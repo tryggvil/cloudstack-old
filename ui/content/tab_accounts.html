@@ -1,0 +1,134 @@
+<!-- Accounts -->
+<div class="maincontent" style="display:block;" id="submenu_content_account">
+	<div id="maincontent_title">
+    	<div class="maintitle_icon"> <img src="images/accountstitle_icons.gif" title="routers" /> </div>
+		<h1>Accounts</h1>
+        <!-- <a class="add_newaccbutton" href="#"></a> -->
+		<div class="search_formarea">
+			<form action="#" method="post">
+				<ol>
+					<li><input class="text" type="text" name="search_input" id="search_input" /></li>
+				</ol>
+			</form>
+			<a class="search_button" id="search_button" href="#"></a>
+			<div id="advanced_search_link" class="advsearch_link">Advanced</div>
+            <div id="advanced_search" class="adv_searchpopup" style="display: none;">
+                <div class="adv_searchformbox">
+                    <h3>
+                        Advance Search</h3>
+                    <form action="#" method="post">
+                    <ol>
+                        <li>
+                            <label for="filter">
+                                Name:</label>
+                            <input class="text" type="text" name="adv_search_name" id="adv_search_name" />
+                        </li>                        
+                        <li>
+                            <label for="filter">Role:</label>
+                        	<select class="select" id="adv_search_role">
+								<option value=""></option>
+								<option value="1">Admin</option>
+								<option value="0">User</option>								
+                            </select>
+                        </li>                                              
+                    </ol>
+                    </form>
+                    <div id="advanced_search_close" class="adv_search_actionbox">
+                        <a href="#">Close </a>
+                    </div>
+                </div>
+            </div>
+		</div>
+	</div>
+     <div class="filter_actionbox">
+    	
+    </div>
+	<div class="grid_container">
+    	<div id="loading_gridtable" class="loading_gridtable">
+                  <div class="loading_gridanimation"></div>
+                   <p>Loading...</p>
+        </div> 
+		<div class="grid_header">
+        	<div class="grid_genheader_cell" style="width:8%;">
+				<div class="grid_headertitles">Role</div>
+			</div>
+			<div class="grid_genheader_cell" style="width:8%;">
+				<div class="grid_headertitles">Account ID</div>
+			</div>
+        	<div class="grid_genheader_cell" style="width:20%;">
+				<div class="grid_headertitles">Account</div>
+			</div>
+			<div class="grid_genheader_cell" style="width:20%;">
+				<div class="grid_headertitles">Domain</div>
+			</div>
+			<div class="grid_genheader_cell" style="width:8%;">
+				<div class="grid_headertitles">VMs</div>
+			</div>
+			<div class="grid_genheader_cell" style="width:8%;">
+				<div class="grid_headertitles">IPs</div>
+			</div>
+            <div class="grid_genheader_cell" style="width:10%;">
+				<div class="grid_headertitles">Bytes Received</div>
+			</div>
+            <div class="grid_genheader_cell" style="width:10%;">
+				<div class="grid_headertitles">Bytes Sent</div>
+			</div>
+            <div class="grid_genheader_cell" style="width:7%;">
+				<div class="grid_headertitles">Disabled</div>
+			</div>
+		</div>
+		<div id="grid_content">
+        	 
+        </div>
+	</div>
+    <div id="pagination_panel" class="pagination_panel" style="display:none;">
+    	<p id="grid_rows_total" />
+    	<div class="pagination_actionbox">
+        	<div class="pagination_actions">
+            	<div class="pagination_actionicon"><img src="images/pagination_refresh.gif" title="refresh" /></div>
+                <a id="refresh" href="#"> Refresh</a>
+            </div>
+            <div class="pagination_actions" id="prevPage_div">
+            	<div class="pagination_actionicon"><img src="images/pagination_previcon.gif" title="prev" /></div>
+                <a id="prevPage" href="#"> Prev</a>
+            </div>
+            <div class="pagination_actions" id="nextPage_div">
+            	<div class="pagination_actionicon"><img src="images/pagination_nexticon.gif" title="next" /></div>
+                <a id="nextPage" href="#"> Next</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Accounts Template -->
+<div id="account_template" style="height:24px;display:none">
+    <div class="grid_smallgenrow_cell" style="width:8%;">
+		<div class="netgrid_celltitles" id="account_role"></div>
+	</div>
+	<div class="grid_smallgenrow_cell" style="width:8%;">
+		<div class="netgrid_celltitles" id="account_accountid"></div>
+	</div>
+	<div class="grid_smallgenrow_cell" style="width:20%;">
+		<div class="netgrid_celltitles" id="account_accountname"></div>
+	</div>
+    <div class="grid_smallgenrow_cell" style="width:20%;">
+		<div class="netgrid_celltitles" id="account_domain"></div>
+	</div>
+    <div class="grid_smallgenrow_cell" style="width:8%;">
+		<div class="netgrid_celltitles" id="account_vms"></div>
+	</div>
+    <div class="grid_smallgenrow_cell" style="width:8%;">
+		<div class="netgrid_celltitles" id="account_ips"></div>
+	</div>
+    <div class="grid_smallgenrow_cell" style="width:10%;">
+		<div class="netgrid_celltitles" id="account_received"></div>
+	</div>
+    <div class="grid_smallgenrow_cell" style="width:10%;">
+		<div class="netgrid_celltitles" id="account_sent"></div>
+	</div>
+    <div class="grid_smallgenrow_cell" style="width:7%;">
+		<div class="netgrid_celltitles" id="account_disabled"></div>
+	</div>
+</div>
+
+

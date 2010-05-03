@@ -1,0 +1,4 @@
+/usr/sbin/vmops-vn
+/usr/sbin/vmops-vnetd
+/etc/init.d/vmops-vnetd
+/usr/lib/python*/dist-packages/vmops*

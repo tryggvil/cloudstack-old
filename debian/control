@@ -1,0 +1,141 @@
+Source: vmops
+Section: libs
+Priority: extra
+Maintainer: Manuel Amador (Rudd-O) <manuel@vmops.com>
+Build-Depends: debhelper (>= 7), openjdk-6-jdk, tomcat6, libws-commons-util-java, libcommons-dbcp-java, libcommons-collections-java, libcommons-httpclient-java, libservlet2.5-java
+Standards-Version: 3.8.1
+Homepage: http://techcenter.vmops.com/software/cloudstack
+
+Package: vmops-deps
+Architecture: any
+Depends: openjdk-6-jre
+Description: VMOps library dependencies
+ This package contains a number of third-party dependencies
+ not shipped by distributions, required to run the VMOps
+ Cloud Stack.
+
+Package: vmops-utils
+Architecture: any
+Depends: openjdk-6-jre
+Description: VMOps utility library
+ The VMOps utility libraries provide a set of Java classes used
+ in the VMOps Cloud Stack.
+
+Package: vmops-client-ui
+Architecture: any
+Depends: openjdk-6-jre, vmops-client (= ${source:Version})
+Description: VMOps management server UI
+ The VMOps management server is the central point of coordination,
+ management, and intelligence in the VMOps Cloud Stack.  This package
+ is a requirement of the vmops-client package, which installs the
+ VMOps management server.
+
+Package: vmops-server
+Architecture: any
+Depends: openjdk-6-jre, vmops-utils (= ${source:Version}), vmops-core (= ${source:Version}), vmops-deps (= ${source:Version}), libservlet2.5-java
+Description: VMOps server library
+ The VMOps server libraries provide a set of Java classes used
+ in the VMOps Cloud Stack.
+
+Package: vmops-vnet
+Architecture: any
+Depends: vmops-daemonize (= ${source:Version}), python, bridge-utils, net-tools
+Description: VMOps-specific virtual network daemon
+ The VMOps virtual network daemon manages virtual networks used in the
+ VMOps Cloud Stack.
+
+Package: vmops-agent-scripts
+Architecture: any
+Depends: openjdk-6-jre, python, bash, bzip2, gzip, unzip
+Description: VMOps agent scripts
+ The VMOps agent is in charge of managing shared computing resources in
+ a VMOps Cloud Stack-powered cloud.  Install this package if this computer
+ will participate in your cloud -- this is a requirement for the VMOps
+ agent.
+
+Package: vmops-daemonize
+Architecture: any
+Description: VMOps daemonization utility
+ This package contains a program that daemonizes the specified
+ process.  The VMOps Cloud Stack uses this to start the agent
+ as a service.
+
+Package: vmops-premium-deps
+Architecture: any
+Depends: openjdk-6-jre
+Description: VMOps premium library dependencies
+ This package contains the certified software components required to run
+ the premium edition of the VMOps Cloud Stack.
+
+Package: vmops-core
+Architecture: any
+Depends: openjdk-6-jre, vmops-deps (= ${source:Version}), vmops-utils (= ${source:Version})
+Description: VMOps core library
+ The VMOps core libraries provide a set of Java classes used
+ in the VMOps Cloud Stack.
+
+Package: vmops-console
+Architecture: any
+Depends: openjdk-6-jre
+Description: VMOps console
+ The VMOps console package contains a set of shared classes
+ used by the remote management console system in the VMOps
+ Cloud Stack.
+
+Package: vmops-test
+Architecture: any
+Depends: openjdk-6-jre, wget, vmops-utils (= ${source:Version}), vmops-deps (= ${source:Version})
+Description: VMOps test suite
+ The VMOps test package contains a suite of automated tests
+ that the very much appreciated QA team at VMOps constantly
+ uses to help increase the quality of the Cloud Stack.
+
+Package: vmops-console-proxy
+Architecture: any
+Depends: openjdk-6-jre, vmops-deps (= ${source:Version}), vmops-console (= ${source:Version})
+Description: VMOps console proxy
+ The VMOps console proxy contains an implementation of an
+ AJAX-based remote console viewer for virtual machines created
+ within a VMOps Cloud Stack-powered cloud.
+
+Package: vmops-client
+Architecture: any
+Depends: openjdk-6-jre, vmops-deps (= ${source:Version}), vmops-utils (= ${source:Version}), vmops-server (= ${source:Version}), vmops-client-ui (= ${source:Version}), vmops-setup (= ${source:Version}), vmops-agent-scripts (= ${source:Version}), tomcat6, libws-commons-util-java, libcommons-dbcp-java, libcommons-collections-java, libcommons-httpclient-java, sysvinit-utils, chkconfig, sudo, openssh-client, jsvc
+Description: VMOps client
+ The VMOps management server is the central point of coordination,
+ management, and intelligence in the VMOps Cloud Stack.  This package
+ is required for the management server to work.
+
+Package: vmops-setup
+Architecture: any
+Depends: openjdk-6-jre, python, vmops-utils (= ${source:Version}), mysql-client, vmops-deps (= ${source:Version}), vmops-server (= ${source:Version})
+Description: VMOps client
+ The VMOps setup tools let you set up your Management Server and Usage Server.
+
+Package: vmops-client-api
+Architecture: any
+Depends: openjdk-6-jre
+Description: VMOps client API library
+ The VMOps client API provides a generic client API for the
+ VMOps Cloud Stack components and third parties to use.
+
+Package: vmops-agent
+Architecture: any
+Depends: openjdk-6-jre, vmops-utils (= ${source:Version}), vmops-core (= ${source:Version}), vmops-deps (= ${source:Version}), vmops-agent-scripts (= ${source:Version}), vmops-vnet (= ${source:Version}), libcommons-httpclient-java, libcommons-collections-java, libcommons-dbcp-java, libcommons-pool-java, libcommons-logging-java, libvirt0, vmops-daemonize, sysvinit-utils, chkconfig, qemu-kvm, libvirt-bin, cgroup-bin, nfs-common, augeas-tools, uuid-runtime
+Description: VMOps agent
+ The VMOps agent is in charge of managing shared computing resources in
+ a VMOps Cloud Stack-powered cloud.  Install this package if this computer
+ will participate in your cloud.
+
+Package: vmops-premium
+Architecture: any
+Depends: openjdk-6-jre, vmops-utils (= ${source:Version}), vmops-core (= ${source:Version}), vmops-deps (= ${source:Version}), vmops-server (= ${source:Version}), vmops-premium-deps (= ${source:Version})
+Description: VMOps premium components
+ The VMOps premium components expand the range of features on your cloud stack.
+
+Package: vmops-usage
+Architecture: any
+Depends: openjdk-6-jre, vmops-utils (= ${source:Version}), vmops-core (= ${source:Version}), vmops-deps (= ${source:Version}), vmops-server (= ${source:Version}), vmops-premium (= ${source:Version}), vmops-daemonize (= ${source:Version}), vmops-setup (= ${source:Version})
+Description: VMOps usage monitor
+ The VMOps usage monitor provides usage accounting across the entire cloud for
+ cloud operators to charge based on usage parameters.

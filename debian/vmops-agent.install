@@ -1,0 +1,14 @@
+/usr/share/java/vmops-agent.jar
+/usr/share/java/vmops-agent-simulator.jar
+/etc/vmops/agent/agent.properties
+/etc/vmops/agent/developer.properties.template
+/etc/vmops/agent/environment.properties
+/etc/vmops/agent/log4j-vmops.xml
+/etc/init.d/vmops-agent
+/usr/bin/agent-runner
+/usr/bin/vmops-setup-agent
+/usr/lib/vmops/agent/css
+/usr/lib/vmops/agent/ui
+/usr/lib/vmops/agent/js
+/usr/lib/vmops/agent/images
+/var/log/vmops/agent

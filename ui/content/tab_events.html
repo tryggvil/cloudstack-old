@@ -1,0 +1,228 @@
+<!-- Content Panel -->
+<!-- Submenus -->
+<div class="submenu_links">
+	<div class="submenu_links_off" id="submenu_events">Events</div>
+	<div class="submenu_links_off" id="submenu_alerts">Alerts</div>
+</div>
+
+<!-- *** Events (begin) *** -->
+<div class="maincontent" id="submenu_content_events" style="display:none;">
+	<div id="maincontent_title">
+    	<div class="maintitle_icon"> <img src="images/eventstitle_icons.gif" title="events" /> </div>
+		<h1>Events</h1>
+		<div class="search_formarea">
+			<form action="#" method="post">
+				<ol>
+					<li><input class="text" type="text" name="search_input" id="search_input" /></li>
+				</ol>
+			</form>
+			<a class="search_button" id="search_button" href="#"></a>
+			
+			<div id="advanced_search_link" class="advsearch_link">Advanced</div>
+            <div id="advanced_search" class="adv_searchpopup" style="display: none;">
+                <div class="adv_searchformbox">
+                    <h3>Advance Search</h3>
+                    <form action="#" method="post">
+                    <ol>
+                        <li>
+                            <label for="filter">Type:</label>
+                            <input class="text" type="text" name="adv_search_type" id="adv_search_type" />
+                        </li>
+                         <li>
+                            <label for="filter">Level:</label>
+                            <input class="text" type="text" name="adv_search_level" id="adv_search_level" />
+                        </li>
+                        <li id="adv_search_account_li" style="display: none;">
+                            <label for="filter">Account:</label>
+                            <select class="select" id="adv_search_account">
+                            </select>
+                        </li>
+                    </ol>
+                    </form>
+                    <div id="advanced_search_close" class="adv_search_actionbox">
+                        <a href="#">Close </a>
+                    </div>
+                </div>
+            </div>
+			
+		</div>
+	</div>
+    <div class="filter_actionbox">
+    	<div class="selection_formarea" style="display:none;">
+        	<form action="#" method="post">
+            	<label for="filter">Filters:</label>
+				<select class="select" id="template_type">
+                  <option value="true">Public</option>
+                  <option value="false">Private</option>
+         		</select>
+			</form>
+         </div>
+    </div>
+	<div class="grid_container">
+    	<div id="loading_gridtable" class="loading_gridtable">
+                  <div class="loading_gridanimation"></div>
+                   <p>Loading...</p>
+             </div>
+		<div class="grid_header"> 
+        	<div class="grid_genheader_cell" id="event_username_header" style="width:13%;">
+				<div class="grid_headertitles">Initiated By</div>
+			</div>
+            <div class="grid_genheader_cell" id="event_account_header" style="width:13%;">
+				<div class="grid_headertitles">Owner Account</div>
+			</div>
+			<div class="grid_genheader_cell" style="width:13%;">
+				<div class="grid_headertitles" >Type</div>
+			</div>
+			<div class="grid_genheader_cell" style="width:13%;">
+				<div class="grid_headertitles">Level</div>
+			</div>
+			<div class="grid_genheader_cell" style="width:34%;">
+				<div class="grid_headertitles">Description</div>
+			</div>
+			<div class="grid_genheader_cell" style="width:13%;">
+				<div class="grid_headertitles">Date</div>
+			</div>
+		</div>
+		<div id="grid_content">
+             	
+        </div>
+	</div>
+    <div id="pagination_panel" class="pagination_panel" style="display:none;">
+    	<p id="grid_rows_total" />
+    	<div class="pagination_actionbox">
+        	<div class="pagination_actions">
+            	<div class="pagination_actionicon"><img src="images/pagination_refresh.gif" title="refresh" /></div>
+                <a id="refresh" href="#"> Refresh</a>
+            </div>
+            <div class="pagination_actions" id="prevPage_div">
+            	<div class="pagination_actionicon"><img src="images/pagination_previcon.gif" title="prev" /></div>
+                <a id="prevPage" href="#"> Prev</a>
+            </div>
+            <div class="pagination_actions" id="nextPage_div">
+            	<div class="pagination_actionicon"><img src="images/pagination_nexticon.gif" title="next" /></div>
+                <a id="nextPage" href="#"> Next</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Events Template -->
+<div id="event_template" style="display:none">
+
+	<div class="grid_smallgenrow_cell" id="event_username_container" style="width:13%;">
+		<div class="netgrid_celltitles" id="event_username"></div>
+	</div>
+    <div class="grid_smallgenrow_cell" id="event_account_container" style="width:13%;">
+		<div class="netgrid_celltitles" id="event_account"></div>
+	</div>
+	<div class="grid_smallgenrow_cell" style="width:13%;">
+		<div class="netgrid_celltitles" id="event_type"></div>
+	</div>
+	<div class="grid_smallgenrow_cell" style="width:13%;">
+		<div class="netgrid_celltitles" id="event_level"></div>
+	</div>
+	<div class="grid_smallgenrow_cell" style="width:34%;">
+		<div class="netgrid_celltitles" id="event_desc"></div>
+	</div>
+	<div class="grid_smallgenrow_cell" style="width:13%;">
+		<div class="netgrid_celltitles" id="event_date"></div>
+	</div>
+</div>
+<!-- *** Events (end) *** -->
+
+<!-- *** Alerts (begin) *** -->
+<div class="maincontent" id="submenu_content_alerts" style="display:none">
+	<div id="maincontent_title">
+    	<div class="maintitle_icon"> <img src="images/alerttitle_icons.gif" title="events" /> </div>
+		<h1>Alerts</h1>
+		<div class="search_formarea">
+			<form action="#" method="post">
+				<ol>
+					<li><input class="text" type="text" name="search_input" id="search_input" /></li>
+				</ol>
+			</form>
+			<a class="search_button" id="search_button" href="#"></a>
+			
+			<div id="advanced_search_link" class="advsearch_link">Advanced</div>
+            <div id="advanced_search" class="adv_searchpopup" style="display: none;">
+                <div class="adv_searchformbox">
+                    <h3>Advance Search</h3>
+                    <form action="#" method="post">
+                    <ol>
+                        <li>
+                            <label for="filter">Type:</label>
+                            <input class="text" type="text" name="adv_search_type" id="adv_search_type" />
+                        </li>               
+                    </ol>
+                    </form>
+                    <div id="advanced_search_close" class="adv_search_actionbox">
+                        <a href="#">Close </a>
+                    </div>
+                </div>
+            </div>
+			
+		</div>
+	</div>
+    <div class="filter_actionbox">
+    	<div class="selection_formarea" style="display:none;">
+        	<form action="#" method="post">
+            	<label for="filter">Filters:</label>
+				<select class="select" id="template_type">
+                  <option value="true">Public</option>
+                  <option value="false">Private</option>
+         		</select>
+			</form>
+         </div>
+    </div>
+	<div class="grid_container">
+    	<div id="loading_gridtable" class="loading_gridtable">
+                  <div class="loading_gridanimation"></div>
+                   <p>Loading...</p>
+             </div>
+		<div class="grid_header">
+			<div class="grid_genheader_cell" style="width:25%;">
+				<div class="grid_headertitles">Type</div>
+			</div>
+			<div class="grid_genheader_cell" style="width:49%;">
+				<div class="grid_headertitles">Description</div>
+			</div>
+			<div class="grid_genheader_cell" style="width:25%;">
+				<div class="grid_headertitles">Sent</div>
+			</div>
+		</div>
+		<div id="grid_content">
+        	 
+        </div>
+	</div>
+    <div id="pagination_panel" class="pagination_panel" style="display:none;">
+    	<p id="grid_rows_total" />
+    	<div class="pagination_actionbox">
+        	<div class="pagination_actions">
+            	<div class="pagination_actionicon"><img src="images/pagination_refresh.gif" title="refresh" /></div>
+                <a id="refresh" href="#"> Refresh</a>
+            </div>
+            <div class="pagination_actions" id="prevPage_div">
+            	<div class="pagination_actionicon"><img src="images/pagination_previcon.gif" title="prev" /></div>
+                <a id="prevPage" href="#"> Prev</a>
+            </div>
+            <div class="pagination_actions" id="nextPage_div">
+            	<div class="pagination_actionicon"><img src="images/pagination_nexticon.gif" title="next" /></div>
+                <a id="nextPage" href="#"> Next</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alert Template -->
+<div id="alert_template" style= "display:none">
+	<div class="grid_smallgenrow_cell" style="width:25%;">
+		<div class="netgrid_celltitles" id="alert_type"></div>
+	</div>
+	 <div class="grid_smallgenrow_cell" style="width:49%;">
+		<div class="netgrid_celltitles" id="alert_desc"></div>
+	</div>
+	<div class="grid_smallgenrow_cell" style="width:25%;">
+		<div class="netgrid_celltitles" id="alert_sent"></div>
+	</div>
+</div>
+<!-- *** Alerts (end) *** -->

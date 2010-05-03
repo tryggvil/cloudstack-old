@@ -1,0 +1,135 @@
+#!/usr/bin/env python
+
+import re
+import os
+
+
+expressions = [
+	("c1",
+		(
+			re.compile(r"/\*\*.*Copyright \(c\) 20(.+?)VMOps Inc(.*?) \*/",re.DOTALL),
+			"""/**
+ *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ * 
+ * This software is licensed under the GNU General Public License v3 or later.  
+ * 
+ * It is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ */"""
+		)),
+	("c2",
+		(
+			re.compile(r"//.*Copyright \(C\) 20[0-9][0-9] VMOps, Inc\.  All Rights Reserved\.",re.DOTALL),
+			"""/**
+ *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ * 
+ * This software is licensed under the GNU General Public License v3 or later.  
+ * 
+ * It is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ */"""
+		)),
+	("gpl3+",
+		(
+			re.compile("(This software is licensed under the GNU General Public License v3 or later)",re.DOTALL),
+			r"\1"
+		)),
+	("gpl2cddlcpexcept",
+		(
+			re.compile("(Sun designates this particular file as subject to the \"Classpath\" exception)",re.DOTALL),
+			r"\1"
+		)),
+	("gpl2cddl",
+		(
+			re.compile("(General Public License Version 2 only \(\"GPL\"\) or the Common Development)",re.DOTALL),
+			r"\1"
+		)),
+	("gpl2orlater",
+		(
+			re.compile(r"(either version 2 of the License, or(.+?)\(at your option\) any later version)",re.DOTALL),
+			r"\1"
+		)),
+	("gpl",
+		(
+			re.compile(r"(GNU General Public License)",re.DOTALL),
+			r"\1"
+		)),
+	("lgpl",
+		(
+			re.compile(r"(GNU Lesser General Public License)",re.DOTALL),
+			r"\1"
+		)),
+	("copyright",
+		(
+			re.compile(r"(Copyright)",re.DOTALL|re.IGNORECASE),
+			r"\1"
+		)),
+]
+
+def java_analyzer(path):
+	text = file(path).read(-1)
+	newtext = text
+	repl = False
+	
+	for e,(r,rep) in expressions:
+		newtext, numrepls = r.subn(rep,newtext,re.DOTALL)
+		if numrepls:
+			repl = True
+			print "%90s"%path,e
+			break
+	
+	if repl:
+		file(path,"w").write(newtext)
+	else:
+		print "%90s"%path,"no license detected"
+		newtext = """/**
+ *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ * 
+ * This software is licensed under the GNU General Public License v3 or later.  
+ * 
+ * It is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ */""" + "\n\n" + text
+		file(path,"w").write(newtext)
+	
+analyzers = {
+	".java":java_analyzer,
+}
+
+for cwd,dirs,files in os.walk("."):
+	skip = [".svn","thirdparty","plugins","tools","premium","usage",".waf-javatest"]
+	areweindir = lambda x: x in cwd.split(os.path.sep)
+	areindirs = map(areweindir,skip)
+	if any(areindirs): continue
+	for f in files:
+		name,ext = os.path.splitext(f)
+		if ext in analyzers:
+			path = os.path.join(cwd,f)
+			analyzers[ext](path)

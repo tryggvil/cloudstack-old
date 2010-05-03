@@ -1,0 +1,13 @@
+#!/bin/sh -e
+
+case "$1" in
+    configure)
+
+	for i in /var/log/vmops/agent
+	do
+		chmod 0770 $i
+	done
+    ;;
+esac
+
+#DEBHELPER#

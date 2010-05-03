@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="/thirdparty/log4j-1.2.15.jar"/>
+	<classpathentry kind="lib" path="/thirdparty/commons-httpclient-3.1.jar"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/utils"/>
+	<classpathentry kind="lib" path="/thirdparty/trilead-ssh2-build213.jar"/>
+	<classpathentry kind="lib" path="/thirdparty/mysql-connector-java-5.1.7-bin.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>

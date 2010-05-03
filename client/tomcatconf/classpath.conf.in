@@ -1,0 +1,9 @@
+#!/bin/bash
+
+SYSTEMJARS="@SYSTEMJARS@"
+SCP=$(build-classpath $SYSTEMJARS 2>/dev/null) ; if [ $? != 0 ] ; then export SCP="@SYSTEMCLASSPATH@" ; fi
+MCP="@MSCLASSPATH@"
+PCP="@PREMIUMCLASSPATH@"
+DCP="@DEPSCLASSPATH@"
+CLASSPATH=$PCP:$SCP:$DCP:$MCP:@MSCONF@
+export CLASSPATH

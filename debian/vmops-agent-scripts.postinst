@@ -1,0 +1,20 @@
+#!/bin/sh -e
+
+case "$1" in
+    configure)
+        if ! id vmops > /dev/null 2>&1 ; then
+            adduser --system --home /var/lib/vmops/management --no-create-home \
+                --group --disabled-password --shell /bin/sh vmops
+                # update me in vmops-usage.postinst as well
+        fi
+
+	for i in /usr/lib/vmops/agent/scripts/network/domr/id_rsa
+	do
+		chmod 0600 $i
+		chown vmops $i
+	done
+
+    ;;
+esac
+
+#DEBHELPER#

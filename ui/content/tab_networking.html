@@ -1,0 +1,696 @@
+<!-- Content Panel -->
+<!-- Submenu -->
+<div class="submenu_links">
+	<div class="submenu_links_on" id="submenu_public_ips">Public IP</div> 
+   	<div class="submenu_links_off" id="submenu_security_groups">Security Groups</div> 
+   	<div class="submenu_links_off" id="submenu_load_balancer_policies">Load Balancer Policies</div>
+</div>
+<!--
+<div class="submenu_links"><a id="submenu_public_ips" href="#">Public IPs</a>| <a id="submenu_security_groups" href="#">Security Groups</a> |<a id="submenu_load_balancer_policies" href="#"> Load Balancer Policies</a></div>
+-->
+<!-- Public IP -->
+<div class="maincontent" id="submenu_content_public_ips" style="display:block;">
+	<div id="maincontent_title">
+    	<div class="maintitle_icon"> <img src="images/iptitle_icons.gif" title="Public IP" /> </div>
+		<h1>Public IPs</h1>
+		<a class="add_publicipbutton" href="#"></a>
+		<div class="search_formarea">
+			<form action="#" method="post">
+				<ol>
+					<li><input class="text" type="text" name="search_input" id="search_input" /></li>
+				</ol>
+			</form>
+			<a class="search_button" id="search_button" href="#"></a>
+			
+			<div id="advanced_search_link" class="advsearch_link">Advanced</div>
+            <div id="advanced_search" class="adv_searchpopup" style="display: none;">
+                <div class="adv_searchformbox">
+                    <h3>Advance Search</h3>
+                    <form action="#" method="post">
+                    <ol>                        
+                        <li>
+                            <label for="filter">Zone:</label>
+                            <select class="select" id="adv_search_zone">
+                            </select>
+                        </li>                        
+                        <li id="adv_search_account_li" style="display: none;">
+                            <label for="filter">Account:</label>
+                            <select class="select" id="adv_search_account">
+                            </select>
+                        </li>
+                    </ol>
+                    </form>
+                    <div id="advanced_search_close" class="adv_search_actionbox">
+                        <a href="#">Close </a>
+                    </div>
+                </div>
+            </div>			
+			
+		</div>
+	</div>
+    <div class="filter_actionbox" style="display:none">
+    	<div class="selection_formarea">
+        	<form action="#" method="post">
+            	<label for="filter">Filters:</label>
+				<select class="select" id="template_type">
+                  <option value="true">Group1</option>
+                  <option value="false">Group2</option>
+         		</select>
+			</form>
+         </div>
+    </div>
+		
+	<div class="grid_container">
+    	<div id="loading_gridtable" class="loading_gridtable">
+                  <div class="loading_gridanimation"></div>
+                   <p>Loading...</p>
+             </div>
+		<div class="grid_header">
+			<div class="grid_genheader_cell" style="width:10%;">
+				<div class="grid_headertitles">Public IP</div>
+			</div>
+			<div class="grid_genheader_cell" style="width:10%;">
+				<div class="grid_headertitles">Zone</div>
+			</div>
+			<div class="grid_genheader_cell" style="width:10%;">
+				<div class="grid_headertitles">Source NAT</div>
+			</div>			
+			<div class="grid_genheader_cell" id="ip_vlan_header" style="display:none; width:13%;">
+				<div class="grid_headertitles">VLAN</div>
+			</div>
+			<div class="grid_genheader_cell" id="ip_account_header" style="display:none; width:13%;">
+				<div class="grid_headertitles">Account</div>
+			</div>
+			<div class="grid_genheader_cell" id="ip_domain_header" style="display:none; width:13%;">
+				<div class="grid_headertitles">Domain</div>
+			</div>
+			<div class="grid_genheader_cell" style="width:10%;">
+				<div class="grid_headertitles">Allocated</div>
+			</div>
+			<div class="grid_genheader_cell" id="ip_release_header" style="width:10%;">
+				<div class="grid_headertitles"></div>
+			</div>
+		</div>
+		<div id="grid_content">
+        	
+        </div>
+    </div>
+    <div id="pagination_panel" class="pagination_panel" style="display:none;">
+    	<p id="grid_rows_total" />
+    	<div class="pagination_actionbox">
+        	<div class="pagination_actions">
+            	<div class="pagination_actionicon"><img src="images/pagination_refresh.gif" title="refresh" /></div>
+                <a id="refresh" href="#"> Refresh</a>
+            </div>
+            <div class="pagination_actions" id="prevPage_div">
+            	<div class="pagination_actionicon"><img src="images/pagination_previcon.gif" title="prev" /></div>
+                <a id="prevPage" href="#"> Prev</a>
+            </div>
+            <div class="pagination_actions" id="nextPage_div">
+            	<div class="pagination_actionicon"><img src="images/pagination_nexticon.gif" title="next" /></div>
+                <a id="nextPage" href="#"> Next</a>
+            </div>
+        </div>
+    </div>
+</div>	
+
+<!-- Public IP Row Template -->
+<div id="ip_template" style="display:none; height:auto;">
+	<div class="adding_loading" style="height:25px;display:none;">
+		<div class="adding_animation"></div>
+		<div class="adding_text">Adding &hellip; </div>
+	</div>
+	<div id="ip_body" style="display:block">
+		<div class="grid_smallgenrow_cell" style="width:10%;">
+			<div class="netgrid_celltitles" id="ip_address"></div>
+		</div>
+		<div class="grid_smallgenrow_cell" style="width:10%;">
+			<div class="netgrid_celltitles" id="ip_zone"></div>
+		</div>
+		<div class="grid_smallgenrow_cell" style="width:10%;">
+			<div class="netgrid_celltitles" id="ip_source_nat"></div>
+		</div>		
+		<div class="grid_smallgenrow_cell" id="ip_vlan_container" style="display:none; width:13%;">
+			<div class="netgrid_celltitles" id="ip_vlan"></div>
+		</div>
+		<div class="grid_smallgenrow_cell" id="ip_account_container" style="display:none; width:13%;">
+			<div class="netgrid_celltitles" id="ip_account"></div>
+		</div>
+		<div class="grid_smallgenrow_cell" id="ip_domain_container" style="display:none; width:13%;">
+			<div class="netgrid_celltitles" id="ip_domain"></div>
+		</div>
+		<div class="grid_smallgenrow_cell" style="width:10%;">
+			<div class="netgrid_celltitles" id="ip_allocated"></div>
+		</div>
+		<div class="grid_smallgenrow_cell" id="ip_release_container" style="width:10%;">
+			<div class="netgrid_celltitles" id="ip_release" style="display:none"><a href="#">Release</a></div>
+		</div>
+	</div>
+</div>
+
+<!-- Security Group -->
+<div class="maincontent" style="display:none;" id="submenu_content_security_groups">
+    <div id="maincontent_title">
+    	<div class="maintitle_icon"> <img src="images/sgtitle_icons.gif" title="security groups" /> </div>
+		<h1>Security Groups</h1>
+		<a class="add_sgroupbutton" href="#"></a>
+		<div class="search_formarea">
+			<form action="#" method="post">
+				<ol>
+					<li><input class="text" type="text" name="search_input" id="search_input" /></li>
+				</ol>
+			</form>
+			<a class="search_button" id="search_button" href="#"></a>
+			
+			<div id="advanced_search_link" class="advsearch_link">Advanced</div>
+            <div id="advanced_search" class="adv_searchpopup" style="display: none;">
+                <div class="adv_searchformbox">
+                    <h3>Advance Search</h3>
+                    <form action="#" method="post">
+                    <ol>
+                        <li>
+                            <label for="filter">Name:</label>
+                            <input class="text" type="text" name="adv_search_name" id="adv_search_name" />
+                        </li>                       
+                        <li id="adv_search_account_li" style="display: none;">
+                            <label for="filter">Account:</label>
+                            <select class="select" id="adv_search_account">
+                            </select>
+                        </li>
+                    </ol>
+                    </form>
+                    <div id="advanced_search_close" class="adv_search_actionbox">
+                        <a href="#">Close </a>
+                    </div>
+                </div>
+            </div>
+			
+		</div>
+    </div>
+    <div class="filter_actionbox">
+    	<div class="selection_formarea" style="display:none;">
+        	<form action="#" method="post">
+            	<label for="filter">Filters:</label>
+				<select class="select" id="template_type">
+                  <option value="true">Public</option>
+                  <option value="false">Private</option>
+         		</select>
+			</form>
+         </div>
+    </div>
+    <div class="fix_wrapper">
+        <div class="net_gridwrapper">
+            <div class="net_gridleft">
+                <div class="netgrid_container">
+                	<div id="loading_gridtable" class="loading_gridtable">
+                              <div class="loading_gridanimation"></div>
+                               <p>Loading...</p>
+                         </div>
+                    <div class="grid_header">
+                        <div class="grid_genheader_cell" style="width:30%;">
+                            <div class="grid_headertitles">Name</div>
+                        </div>
+                       <div class="grid_genheader_cell" id="sg_rule_desc_header" style="width:30%;">
+                            <div class="grid_headertitles">Description</div>
+                        </div>
+                        <div class="grid_genheader_cell" id="sg_rule_account_header" style="display:none; width:30%;">
+                            <div class="grid_headertitles">Account</div>
+                        </div>
+                         <div class="grid_genheader_cell" style="width:9%;">
+                            <div class="grid_headertitles"></div>
+                        </div>
+                    </div>
+                    <div id="grid_content">
+                        
+                    </div>
+                </div>             
+                <div id="pagination_panel" class="pagination_panel" style="display:none;">
+    	            <p id="grid_rows_total" />
+    	            <div class="pagination_actionbox">
+        	            <div class="pagination_actions">
+            	            <div class="pagination_actionicon"><img src="images/pagination_refresh.gif" title="refresh" /></div>
+                            <a id="refresh" href="#"> Refresh</a>
+                        </div>
+                        <div class="pagination_actions" id="prevPage_div">
+            	            <div class="pagination_actionicon"><img src="images/pagination_previcon.gif" title="prev" /></div>
+                            <a id="prevPage" href="#"> Prev</a>
+                        </div>
+                        <div class="pagination_actions" id="nextPage_div">
+            	            <div class="pagination_actionicon"><img src="images/pagination_nexticon.gif" title="next" /></div>
+                            <a id="nextPage" href="#"> Next</a>
+                        </div>
+                    </div>
+                </div>         
+            </div>              
+        </div>
+    <div class="net_gridright">
+		<div class="net_displaybox">
+			<div class="net_displaybox_top">
+				<div class="net_displaytitlebox">
+					<h2>Click on a Security Group to see more details</h2>
+					<a class="add_rules" href="#" style="display:none"></a>
+				</div>
+			</div>
+			<div class="net_displaybox_mid" style="display:none">
+				<div class="display_content">
+					<div class="display_gridbox">
+						<div class="display_gridheader">
+							<div class="display_headercell1">
+								<div class="display_headercell_title">Public Port</div>
+							</div>
+							<div class="display_headercell1">
+								<div class="display_headercell_title">Private Port</div>
+							</div>
+							<div class="display_headercell1">
+								<div class="display_headercell_title">Protocol</div>
+							</div>
+							<div class="display_headercell2"></div>
+						</div>
+						<div id="display_gridcontent"></div>
+					</div>
+				</div>
+			</div>
+			<div class="net_displaybox_bot"></div>
+		</div>
+    </div>
+    </div>
+    <div id="pagination_panel_events" class="pagination_panel" style="display:none;">
+    	<p id="grid_rows_total_events" />
+    	<div class="pagination_actionbox">
+        	<div class="pagination_actions">
+            	<div class="pagination_actionicon"><img src="images/pagination_refresh.gif" title="refresh" /></div>
+                <a id="refresh_event" href="#"> Refresh</a>
+            </div>
+            <div class="pagination_actions" id="prevPage_event_div">
+            	<div class="pagination_actionicon"><img src="images/pagination_previcon.gif" title="prev" /></div>
+                <a id="prevPage_event" href="#"> Prev</a>
+            </div>
+            <div class="pagination_actions" id="nextPage_event_div">
+            	<div class="pagination_actionicon"><img src="images/pagination_nexticon.gif" title="next" /></div>
+                <a id="nextPage_event" href="#"> Next</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Security Group Rule Template -->
+<div id="sg_rule_template" style="display:none">
+	<div class="display_rowloading" style="display:none">
+		<div class="display_rowloader_animation"></div>
+		<p>Deleting...</p>
+	</div>
+	<div id="sg_body">
+		<div class="display_rowcell1">
+			<div class="display_rowcell_title" id="sg_rule_public_port"></div>
+		</div>
+		<div class="display_rowcell1">
+			<div class="display_rowcell_title" id="sg_rule_private_port"></div>
+		</div>
+		<div class="display_rowcell1">
+			<div class="display_rowcell_title" id="sg_rule_protocol"></div>
+		</div>
+		<div class="display_rowcell2">
+			<a class="display_deletebutton" id="sg_rule_delete" href="#"></a>
+		</div>
+	</div>
+</div>
+
+<!-- Security Group Template -->
+<div id="sg_template" style="display:none;">
+	<div class="grid_smallgenrow_cell" style="width:30%;">
+		<div class="netgrid_celltitles" id="sg_name"></div>
+	</div>
+	<div class="grid_smallgenrow_cell" id="sg_desc_container" style="width:30%;" >
+		<div class="netgrid_celltitles" id="sg_desc"></div>
+	</div>
+	<div class="grid_smallgenrow_cell" id="sg_account_container" style="display:none; width:30%;">
+		<div class="netgrid_celltitles" id="sg_account"></div>
+	</div>
+	<div class="grid_smallgenrow_cell" style="width:9%;">
+		<div class="netgrid_celltitles" style="display:block"><a id="sg_delete" href="#">Delete</a></div>
+	</div>
+</div>
+
+<!-- Load Balancer Policies -->
+<div class="maincontent" style="display:none;" id="submenu_content_load_balancer_policies">
+	<div id="maincontent_title">
+    	<div class="maintitle_icon"> <img src="images/loadtitle_icons.gif" title="security groups" /> </div>
+		<h1>Load Balancer Policies</h1>
+		<a class="add_loadbalancerbutton" href="#"></a>
+		<div class="search_formarea">
+			<form action="#" method="post">
+				<ol>
+					<li><input class="text" type="text" name="search_input" id="search_input" /></li>
+				</ol>
+			</form>
+			<a class="search_button" id="search_button" href="#"></a>
+			
+			<div id="advanced_search_link" class="advsearch_link">Advanced</div>
+            <div id="advanced_search" class="adv_searchpopup" style="display: none;">
+                <div class="adv_searchformbox">
+                    <h3>Advance Search</h3>
+                    <form action="#" method="post">
+                    <ol>
+                        <li>
+                            <label for="filter">Name:</label>
+                            <input class="text" type="text" name="adv_search_name" id="adv_search_name" />
+                        </li>                     
+                        <li id="adv_search_account_li" style="display: none;">
+                            <label for="filter">Account:</label>
+                            <select class="select" id="adv_search_account">
+                            </select>
+                        </li>
+                    </ol>
+                    </form>
+                    <div id="advanced_search_close" class="adv_search_actionbox">
+                        <a href="#">Close </a>
+                    </div>
+                </div>
+            </div>
+			
+		</div>
+	</div>
+    <div class="filter_actionbox">
+    	<div class="selection_formarea" style="display:none;">
+        	<form action="#" method="post">
+            	<label for="filter">Filters:</label>
+				<select class="select" id="template_type">
+                  <option value="true">Public</option>
+                  <option value="false">Private</option>
+         		</select>
+			</form>
+         </div>
+    </div>
+    <div class="fix_wrapper">        
+        <div class="net_gridwrapper">
+            <div class="net_gridleft">
+                <div class="netgrid_container">
+                	<div id="loading_gridtable" class="loading_gridtable" style="display:none;">
+                          <div class="loading_gridanimation"></div>
+                           <p>Loading...</p>
+                         </div> 	
+                    <div class="grid_header">
+                        <div class="grid_genheader_cell" id="lb_name_header" style="width:32%;">
+                            <div class="grid_headertitles">Name</div>
+                        </div>
+                        <div class="grid_genheader_cell" style="width:10%;">
+                            <div class="grid_headertitles">Public IP</div>
+                        </div>
+                        <div class="grid_genheader_cell" style="width:10%;">
+                            <div class="grid_headertitles">Public Port</div>
+                        </div>
+                        <div class="grid_genheader_cell" style="width:10%;">
+                            <div class="grid_headertitles">Private Port</div>
+                        </div>
+                        <div class="grid_genheader_cell" style="width:15%;">
+                            <div class="grid_headertitles">Algorithm</div>
+                        </div>
+                        <<div class="grid_genheader_cell" id="lb_account_header" style="display:none; width:15%;">
+                            <div class="grid_headertitles">Account</div>
+                        </div>
+                        <div class="grid_genheader_cell" style="width:7%;">
+                            <div class="grid_headertitles"></div>
+                        </div>
+                    </div>
+                    <div id="grid_content">
+                        
+                    </div>
+                </div>                
+                <div id="pagination_panel" class="pagination_panel" style="display:none;">
+    	            <p id="grid_rows_total" />
+    	            <div class="pagination_actionbox">
+        	            <div class="pagination_actions">
+            	            <div class="pagination_actionicon"><img src="images/pagination_refresh.gif" title="refresh" /></div>
+                            <a id="refresh" href="#"> Refresh</a>
+                        </div>
+                        <div class="pagination_actions" id="prevPage_div">
+            	            <div class="pagination_actionicon"><img src="images/pagination_previcon.gif" title="prev" /></div>
+                            <a id="prevPage" href="#"> Prev</a>
+                        </div>
+                        <div class="pagination_actions" id="nextPage_div">
+            	            <div class="pagination_actionicon"><img src="images/pagination_nexticon.gif" title="next" /></div>
+                            <a id="nextPage" href="#"> Next</a>
+                        </div>
+                    </div>
+                </div>              
+            </div>             
+        </div>
+        <div class="net_gridright">
+            <div class="net_displaybox">
+                <div class="net_displaybox_top">
+                    <div class="net_displaytitlebox">
+                        <h2>Click on a Load Balancer to see more details </h2>
+                        <a class="add_rules" href="#" style="display:none"></a>
+                    </div>
+                </div>
+                <div class="net_displaybox_mid" style="display:none">
+                    <div class="display_content">
+                        <div class="load_graphicalbox">
+                            <div class="load_graphical_left">
+                                <div class="load_router"></div>
+                                <p>Public IP:<br/><strong id="lb_rule_ip">72.52.126.23</strong></p>
+                            </div>
+                            <div class="load_graphical_mid">
+                                <div class="load_joint"></div>
+                            </div>
+                            <div class="load_graphical_right">
+                                <div class="load_vmlist">
+                                    <div id="lb_instance_new" style="display:block">
+                                        <div class="load_newaddvm" >
+                                            <div class="loadadd_icon"></div>
+                                            <div class="load_newadd_text">Add an instance </div>
+                                        </div>	
+                                    </div>
+                                    <div id="load_vmlist_container">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="net_displaybox_bot"></div>
+            </div>
+        </div>
+    </div>
+    <div id="pagination_panel_events" class="pagination_panel" style="display:none;">
+    	<p id="grid_rows_total_events" />
+    	<div class="pagination_actionbox">
+        	<div class="pagination_actions">
+            	<div class="pagination_actionicon"><img src="images/pagination_refresh.gif" title="refresh" /></div>
+                <a id="refresh_event" href="#"> Refresh</a>
+            </div>
+            <div class="pagination_actions" id="prevPage_event_div">
+            	<div class="pagination_actionicon"><img src="images/pagination_previcon.gif" title="prev" /></div>
+                <a id="prevPage_event" href="#"> Prev</a>
+            </div>
+            <div class="pagination_actions" id="nextPage_event_div">
+            	<div class="pagination_actionicon"><img src="images/pagination_nexticon.gif" title="next" /></div>
+                <a id="nextPage_event" href="#"> Next</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Load Balancer Instance Template -->
+<div id="lb_instance_template" style="display:none">
+	<div class="load_loadingvm" style="display:none">
+		<div class="loadadding_animation"></div>
+		<div class="load_adding_text">Adding &hellip; </div>
+	</div>
+	<div class="load_workingvm">
+		<div class="load_graphicalvm_top">
+			<div class="load_closebutton"></div>
+		</div>
+		<div class="load_graphicalvm_bot">
+			<div class="loadingvmtext">
+				<p>Name of the VM<br/>10.10.27.8</p>
+			</div>
+		 </div>
+	</div>
+	<!--
+	<div class="load_stoppedvm">
+		<div class="load_graphicalvm_top">
+			<div class="load_closebutton"></div>
+		</div>
+		<div class="load_graphicalvm_bot">
+			<div class="loadingvmtext">
+				<p>Name of the VM<br/>10.10.27.8</p>
+			</div>
+		</div>
+	</div>
+	-->
+</div>
+
+<!-- Load Balancer Policy VM Template -->
+<div class="load_workingvm" id="lb_vm_template" style="display:none">
+	<div id="lb_vm_loading" style="display:none">
+		<div class="loadadding_animation"></div>
+		<div class="load_adding_text">Adding &hellip; </div>
+	</div>
+	<div id="lb_vm_body">
+		<div class="load_graphicalvm_top">
+			<div class="load_closebutton"></div>
+		</div>
+		<div class="load_graphicalvm_bot">
+			<div class="loadingvmtext">
+				<p>Name of the VM<br/>10.10.27.8</p>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- Load Balancer Policy Template -->
+<div id="lb_template" style="height:25px;display:none">
+	<div class="adding_loading" style="height:25px;display:none;">
+		<div class="adding_animation"></div>
+		<div class="adding_text">Deleting &hellip; </div>
+	</div>
+	<div id="lb_body">
+		<div class="grid_smallgenrow_cell" id="lb_name_container" style="width:32%;">
+			<div class="netgrid_celltitles" id="lb_name"></div>
+		</div>
+		<div class="grid_smallgenrow_cell" style="width:10%;">
+				<div class="netgrid_celltitles" id="lb_public_ip"></div>
+		 </div>
+		 <div class="grid_smallgenrow_cell" style="width:10%;">
+				<div class="netgrid_celltitles" id="lb_public_port"></div>
+		 </div>
+		 <div class="grid_smallgenrow_cell" style="width:10%;">
+				<div class="netgrid_celltitles" id="lb_private_port"></div>
+		 </div>
+		 <div class="grid_smallgenrow_cell" style="width:15%;">
+				<div class="netgrid_celltitles" id="lb_algorithm"></div>
+		 </div>
+		 <div class="grid_smallgenrow_cell" id="lb_account_container" style="display:none; width:15%;">
+				<div class="netgrid_celltitles" id="lb_account"></div>
+		 </div>
+		  <div class="grid_smallgenrow_cell" style="width:7%;">
+				<div class="netgrid_celltitles" style="display:block" id="lb_delete"><a href="#" id="template_delete">Delete</a></div>
+		 </div>
+	</div>
+</div>
+
+<!-- Dialogs -->
+
+<!-- Acquire Public IP Dialog -->
+<div id="dialog_acquire_public_ip" title="Acquire New IP" style="display:none">
+	<p>Please select an availability zone to associate your new IP with.  Acquiring additional IP may cost you an additional X dollars per month.</p>
+	<div class="dialog_formcontent">
+		<form action="#" method="post" id="form_acquire">
+			<ol>
+				<li>
+					<label for="user_name">Availability Zone:</label>
+					<select class="select" name="acquire_zone" id="acquire_zone">
+						<option value="default">Please wait...</option>
+					</select>
+				</li>
+			</ol>
+		</form>
+	</div>
+</div>
+
+<!-- Add Security Groups Dialog -->
+<div id="dialog_add_security_groups" title="Add Security Group" style="display:none">
+	<p>Please specify a name and description for your security group.  Once created, you can click on the group to add forwarding rules.</p>
+	<div class="dialog_formcontent">
+		<form action="#" method="post" id="form_acquire">
+			<ol>
+				<li>
+					<label for="user_name">Name:</label>
+					<input class="text" type="text" name="security_group_name" id="security_group_name"/>
+                    <div id="security_group_name_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
+				</li>
+				<li>
+					<label for="user_name">Description:</label>
+					<input class="text" type="text" name="security_group_desc" id="security_group_desc"/>
+                    <div id="security_group_desc_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
+				</li>
+			</ol>
+		</form>
+	</div>
+</div>
+
+<!-- Add Security Group Rule Dialog -->
+<div id="dialog_add_security_group_rule" title="Add Security Group Rule" style="display:none">
+	<p>Please specify the public port, private port, and protocol of your new rule.</p>
+	<div class="dialog_formcontent">
+		<form action="#" method="post" id="form_acquire">
+			<ol>
+				<li>
+					<label for="user_name">Public Port:</label>
+					<input class="text" type="text" name="security_group_public_port" id="security_group_public_port"/>
+					<div id="security_group_public_port_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
+				</li>
+				<li>
+					<label for="user_name">Private Port:</label>
+					<input class="text" type="text" name="security_group_private_port" id="security_group_private_port"/>
+					<div id="security_group_private_port_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
+				</li>
+				<li>
+					<label for="user_name">Protocol:</label>
+					<select class="select" name="security_group_protocol" id="security_group_protocol">
+						 <option value="TCP">TCP</option>
+						 <option value="UDP">UDP</option>
+					</select>
+				</li>
+			</ol>
+		</form>
+	</div>
+</div>
+
+<!-- Add Load Balancer Policy Dialog -->
+<div id="dialog_add_lb_policy" title="Add Load Balancer Policy" style="display:none">
+	<p>Please fill in the appropriate data to create a load balancer policy.  Once created, you can click on the policy to add virtual instances.</p>
+	<div class="dialog_formcontent">
+		<form action="#" method="post" id="form_acquire">
+			<ol>
+				<li>
+					<label for="user_name">Name:</label>
+					<input class="text" type="text" name="lb_policy_name" id="lb_form_name"/>
+					<div id="lb_form_name_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
+				</li>
+				<li>
+					<label for="user_name">Public IP:</label>
+					<select class="select" name="lb_policy_public_ip" id="lb_form_public_ip">
+						<option value="none">Please wait...</option>
+					</select>
+				</li>
+				<li>
+					<label for="user_name">Public Port:</label>
+					<input class="text" type="text" name="lb_policy_public_port" id="lb_form_public_port"/>
+					<div id="lb_form_public_port_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
+				</li>
+				<li>
+					<label for="user_name">Private Port:</label>
+					<input class="text" type="text" name="lb_policy_private_port" id="lb_form_private_port"/>
+					<div id="lb_form_private_port_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
+				</li>
+				<li>
+					<label for="user_name">Algorithm:</label>
+					<select class="select" name="lb_policy_algorithm" id="lb_form_algorithm">
+						<option value="roundrobin">roundrobin</option>
+						<option value="leastconn">leastconn</option>
+						<option value="source">source</option>
+					</select>
+				</li>
+			</ol>
+		</form>
+	</div>
+</div>
+
+<!-- Add VM to Load Balancer Dialog -->
+<div id="dialog_add_vm_to_lb" title="Add VM to Load Balancer" style="display:none">
+	<p>Please select the virtual instance you would like to apply the load balancer rule to.</p>
+	<div class="dialog_formcontent">
+		<form action="#" method="post" id="form_acquire">
+			<ol>
+				<li>
+					<label for="user_name">Virtual Instance:</label>
+					<select class="select" name="vm_to_lb" id="vm_to_lb">
+						<option value="none">Please wait...</option>
+					</select>
+				</li>
+			</ol>
+		</form>
+	</div>
+</div>

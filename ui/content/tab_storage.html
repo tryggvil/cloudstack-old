@@ -1,0 +1,1225 @@
+<div class="submenu_links">
+    <div class="submenu_links_on" id="submenu_pool">
+        Primary Storage</div>
+    <div class="submenu_links_off" id="submenu_storage">
+        Secondary Storage</div>
+    <div class="submenu_links_off" id="submenu_volume">
+        Volume</div>
+    <div class="submenu_links_off" id="submenu_snapshot">
+        Snapshots</div>
+</div>
+<!-- *** Primary Storage (begin) *** -->
+<div class="maincontent" id="submenu_content_pool" style="display: none">
+    <div id="maincontent_title">
+        <div class="maintitle_icon">
+            <img src="images/storagetitle_icons.gif" title="Primary Storage" />
+        </div>
+        <h1>
+            Primary Storage</h1>
+        <a class="add_storagepoolbutton" id="storage_action_new_pool" href="#"></a>
+        <div class="search_formarea">
+            <form action="#" method="post">
+            <ol>
+                <li>
+                    <input class="text" type="text" name="search_input" id="search_input" /></li>
+            </ol>
+            </form>
+            <a class="search_button" id="search_button" href="#"></a>
+            <div id="advanced_search_link" class="advsearch_link">
+                Advanced</div>
+            <div id="advanced_search" class="adv_searchpopup" style="display: none;">
+                <div class="adv_searchformbox">
+                    <h3>
+                        Advance Search</h3>
+                    <form action="#" method="post">
+                    <ol>
+                        <li>
+                            <label for="filter">
+                                Name:</label>
+                            <input class="text" type="text" name="adv_search_name" id="adv_search_name" />
+                        </li>
+                        <li>
+                            <label for="filter">
+                                Zone:</label>
+                            <select class="select" id="adv_search_zone">
+                            </select>
+                        </li>
+                        <li>
+                            <label for="filter">
+                                IP:</label>
+                            <input class="text" type="text" name="adv_search_ip" id="adv_search_ip" />
+                        </li>
+                        <li>
+                            <label for="filter">
+                                Path:</label>
+                            <input class="text" type="text" name="adv_search_path" id="adv_search_path" />
+                        </li>
+                    </ol>
+                    </form>
+                    <div id="advanced_search_close" class="adv_search_actionbox">
+                        <a href="#">Close </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="filter_actionbox">
+        <div class="selection_formarea" style="display: none;">
+            <form action="#" method="post">
+            <label for="filter">
+                Filters:</label>
+            <select class="select" id="Select1">
+                <option value="true">Public</option>
+                <option value="false">Private</option>
+            </select>
+            </form>
+        </div>
+    </div>
+    <div class="grid_container">
+        <div id="loading_gridtable" class="loading_gridtable">
+            <div class="loading_gridanimation">
+            </div>
+            <p>
+                Loading...</p>
+        </div>
+        <div class="grid_header">
+            <div class="grid_genheader_cell" style="width: 3%;">
+                <div class="grid_headertitles">
+                    ID</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 10%;">
+                <div class="grid_headertitles">
+                    Zone</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 10%;">
+                <div class="grid_headertitles">
+                    Pod</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 10%;">
+                <div class="grid_headertitles">
+                    Name</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 10%;">
+                <div class="grid_headertitles">
+                    IP/FQDN</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 15%;">
+                <div class="grid_headertitles">
+                    Path</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 20%;">
+                <div class="grid_headertitles">
+                    Statistics</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 10%;">
+                <div class="grid_headertitles">
+                    Created</div>
+            </div>
+        </div>
+        <div id="grid_content">
+        </div>
+    </div>
+    <div id="pagination_panel" class="pagination_panel" style="display: none">
+        <p id="grid_rows_total" />
+        <div class="pagination_actionbox">
+            <div class="pagination_actions">
+                <div class="pagination_actionicon">
+                    <img src="images/pagination_refresh.gif" title="refresh" /></div>
+                <a id="refresh" href="#">Refresh</a>
+            </div>
+            <div class="pagination_actions" id="prevPage_div">
+                <div class="pagination_actionicon">
+                    <img src="images/pagination_previcon.gif" title="prev" /></div>
+                <a id="prevPage" href="#">Prev</a>
+            </div>
+            <div class="pagination_actions" id="nextPage_div">
+                <div class="pagination_actionicon">
+                    <img src="images/pagination_nexticon.gif" title="next" /></div>
+                <a id="nextPage" href="#">Next</a>
+            </div>
+        </div>
+    </div>
+</div>
+<!--Storage Template -->
+<div id="pool_template" style="display: none">
+    <div id="row_container">
+        <div class="grid_smallgenrow_cell" style="width: 3%;">
+            <div class="netgrid_celltitles" id="pool_id">
+            </div>
+        </div>
+        <div class="grid_smallgenrow_cell" style="width: 10%;">
+            <div class="netgrid_celltitles" id="pool_zone">
+            </div>
+        </div>
+        <div class="grid_smallgenrow_cell" style="width: 10%;">
+            <div class="netgrid_celltitles" id="pool_pod">
+            </div>
+        </div>
+        <div class="grid_smallgenrow_cell" style="width: 10%;">
+            <div class="netgrid_celltitles" id="pool_name">
+            </div>
+        </div>
+        <div class="grid_smallgenrow_cell" style="width: 10%;">
+            <div class="netgrid_celltitles" id="pool_ip">
+            </div>
+        </div>
+        <div class="grid_smallgenrow_cell" style="width: 15%;">
+            <div class="netgrid_celltitles" id="pool_path">
+            </div>
+        </div>
+        <div class="grid_smallgenrow_cell" style="width: 20%;">
+            <div class="netgrid_celltitles" id="pool_statistics">
+            </div>
+        </div>
+        <div class="grid_smallgenrow_cell" style="width: 10%;">
+            <div class="netgrid_celltitles" id="pool_created">
+                16/02/2010</div>
+        </div>
+    </div>
+</div>
+<!-- END Primary Storage Template -->
+<!-- Add Primary Storage Dialog -->
+<div id="dialog_add_pool" title="Add Primary Storage" style="display: none">
+    <p>
+        Please fill in the following data to add a new Primary Storage.</p>
+    <div class="dialog_formcontent">
+        <form action="#" method="post" id="form_acquire">
+        <ol>
+            <li>
+                <label for="user_name">
+                    Availability Zone:</label>
+                <select class="select" name="pool_zone" id="pool_zone">
+                    <option value="default">Please wait...</option>
+                </select>
+            </li>
+            <li>
+                <label for="user_name">
+                    Pod:</label>
+                <select class="select" name="pool_pod" id="pool_pod">
+                    <option value="default">Please wait...</option>
+                </select>
+            </li>
+            <li>
+                <label for="user_name">
+                    Name:</label>
+                <input class="text" type="text" name="add_pool_name" id="add_pool_name" />
+                <div id="add_pool_name_errormsg" class="dialog_formcontent_errormsg" style="display: none;">
+                </div>
+            </li>
+            <li>
+                <label for="add_pool_nfs_server">
+                    NFS Server:</label>
+                <input class="text" type="text" name="add_pool_nfs_server" id="add_pool_nfs_server" />
+                <div id="add_pool_nfs_server_errormsg" class="dialog_formcontent_errormsg" style="display: none;">
+                </div>
+            </li>
+            <li>
+                <label for="add_pool_path">
+                    Path:</label>
+                <input class="text" type="text" name="add_pool_path" id="add_pool_path" />
+                <div id="add_pool_path_errormsg" class="dialog_formcontent_errormsg" style="display: none;">
+                </div>
+            </li>
+        </ol>
+        </form>
+    </div>
+</div>
+<!-- *** Primary Storage (end) *** -->
+<!-- *** Secondary Storage (begin) *** -->
+<!-- Secondary Storage Content Panel (begin) -->
+<div class="maincontent" id="submenu_content_storage" style="display: none;">
+    <div id="maincontent_title">
+        <div class="maintitle_icon">
+            <img src="images/storagetitle_icons.gif" title="Secondary Storage" />
+        </div>
+        <h1>
+            Secondary Storage</h1>
+        <a class="add_secondary_storagebutton" id="storage_action_new_host" href="#"></a>
+        <div class="search_formarea">
+            <form action="#" method="post">
+            <ol>
+                <li>
+                    <input class="text" type="text" name="search_input" id="search_input" /></li>
+            </ol>
+            </form>
+            <a class="search_button" id="search_button" href="#"></a>
+            <div id="advanced_search_link" class="advsearch_link">
+                Advanced</div>
+            <div id="advanced_search" class="adv_searchpopup" style="display: none;">
+                <div class="adv_searchformbox">
+                    <h3>
+                        Advance Search</h3>
+                    <form action="#" method="post">
+                    <ol>
+                        <li>
+                            <label for="filter">
+                                Name:</label>
+                            <input class="text" type="text" name="adv_search_name" id="adv_search_name" />
+                        </li>
+                        <li>
+                            <label for="filter">
+                                State:</label>
+                            <select class="select" id="adv_search_state">
+                                <option value=""></option>
+                                <option value="Creating">Creating</option>
+                                <option value="Starting">Starting</option>
+                                <option value="Running">Running</option>
+                                <option value="Stopping">Stopping</option>
+                                <option value="Stopped">Stopped</option>
+                                <option value="Destroyed">Destroyed</option>
+                                <option value="Expunging">Expunging</option>
+                                <option value="Migrating">Migrating</option>
+                                <option value="Error">Error</option>
+                                <option value="Unknown">Unknown</option>
+                            </select>
+                        </li>
+                        <li>
+                            <label for="filter">
+                                Zone:</label>
+                            <select class="select" id="adv_search_zone">
+                            </select>
+                        </li>
+                        <li>
+                            <label for="filter">
+                                Pod:</label>
+                            <select class="select" id="adv_search_pod">
+                            </select>
+                        </li>
+                    </ol>
+                    </form>
+                    <div id="advanced_search_close" class="adv_search_actionbox">
+                        <a href="#">Close </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="filter_actionbox">
+        <div class="selection_formarea" style="display: none;">
+            <form action="#" method="post">
+            <label for="filter">
+                Filters:</label>
+            <select class="select" id="template_type">
+                <option value="true">Public</option>
+                <option value="false">Private</option>
+            </select>
+            </form>
+        </div>
+    </div>
+    <div class="grid_container">
+        <div id="loading_gridtable" class="loading_gridtable">
+            <div class="loading_gridanimation">
+            </div>
+            <p>
+                Loading...</p>
+        </div>
+        <div class="grid_header">
+            <!--
+			<div class="gridadmin_hostheader_cell0">
+			    <div class="grid_headertitles">State Bar</div>
+			</div>
+			!-->
+            <div class="grid_genheader_cell" style="width: 15%;">
+                <div class="grid_headertitles">
+                    Type</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 25%;">
+                <div class="grid_headertitles">
+                    Name</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 10%;">
+                <div class="grid_headertitles">
+                    IP</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 15%;">
+                <div class="grid_headertitles">
+                    Version</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 15%;">
+                >
+                <div class="grid_headertitles">
+                    Management Server ID</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 15%;">
+                <div class="grid_headertitles">
+                    Last Disconnected</div>
+            </div>
+        </div>
+        <div id="grid_content">
+        </div>
+    </div>
+    <div id="pagination_panel" class="pagination_panel" style="display: none;">
+        <p id="grid_rows_total" />
+        <div class="pagination_actionbox">
+            <div class="pagination_actions">
+                <div class="pagination_actionicon">
+                    <img src="images/pagination_refresh.gif" title="refresh" /></div>
+                <a id="refresh" href="#">Refresh</a>
+            </div>
+            <div class="pagination_actions" id="prevPage_div">
+                <div class="pagination_actionicon">
+                    <img src="images/pagination_previcon.gif" title="prev" /></div>
+                <a id="prevPage" href="#">Prev</a>
+            </div>
+            <div class="pagination_actions" id="nextPage_div">
+                <div class="pagination_actionicon">
+                    <img src="images/pagination_nexticon.gif" title="next" /></div>
+                <a id="nextPage" href="#">Next</a>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Secondary Storage Content Panel (end) -->
+<!-- Secondary Storage Template (begin) -->
+<div id="storage_template" style="display: none">
+    <div id="row_container">
+        <!--
+		<div class="green_statusbar" id="storage_state_bar"></div>		
+		<div class="gridadmin_hostrow_cell4">
+			<div class="grid_runningtitles" id="storage_state"></div>
+		</div>
+		!-->
+        <div class="grid_smallgenrow_cell" style="width: 15%;">
+            <div class="netgrid_celltitles" id="storage_type">
+            </div>
+        </div>
+        <div class="grid_smallgenrow_cell" style="width: 25%;">
+            <div class="netgrid_celltitles" id="storage_name">
+            </div>
+        </div>
+        <div class="grid_smallgenrow_cell" style="width: 10%;">
+            <div class="netgrid_celltitles" id="storage_ip">
+            </div>
+        </div>
+        <div class="grid_smallgenrow_cell" style="width: 15%;">
+            <div class="netgrid_celltitles" id="storage_version">
+            </div>
+        </div>
+        <div class="grid_smallgenrow_cell" style="width: 15%;">
+            <div class="netgrid_celltitles" id="storage_mgmt">
+            </div>
+        </div>
+        <div class="grid_smallgenrow_cell" style="width: 15%;">
+            <div class="netgrid_celltitles" id="storage_disconnected">
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Secondary Storage Template (end) -->
+<!-- Add Secondary Storage Dialog (begin) -->
+<div id="dialog_add_host" title="Add Secondary Storage" style="display: none">
+    <p>
+        Please fill in the following data to add a new storage.</p>
+    <div class="dialog_formcontent">
+        <form action="#" method="post" id="form1">
+        <ol>
+            <li>
+                <label for="user_name">
+                    Availability Zone:</label>
+                <select class="select" name="storage_zone" id="storage_zone">
+                    <option value="default">Please wait...</option>
+                </select>
+            </li>
+            <li>
+                <label for="add_storage_nfs_server">
+                    NFS Server:</label>
+                <input class="text" type="text" name="add_storage_nfs_server" id="add_storage_nfs_server" />
+                <div id="add_storage_nfs_server_errormsg" class="dialog_formcontent_errormsg" style="display: none;">
+                </div>
+            </li>
+            <li>
+                <label for="add_storage_path">
+                    Path:</label>
+                <input class="text" type="text" name="add_storage_path" id="add_storage_path" />
+                <div id="add_storage_path_errormsg" class="dialog_formcontent_errormsg" style="display: none;">
+                </div>
+            </li>
+        </ol>
+        </form>
+    </div>
+</div>
+<!-- Add Secondary Storage Dialog (end) -->
+<!--*** Secondary Storage (end) *** -->
+<!-- *** Volume (begin) *** -->
+<!-- Volume Content Panel (begin) -->
+<div class="maincontent" id="submenu_content_volume" style="display: none;">
+    <div id="maincontent_title">
+        <div class="maintitle_icon">
+            <img src="images/storagetitle_icons.gif" title="volume" />
+        </div>
+        <h1>
+            Volume</h1>
+        <a class="add_volumebutton" id="storage_action_new_volume" href="#"></a>
+        <div class="search_formarea">
+            <form action="#" method="post">
+            <ol>
+                <li>
+                    <input class="text" type="text" name="search_input" id="search_input" /></li>
+            </ol>
+            </form>
+            <a class="search_button" id="search_button" href="#"></a>
+            <div id="advanced_search_link" class="advsearch_link">
+                Advanced</div>
+            <div id="advanced_search" class="adv_searchpopup" style="display: none;">
+                <div class="adv_searchformbox">
+                    <h3>
+                        Advance Search</h3>
+                    <form action="#" method="post">
+                    <ol>
+                        <li>
+                            <label for="filter">
+                                Name:</label>
+                            <input class="text" type="text" name="adv_search_name" id="adv_search_name" />
+                        </li>
+                        <li>
+                            <label for="filter">
+                                Zone:</label>
+                            <select class="select" id="adv_search_zone">
+                            </select>
+                        </li>
+                        <li id="adv_search_pod_li" style="display: none;">
+                            <label for="filter">
+                                Pod:</label>
+                            <select class="select" id="adv_search_pod">
+                            </select>
+                        </li>
+                        <li id="adv_search_account_li" style="display: none;">
+                            <label for="filter">
+                                Account:</label>
+                            <select class="select" id="adv_search_account">
+                            </select>
+                        </li>
+                    </ol>
+                    </form>
+                    <div id="advanced_search_close" class="adv_search_actionbox">
+                        <a href="#">Close </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="filter_actionbox">
+        <div class="selection_formarea" style="display: none;">
+            <form action="#" method="post">
+            <label for="filter">
+                Filters:</label>
+            <select class="select" id="Select2">
+                <option value="true">Public</option>
+                <option value="false">Private</option>
+            </select>
+            </form>
+        </div>
+    </div>
+    <div class="grid_container">
+        <div id="loading_gridtable" class="loading_gridtable">
+            <div class="loading_gridanimation">
+            </div>
+            <p>
+                Loading...</p>
+        </div>
+        <div class="grid_header">
+            <div class="grid_genheader_cell" style="width: 3%;">
+                <div class="grid_headertitles">
+                    ID</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 15%;">
+                <div class="grid_headertitles">
+                    Name</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 15%;">
+                <div class="grid_headertitles">
+                    Type</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 12%;">
+                <div class="grid_headertitles">
+                    Instance Name</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 7%;">
+                <div class="grid_headertitles">
+                    Size</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 12%;">
+                <div class="grid_headertitles">
+                    Created</div>
+            </div>
+            <div class="grid_genheader_cell" id="volume_hostname_header" style="display: none;
+                width: 10%;">
+                <div class="grid_headertitles">
+                    Storage</div>
+            </div>
+            <div class="grid_genheader_cell" id="volume_account_header" style="display: none;
+                width: 10%;">
+                <div class="grid_headertitles">
+                    Account</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 15%;">
+                <div class="grid_headertitles">
+                </div>
+            </div>
+        </div>
+        <div id="grid_content">
+        </div>
+    </div>
+    <div id="pagination_panel" class="pagination_panel" style="display: none;">
+        <p id="grid_rows_total" />
+        <div class="pagination_actionbox">
+            <div class="pagination_actions">
+                <div class="pagination_actionicon">
+                    <img src="images/pagination_refresh.gif" title="refresh" />
+                </div>
+                <a id="refresh" href="#">Refresh</a>
+            </div>
+            <div class="pagination_actions" id="prevPage_div">
+                <div class="pagination_actionicon">
+                    <img src="images/pagination_previcon.gif" title="prev" />
+                </div>
+                <a id="prevPage" href="#">Prev</a>
+            </div>
+            <div class="pagination_actions" id="nextPage_div">
+                <div class="pagination_actionicon">
+                    <img src="images/pagination_nexticon.gif" title="next" />
+                </div>
+                <a id="nextPage" href="#">Next</a>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Volume Content Panel (end) -->
+<!-- Volume Template (begin) -->
+<div id="volume_template" style="display: none">
+    <div class="adding_loading" style="height: 45px; display: none;" id="loading_container">
+        <div class="adding_animation">
+        </div>
+        <div class="adding_text">
+            Creating &hellip;
+        </div>
+    </div>
+    <div class="result_loading" style="height: 25px; display: none;" id="created_successfully">
+        <p>
+            Created Successfully</p>
+        <div class="result_closebutton" id="close_button">
+        </div>
+    </div>
+    <div id="volume_body" style="height: 45px;">
+        <div class="grid_smallgenrow_cell" style="width: 3%;">
+            <div class="netgrid_celltitles" id="volume_id">
+                ID</div>
+        </div>
+        <div class="grid_smallgenrow_cell" style="width: 15%;">
+            <div class="netgrid_celltitles" id="volume_name">
+                Name</div>
+        </div>
+        <div class="grid_smallgenrow_cell" style="width: 15%;">
+            <div class="netgrid_celltitles" id="volume_type">
+                Type</div>
+        </div>
+        <div class="grid_smallgenrow_cell" style="width: 12%;">
+            <div class="netgrid_celltitles" id="volume_vmname">
+            </div>
+        </div>
+        <div class="grid_smallgenrow_cell" style="width: 7%;">
+            <div class="netgrid_celltitles" id="volume_size">
+                size</div>
+        </div>
+        <div class="grid_smallgenrow_cell" style="width: 12%;">
+            <div class="netgrid_celltitles" id="volume_created">
+                Created</div>
+        </div>
+        <div class="grid_smallgenrow_cell" id="volume_hostname_container" style="width: 10%;
+            display: none;">
+            <div class="netgrid_celltitles" id="volume_hostname">
+            </div>
+        </div>
+        <div class="grid_smallgenrow_cell" id="volume_account_container" style="width: 10%;
+            display: none;">
+            <div class="netgrid_celltitles" id="volume_account">
+                account</div>
+        </div>
+        <div id="grid_links_container" style="display: block">
+            <div class="grid_links">
+                <div id="volume_action_snapshot_grid" class="vm_botactionslinks_down">
+                    snapshots
+                </div>                
+                <div style="float: left">
+                    <a id="volume_action_take_snapshot" href="#">take snapshot</a> |
+                </div>
+                <div style="float: left">
+                    <a id="volume_action_recurring_snapshot" href="#">recurring snapshot</a> |
+                </div>
+                <div style="display: none; float: left" id="volume_action_detach_span">
+                    <a id="volume_action_detach" href="#">detach</a> |
+                </div>
+                <div style="display: none; float: left" id="volume_action_attach_span">
+                    <a id="volume_action_attach" href="#">attach</a> |
+                </div>
+                <div style="display: none; float: left" id="volume_action_delete_span">
+                    <a id="volume_action_delete" href="#">delete</a> |
+                </div>
+                <div style="display: none; float: left" id="volume_action_create_template_span">
+                    <a id="volume_action_create_template" href="#">create template</a> |
+                </div>
+            </div>
+        </div>
+    </div>   
+    <div class="hostadmin_showdetails_panel" id="volume_snapshot_detail_panel" style="display: none;">
+        <div class="hostadmin_showdetails_grid">
+            <div class="hostadmin_showdetailsheader">
+                <div class="hostadmin_showdetailsheader_cell" style="width: 10%">
+                    <div class="grid_headertitles">
+                        ID</div>
+                </div>
+                <div class="hostadmin_showdetailsheader_cell" style="width: 20%">
+                    <div class="grid_headertitles">
+                        Name</div>
+                </div>
+                <div class="hostadmin_showdetailsheader_cell" style="width: 30%">
+                    <div class="grid_headertitles">
+                        Path</div>
+                </div>               
+                <div class="hostadmin_showdetailsheader_cell" style="width: 10%">
+                    <div class="grid_headertitles">
+                        Created</div>
+                </div>
+                <!--
+                <div class="hostadmin_showdetailsheader_cell" style="width: 20%">
+                    <div class="grid_headertitles">
+                        Actions
+                    </div>
+                </div>
+                -->
+            </div>
+            <div id="volume_snapshot_grid">
+                <div class="hostadmin_showdetails_row_odd">
+                    <div class="hostadmin_showdetailsrow_cell" style="width: 100%">
+                        <div class="netgrid_celltitles">
+                            No Snapshot
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>    
+</div>
+<!-- Volume Template (end) -->
+<!-- Volume's Snapshot Template (begin) -->
+<div id="volume_snapshot_detail_template" style="display: none">
+    <div class="adding_loading" style="height: 25px; display: none;">
+        <div class="adding_animation">
+        </div>
+        <div class="adding_text">
+            Detaching &hellip;
+        </div>
+    </div>
+    <div id="volume_snapshot_body">
+        <div class="hostadmin_showdetailsrow_cell" style="width: 10%">
+            <div class="netgrid_celltitles" id="id">
+            </div>
+        </div>
+        <div class="hostadmin_showdetailsrow_cell" style="width: 20%">
+            <div class="netgrid_celltitles" id="name">
+            </div>
+        </div>       
+        <div class="hostadmin_showdetailsrow_cell" style="width: 30%">
+            <div class="netgrid_celltitles" id="path">
+            </div>
+        </div>
+        <div class="hostadmin_showdetailsrow_cell" style="width: 10%">
+            <div class="netgrid_celltitles" id="created">
+            </div>
+        </div>
+        <!--
+        <div class="hostadmin_showdetailsrow_cell" style="width: 20%">
+            <div class="netgrid_celltitles" id="detail_action">
+                <a id="volume_action_detach_disk" href="#">Detach Disk</a><span id="volume_acton_separator">&nbsp;&nbsp;|</span><a
+                    id="A1" href="#">Create Template</a></div>
+        </div>
+        -->
+    </div>
+</div>
+<!-- Volume's Snapshot Template (end) -->
+<!-- Add Volume Dialog (begin) -->
+<div id="dialog_add_volume" title="Add Volume" style="display: none">
+    <p>
+        Please fill in the following data to add a new volume.</p>
+    <div class="dialog_formcontent">
+        <form action="#" method="post" id="form2">
+        <ol>
+            <li>
+                <label for="add_volume_name">
+                    Name:</label>
+                <input class="text" type="text" name="add_volume_name" id="add_volume_name" />
+                <div id="add_volume_name_errormsg" class="dialog_formcontent_errormsg" style="display: none;">
+                </div>
+            </li>
+            <li>
+                <label for="volume_zone">
+                    Availability Zone:</label>
+                <select class="select" name="volume_zone" id="volume_zone">
+                    <option value="default">Please wait...</option>
+                </select>
+            </li>
+            <li>
+                <label for="volume_diskoffering">
+                    Disk Offering:</label>
+                <select class="select" name="volume_diskoffering" id="volume_diskoffering">
+                    <option value="default">Please wait...</option>
+                </select>
+            </li>
+        </ol>
+        </form>
+    </div>
+</div>
+<!-- Add Volume Dialog (end) -->
+<!-- Take Snapshots Dialog (begin) -->
+<div id="dialog_recurring_snapshot" class="dialog_snapshotbox" title="Recurring Snapshot" style="display:none;">
+    <div class="dialog_snapshotconatiner">
+        <div class="dialog_snapshotleft">
+            <div class="dialog_formcontent">
+                <div class="dialog_snapshotleft_list">
+                    <div class="dialog_snapshotleft_label">
+                        Hourly:</div>
+                    <div class="dialog_snapshotleft_info">
+                        <p>at minute</p>
+                        <span id="read_hourly_minute">mm</span>
+                        <p>every hour</p>
+                    </div>
+                    <div class="dialog_snapshotleft_max">
+                        <p>Max:</p>
+                        <span id="read_hourly_max">N</span></div>
+                    <div class="dialog_snapshotleft_actions">
+                        <a id="hourly_edit_link" href="#">Edit</a> | <a id="hourly_delete_link" href="#">Delete</a></div>
+                </div>
+                <div class="dialog_snapshotleft_list">
+                    <div class="dialog_snapshotleft_label">
+                        Daily:</div>
+                    <div class="dialog_snapshotleft_info">
+                        <p>at</p>
+                        <span id="read_daily_hour">hh</span><span>:</span><span id="read_daily_minute">mm</span>
+                        <span id="read_daily_meridiem">AM</span>
+                    </div>
+                    <div class="dialog_snapshotleft_max">
+                        <p>
+                            Max:</p>
+                        <span id="read_daily_max">N</span></div>
+                    <div class="dialog_snapshotleft_actions">
+                        <a id="daily_edit_link" href="#">Edit</a> | <a id="daily_delete_link" href="#">Delete</a></div>
+                </div>
+                <div class="dialog_snapshotleft_list">
+                    <div class="dialog_snapshotleft_label">
+                        Weekly:</div>
+                    <div class="dialog_snapshotleft_info">
+                        <p>at</p>
+                        <span id="read_weekly_hour">hh</span><span>:</span><span id="read_weekly_minute">mm</span>
+                        <span id="read_weekly_meridiem">AM</span>
+                        <span id="read_weekly_day_of_week">day-of-week</span>
+                    </div>
+                    <div class="dialog_snapshotleft_max">
+                        <p>Max:</p>
+                        <span id="read_weekly_max">N</span></div>
+                    <div class="dialog_snapshotleft_actions">
+                        <a id="weekly_edit_link" href="#">Edit</a> | <a id="weely_delete_link" href="#">Delete</a></div>
+                </div>        
+                <div class="dialog_snapshotleft_list">
+                    <div class="dialog_snapshotleft_label">
+                        Monthly:</div>
+                    <div class="dialog_snapshotleft_info">
+                        <p>at</p>
+                        <span id="read_monthly_hour">hh</span><span>:</span><span id="read_monthly_minute">mm</span>
+                        <span id="read_monthly_meridiem">AM</span>
+                        <span id="read_monthly_day_of_month">day-of-month</span>
+                    </div>
+                    <div class="dialog_snapshotleft_max">
+                        <p>Max:</p>
+                        <span id="read_monthly_max">N</span></div>
+                    <div class="dialog_snapshotleft_actions">
+                        <a id="monthly_edit_link" href="#">Edit</a> | <a id="monthly_delete_link" href="#">Delete</a></div>
+                </div>             
+            </div>
+        </div>
+        <div class="dialog_snapshotright">
+            <div class="dialog_snapshots_editcontent">
+                <div class="dialog_snapshots_editcontent_title">
+                    <p>
+                        Edit:</p>
+                    <span id="edit_interval_type">Interval Type</span>
+                </div>
+                <div class="dialog_formcontent">
+                    <form action="#" method="post" id="form4">
+                    <ol>
+                        <li>
+                            <label for="add_volume_name">
+                                Time:</label>
+                            <span id="edit_hour_container">
+                                <select id="edit_hour">
+                                    <option value="">hour</option>
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                    <option value="6">6</option>
+                                    <option value="7">7</option>
+                                    <option value="8">8</option>
+                                    <option value="9">9</option>
+                                    <option value="10">10</option>
+                                    <option value="11">11</option>                                    
+                                </select>
+                            </span>
+                            
+                            <span id="edit_time_colon">:</span>
+                            
+                            <span id="edit_minute_container">
+                                <select id="edit_minute">
+                                    <option value="">minute</option>
+                                    <option value="00">00</option>
+                                    <option value="01">01</option>
+                                    <option value="02">02</option>
+                                    <option value="03">03</option>
+                                    <option value="04">04</option>
+                                    <option value="05">05</option>
+                                    <option value="06">06</option>
+                                    <option value="07">07</option>
+                                    <option value="08">08</option>
+                                    <option value="09">09</option>                                
+                                    <option value="10">10</option>
+                                    <option value="11">11</option>
+                                    <option value="12">12</option>
+                                    <option value="13">13</option>
+                                    <option value="14">14</option>
+                                    <option value="15">15</option>
+                                    <option value="16">16</option>
+                                    <option value="17">17</option>
+                                    <option value="18">18</option>
+                                    <option value="19">19</option>                                
+                                    <option value="20">20</option>                                
+                                    <option value="21">21</option>
+                                    <option value="22">22</option>
+                                    <option value="23">23</option>
+                                    <option value="24">24</option>
+                                    <option value="25">25</option>
+                                    <option value="26">26</option>
+                                    <option value="27">27</option>
+                                    <option value="28">28</option>
+                                    <option value="29">29</option>                                
+                                    <option value="30">30</option>                                
+                                    <option value="31">31</option>
+                                    <option value="32">32</option>
+                                    <option value="33">33</option>
+                                    <option value="34">34</option>
+                                    <option value="35">35</option>
+                                    <option value="36">36</option>
+                                    <option value="37">37</option>
+                                    <option value="38">38</option>
+                                    <option value="39">39</option>                                
+                                    <option value="40">40</option>                                
+                                    <option value="41">41</option>
+                                    <option value="42">42</option>
+                                    <option value="43">43</option>
+                                    <option value="44">44</option>
+                                    <option value="45">45</option>
+                                    <option value="46">46</option>
+                                    <option value="47">47</option>
+                                    <option value="48">48</option>
+                                    <option value="49">49</option>                                
+                                    <option value="50">50</option>                                
+                                    <option value="51">51</option>
+                                    <option value="52">52</option>
+                                    <option value="53">53</option>
+                                    <option value="54">54</option>
+                                    <option value="55">55</option>
+                                    <option value="56">56</option>
+                                    <option value="57">57</option>
+                                    <option value="58">58</option>
+                                    <option value="59">59</option>                        
+                                </select>
+                            </span>
+                            
+                            <span id="edit_meridiem_container">
+                                <select id="edit_meridiem">                                                                
+                                    <option value="AM">AM</option>
+                                    <option value="PM">PM</option>                                   
+                                </select>
+                            </span>
+                            
+                            <div id="Div6" class="dialog_formcontent_errormsg" style="display: none;">
+                            </div>
+                        </li>
+                        <li>
+                            <label for="add_volume_name">
+                                Max:</label>
+                            <input class="text" style="width: 60px;" type="text" name="add_volume_name" id="edit_max" />
+                            <div id="Div7" class="dialog_formcontent_errormsg" style="display: none;">
+                            </div>
+                        </li>                       
+                        <li id="edit_day_of_week_container">
+                            <label for="filter">
+                                Day of the Week:</label>
+                            <select id="edit_day_of_week">
+                                <option value=""></option>
+                                <option value="1">Mon.</option>
+                                <option value="2">Tue.</option>
+                                <option value="3">Wed.</option>
+                                <option value="4">Thu.</option>
+                                <option value="5">Fri.</option>
+                                <option value="6">Sat.</option>
+                                <option value="7">Sun.</option>
+                            </select>
+                        </li>
+                        <li id="edit_day_of_month_container">
+                            <label for="filter">
+                                Day of the Month:</label>
+                            <select id="edit_day_of_month">
+                                <option value=""></option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                                <option value="11">11</option>
+                                <option value="12">12</option>
+                                <option value="13">13</option>
+                                <option value="14">14</option>
+                                <option value="15">15</option>
+                                <option value="16">16</option>
+                                <option value="17">17</option>
+                                <option value="18">18</option>
+                                <option value="19">19</option>
+                                <option value="20">20</option>
+                                <option value="21">21</option>
+                                <option value="22">22</option>
+                                <option value="23">23</option>
+                                <option value="24">24</option>
+                                <option value="25">25</option>
+                                <option value="26">26</option>
+                                <option value="27">27</option>
+                                <option value="28">28</option>
+                            </select>
+                        </li>
+                    </ol>
+                    <input type="submit" id="apply_button" value="Apply Schedule" style="background-color:Yellow; width: 150px; height:25px"/>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Take Snapshots Dialog (end) -->
+<!-- Detach Volume Dialog (begin) -->
+<div id="dialog_detach_volume" title="Detach Volume" style="display: none">
+    <p>
+        Please confirm you want to detach the volume. If you are detaching a disk volume
+        from a Windows based virtual machine, you will need to reboot the instance for the
+        settings to take effect.</p>
+</div>
+<!-- Detach Volume Dialog (end) -->
+<!-- Attach Volume Dialog (begin) -->
+<div id="dialog_attach_volume" title="Attach Volume" style="display: none">
+    <p>
+        Please fill in the following data to attach a new volume. If you are attaching a
+        disk volume to a Windows based virtual machine, you will need to reboot the instance
+        to see the attached disk.</p>
+    <div class="dialog_formcontent">
+        <form action="#" method="post" id="form3">
+        <ol>
+            <li>
+                <label for="volume_vm">
+                    Virtual Machine:</label>
+                <select class="select" name="volume_vm" id="volume_vm">
+                    <option value="default">Please wait...</option>
+                </select>
+            </li>
+        </ol>
+        </form>
+    </div>
+</div>
+<!-- Attach Volume Dialog (end) -->
+<!-- Delete Volume Dialog (begin) -->
+<div id="dialog_delete_volume" title="Delete Volume" style="display: none">
+    <p>
+        Please confirm you want to delete the volume.</p>
+</div>
+<!-- Delete Volume Dialog (end) -->
+<!-- Create Template Dialog (begin) -->
+<div id="dialog_create_template" title="Create Template">
+    <p>
+        Please specify the following information before creating a template of your disk
+        volume: <b><span id="volume_name"></span></b>. Creating a template could take up
+        to several hours depending on the size of your disk volume.</p>
+    <div class="dialog_formcontent">
+        <form action="#" method="post" id="form_acquire">
+        <ol>
+            <li>
+                <label for="create_template_name">
+                    Name:</label>
+                <input class="text" type="text" name="create_template_name" id="create_template_name" />
+                <div id="create_template_name_errormsg" class="dialog_formcontent_errormsg" style="display: none;">
+                </div>
+            </li>
+            <li>
+                <label for="create_template_desc"">
+                    Display Text:</label>
+                <input class="text" type="text" name="create_template_desc" id="create_template_desc" />
+                <div id="create_template_desc_errormsg" class="dialog_formcontent_errormsg" style="display: none;">
+                </div>
+            </li>
+            <li>
+                <label for="create_template_os_type">
+                    OS Type:</label>
+                <select class="select" name="create_template_os_type" id="create_template_os_type">
+                </select>
+            </li>
+            <li>
+                <label for="create_template_public">
+                    Public:</label>
+                <select class="select" name="create_template_public" id="create_template_public">
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                </select>
+            </li>
+            <li>
+                <label for="create_template_password">
+                    Password Enabled?:</label>
+                <select class="select" name="create_template_password" id="create_template_password">
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                </select>
+            </li>
+        </ol>
+        </form>
+    </div>
+</div>
+<!-- Create Template Dialog (end) -->
+<!-- Create Snapshot Dialog (begin) -->
+<div id="dialog_create_snapshot" title="Create Snapshot" style="display: none">
+    <p>
+        Please confirm you want to create snapshot for this volume.</p>
+</div>
+<!-- Create Snapshot Dialog (end) -->
+<!--*** Volume (end) *** -->
+<!--*** Snapshot (begin) *** -->
+<div class="maincontent" style="display: none;" id="submenu_content_snapshot">
+    <div id="maincontent_title">
+        <div class="maintitle_icon">
+            <img src="images/accountstitle_icons.gif" title="routers" />
+        </div>
+        <h1>
+            snapshots</h1>
+        <div class="search_formarea">
+            <form action="#" method="post">
+            <ol>
+                <li>
+                    <input class="text" type="text" name="search_input" id="search_input" /></li>
+            </ol>
+            </form>
+            <a class="search_button" id="search_button" href="#"></a>
+            <div id="advanced_search_link" class="advsearch_link">
+                Advanced</div>
+            <div id="advanced_search3" class="adv_searchpopup" style="display: none;">
+                <div class="adv_searchformbox">
+                    <h3>
+                        Advance Search</h3>
+                    <form action="#" method="post">
+                    <ol>
+                        <li>
+                            <label for="filter">
+                                Name:</label>
+                            <input class="text" type="text" name="adv_search_name" id="adv_search_name" />
+                        </li>
+                        <li>
+                            <label for="filter">
+                                Role:</label>
+                            <select class="select" id="adv_search_role">
+                                <option value=""></option>
+                                <option value="1">Admin</option>
+                                <option value="0">User</option>
+                            </select>
+                        </li>
+                    </ol>
+                    </form>
+                    <div id="advanced_search_close" class="adv_search_actionbox">
+                        <a href="#">Close </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="filter_actionbox">
+    </div>
+    <div class="grid_container">
+        <div id="loading_gridtable" class="loading_gridtable">
+            <div class="loading_gridanimation">
+            </div>
+            <p>
+                Loading...</p>
+        </div>
+        <div class="grid_header">
+            <div class="hostadmin_showdetailsheader_cell" style="width: 10%">
+                <div class="grid_headertitles">
+                    ID</div>
+            </div>
+            <div class="hostadmin_showdetailsheader_cell" style="width: 20%">
+                <div class="grid_headertitles">
+                    Name</div>
+            </div>
+            <div class="hostadmin_showdetailsheader_cell" style="width: 20%">
+                <div class="grid_headertitles">
+                    Path</div>
+            </div>
+            <div class="hostadmin_showdetailsheader_cell" style="width: 20%">
+                <div class="grid_headertitles">
+                    Created</div>
+            </div>
+        </div>
+        <div id="grid_content">
+        </div>
+    </div>
+    <div id="pagination_panel" class="pagination_panel" style="display: none;">
+        <p id="grid_rows_total" />
+        <div class="pagination_actionbox">
+            <div class="pagination_actions">
+                <div class="pagination_actionicon">
+                    <img src="images/pagination_refresh.gif" title="refresh" /></div>
+                <a id="refresh" href="#">Refresh</a>
+            </div>
+            <div class="pagination_actions" id="prevPage_div">
+                <div class="pagination_actionicon">
+                    <img src="images/pagination_previcon.gif" title="prev" /></div>
+                <a id="prevPage" href="#">Prev</a>
+            </div>
+            <div class="pagination_actions" id="nextPage_div">
+                <div class="pagination_actionicon">
+                    <img src="images/pagination_nexticon.gif" title="next" /></div>
+                <a id="nextPage" href="#">Next</a>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- snapshots Template (begin) -->
+<div id="snapshot_template" style="height: 24px; display: none">
+    <div id="snapshot_body">
+        <div class="hostadmin_showdetailsrow_cell" style="width: 10%">
+            <div class="netgrid_celltitles" id="id">
+            </div>
+        </div>
+        <div class="hostadmin_showdetailsrow_cell" style="width: 20%">
+            <div class="netgrid_celltitles" id="name">
+            </div>
+        </div>
+        <div class="hostadmin_showdetailsrow_cell" style="width: 20%">
+            <div class="netgrid_celltitles" id="path">
+            </div>
+        </div>
+        <div class="hostadmin_showdetailsrow_cell" style="width: 20%">
+            <div class="netgrid_celltitles" id="created">
+            </div>
+        </div>
+    </div>
+</div>
+<!-- snapshots Template (end) -->
+<!--*** Snapshot (end) *** -->

@@ -1,0 +1,1904 @@
+<api>
+
+<!-- Preparations for api test - create user and register him; add another user/domain for future get/delete commands; get domainRouter id-->
+	<command>
+		<name>createUser</name>
+		<parameters>
+			<item random="true">
+			    <name>username</name>
+			</item>
+			<item>
+			    <name>password</name>
+				<value>apiuser</value>
+			</item>
+			<item>
+				<name>firstname</name>
+				<value>apiuser</value>
+			</item>
+			<item>
+				<name>lastname</name>
+				<value>apiuser</value>
+			</item>
+			<item>
+				<name>email</name>
+				<value>apiuser@gmail.com</value>
+			</item>
+			<item>
+				<name>accounttype</name>
+				<value>0</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>userid</param>
+			</item>
+			<item setparam="true">
+				<name>username</name>
+				<param>usernamevar</param>
+			</item>
+			<item setparam="true">
+				<name>account</name>
+				<param>accountvar</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>register</name>
+		<parameters>
+			<item getparam="true">
+			    <name>username</name>
+				<param>usernamevar</param>
+			</item>
+			<item>
+			    <name>domainid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>apikey</name>
+				<param>apikey</param>
+			</item>
+			<item setparam="true">
+				<name>secretkey</name>
+				<param>secretkey</param>
+			</item>
+		</returnvalue>
+	</command>	
+	
+	<command>
+		<name>createUser</name>
+		<parameters>
+			<item random="true">
+			    <name>username</name>
+			</item>
+			<item>
+			    <name>password</name>
+				<value>apiuser1</value>
+			</item>
+			<item>
+				<name>firstname</name>
+				<value>apiuser</value>
+			</item>
+			<item>
+				<name>lastname</name>
+				<value>apiuser</value>
+			</item>
+			<item>
+				<name>email</name>
+				<value>apiuser@gmail.com</value>
+			</item>
+			<item>
+				<name>accounttype</name>
+				<value>0</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>userid1</param>
+			</item>
+			<item setparam="true">
+				<name>username</name>
+				<param>usernamevar1</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>createDomain</name>
+		<parameters>
+			<item random="true">
+			    <name>name</name>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>name</name>
+				<param>domainname</param>
+			</item>
+			<item setparam="true">
+				<name>id</name>
+				<param>newdomainid</param>
+			</item>
+		</returnvalue>
+	</command>	
+	
+	
+	<command>
+		<name>deployVirtualMachine</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item>
+			    <name>serviceofferingid</name>
+				<value>1</value>
+			</item>
+			<item>
+			    <name>diskofferingid</name>
+				<value>1</value>
+			</item>	
+			<item getparam="true">
+				<name>templateid</name>
+				<param>globaltemplateid</param>
+			</item>
+			<item getparam="true">
+			    <name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>ipaddress</name>
+				<param>vmipaddress</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	
+	<command>
+		<name>listRouters</name>
+		<parameters>
+			<item getparam="true">
+			    <name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+			<item getparam="true">
+				<name>account</name>
+				<param>accountvar</param>
+			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+		<returnvalue list="true">
+			<name>router</name>
+			<element>0</element> 
+			<item setparam="true">
+				<name>id</name>
+				<param>routerid</param>
+			</item>
+		</returnvalue>
+	</command>	
+	
+	
+
+<!-- ALLOWED COMMANDS FOR REGULAR USER-->
+
+<!-- SYSTEM COMMANDS-->
+
+	<command>
+		<name>listZones</name>
+		<usercommand>true</usercommand>
+	</command>
+	
+	<command>
+		<name>listDiskOfferings</name>
+		<usercommand>true</usercommand>
+		<empty>false</empty>
+	</command>	
+	
+	<command>
+		<name>listTemplates</name>
+		<usercommand>true</usercommand>
+	</command>
+	
+	<command>
+		<name>listServiceOfferings</name>
+		<usercommand>true</usercommand>
+	</command>
+	
+	<command>
+		<name>listEvents</name>
+		<usercommand>true</usercommand>
+	</command>
+	
+	<command>
+		<name>listAccounts</name>
+		<usercommand>true</usercommand>
+	</command>
+	
+	<command>
+		<name>listIsos</name>
+		<usercommand>true</usercommand>
+	</command>
+	
+	
+<!-- VIRTUAL MACHINES COMMANDS-->
+	
+	<command>
+		<name>deployVirtualMachine</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item>
+			    <name>serviceofferingid</name>
+				<value>1</value>
+			</item>
+			<item>
+			    <name>diskofferingid</name>
+				<value>1</value>
+			</item>	
+			<item getparam="true">
+				<name>templateid</name>
+				<param>globaltemplateid</param>
+			</item>
+			<item getparam="true">
+			    <name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+			<item setparam="true">
+				<name>name</name>
+				<param>vmname</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>listVirtualMachines</name>
+		<usercommand>true</usercommand>
+		<parameters>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>rebootVirtualMachine</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>
+
+	<command>
+		<name>stopVirtualMachine</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>	
+	
+<!-- VOLUME COMMANDS -->	
+<!--  listVolumes command -->
+<!--	<command>-->
+<!--		<name>listVolumes</name>-->
+<!--		<usercommand>true</usercommand>-->
+<!--		<parameters>-->
+<!--			<item getparam="true">-->
+<!--				<name>virtualmachineid</name>-->
+<!--				<param>vmid</param>-->
+<!--			</item>-->
+<!--			<item>-->
+<!--				<name>type</name>-->
+<!--				<value>ROOT</value>-->
+<!--			</item>-->
+<!--		</parameters>-->
+<!--		<returnvalue>-->
+<!--			<item setparam="true">-->
+<!--				<name>id</name>-->
+<!--				<param>rootvolumeid1235</param>-->
+<!--			</item>-->
+<!--		</returnvalue>-->
+<!--	</command>-->
+	
+	<command>
+		<name>listVolumes</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+				<name>virtualmachineid</name>
+				<param>vmid</param>
+			</item>
+			<item>
+				<name>type</name>
+				<value>DATADISK</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>datavolumeid</param>
+			</item>
+			<item setparam="true">
+				<name>name</name>
+				<param>datavolumename</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<!--  Detach volume command - detach volume from the vm and make sure that you don't see it in the list of volumes for this vm -->
+	<command>
+		<name>detachVolume</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>datavolumeid</param>
+			</item>
+			<item getparam="true">
+				<name>virtualmachineid</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>listVolumes</name>
+		<usercommand>true</usercommand>
+		<empty>true</empty>
+		<parameters>
+			<item getparam="true">
+				<name>virtualmachineid</name>
+				<param>vmid</param>
+			</item>
+			<item>
+				<name>type</name>
+				<value>DATADISK</value>
+			</item>
+		</parameters>
+	</command>
+	
+	
+	<!--  Create volume command - create a volume and make sure that it appeared in the list -->
+	<command>
+		<name>createVolume</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
+			</item>
+			<item random="true">
+				<name>name</name>
+			</item>
+			<item getparam="true">
+				<name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+			<item>
+				<name>diskofferingid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>datavolumeid</param>
+			</item>
+		</returnvalue>
+	</command>	
+	
+	
+	<!--  Attach volume command - attach volume from to the vm and make sure that you see it in the list of volumes for this vm -->
+	<command>
+		<name>attachVolume</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>datavolumeid</param>
+			</item>
+			<item getparam="true">
+				<name>virtualmachineid</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>listVolumes</name>
+		<usercommand>true</usercommand>
+		<empty>false</empty>
+		<parameters>
+			<item getparam="true">
+				<name>virtualmachineid</name>
+				<param>vmid</param>
+			</item>
+			<item>
+				<name>type</name>
+				<value>DATADISK</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>datavolumeid</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>detachVolume</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>datavolumeid</param>
+			</item>
+		</parameters>
+	</command>	
+	
+	
+	<!--  Delete volume command - delete volume and make sure that you don't see it in the list of volumes any more -->
+	<command>
+		<name>createVolume</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
+			</item>
+			<item random="true">
+				<name>name</name>
+			</item>
+			<item getparam="true">
+				<name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+			<item>
+				<name>diskofferingid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>datavolumeid1</param>
+			</item>
+		</returnvalue>
+	</command>	
+	
+	<command>
+		<name>deleteVolume</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>datavolumeid1</param>
+			</item>
+		</parameters>
+	</command>	
+	
+	<command>
+		<name>listVolumes</name>
+		<usercommand>true</usercommand>
+		<empty>true</empty>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>datavolumeid1</param>
+			</item>
+		</parameters>
+	</command>	
+	
+	
+	
+<!-- TEMPLATE COMMANDS -->
+	<command>
+		<name>createTemplate</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+				<name>volumeid</name>
+				<param>datavolumeid</param>
+			</item>
+			<item random="true">
+				<name>name</name>
+			</item>
+			<item>
+				<name>displaytext</name>
+				<value>newtext</value>
+			</item>
+			<item>
+				<name>osTypeId</name>
+				<value>1</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>privatetemplateid</param>
+			</item>
+			<item setparam="true">
+				<name>name</name>
+				<param>privatetemplatename</param>
+				<value>privatet</value>
+			</item>
+			<item>
+				<name>ispublic</name>
+				<value>false</value>
+			</item>
+			<item>
+				<name>requireshvm</name>
+				<value>false</value>
+			</item>
+			<item>
+				<name>bits</name>
+				<value>64</value>
+			</item>
+			<item>
+				<name>isready</name>
+				<value>true</value>
+			</item>
+			<item>
+				<name>created</name>
+			</item>
+			<item>
+				<name>passwordenabled</name>
+				<value>true</value>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>listTemplates</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+				<name>name</name>
+				<param>privatetemplatename</param>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item getparam="true">
+				<name>id</name>
+				<param>privatetemplateid</param>
+			</item>
+			<item getparam="true">
+				<name>name</name>
+				<param>privatetemplatename</param>
+			</item>
+			<item>
+				<name>ispublic</name>
+				<value>false</value>
+			</item>
+			<item>
+				<name>requireshvm</name>
+				<value>false</value>
+			</item>
+			<item>
+				<name>bits</name>
+				<value>64</value>
+			</item>
+			<item>
+				<name>isready</name>
+				<value>true</value>
+			</item>
+			<item>
+				<name>created</name>
+			</item>
+			<item>
+				<name>passwordenabled</name>
+				<value>true</value>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>deleteTemplate</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>privatetemplateid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>listTemplates</name>
+		<usercommand>true</usercommand>
+		<empty>true</empty>
+		<parameters>
+			<item getparam="true">
+				<name>name</name>
+				<param>privatetemplatename</param>
+			</item>
+		</parameters>
+	</command>
+	
+	
+	
+<!-- SNAPSHOT COMMANDS -->
+	<command>
+		<name>listVolumes</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+				<name>virtualmachineid</name>
+				<param>vmid</param>
+			</item>
+			<item>
+				<name>type</name>
+				<value>DATADISK</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>datavolumeid</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>createSnapshot</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+				<name>volumeid</name>
+				<param>datavolumeid</param>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>snapshotid1</param>
+			</item>
+			<item getparam="true">
+				<name>volumeid</name>
+				<param>datavolumeid</param>
+			</item>
+			<item>
+				<name>created</name>
+			</item>
+			<item>
+				<name>name</name>
+			</item>
+			<item>
+				<name>path</name>
+			</item>
+			<item getparam="true">
+				<name>account</name>
+				<param>accountname</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>createSnapshot</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+				<name>volumeid</name>
+				<param>datavolumeid</param>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>snapshotid2</param>
+			</item>
+			<item getparam="true">
+				<name>volumeid</name>
+				<param>datavolumeid</param>
+			</item>
+			<item>
+				<name>created</name>
+			</item>
+			<item>
+				<name>name</name>
+			</item>
+			<item>
+				<name>path</name>
+			</item>
+			<item getparam="true">
+				<name>account</name>
+				<param>accountname</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>listSnapshots</name>
+		<usercommand>true</usercommand>
+		<empty>false</empty>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>rollbackToSnapshot</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>snapshotid2</param>
+			</item>
+		</parameters>
+	</command>
+	
+
+	<command>
+		<name>destroySnapshot</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>snapshotid1</param>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>destroySnapshot</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>snapshotid2</param>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>listSnapshots</name>
+		<usercommand>true</usercommand>
+		<empty>true</empty>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>changeServiceForVirtualMachine</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+			<item>
+				<name>serviceofferingid</name>
+				<value>2</value>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>startVirtualMachine</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>resetPasswordForVirtualMachine</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>enableHAForVirtualMachine</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+			<item>
+				<name>haenable</name>
+				<value>true</value>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>searchForVirtualMachines</name>
+		<usercommand>true</usercommand>
+		<empty>false</empty>
+		<parameters>
+			<item getparam="true">
+			    <name>keyword</name>
+				<param>vmname</param>
+			</item>
+		</parameters>
+	</command>			
+	
+	<command>
+		<name>associateIpAddress</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+			    <name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+		</parameters>
+		<returnvalue> 
+			<item setparam="true">
+				<name>ipaddress</name>
+				<param>nonsourcenatpublicip</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>listPublicIpAddresses</name>
+		<usercommand>true</usercommand>
+	</command>
+	
+	<command>
+		<name>disassociateIpAddress</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+				<name>ipaddress</name>
+				<param>nonsourcenatpublicip</param>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>associateIpAddress</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+			    <name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+		</parameters>
+		<returnvalue> 
+			<item setparam="true">
+				<name>ipaddress</name>
+				<param>nonsourcenatpublicip</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	
+<!-- PORT FORWARDING COMMANDS-->
+	<command>
+		<name>createSecurityGroup</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item random="true">
+			    <name>name</name>
+			</item>
+			<item>
+			    <name>description</name>
+				<value>none</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>pfgroupid</param>
+			</item>
+			<item setparam="true">
+				<name>name</name>
+				<param>pfgroupname</param>
+			</item>
+			<item>
+				<name>description</name>
+				<value>none</value>
+			</item>
+		</returnvalue>
+	</command>	
+	
+	<command>
+		<name>listSecurityGroups</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+			    <name>name</name>
+				<param>pfgroupname</param>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item getparam="true">
+				<name>id</name>
+				<param>pfgroupid</param>
+			</item>
+			<item getparam="true">
+				<name>name</name>
+				<param>pfgroupname</param>
+			</item>
+			<item>
+				<name>description</name>
+				<value>none</value>
+			</item>
+		</returnvalue>
+	</command>	
+	
+	<command>
+		<name>createNetworkRule</name>
+		<usercommand>true</usercommand>
+		
+		<parameters>
+			<item>
+			    <name>publicport</name>
+				<value>22</value>
+			</item>
+			<item>
+			    <name>privateport</name>
+				<value>22</value>
+			</item>
+			<item getparam="true">
+			    <name>securitygroupid</name>
+				<param>pfgroupid</param>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>pfruleid</param>
+			</item>
+			<item getparam="true">
+				<name>securitygroupid</name>
+				<param>pfgroupid</param>
+			</item>
+			<item>
+				<name>publicport</name>
+				<value>22</value>
+			</item>
+			<item>
+				<name>privateport</name>
+				<value>22</value>
+			</item>
+		</returnvalue>
+	</command>	
+	
+	<command>
+		<name>listNetworkRules</name>
+		<usercommand>true</usercommand>
+		<empty>false</empty>
+		<parameters>
+			<item getparam="true">
+			    <name>groupid</name>
+				<param>pfgroupid</param>
+			</item>
+		</parameters>
+	</command>	
+	
+	<command>
+		<name>assignSecurityGroup</name>
+		
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+			    <name>groupid</name>
+				<param>pfgroupid</param>
+			</item>
+			<item getparam="true">
+			    <name>virtualmachineid</name>
+				<param>vmid</param>
+			</item>
+			<item getparam="true">
+			    <name>publicip</name>
+				<param>nonsourcenatpublicip</param>
+			</item>
+		</parameters>
+	</command>	
+	
+	<command>
+		<name>listSecurityGroupsByVM</name>
+		<usercommand>true</usercommand>
+		<empty>false</empty>
+		<parameters>
+			<item getparam="true">
+			    <name>virtualmachineid</name>
+				<param>vmid</param>
+			</item>
+			<item getparam="true">
+			    <name>ipaddress</name>
+				<param>nonsourcenatpublicip</param>
+			</item>
+		</parameters>
+	</command>	
+	
+	
+	<command>
+		<name>deleteNetworkRule</name>
+		
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+			    <name>id</name>
+				<param>pfruleid</param>
+			</item>
+		</parameters>
+	</command>	
+	
+	<command>
+		<name>listNetworkRules</name>
+		<empty>true</empty>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+			    <name>groupid</name>
+				<param>pfgroupid</param>
+			</item>
+		</parameters>
+	</command>	
+	
+	<command>
+		<name>createNetworkRule</name>
+		
+		<usercommand>true</usercommand>
+		<parameters>
+			<item>
+			    <name>publicport</name>
+				<value>22</value>
+			</item>
+			<item>
+			    <name>privateport</name>
+				<value>22</value>
+			</item>
+			<item getparam="true">
+			    <name>securitygroupid</name>
+				<param>pfgroupid</param>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>pfruleid</param>
+			</item>
+			<item getparam="true">
+				<name>securitygroupid</name>
+				<param>pfgroupid</param>
+			</item>
+			<item>
+				<name>publicport</name>
+				<value>22</value>
+			</item>
+			<item>
+				<name>privateport</name>
+				<value>22</value>
+			</item>
+		</returnvalue>
+	</command>	
+	
+	<command>
+		<name>removeSecurityGroup</name>
+		
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+			    <name>groupid</name>
+				<param>pfgroupid</param>
+			</item>
+			<item getparam="true">
+			    <name>virtualmachineid</name>
+				<param>vmid</param>
+			</item>
+			<item getparam="true">
+			    <name>publicip</name>
+				<param>nonsourcenatpublicip</param>
+			</item>
+		</parameters>
+	</command>	
+	
+	<command>
+		<name>listSecurityGroupsByVM</name>
+		<empty>true</empty>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+			    <name>virtualmachineid</name>
+				<param>vmid</param>
+			</item>
+			<item getparam="true">
+			    <name>ipaddress</name>
+				<param>nonsourcenatpublicip</param>
+			</item>
+		</parameters>
+	</command>	
+
+	<command>
+		<name>deleteSecurityGroup</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+			    <name>id</name>
+				<param>pfgroupid</param>
+			</item>
+		</parameters>
+	</command>	
+	
+
+	<command>
+		<name>listSecurityGroups</name>
+		<empty>true</empty>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+			    <name>id</name>
+				<param>pfgroupid</param>
+			</item>
+			<item getparam="true">
+			    <name>name</name>
+				<param>pfgroupname</param>
+			</item>
+		</parameters>
+	</command>	
+	
+	
+	<command>
+		<name>destroyVirtualMachine</name>
+		<usercommand>true</usercommand>
+		
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	
+<!-- NOT ALLOWED COMMANDS FOR THE REGULAR USER-->
+
+<!-- ACCOUNT COMMANDS-->
+	<command>
+		<name>updateAccount</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item>
+			    <name>id</name>
+				<value>2</value>
+			</item>
+			<item>
+			    <name>name</name>
+				<value>updatedname</value>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>disableAccount</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item>
+			    <name>id</name>
+				<value>2</value>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>enableAccount</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item>
+			    <name>id</name>
+				<value>2</value>
+			</item>
+		</parameters>
+	</command>
+	
+<!-- VM COMMANDS-->
+	<command>
+		<name>recoverVirtualMachine</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>
+	
+<!-- USER COMMANDS-->
+	<command>
+		<name>createUser</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<testcase>49</testcase>
+		<parameters>
+			<item random="true">
+			    <name>username</name>
+			</item>
+			<item>
+			    <name>password</name>
+				<value>apiuser</value>
+			</item>
+			<item>
+				<name>firstname</name>
+				<value>apiuser</value>
+			</item>
+			<item>
+				<name>lastname</name>
+				<value>apiuser</value>
+			</item>
+			<item>
+				<name>email</name>
+				<value>apiuser@gmail.com</value>
+			</item>
+			<item>
+				<name>accounttype</name>
+				<value>0</value>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>register</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item getparam="true">
+			    <name>username</name>
+				<param>usernamevar1</param>
+			</item>
+			<item>
+			    <name>domainid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>updateUser</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item getparam="true">
+			    <name>id</name>
+				<param>userid1</param>
+			</item>
+			<item random="true">
+			    <name>username</name>
+			</item>
+		</parameters>
+	</command>	
+	
+	<command>
+		<name>listUsers</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item getparam="true">
+			    <name>id</name>
+				<param>userid1</param>
+			</item>
+		</parameters>
+	</command>		
+	
+	<command>
+		<name>disableUser</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item getparam="true">
+			    <name>id</name>
+				<param>userid1</param>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>enableUser</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item getparam="true">
+			    <name>id</name>
+				<param>userid1</param>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>deleteUser</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item getparam="true">
+			    <name>id</name>
+				<param>userid1</param>
+			</item>
+		</parameters>
+	</command>
+
+<!-- DOMAIN COMMANDS-->	
+	<command>
+		<name>createDomain</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item random="true">
+			    <name>name</name>
+			</item>
+		</parameters>
+	</command>	
+	
+	<command>
+		<name>listDomains</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item getparam="true">
+			    <name>name</name>
+				<param>domainname</param>
+			</item>
+		</parameters>
+	</command>	
+	
+	<command>
+		<name>updateDomain</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item getparam="true">
+			    <name>id</name>
+				<param>newdomainid</param>
+			</item>
+			<item>
+			    <name>name</name>
+				<value>updateddomainname</value>
+			</item>
+		</parameters>
+	</command>	
+	
+	<command>
+		<name>deleteDomain</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item getparam="true">
+			    <name>id</name>
+				<param>newdomainid</param>
+			</item>
+		</parameters>
+	</command>	
+	
+	<command>
+		<name>register</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item getparam="true">
+			    <name>username</name>
+				<param>usernamevar1</param>
+			</item>
+			<item>
+			    <name>domainid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+	</command>	
+	
+	
+
+	
+<!-- DOMAIN ROUTER COMMANDS-->		
+	<command>
+		<name>listRouters</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item getparam="true">
+			    <name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+		</parameters>
+	</command>	
+	
+	<command>
+		<name>rebootRouter</name>
+		
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>routerid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>stopRouter</name>
+		
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>routerid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>startRouter</name>
+		
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>routerid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	
+
+	
+	
+	<!-- CONFIGURATION COMMANDS-->		
+	<command>
+		<name>createZone</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item random="true">
+				<name>zoneName</name>
+			</item>
+			<item>
+				<name>gateway</name>
+				<value>172.18.0.1</value>
+			</item>
+			<item>
+				<name>dns1</name>
+				<value>172.18.0.1</value>
+			</item>
+			<item>
+				<name>netmask</name>
+				<value>255.255.0.0</value>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>createPod</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item random="true">
+				<name>podName</name>
+			</item>
+			<item getparam="true">
+				<name>zoneId</name>
+				<param>globalzoneid</param>
+			</item>
+			<item>
+				<name>cidr</name>
+				<value>192.168.0.0/24</value>
+			</item>
+		</parameters>
+		<returnvalue>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>listConfigurations</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item>
+				<name>name</name>
+				<value>update.wait</value>
+			</item>
+		</parameters>
+	</command>	
+	
+	<command>
+		<name>updateConfiguration</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item>
+				<name>name</name>
+				<value>update.wait</value>
+			</item>
+			<item>
+				<name>value</name>
+				<value>35</value>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>changePrivateIpRange</name>
+		<usercommand>true</usercommand>
+		<error>true</error>	
+		<parameters>
+			<item>
+				<name>zonename</name>
+				<value>zone1</value>
+			</item>
+			<item>
+				<name>podname</name>
+				<value>pod1</value>
+			</item>
+			<item>
+				<name>op</name>
+				<value>add</value>
+			</item>
+			<item>
+				<name>startip</name>
+				<value>172.17.100.254</value>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>changePublicIpRange</name>
+		<usercommand>true</usercommand>
+		<error>true</error>	
+		<parameters>
+			<item>
+				<name>zonename</name>
+				<value>zone1</value>
+			</item>
+			<item>
+				<name>op</name>
+				<value>delete</value>
+			</item>
+			<item>
+				<name>startip</name>
+				<value>172.17.100.242</value>
+			</item>
+			<item>
+				<name>endip</name>
+				<value>172.17.100.245</value>
+			</item>
+			<item>
+				<name>vlanname</name>
+				<value>untagged</value>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>editZone</name>
+		<usercommand>true</usercommand>
+		<error>true</error>	
+		<parameters>
+			<item>
+				<name>id</name>
+				<value>1</value>
+			</item>
+			<item>
+				<name>name</name>
+				<value>newzone</value>
+			</item>
+			<item>
+				<name>gateway</name>
+				<value>172.18.0.1</value>
+			</item>
+			<item>
+				<name>dns1</name>
+				<value>172.18.0.1</value>
+			</item>
+			<item>
+				<name>netmask</name>
+				<value>255.255.0.0</value>
+			</item>
+		</parameters>
+		<returnvalue>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>editPod</name>
+		<usercommand>true</usercommand>
+		<error>true</error>	
+		<parameters>
+			<item>
+				<name>id</name>
+				<value>1</value>
+			</item>
+			<item>
+				<name>zoneid</name>
+				<value>1</value>
+			</item>
+			<item>
+				<name>podName</name>
+				<value>pod10001</value>
+			</item>
+		</parameters>
+		<returnvalue>			
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>deletePod</name>
+		<usercommand>true</usercommand>
+		<error>true</error>	
+		<parameters>
+			<item>
+				<name>id</name>
+				<value>1</value>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>deleteZone</name>
+		<usercommand>true</usercommand>
+		<error>true</error>	
+		<parameters>
+			<item>
+				<name>id</name>
+				<value>1</value>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>listAlerts</name>
+		<usercommand>true</usercommand>
+		<error>true</error>	
+	</command>
+	
+	<command>
+		<name>listCapacity</name>
+		<usercommand>true</usercommand>
+		<error>true</error>	
+	</command>
+	
+	<command>
+		<name>listHosts</name>
+		<usercommand>true</usercommand>
+		<error>true</error>	
+	</command>
+		
+	<command>
+		<name>prepareForMaintenance</name>
+		<usercommand>true</usercommand>
+		<error>true</error>	
+		
+		<parameters>
+			<item>
+			    <name>id</name>
+				<value>1</value>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>completeMaintenance</name>
+		<usercommand>true</usercommand>
+		<error>true</error>	
+		
+		<parameters>
+			<item>
+			    <name>id</name>
+				<value>1</value>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>reconnect</name>
+		<usercommand>true</usercommand>
+		<error>true</error>	
+		<parameters>
+			<item>
+			    <name>id</name>
+				<value>2</value>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>listPods</name>
+		<usercommand>true</usercommand>
+		<error>true</error>	
+	</command>	
+	
+	<command>
+		<name>createLimit</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item>
+			    <name>type</name>
+				<value>public_ip</value>
+			</item>
+			<item>
+			    <name>max</name>
+				<value>300</value>
+			</item>
+			<item>
+			    <name>domainid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>limitid</param>
+			</item>
+		</returnvalue>
+	</command>		
+	
+	<command>
+		<name>listLimits</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item>
+			    <name>id</name>
+				<value>1</value>
+			</item>
+			<item>
+			    <name>type</name>
+				<value>public_ip</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item>
+				<name>max</name>
+				<value>300</value>
+			</item>
+		</returnvalue>
+	</command>		
+	
+	<command>
+		<name>updateLimit</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item>
+			    <name>id</name>
+				<value>1</value>
+			</item>
+			<item>
+			    <name>max</name>
+				<value>65</value>
+			</item>
+		</parameters>
+	</command>		
+	
+	<command>
+		<name>deleteLimit</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item>
+			    <name>id</name>
+				<value>1</value>
+			</item>
+		</parameters>
+	</command>	
+	
+	<command>
+		<name>createDiskOffering</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item random="true">
+			    <name>name</name>
+			</item>
+			<item>
+			    <name>description</name>
+				<value>newdiskdesc</value>
+			</item>
+			<item>
+			    <name>disksize</name>
+				<value>1024</value>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>deleteDiskOffering</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item>
+			    <name>id</name>
+				<value>1</value>
+			</item>
+		</parameters>
+	</command>	
+	
+	<command>
+		<name>createServiceOffering</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item random="true">
+			    <name>name</name>
+			</item>
+			<item>
+			    <name>displaytext</name>
+				<value>newoff</value>
+			</item>
+			<item>
+			    <name>cpunumber</name>
+				<value>1</value>
+			</item>
+			<item>
+			    <name>cpuspeed</name>
+				<value>200</value>
+			</item>
+			<item>
+			    <name>memory</name>
+				<value>256</value>
+			</item>
+		</parameters>
+	</command>
+	
+
+	<command>
+		<name>editServiceOffering</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item>
+			    <name>id</name>
+				<value>2</value>
+			</item>
+			<item>
+			    <name>name</name>
+				<value>newestoff</value>
+			</item>
+			<item>
+			    <name>displaytext</name>
+				<value>display</value>
+			</item>
+		</parameters>
+	</command>
+	
+	
+	<command>
+		<name>deleteServiceOffering</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item>
+			    <name>id</name>
+				<value>3</value>
+			</item>
+		</parameters>
+	</command>
+
+</api>

@@ -1,0 +1,1430 @@
+<loadbalancers>
+
+<!-- Test case #853 - port value validation when do create a load balancer -->
+	<command>
+		<name>deployVirtualMachine</name>
+		<parameters>
+			<item getparam="true">
+			    <name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+			<item>
+			    <name>serviceofferingid</name>
+				<value>1</value>
+			</item>
+			<item>
+			    <name>diskofferingid</name>
+				<value>1</value>
+			</item>	
+			<item getparam="true">
+				<name>templateid</name>
+				<param>globaltemplateid</param>
+			</item>
+			<item>
+				<name>account</name>
+				<value>admin</value>
+			</item>
+			<item>
+				<name>displayname</name>
+				<value>namefordisplay</value>
+			</item>
+			<item>
+				<name>group</name>
+				<value>group1</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>associateIpAddress</name>
+		<parameters>
+			<item getparam="true">
+			    <name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+			<item>
+				<name>account</name>
+				<value>admin</value>
+			</item>
+		</parameters>
+		<returnvalue> 
+			<item setparam="true">
+				<name>ipaddress</name>
+				<param>nonsourcenatpublicip</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>createLoadBalancer</name>
+		<error>true</error>
+		<testcase>853</testcase>
+		<parameters>
+			<item random="true">
+			    <name>name</name>
+			</item>
+			<item getparam="true">
+			    <name>ipaddress</name>
+				<param>nonsourcenatpublicip</param>
+			</item>
+			<item>
+			    <name>privateport</name>
+				<value>0</value>
+			</item>
+			<item>
+			    <name>publicport</name>
+				<value>986</value>
+			</item>
+			<item>
+			    <name>algorithm</name>
+				<value>roundrobin</value>
+			</item>
+			<item>
+			    <name>account</name>
+				<value>admin</value>
+			</item>
+			<item>
+			    <name>domainid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+	</command>	
+	
+	<command>
+		<name>createLoadBalancer</name>
+		<error>true</error>
+		<testcase>853</testcase>
+		<parameters>
+			<item random="true">
+			    <name>name</name>
+			</item>
+			<item getparam="true">
+			    <name>ipaddress</name>
+				<param>nonsourcenatpublicip</param>
+			</item>
+			<item>
+			    <name>privateport</name>
+				<value>65536</value>
+			</item>
+			<item>
+			    <name>publicport</name>
+				<value>986</value>
+			</item>
+			<item>
+			    <name>algorithm</name>
+				<value>roundrobin</value>
+			</item>
+			<item>
+			    <name>account</name>
+				<value>admin</value>
+			</item>
+			<item>
+			    <name>domainid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+	</command>	
+	
+	<command>
+		<name>createLoadBalancer</name>
+		<error>true</error>
+		<testcase>853</testcase>
+		<parameters>
+			<item random="true">
+			    <name>name</name>
+			</item>
+			<item getparam="true">
+			    <name>ipaddress</name>
+				<param>nonsourcenatpublicip</param>
+			</item>
+			<item>
+			    <name>privateport</name>
+				<value>1</value>
+			</item>
+			<item>
+			    <name>publicport</name>
+				<value>0</value>
+			</item>
+			<item>
+			    <name>algorithm</name>
+				<value>roundrobin</value>
+			</item>
+			<item>
+			    <name>account</name>
+				<value>admin</value>
+			</item>
+			<item>
+			    <name>domainid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+	</command>	
+	
+	<command>
+		<name>createLoadBalancer</name>
+		<error>true</error>
+		<testcase>853</testcase>
+		<parameters>
+			<item random="true">
+			    <name>name</name>
+			</item>
+			<item getparam="true">
+			    <name>ipaddress</name>
+				<param>nonsourcenatpublicip</param>
+			</item>
+			<item>
+			    <name>privateport</name>
+				<value>65535</value>
+			</item>
+			<item>
+			    <name>publicport</name>
+				<value>65536</value>
+			</item>
+			<item>
+			    <name>algorithm</name>
+				<value>roundrobin</value>
+			</item>
+			<item>
+			    <name>account</name>
+				<value>admin</value>
+			</item>
+			<item>
+			    <name>domainid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+	</command>	
+	
+<!-- Test case #919 - algorithm validation when do create a load balancer -->
+	<command>
+		<name>createLoadBalancer</name>
+		<testcase>919</testcase>
+		<parameters>
+			<item random="true">
+			    <name>name</name>
+			</item>
+			<item getparam="true">
+			    <name>ipaddress</name>
+				<param>nonsourcenatpublicip</param>
+			</item>
+			<item>
+			    <name>privateport</name>
+				<value>9191</value>
+			</item>
+			<item>
+			    <name>publicport</name>
+				<value>9191</value>
+			</item>
+			<item>
+			    <name>algorithm</name>
+				<value>roundrobin</value>
+			</item>
+			<item>
+			    <name>account</name>
+				<value>admin</value>
+			</item>
+			<item>
+			    <name>domainid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+	</command>	
+	
+	<command>
+		<name>createLoadBalancer</name>
+		<testcase>919-1</testcase>
+		<parameters>
+			<item random="true">
+			    <name>name</name>
+			</item>
+			<item getparam="true">
+			    <name>ipaddress</name>
+				<param>nonsourcenatpublicip</param>
+			</item>
+			<item>
+			    <name>privateport</name>
+				<value>9192</value>
+			</item>
+			<item>
+			    <name>publicport</name>
+				<value>9192</value>
+			</item>
+			<item>
+			    <name>algorithm</name>
+				<value>leastconn</value>
+			</item>
+			<item>
+			    <name>account</name>
+				<value>admin</value>
+			</item>
+			<item>
+			    <name>domainid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+	</command>	
+	
+	<command>
+		<name>createLoadBalancer</name>
+		<testcase>919-2</testcase>
+		<parameters>
+			<item random="true">
+			    <name>name</name>
+			</item>
+			<item getparam="true">
+			    <name>ipaddress</name>
+				<param>nonsourcenatpublicip</param>
+			</item>
+			<item>
+			    <name>privateport</name>
+				<value>9193</value>
+			</item>
+			<item>
+			    <name>publicport</name>
+				<value>9193</value>
+			</item>
+			<item>
+			    <name>algorithm</name>
+				<value>source</value>
+			</item>
+			<item>
+			    <name>account</name>
+				<value>admin</value>
+			</item>
+			<item>
+			    <name>domainid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+	</command>	
+	
+	<command>
+		<name>createLoadBalancer</name>
+		<error>true</error>
+		<testcase>919-3</testcase>
+		<parameters>
+			<item random="true">
+			    <name>name</name>
+			</item>
+			<item getparam="true">
+			    <name>ipaddress</name>
+				<param>nonsourcenatpublicip</param>
+			</item>
+			<item>
+			    <name>privateport</name>
+				<value>9194</value>
+			</item>
+			<item>
+			    <name>publicport</name>
+				<value>9194</value>
+			</item>
+			<item>
+			    <name>algorithm</name>
+				<value>roundrobinblahblah</value>
+			</item>
+			<item>
+			    <name>account</name>
+				<value>admin</value>
+			</item>
+			<item>
+			    <name>domainid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+	</command>	
+
+
+<!-- Test case #920 - verify that the same names are not allowed for load balancers belonging to the same account-->
+	<command>
+		<name>createLoadBalancer</name>
+		<testcase>920-1</testcase>
+		<parameters>
+			<item random="true" setparam="true">
+			    <name>name</name>
+			    <param>lbname</param>
+			</item>
+			<item getparam="true">
+			    <name>ipaddress</name>
+				<param>nonsourcenatpublicip</param>
+			</item>
+			<item>
+			    <name>privateport</name>
+				<value>9201</value>
+			</item>
+			<item>
+			    <name>publicport</name>
+				<value>9201</value>
+			</item>
+			<item>
+			    <name>algorithm</name>
+				<value>source</value>
+			</item>
+			<item>
+			    <name>account</name>
+				<value>admin</value>
+			</item>
+			<item>
+			    <name>domainid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+	</command>	
+	
+	<command>
+		<name>createLoadBalancer</name>
+		<error>true</error>
+		<testcase>920-2</testcase>
+		<parameters>
+			<item getparam="true">
+			    <name>name</name>
+				<param>lbname</param>
+			</item>
+			<item getparam="true">
+			    <name>ipaddress</name>
+				<param>nonsourcenatpublicip</param>
+			</item>
+			<item>
+			    <name>privateport</name>
+				<value>9202</value>
+			</item>
+			<item>
+			    <name>publicport</name>
+				<value>9202</value>
+			</item>
+			<item>
+			    <name>algorithm</name>
+				<value>source</value>
+			</item>
+			<item>
+			    <name>account</name>
+				<value>admin</value>
+			</item>
+			<item>
+			    <name>domainid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+	</command>	
+
+
+
+<!-- Test case #921 - verify that the same names for load balancers are allowed across accounts -->
+	<command>
+		<name>createLoadBalancer</name>
+		<testcase>921-1</testcase>
+		<parameters>
+			<item random="true" setparam="true">
+			    <name>name</name>
+				<param>lbname</param>
+			</item>
+			<item getparam="true">
+			    <name>ipaddress</name>
+				<param>nonsourcenatpublicip</param>
+			</item>
+			<item>
+			    <name>privateport</name>
+				<value>921</value>
+			</item>
+			<item>
+			    <name>publicport</name>
+				<value>921</value>
+			</item>
+			<item>
+			    <name>algorithm</name>
+				<value>source</value>
+			</item>
+			<item>
+			    <name>account</name>
+				<value>admin</value>
+			</item>
+			<item>
+			    <name>domainid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+	</command>	
+	
+	<command>
+		<name>createUser</name>
+		<parameters>
+			<item random="true">
+			    <name>username</name>
+			</item>
+			<item>
+			    <name>password</name>
+				<value>apiuser</value>
+			</item>
+			<item>
+				<name>firstname</name>
+				<value>apiuser</value>
+			</item>
+			<item>
+				<name>lastname</name>
+				<value>apiuser</value>
+			</item>
+			<item>
+				<name>email</name>
+				<value>apiuser@gmail.com</value>
+			</item>
+			<item>
+				<name>accounttype</name>
+				<value>0</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>userid</param>
+			</item>
+			<item setparam="true">
+				<name>username</name>
+				<param>usernamevar</param>
+			</item>
+			<item setparam="true">
+				<name>account</name>
+				<param>accountvar</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>register</name>
+		<parameters>
+			<item getparam="true">
+			    <name>username</name>
+				<param>usernamevar</param>
+			</item>
+			<item>
+			    <name>domainid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>apikey</name>
+				<param>apikey</param>
+			</item>
+			<item setparam="true">
+				<name>secretkey</name>
+				<param>secretkey</param>
+			</item>
+		</returnvalue>
+	</command>	
+	
+	<command>
+		<name>deployVirtualMachine</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+			    <name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+			<item>
+			    <name>serviceofferingid</name>
+				<value>1</value>
+			</item>
+			<item>
+			    <name>diskofferingid</name>
+				<value>1</value>
+			</item>	
+			<item getparam="true">
+				<name>templateid</name>
+				<param>globaltemplateid</param>
+			</item>
+			<item>
+				<name>displayname</name>
+				<value>namefordisplay</value>
+			</item>
+			<item>
+				<name>group</name>
+				<value>group1</value>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>associateIpAddress</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+			    <name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+		</parameters>
+		<returnvalue> 
+			<item setparam="true">
+				<name>ipaddress</name>
+				<param>nonsourcenatpublicip1</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>createLoadBalancer</name>
+		<usercommand>true</usercommand>
+		<testcase>921-2</testcase>
+		<parameters>
+			<item getparam="true">
+			    <name>name</name>
+				<param>lbname</param>
+			</item>
+			<item getparam="true">
+			    <name>ipaddress</name>
+				<param>nonsourcenatpublicip1</param>
+			</item>
+			<item>
+			    <name>privateport</name>
+				<value>9211</value>
+			</item>
+			<item>
+			    <name>publicport</name>
+				<value>9211</value>
+			</item>
+			<item>
+			    <name>algorithm</name>
+				<value>source</value>
+			</item>
+		</parameters>
+	</command>	
+
+
+<!-- Test case #922 - try to create a load balancer with non-existing ip address -->
+	<command>
+		<name>createLoadBalancer</name>
+		<testcase>922</testcase>
+		<error>true</error>
+		<parameters>
+			<item random="true">
+			    <name>name</name>
+			</item>
+			<item>
+			    <name>ipaddress</name>
+				<value>192.168.0.5</value>
+			</item>
+			<item>
+			    <name>privateport</name>
+				<value>922</value>
+			</item>
+			<item>
+			    <name>publicport</name>
+				<value>922</value>
+			</item>
+			<item>
+			    <name>algorithm</name>
+				<value>source</value>
+			</item>
+			<item>
+			    <name>domainid</name>
+				<value>1</value>
+			</item>
+			<item>
+			    <name>account</name>
+				<value>admin</value>
+			</item>
+		</parameters>
+	</command>
+	
+	
+<!-- Test case #923 - try to create a load balancer rule with ip address belonging to different user -->
+	<command>
+		<name>createLoadBalancer</name>
+		<usercommand>true</usercommand>
+		<testcase>923</testcase>
+		<error>true</error>
+		<parameters>
+			<item random="true">
+			    <name>name</name>
+			</item>
+			<item getparam="true">
+			    <name>ipaddress</name>
+				<param>nonsourcenatpublicip</param>
+			</item>
+			<item>
+			    <name>privateport</name>
+				<value>923</value>
+			</item>
+			<item>
+			    <name>publicport</name>
+				<value>923</value>
+			</item>
+			<item>
+			    <name>algorithm</name>
+				<value>source</value>
+			</item>
+			<item>
+			    <name>domainid</name>
+				<value>1</value>
+			</item>
+			<item>
+			    <name>account</name>
+				<value>admin</value>
+			</item>
+		</parameters>
+	</command>		
+	
+<!-- Test case #924 - create a load balancer with non-source nat ip address -->
+	<command>
+		<name>associateIpAddress</name>
+		<parameters>
+			<item getparam="true">
+			    <name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+			<item>
+				<name>account</name>
+				<value>admin</value>
+			</item>
+		</parameters>
+		<returnvalue> 
+			<item setparam="true">
+				<name>ipaddress</name>
+				<param>nonsourcenatpublicip</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>createLoadBalancer</name>
+		<testcase>924</testcase>
+		<parameters>
+			<item random="true">
+			    <name>name</name>
+			</item>
+			<item getparam="true">
+			    <name>ipaddress</name>
+				<param>nonsourcenatpublicip</param>
+			</item>
+			<item>
+			    <name>privateport</name>
+				<value>924</value>
+			</item>
+			<item>
+			    <name>publicport</name>
+				<value>924</value>
+			</item>
+			<item>
+			    <name>algorithm</name>
+				<value>roundrobin</value>
+			</item>
+			<item>
+			    <name>account</name>
+				<value>admin</value>
+			</item>
+			<item>
+			    <name>domainid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+	</command>	
+	
+<!-- Test case #925 - try to delete load balancer with non-existing id - negative case-->
+	<command>
+		<name>deleteLoadBalancer</name>
+		<error>true</error>
+		<testcase>925</testcase>
+		<parameters>
+			<item>
+			    <name>id</name>
+				<value>10000</value>
+			</item>
+		</parameters>
+	</command>	
+
+<!-- Test case #926 - verify that admin can delete any rule via 8096 port-->
+	<command>
+		<name>createUser</name>
+		<parameters>
+			<item random="true">
+			    <name>username</name>
+			</item>
+			<item>
+			    <name>password</name>
+				<value>apiuser</value>
+			</item>
+			<item>
+				<name>firstname</name>
+				<value>apiuser</value>
+			</item>
+			<item>
+				<name>lastname</name>
+				<value>apiuser</value>
+			</item>
+			<item>
+				<name>email</name>
+				<value>apiuser@gmail.com</value>
+			</item>
+			<item>
+				<name>accounttype</name>
+				<value>0</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>userid</param>
+			</item>
+			<item setparam="true">
+				<name>username</name>
+				<param>usernamevar</param>
+			</item>
+			<item setparam="true">
+				<name>account</name>
+				<param>accountvar</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>register</name>
+		<parameters>
+			<item getparam="true">
+			    <name>username</name>
+				<param>usernamevar</param>
+			</item>
+			<item>
+			    <name>domainid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>apikey</name>
+				<param>apikey</param>
+			</item>
+			<item setparam="true">
+				<name>secretkey</name>
+				<param>secretkey</param>
+			</item>
+		</returnvalue>
+	</command>	
+	
+	<command>
+		<name>deployVirtualMachine</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+			    <name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+			<item>
+			    <name>serviceofferingid</name>
+				<value>1</value>
+			</item>
+			<item>
+			    <name>diskofferingid</name>
+				<value>1</value>
+			</item>	
+			<item getparam="true">
+				<name>templateid</name>
+				<param>globaltemplateid</param>
+			</item>
+			<item>
+				<name>displayname</name>
+				<value>namefordisplay</value>
+			</item>
+			<item>
+				<name>group</name>
+				<value>group1</value>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>associateIpAddress</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item getparam="true">
+			    <name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+		</parameters>
+		<returnvalue> 
+			<item setparam="true">
+				<name>ipaddress</name>
+				<param>nonsourcenatpublicip1</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>createLoadBalancer</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item>
+			    <name>name</name>
+				<value>loadb9261</value>
+			</item>
+			<item getparam="true">
+			    <name>ipaddress</name>
+				<param>nonsourcenatpublicip1</param>
+			</item>
+			<item>
+			    <name>privateport</name>
+				<value>9261</value>
+			</item>
+			<item>
+			    <name>publicport</name>
+				<value>9261</value>
+			</item>
+			<item>
+			    <name>algorithm</name>
+				<value>source</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>lbid1</param>
+			</item>
+		</returnvalue>
+	</command>	
+	
+	<command>
+		<name>createLoadBalancer</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item>
+			    <name>name</name>
+				<value>loadb9262</value>
+			</item>
+			<item getparam="true">
+			    <name>ipaddress</name>
+				<param>nonsourcenatpublicip1</param>
+			</item>
+			<item>
+			    <name>privateport</name>
+				<value>9262</value>
+			</item>
+			<item>
+			    <name>publicport</name>
+				<value>9262</value>
+			</item>
+			<item>
+			    <name>algorithm</name>
+				<value>source</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>lbid2</param>
+			</item>
+		</returnvalue>
+	</command>	
+	
+	<command>
+		<name>createLoadBalancer</name>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item>
+			    <name>name</name>
+				<value>loadb9263</value>
+			</item>
+			<item getparam="true">
+			    <name>ipaddress</name>
+				<param>nonsourcenatpublicip1</param>
+			</item>
+			<item>
+			    <name>privateport</name>
+				<value>9263</value>
+			</item>
+			<item>
+			    <name>publicport</name>
+				<value>9263</value>
+			</item>
+			<item>
+			    <name>algorithm</name>
+				<value>source</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>lbid3</param>
+			</item>
+		</returnvalue>
+	</command>	
+	
+	<command>
+		<name>deleteLoadBalancer</name>
+		<testcase>926</testcase>
+		<parameters>
+			<item getparam="true">
+			    <name>id</name>
+				<param>lbid1</param>
+			</item>
+		</parameters>
+	</command>
+
+
+<!-- Test case #927 - verify that admin can delete any rule via 8080 port-->
+	<command>
+		<name>createUser</name>
+		<parameters>
+			<item random="true">
+			    <name>username</name>
+			</item>
+			<item>
+			    <name>password</name>
+				<value>apiuser</value>
+			</item>
+			<item>
+				<name>firstname</name>
+				<value>apiuser</value>
+			</item>
+			<item>
+				<name>lastname</name>
+				<value>apiuser</value>
+			</item>
+			<item>
+				<name>email</name>
+				<value>apiuser@gmail.com</value>
+			</item>
+			<item>
+				<name>accounttype</name>
+				<value>1</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>userid</param>
+			</item>
+			<item setparam="true">
+				<name>username</name>
+				<param>usernamevar</param>
+			</item>
+			<item setparam="true">
+				<name>account</name>
+				<param>accountvar</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>register</name>
+		<parameters>
+			<item getparam="true">
+			    <name>username</name>
+				<param>usernamevar</param>
+			</item>
+			<item>
+			    <name>domainid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>apikey</name>
+				<param>apikey</param>
+			</item>
+			<item setparam="true">
+				<name>secretkey</name>
+				<param>secretkey</param>
+			</item>
+		</returnvalue>
+	</command>	
+	
+	<command>
+		<name>deleteLoadBalancer</name>
+		<usercommand>true</usercommand>
+		<testcase>927</testcase>
+		<parameters>
+			<item getparam="true">
+			    <name>id</name>
+				<param>lbid2</param>
+			</item>
+		</parameters>
+	</command>
+	
+	
+<!--  Test case 928 - verify that regular user can't delete lb rule belonging to another user -->
+	<command>
+		<name>createUser</name>
+		<parameters>
+			<item random="true">
+			    <name>username</name>
+			</item>
+			<item>
+			    <name>password</name>
+				<value>apiuser</value>
+			</item>
+			<item>
+				<name>firstname</name>
+				<value>apiuser</value>
+			</item>
+			<item>
+				<name>lastname</name>
+				<value>apiuser</value>
+			</item>
+			<item>
+				<name>email</name>
+				<value>apiuser@gmail.com</value>
+			</item>
+			<item>
+				<name>accounttype</name>
+				<value>0</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>userid</param>
+			</item>
+			<item setparam="true">
+				<name>username</name>
+				<param>usernamevar</param>
+			</item>
+			<item setparam="true">
+				<name>account</name>
+				<param>accountvar</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>register</name>
+		<parameters>
+			<item getparam="true">
+			    <name>username</name>
+				<param>usernamevar</param>
+			</item>
+			<item>
+			    <name>domainid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>apikey</name>
+				<param>apikey</param>
+			</item>
+			<item setparam="true">
+				<name>secretkey</name>
+				<param>secretkey</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>deleteLoadBalancer</name>
+		<usercommand>true</usercommand>
+		<testcase>928</testcase>
+		<error>true</error>
+		<parameters>
+			<item getparam="true">
+			    <name>id</name>
+				<param>lbid3</param>
+			</item>
+		</parameters>
+	</command>
+	
+<!--  Test case 939 - verify that you can assign a load balancer to multipe vms -->
+	<command>
+		<name>deployVirtualMachine</name>
+		<parameters>
+			<item getparam="true">
+			    <name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+			<item>
+			    <name>serviceofferingid</name>
+				<value>1</value>
+			</item>
+			<item>
+			    <name>diskofferingid</name>
+				<value>1</value>
+			</item>	
+			<item getparam="true">
+				<name>templateid</name>
+				<param>globaltemplateid</param>
+			</item>
+			<item>
+				<name>account</name>
+				<value>admin</value>
+			</item>
+			<item>
+				<name>displayname</name>
+				<value>namefordisplay</value>
+			</item>
+			<item>
+				<name>group</name>
+				<value>group1</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>vmid1</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>deployVirtualMachine</name>
+		<parameters>
+			<item getparam="true">
+			    <name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+			<item>
+			    <name>serviceofferingid</name>
+				<value>1</value>
+			</item>
+			<item>
+			    <name>diskofferingid</name>
+				<value>1</value>
+			</item>	
+			<item getparam="true">
+				<name>templateid</name>
+				<param>globaltemplateid</param>
+			</item>
+			<item>
+				<name>account</name>
+				<value>admin</value>
+			</item>
+			<item>
+				<name>displayname</name>
+				<value>namefordisplay</value>
+			</item>
+			<item>
+				<name>group</name>
+				<value>group1</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>vmid2</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>associateIpAddress</name>
+		<parameters>
+			<item getparam="true">
+			    <name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+			<item>
+				<name>account</name>
+				<value>admin</value>
+			</item>
+		</parameters>
+		<returnvalue> 
+			<item setparam="true">
+				<name>ipaddress</name>
+				<param>nonsourcenatpublicip</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>createLoadBalancer</name>
+		<parameters>
+			<item random="true">
+			    <name>name</name>
+			</item>
+			<item getparam="true">
+			    <name>ipaddress</name>
+				<param>nonsourcenatpublicip</param>
+			</item>
+			<item>
+			    <name>privateport</name>
+				<value>931</value>
+			</item>
+			<item>
+			    <name>publicport</name>
+				<value>931</value>
+			</item>
+			<item>
+			    <name>algorithm</name>
+				<value>source</value>
+			</item>
+			<item>
+			    <name>domainid</name>
+				<value>1</value>
+			</item>
+			<item>
+			    <name>account</name>
+				<value>admin</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>lbid</param>
+			</item>
+		</returnvalue>
+	</command>	
+	
+	<command>
+		<name>assignToLoadBalancer</name>
+		<testcase>939</testcase>
+		<parameters>
+			<item getparam="true">
+			    <name>id</name>
+				<param>lbid</param>
+			</item>
+			<item getparam="true">
+			    <name>virtualmachineid</name>
+				<param>vmid1</param>
+			</item>
+		</parameters>
+	</command>	
+	
+	<command>
+		<name>assignToLoadBalancer</name>
+		<testcase>939</testcase>
+		<parameters>
+			<item getparam="true">
+			    <name>id</name>
+				<param>lbid</param>
+			</item>
+			<item getparam="true">
+			    <name>virtualmachineid</name>
+				<param>vmid2</param>
+			</item>
+		</parameters>
+	</command>	
+	
+<!--  Test case 978 - try to create 2 load balancers with the same settings -->
+	<command>
+		<name>createLoadBalancer</name>
+		<testcase>978</testcase>
+		<parameters>
+			<item random="true">
+			    <name>name</name>
+			</item>
+			<item getparam="true">
+			    <name>ipaddress</name>
+				<param>nonsourcenatpublicip</param>
+			</item>
+			<item>
+			    <name>privateport</name>
+				<value>978</value>
+			</item>
+			<item>
+			    <name>publicport</name>
+				<value>978</value>
+			</item>
+			<item>
+			    <name>algorithm</name>
+				<value>roundrobin</value>
+			</item>
+			<item>
+			    <name>account</name>
+				<value>admin</value>
+			</item>
+			<item>
+			    <name>domainid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+	</command>	
+	
+	<command>
+		<name>createLoadBalancer</name>
+		<testcase>978</testcase>
+		<error>true</error>
+		<parameters>
+			<item random="true">
+			    <name>name</name>
+			</item>
+			<item getparam="true">
+			    <name>ipaddress</name>
+				<param>nonsourcenatpublicip</param>
+			</item>
+			<item>
+			    <name>privateport</name>
+				<value>978</value>
+			</item>
+			<item>
+			    <name>publicport</name>
+				<value>978</value>
+			</item>
+			<item>
+			    <name>algorithm</name>
+				<value>roundrobin</value>
+			</item>
+			<item>
+			    <name>account</name>
+				<value>admin</value>
+			</item>
+			<item>
+			    <name>domainid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+	</command>	
+	
+<!--  Test case 1017 - verify that you can create a load balancer with source nat ip address -->
+	<command>
+		<name>listRouters</name>
+		<parameters>
+			<item getparam="true">
+			    <name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+			<item>
+				<name>account</name>
+				<value>admin</value>
+			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+		<returnvalue list="true">
+			<name>router</name>
+		    <element>0</element>
+			<item setparam="true">
+				<name>publicip</name>
+				<param>sourcenatpublicip</param>
+			</item>
+		</returnvalue>
+	</command>	
+	
+	<command>
+		<name>createLoadBalancer</name>
+		<testcase>1017</testcase>
+		<parameters>
+			<item random="true">
+			    <name>name</name>
+			</item>
+			<item getparam="true">
+			    <name>ipaddress</name>
+				<param>sourcenatpublicip</param>
+			</item>
+			<item>
+			    <name>privateport</name>
+				<value>1017</value>
+			</item>
+			<item>
+			    <name>publicport</name>
+				<value>1017</value>
+			</item>
+			<item>
+			    <name>algorithm</name>
+				<value>roundrobin</value>
+			</item>
+			<item>
+			    <name>account</name>
+				<value>admin</value>
+			</item>
+			<item>
+			    <name>domainid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+	</command>	
+	
+	
+</loadbalancers>

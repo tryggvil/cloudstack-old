@@ -1,0 +1,194 @@
+### bitmap of permissions at the end of each classname, 1 = ADMIN, 2 = DOMAIN_ADMIN, 4 = READ_ONLY_ADMIN, 8 = USER
+
+### Account commands
+updateAccount=com.vmops.api.commands.UpdateAccountCmd;3
+listAccounts=com.vmops.api.commands.ListAccountsCmd;15
+
+#### User commands
+createUser=com.vmops.api.commands.CreateUserCmd;1
+updateUser=com.vmops.api.commands.UpdateUserCmd;1
+deleteUser=com.vmops.api.commands.DeleteUserCmd;1
+listUsers=com.vmops.api.commands.ListUsersCmd;7
+disableUser=com.vmops.api.commands.DisableUserCmd;3
+enableUser=com.vmops.api.commands.EnableUserCmd;3
+disableAccount=com.vmops.api.commands.DisableAccountCmd;3
+enableAccount=com.vmops.api.commands.EnableAccountCmd;3
+
+#### Domain commands
+createDomain=com.vmops.api.commands.CreateDomainCmd;3
+updateDomain=com.vmops.api.commands.UpdateDomainCmd;3
+deleteDomain=com.vmops.api.commands.DeleteDomainCmd;3
+listDomains=com.vmops.api.commands.ListDomainsCmd;7
+listDomainChildren=com.vmops.api.commands.ListDomainChildrenCmd;7
+
+#### Limit commands
+createResourceLimit=com.vmops.api.commands.CreateResourceLimitCmd;3
+updateResourceLimit=com.vmops.api.commands.UpdateResourceLimitCmd;3
+deleteResourceLimit=com.vmops.api.commands.DeleteResourceLimitCmd;3
+listResourceLimits=com.vmops.api.commands.ListResourceLimitsCmd;7
+
+#### VM commands
+deployVirtualMachine=com.vmops.api.commands.DeployVMCmd;11
+destroyVirtualMachine=com.vmops.api.commands.DestroyVMCmd;15
+rebootVirtualMachine=com.vmops.api.commands.RebootVMCmd;15
+startVirtualMachine=com.vmops.api.commands.StartVMCmd;15
+stopVirtualMachine=com.vmops.api.commands.StopVMCmd;15
+resetPasswordForVirtualMachine=com.vmops.api.commands.ResetVMPasswordCmd;15
+changeServiceForVirtualMachine=com.vmops.api.commands.UpgradeVMCmd;15
+updateVirtualMachine=com.vmops.api.commands.UpdateVMCmd;15
+recoverVirtualMachine=com.vmops.api.commands.RecoverVMCmd;3
+listVirtualMachines=com.vmops.api.commands.ListVMsCmd;15
+listVirtualMachineStatistics=com.vmops.api.commands.ListVMStatsCmd;15
+
+#### snapshot commands
+createSnapshot=com.vmops.api.commands.CreateSnapshotCmd;15
+listSnapshots=com.vmops.api.commands.ListSnapshotsCmd;15
+deleteSnapshot=com.vmops.api.commands.DeleteSnapshotCmd;15
+createVolumeFromSnapshot=com.vmops.api.commands.CreateVolumeFromSnapshotCmd;15
+createSnapshotPolicy=com.vmops.api.commands.CreateSnapshotPolicyCmd;15
+deleteSnapshotPolicies=com.vmops.api.commands.DeleteSnapshotPoliciesCmd;15
+listSnapshotPolicies=com.vmops.api.commands.ListSnapshotPoliciesCmd;15
+
+#### template commands
+createTemplate=com.vmops.api.commands.CreateTemplateCmd;15
+registerTemplate=com.vmops.api.commands.RegisterTemplateCmd;15
+updateTemplate=com.vmops.api.commands.UpdateTemplateCmd;15
+copyTemplate=com.vmops.api.commands.CopyTemplateCmd;15
+deleteTemplate=com.vmops.api.commands.DeleteTemplateCmd;15
+listTemplates=com.vmops.api.commands.ListTemplatesCmd;15
+updateTemplatePermissions=com.vmops.api.commands.UpdateTemplatePermissionsCmd;15
+listTemplatePermissions=com.vmops.api.commands.ListTemplatePermissionsCmd;15
+
+#### iso commands
+attachIso=com.vmops.api.commands.AttachIsoCmd;15
+detachIso=com.vmops.api.commands.DetachIsoCmd;15
+listIsos=com.vmops.api.commands.ListIsosCmd;15
+registerIso=com.vmops.api.commands.RegisterIsoCmd;15
+updateIso=com.vmops.api.commands.UpdateIsoCmd;15
+deleteIso=com.vmops.api.commands.DeleteIsoCmd;15
+
+#### guest OS commands
+listOSTypes=com.vmops.api.commands.ListGuestOsCmd;15
+listOSCategories=com.vmops.api.commands.ListGuestOsCategoriesCmd;15
+
+#### service offering commands
+createServiceOffering=com.vmops.api.commands.CreateServiceOfferingCmd;3
+deleteServiceOffering=com.vmops.api.commands.DeleteServiceOfferingCmd;3
+updateServiceOffering=com.vmops.api.commands.UpdateServiceOfferingCmd;3
+listServiceOfferings=com.vmops.api.commands.ListServiceOfferingsCmd;15
+
+#### disk offering commands
+createDiskOffering=com.vmops.api.commands.CreateDiskOfferingCmd;3
+updateDiskOffering=com.vmops.api.commands.UpdateDiskOfferingCmd;3
+deleteDiskOffering=com.vmops.api.commands.DeleteDiskOfferingCmd;3
+listDiskOfferings=com.vmops.api.commands.ListDiskOfferingsCmd;15
+
+#### vlan commands
+createVlan=com.vmops.api.commands.CreateVlanCmd;1
+deleteVlan=com.vmops.api.commands.DeleteVlanCmd;1
+
+createVlanIpRange=com.vmops.api.commands.CreateVlanIpRangeCmd;1
+deleteVlanIpRange=com.vmops.api.commands.DeleteVlanIpRangeCmd;1
+listVlanIpRanges=com.vmops.api.commands.ListVlanIpRangesCmd;1
+
+createVlanRange=com.vmops.api.commands.CreateVlanRangeCmd;1
+deleteVlanRange=com.vmops.api.commands.DeleteVlanRangeCmd;1
+listVlanRanges=com.vmops.api.commands.ListVlanRangesCmd;1
+
+#### address commands
+associateIpAddress=com.vmops.api.commands.AssociateIPAddrCmd;15
+disassociateIpAddress=com.vmops.api.commands.DisassociateIPAddrCmd;15
+listPublicIpAddresses=com.vmops.api.commands.ListPublicIpAddressesCmd;15
+listPrivateIpAddresses=com.vmops.api.commands.ListPrivateIpAddressesCmd;3
+updatePublicIpRange=com.vmops.api.commands.UpdatePublicIpRangeCmd;1
+updatePrivateIpRange=com.vmops.api.commands.UpdatePrivateIpRangeCmd;1
+
+#### firewall commands
+createNetworkRule=com.vmops.api.commands.CreateNetworkRuleCmd;15
+deleteNetworkRule=com.vmops.api.commands.DeleteNetworkRuleCmd;15
+listNetworkRules=com.vmops.api.commands.ListNetworkRulesCmd;15
+createSecurityGroup=com.vmops.api.commands.CreateSecurityGroupCmd;15
+deleteSecurityGroup=com.vmops.api.commands.DeleteSecurityGroupCmd;15
+assignSecurityGroup=com.vmops.api.commands.AssignSecurityGroupCmd;15
+removeSecurityGroup=com.vmops.api.commands.RemoveSecurityGroupCmd;15
+listSecurityGroups=com.vmops.api.commands.ListSecurityGroupsCmd;15
+listSecurityGroupsByVM=com.vmops.api.commands.ListSecurityGroupsByVMCmd;15
+
+#### load balancer commands
+createLoadBalancer=com.vmops.api.commands.CreateLoadBalancerCmd;15
+deleteLoadBalancer=com.vmops.api.commands.DeleteLoadBalancerCmd;15
+removeFromLoadBalancer=com.vmops.api.commands.RemoveFromLoadBalancerCmd;15
+assignToLoadBalancer=com.vmops.api.commands.AssignToLoadBalancerCmd;15
+listLoadBalancers=com.vmops.api.commands.ListLoadBalancersCmd;15
+listLoadBalancerInstances=com.vmops.api.commands.ListLoadBalancerInstancesCmd;15
+
+#### router commands
+startRouter=com.vmops.api.commands.StartRouterCmd;7
+rebootRouter=com.vmops.api.commands.RebootRouterCmd;7
+stopRouter=com.vmops.api.commands.StopRouterCmd;7
+listRouters=com.vmops.api.commands.ListRoutersCmd;7
+
+#### console proxy commands
+startConsoleProxy=com.vmops.api.commands.StartConsoleProxyCmd;1
+rebootConosoleProxy=com.vmops.api.commands.RebootConsoleProxyCmd;1
+stopConsoleProxy=com.vmops.api.commands.StopConsoleProxyCmd;1
+listConsoleProxies=com.vmops.api.commands.ListProxiesCmd;1
+
+#### configuration commands
+updateConfiguration=com.vmops.api.commands.UpdateCfgCmd;1
+listConfigurations=com.vmops.api.commands.ListCfgsByCmd;1
+
+#### pod commands
+createPod=com.vmops.api.commands.CreatePodCmd;1
+updatePod=com.vmops.api.commands.UpdatePodCmd;1
+deletePod=com.vmops.api.commands.DeletePodCmd;1
+listPods=com.vmops.api.commands.ListPodsByCmd;1
+
+#### zone commands
+createZone=com.vmops.api.commands.CreateZoneCmd;1
+updateZone=com.vmops.api.commands.UpdateZoneCmd;1
+deleteZone=com.vmops.api.commands.DeleteZoneCmd;1
+listZones=com.vmops.api.commands.ListZonesByCmd;15
+
+#### events commands
+listEvents=com.vmops.api.commands.ListEventsCmd;15
+
+#### alerts commands
+listAlerts=com.vmops.api.commands.ListAlertsCmd;3
+
+#### system capacity commands
+listCapacity=com.vmops.api.commands.ListCapacityCmd;3
+
+#### host commands
+addHost=com.vmops.api.commands.AddHostCmd;1
+reconnectHost=com.vmops.api.commands.ReconnectHostCmd;1
+updateHost=com.vmops.api.commands.UpdateHostCmd;1
+deleteHost=com.vmops.api.commands.DeleteHostCmd;1
+prepareHostForMaintenance=com.vmops.api.commands.PrepareForMaintenanceCmd;1
+cancelHostMaintenance=com.vmops.api.commands.CancelMaintenanceCmd;1
+listHosts=com.vmops.api.commands.ListHostsCmd;1
+addSecondaryStorage=com.vmops.api.commands.AddSecondaryStorageCmd;1
+listHostStats=com.vmops.api.commands.ListHostStatsCmd;1
+
+#### volume commands
+attachVolume=com.vmops.api.commands.AttachVolumeCmd;15
+detachVolume=com.vmops.api.commands.DetachVolumeCmd;15
+createVolume=com.vmops.api.commands.CreateVolumeCmd;15
+deleteVolume=com.vmops.api.commands.DeleteVolumeCmd;15
+listVolumes=com.vmops.api.commands.ListVolumesCmd;15
+
+#### registration command:  FIXME -- this really should be something in management server that
+####                                 generates a new key for the user and they just have to
+####                                 use that key...the key is stored in the db associated w/
+####                                 the userId...every request to the developer API should be
+####                                 checked against the key
+register=com.vmops.api.commands.RegisterCmd;15
+
+### async-query command
+queryAsyncJobResult=com.vmops.api.commands.QueryAsyncJobResultCmd;15
+listAsyncJobs=com.vmops.api.commands.ListAsyncJobsCmd;15
+
+#### storage pools commands
+listStoragePools=com.vmops.api.commands.ListStoragePoolsCmd;1
+listStoragePoolsAndHosts=com.vmops.api.commands.ListStoragePoolsAndHostsCmd;1
+createStoragePool=com.vmops.api.commands.CreateStoragePoolCmd;1

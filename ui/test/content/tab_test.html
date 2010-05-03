@@ -1,0 +1,283 @@
+<!-- Submenus -->
+	<div class="submenu_links">
+        <div class="submenu_links_on" id="submenu_user">Accounts</div>
+        <div class="submenu_links_off" id="submenu_domain">Domains</div>
+	</div>
+<!-- ***** user (begin) ************************************************************************* -->
+<div class="maincontent" style="display: block;" id="submenu_content_user">
+    <div id="maincontent_title">      
+        <h1>
+            Accounts</h1>
+        <a class="add_userbutton" href="#" id="user_action_new"></a>
+    </div>
+    <div class="grid_container">
+        <div class="grid_header">           
+            <div class="grid_genheader_cell" style="width: 5%;">
+                <div class="grid_headertitles">
+                    ID</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 10%;">
+                <div class="grid_headertitles">
+                    User name</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 10%;">
+                <div class="grid_headertitles">
+                    Account</div>
+            </div>
+             <div class="grid_genheader_cell" style="width: 5%;">
+                <div class="grid_headertitles">
+                    Role</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 10%;">
+                <div class="grid_headertitles">
+                    Domain</div>
+            </div>          
+            <div class="grid_genheader_cell" style="width: 10%;">
+                <div class="grid_headertitles">
+                    Email</div>
+            </div>
+             <div class="grid_genheader_cell" style="width: 10%;">
+                <div class="grid_headertitles">
+                    First name</div>
+            </div>
+             <div class="grid_genheader_cell" style="width: 10%;">
+                <div class="grid_headertitles">
+                    Last name</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 20%;">
+                <div class="grid_headertitles">
+                </div>
+            </div>
+        </div>
+        <div id="grid_content">
+        </div>
+    </div>
+</div>
+<!-- user Template -->
+<div id="user_template" style="display: none">   
+    <div class="grid_smallgenrow_cell" style="width: 5%;">
+        <div class="netgrid_celltitles" id="user_userid">
+        </div>
+    </div>
+    <div class="grid_smallgenrow_cell" style="width: 10%;">
+        <div class="netgrid_celltitles" id="user_username">
+        </div>
+    </div>
+    <div class="grid_smallgenrow_cell" style="width: 10%;">
+        <div class="netgrid_celltitles" id="user_account">
+        </div>
+    </div>
+    <div class="grid_smallgenrow_cell" style="width: 5%;">
+        <div class="netgrid_celltitles" id="user_role">
+        </div>
+    </div>
+    <div class="grid_smallgenrow_cell" style="width: 10%;">
+        <div class="netgrid_celltitles" id="user_domain">
+        </div>
+    </div>
+    <div class="grid_smallgenrow_cell" style="width: 10%;">
+        <div class="netgrid_celltitles" id="user_email">
+        </div>
+    </div>
+    <div class="grid_smallgenrow_cell" style="width: 10%;">
+        <div class="netgrid_celltitles" id="user_firstname">
+        </div>
+    </div>
+    <div class="grid_smallgenrow_cell" style="width: 10%;">
+        <div class="netgrid_celltitles" id="user_lastname">
+        </div>
+    </div>
+    <div class="grid_smallgenrow_cell" style="width: 20%;">
+        <div class="netgrid_celltitles">
+            <a href="#" id="edit_link">Edit</a> | <a href="#" id="change_password_link">Change password</a> | <a href="#" id="delete_link">Delete</a></div>
+    </div>
+</div>
+
+<!-- Add user Dialog -->
+<div id="dialog_add_user" title="Add New user" style="display:none">
+	<p>Please fill in the following data to add a new user.</p>
+	<div class="dialog_formcontent">
+		<form action="#" method="post" id="form_acquire">
+			<ol>		
+				<li>
+					<label for="add_user_username">User name:</label>
+					<input class="text" type="text" name="add_user_username" id="add_user_username"/>
+					<div id="add_user_username_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
+				</li>
+				<li>
+					<label for="add_user_password">Password:</label>
+					<input class="text" type="password" name="add_user_password" id="add_user_password"/>
+					<div id="add_user_password_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
+				</li>
+				<li>
+					<label for="add_user_email">Email:</label>
+					<input class="text" type="text" name="add_user_email" id="add_user_email"/>
+					<div id="add_user_email_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
+				</li>
+				<li>
+					<label for="add_user_firstname">First name:</label>
+					<input class="text" type="text" name="add_user_firstname" id="add_user_firstname"/>
+					<div id="add_user_firstname_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
+				</li>
+				<li>
+					<label for="add_user_lastname">Last name:</label>
+					<input class="text" type="text" name="add_user_lastname" id="add_user_lastname"/>
+					<div id="add_user_lastname_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
+				</li>
+				<li>
+					<label for="add_user_account">Account:</label>
+					<input class="text" type="text" name="add_user_account" id="add_user_account"/>
+					<div id="add_user_account_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>				
+				</li>
+				<li>
+				    <label for="add_user_account_type">Role:</label>
+				    <select class="select" id="add_user_account_type">
+                      <option value="0">User</option>
+                      <option value="1">Admin</option>
+         		    </select>
+				</li>
+				<li>
+					<label for="add_user_domain">Domain:</label>
+					<select class="select" name="add_user_domain" id="add_user_domain">						
+					</select>
+				</li>		
+			</ol>
+		</form>
+	</div>
+</div>
+
+<!-- Edit User Dialog -->
+<div id="dialog_edit_user" title="Edit User" style="display:none">
+	<p>Please review your changes before clicking 'Save'</p>
+	<div class="dialog_formcontent">
+		<form action="#" method="post" id="form2">
+			<ol>		
+				<li>
+					<label for="edit_user_username">User name:</label>
+					<input class="text" type="text" name="edit_user_username" id="edit_user_username"/>
+					<div id="edit_user_username_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
+				</li>
+				<li>
+					<label for="edit_user_email">Email:</label>
+					<input class="text" type="text" name="edit_user_email" id="edit_user_email"/>
+					<div id="edit_user_email_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
+				</li>
+				<li>
+					<label for="edit_user_firstname">First name:</label>
+					<input class="text" type="text" name="edit_user_firstname" id="edit_user_firstname"/>
+					<div id="edit_user_firstname_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
+				</li>
+				<li>
+					<label for="edit_user_lastname">Last name:</label>
+					<input class="text" type="text" name="edit_user_lastname" id="edit_user_lastname"/>
+					<div id="edit_user_lastname_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
+				</li>				
+			</ol>
+		</form>
+	</div>
+</div>
+
+<!-- Change Password Dialog -->
+<div id="dialog_change_password" title="Change Password" style="display:none">
+	<p>Please review your changes before clicking 'Save'</p>
+	<div class="dialog_formcontent">
+		<form action="#" method="post" id="form4">
+			<ol>					
+				<li>
+					<label for="change_password_password1">Password:</label>
+					<input class="text" type="password" name="change_password_password1" id="change_password_password1"/>
+					<div id="change_password_password1_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
+				</li>							
+			</ol>
+		</form>
+	</div>
+</div>
+<!-- ***** user (end) *************************************************************************** -->
+
+<!-- ***** Domain (begin) ************************************************************************** -->
+<div class="maincontent" style="display: none;" id="submenu_content_domain">
+    <div id="maincontent_title">       
+        <h1>
+            Domains</h1>
+        <a class="add_domainbutton" href="#" id="domain_action_new"></a>
+    </div>
+    <div class="grid_container">
+        <div class="grid_header">
+            <div class="grid_genheader_cell" style="width: 10%;">
+                <div class="grid_headertitles">
+                    ID</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 20%;">
+                <div class="grid_headertitles">
+                    Name</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 20%;">
+                <div class="grid_headertitles">
+                    Parent</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 10%;">
+                <div class="grid_headertitles">
+                </div>
+            </div>
+        </div>
+        <div id="grid_content">
+        </div>
+    </div>
+</div>
+<!-- Domain Template -->
+<div id="domain_template" style="display: none">
+    <div class="grid_smallgenrow_cell" style="width: 10%;">
+        <div class="netgrid_celltitles" id="domain_id">
+        </div>
+    </div>
+    <div class="grid_smallgenrow_cell" style="width: 20%;">
+        <div class="netgrid_celltitles" id="domain_name">
+        </div>
+    </div>
+    <div class="grid_smallgenrow_cell" style="width: 20%;">
+        <div class="netgrid_celltitles" id="parent_domain_name">
+        </div>
+    </div>
+    <div class="grid_smallgenrow_cell" style="width: 10%;" id="domain_links">
+        <div class="netgrid_celltitles">
+            <a href="#" id="edit_link">Edit</a> | <a href="#" id="delete_link">Delete</a></div>
+    </div>
+</div>
+
+<!-- Add Domain Dialog -->
+<div id="dialog_add_domain" title="Add New Domain" style="display:none">
+	<p>Please fill in the following data to add a new domain.</p>
+	<div class="dialog_formcontent">
+		<form action="#" method="post" id="form1">
+			<ol>		
+				<li>
+					<label for="add_domain_name">Name:</label>
+					<input class="text" type="text" name="add_domain_name" id="add_domain_name"/>
+					<div id="add_domain_name_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
+				</li>	
+				<li>
+					<label for="add_domain_parent">Parent domain:</label>
+					<select class="select" name="add_domain_parent" id="add_domain_parent">						
+					</select>
+				</li>		
+			</ol>
+		</form>
+	</div>
+</div>
+<!-- Edit Domain Dialog -->
+<div id="dialog_edit_domain" title="Edit Domain" style="display:none">
+	<p>Please review your changes before clicking 'Save'</p>
+	<div class="dialog_formcontent">
+		<form action="#" method="post" id="form3">
+			<ol>		
+				<li>
+					<label for="edit_domain_name">Name:</label>
+					<input class="text" type="text" name="edit_domain_name" id="edit_domain_name"/>
+					<div id="edit_domain_name_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
+				</li>					
+			</ol>
+		</form>
+	</div>
+</div>
+<!-- ***** Domain (end) **************************************************************************** -->
+

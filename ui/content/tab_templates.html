@@ -1,0 +1,466 @@
+<div class="submenu_links">		
+    <div class="submenu_links_on" id="submenu_template">Template</div>
+    <div class="submenu_links_off" id="submenu_iso">ISO</div>       
+</div>
+
+
+<!-- *** Template (begin) *** -->
+<div class="maincontent" id="submenu_content_template" style="display:block;">
+	<div id="maincontent_title">
+    	<div class="maintitle_icon"> <img src="images/templatestitle_icons.gif" title="templates" /> </div>
+		<h1>Templates</h1>
+		<a class="add_newtemplatebutton" id="template_action_new" href="#" style="display:none"></a>
+        
+		<div class="search_formarea">
+			<form action="#" method="post">
+				<ol>
+					<li><input class="text" type="text" name="search_input" id="search_input" /></li>
+				</ol>
+			</form>
+			<a class="search_button" href="#" id="search_button"></a>
+			
+			<div id="advanced_search_link" class="advsearch_link">Advanced</div>
+            <div id="advanced_search" class="adv_searchpopup" style="display: none;">
+                <div class="adv_searchformbox">
+                    <h3>Advance Search</h3>
+                    <form action="#" method="post">
+                    <ol>
+                        <li>
+                            <label for="filter">Name:</label>
+                            <input class="text" type="text" name="adv_search_name" id="adv_search_name" />
+                        </li>                       
+                    </ol>
+                    </form>
+                    <div id="advanced_search_close" class="adv_search_actionbox">
+                        <a href="#">Close </a>
+                    </div>
+                </div>
+            </div>
+			
+		</div>
+	</div>
+    <div class="filter_actionbox">
+    	<div class="selection_formarea">
+        	<form action="#" method="post">
+            	<label for="filter">Filters:</label>
+				<select class="select" id="template_type">
+                  <option value="true">Public</option>
+                  <option value="false">Private</option>
+         		</select>
+			</form>
+         </div>
+    </div>
+		
+	<div class="grid_container">
+    	<div id="loading_gridtable" class="loading_gridtable">
+                  <div class="loading_gridanimation"></div>
+                   <p>Loading...</p>
+             </div>
+		<div class="grid_header">
+			<!--
+			<div class="temp_gridheader_cell4">
+				<div class="grid_headertitles">Type</div>
+			</div>
+			-->
+			<div class="grid_genheader_cell" style="width:5%;">
+				<div class="grid_headertitles">ID</div>
+			</div>
+			<div class="grid_genheader_cell" style="width:15%;">
+				<div class="grid_headertitles">Name</div>
+			</div>
+			<div class="grid_genheader_cell" style="width:20%;">
+				<div class="grid_headertitles">Display Text</div>
+			</div>
+			<div class="grid_genheader_cell" style="width:10%;">
+				<div class="grid_headertitles">Status</div>
+			</div>
+            <div class="grid_genheader_cell" style="width:10%;">
+				<div class="grid_headertitles">Attributes</div>
+			</div>
+			<div class="grid_genheader_cell" style="width:18%;">
+				<div class="grid_headertitles">OS Type</div>
+			</div>
+            <div class="grid_genheader_cell" style="width:10%;">
+				<div class="grid_headertitles">Created</div>
+			</div>
+            <div class="grid_genheader_cell" style="width:8%;">
+				<div class="grid_headertitles"></div>
+			</div>
+		</div>
+		<div id="grid_content">
+        	
+        </div>
+    </div>
+    <div id="pagination_panel" class="pagination_panel" style="display:none;">
+    	<p id="grid_rows_total" />
+    	<div class="pagination_actionbox">
+        	<div class="pagination_actions">
+            	<div class="pagination_actionicon"><img src="images/pagination_refresh.gif" title="refresh" /></div>
+                <a id="refresh" href="#"> Refresh</a>
+            </div>
+            <div class="pagination_actions" id="prevPage_div">
+            	<div class="pagination_actionicon"><img src="images/pagination_previcon.gif" title="prev" /></div>
+                <a id="prevPage" href="#"> Prev</a>
+            </div>
+            <div class="pagination_actions" id="nextPage_div">
+            	<div class="pagination_actionicon"><img src="images/pagination_nexticon.gif" title="next" /></div>
+                <a id="nextPage" href="#"> Next</a>
+            </div>
+        </div>
+    </div>
+</div>	
+
+<!-- VM Template template -->
+<div style="height:25px;display:none;" id="vm_template_template">  
+    <div id="row_container">  
+	    <!--
+	    <div class="tempgrid_row_cell4">
+		    <div class="netgrid_celltitles">
+			    <div class="temptypeicons"><img src="images/temp_windowsicon.gif" alt="windows" /></div>
+		    </div>
+	    </div>
+	    -->
+	    <div class="grid_smallgenrow_cell" style="width:5%;" >
+		    <div class="netgrid_celltitles" id="template_id"></div>
+	    </div>
+	    <div class="grid_smallgenrow_cell" style="width:15%;" >
+		    <div class="netgrid_celltitles" id="template_name"></div>
+	    </div>
+	    <div class="grid_smallgenrow_cell" style="width:20%;" >
+		    <div class="netgrid_celltitles" id="template_display_text"></div>
+	    </div>
+	    <div class="grid_smallgenrow_cell" style="width:10%;" >
+		    <div class="netgrid_celltitles" id="template_status"></div>
+	    </div>
+	    <div class="grid_smallgenrow_cell" style="width:10%;" >
+		    <div class="netgrid_celltitles">
+		        <!--
+			    <div class="tempbiticons"><img src="images/64bit_icon.gif" alt="bits" id="template_bit" /></div>			
+			    <div class="tempbiticons"><img src="images/hvm_selectedicon.gif" alt="HVM selected" id="template_hvm" /></div>
+			    !-->
+			    <div class="tempbiticons"><img src="images/password_selectedicon.gif" alt="password enabled" id="template_password"/></div>			
+		    </div>
+	    </div>
+	    <div class="grid_smallgenrow_cell" style="width:18%;" >
+		    <div class="netgrid_celltitles" id="template_ostype"></div>
+	    </div>
+	    <div class="grid_smallgenrow_cell" style="width:10%;" >
+		    <div class="netgrid_celltitles" id="template_created"></div>
+	    </div>
+	    <div class="grid_smallgenrow_cell" id="template_crud" style="width:8%;">
+		    <div class="netgrid_celltitles">
+			    <a href="#" id="template_edit"> Edit</a> | 
+			    <a href="#" id="template_delete">Delete</a>
+		    </div>
+	    </div>
+	</div>
+</div>
+
+<!-- Edit Template Dialog -->
+<div id="dialog_edit_template" title="Edit Template" style="display:none">
+	<p>Please review your changes before clicking 'Change'</p>
+	<div class="dialog_formcontent">
+		<form action="#" method="post" id="form_acquire">
+			<ol>
+				<li>
+					<label for="user_name">Name:</label>
+					<input class="text" type="text" name="edit_template_name" id="edit_template_name" style="width:250px"/>
+					<div id="edit_template_name_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div> 
+				</li>
+				<li>
+					<label for="user_name">Display Text:</label>
+					<input class="text" type="text" name="edit_template_display_text" id="edit_template_display_text" style="width:250px"/>
+					<div id="edit_template_display_text_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div>
+				</li>
+				<!--
+				<li id="edit_template_public_container" style="display:none">
+					<label for="user_name">Public:</label>
+					<select class="select" name="edit_template_public" id="edit_template_public">
+						<option value="true">Yes</option>
+						<option value="false">No</option>
+					</select>
+				</li>
+				!-->
+			</ol>
+		</form>
+	</div>
+</div>
+
+<!-- Add Template Dialog -->
+<div id="dialog_add_template" title="Add Template" style="display:none">
+	<p>Please enter the following data to create your new template</p>
+	<div class="dialog_formcontent">
+		<form action="#" method="post" id="form_acquire">
+			<ol>
+				<li>
+					<label for="user_name">Name:</label>
+					<input class="text" type="text" name="add_template_name" id="add_template_name" style="width:250px"/>
+					<div id="add_template_name_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div>
+				</li>
+				<li>
+					<label for="user_name">Display Text:</label>
+					<input class="text" type="text" name="add_template_display_text" id="add_template_display_text" style="width:250px"/>
+					<div id="add_template_display_text_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div>
+				</li>
+				<li>
+					<label for="user_name">URL:</label>
+					<input class="text" type="text" name="add_template_url" id="add_template_url" style="width:250px"/>
+					<div id="add_template_url_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div>
+				</li>					
+				<li>
+					<label for="add_template_os_type">OS Type:</label>
+					<select class="select" name="add_template_os_type" id="add_template_os_type">
+					</select>
+				</li>	
+				<li>
+					<label for="add_template_format">Format:</label>
+					<select class="select" name="add_template_format" id="add_template_format">
+						<!--
+						<option value="QCOW2">QCOW2</option>
+						<option value="RAW">RAW</option>
+						-->
+						<option value="VHD">VHD</option>
+					</select>
+				</li>	
+				<!--		
+				<li>
+					<label for="user_name">Require HVM?:</label>
+					<select class="select" name="add_template_hvm" id="add_template_hvm">
+						<option value="true">Yes</option>
+						<option value="false">No</option>
+					</select>
+				</li>
+				<li>
+					<label for="user_name">OS Arch:</label>
+					<select class="select" name="add_template_os" id="add_template_os">
+						<option value="64">64 Bit</option>
+						<option value="32">32 Bit</option>
+					</select>
+				</li>
+				!-->
+				<li>
+					<label for="user_name">Password Enabled?:</label>
+					<select class="select" name="add_template_password" id="add_template_password">
+						<option value="true">Yes</option>
+						<option value="false">No</option>
+					</select>
+				</li>
+			</ol>
+		</form>
+	</div>
+</div>
+<!-- *** Template (end) *** -->
+
+
+
+
+
+
+<!-- *** ISO (begin) *** -->
+<div class="maincontent" id="submenu_content_iso" style="display:block;">
+	<div id="maincontent_title">
+    	<div class="maintitle_icon"> <img src="images/isotitle_icons.gif" title="templates" /> </div>
+		<h1>ISO</h1>
+		<a class="add_newisobutton" id="iso_action_new" href="#" style="display:none"></a>
+        
+		<div class="search_formarea">
+			<form action="#" method="post">
+				<ol>
+					<li><input class="text" type="text" name="search_input" id="search_input" /></li>
+				</ol>
+			</form>
+			<a class="search_button" id="search_button" href="#"></a>
+			
+			<div id="advanced_search_link" class="advsearch_link">Advanced</div>
+            <div id="advanced_search" class="adv_searchpopup" style="display: none;">
+                <div class="adv_searchformbox">
+                    <h3>Advance Search</h3>
+                    <form action="#" method="post">
+                    <ol>
+                        <li>
+                            <label for="filter">Name:</label>
+                            <input class="text" type="text" name="adv_search_name" id="adv_search_name" />
+                        </li>                       
+                    </ol>
+                    </form>
+                    <div id="advanced_search_close" class="adv_search_actionbox">
+                        <a href="#">Close </a>
+                    </div>
+                </div>
+            </div>
+			
+		</div>
+	</div>
+    <div class="filter_actionbox">
+    	<div class="selection_formarea">
+        	<form action="#" method="post">
+            	<label for="filter">Filters:</label>
+				<select class="select" id="iso_type">
+                  <option value="true">Public</option>
+                  <option value="false">Private</option>
+         		</select>
+			</form>
+         </div>
+    </div>
+		
+	<div class="grid_container">
+    	<div id="loading_gridtable" class="loading_gridtable">
+                  <div class="loading_gridanimation"></div>
+                   <p>Loading...</p>
+             </div>
+		<div class="grid_header">
+			<!--
+			<div class="temp_gridheader_cell4">
+				<div class="grid_headertitles">Type</div>
+			</div>
+			-->
+            <div class="grid_genheader_cell" style="width:5%;">
+				<div class="grid_headertitles">ID</div>
+			</div>
+			<div class="grid_genheader_cell" style="width:20%;">
+				<div class="grid_headertitles">Name</div>
+			</div>
+			<div class="grid_genheader_cell" style="width:25%;">
+				<div class="grid_headertitles">Display Text</div>
+			</div>			
+			<div class="grid_genheader_cell" style="width:20%;">
+				<div class="grid_headertitles">Status</div>
+			</div>
+            <div class="grid_genheader_cell" style="width:11%;">
+				<div class="grid_headertitles">Bootable</div>
+			</div>  			
+            <div class="grid_genheader_cell" style="width:10%;">
+				<div class="grid_headertitles">Created</div>
+			</div>
+             <div class="grid_genheader_cell" style="width:8%;">
+				<div class="grid_headertitles"></div>
+			</div>
+		</div>
+		<div id="grid_content">
+        	
+        </div>
+    </div>
+    <div id="pagination_panel" class="pagination_panel" style="display:none;">
+    	<p id="grid_rows_total" />
+    	<div class="pagination_actionbox">
+        	<div class="pagination_actions">
+            	<div class="pagination_actionicon"><img src="images/pagination_refresh.gif" title="refresh" /></div>
+                <a id="refresh" href="#"> Refresh</a>
+            </div>
+            <div class="pagination_actions" id="prevPage_div">
+            	<div class="pagination_actionicon"><img src="images/pagination_previcon.gif" title="prev" /></div>
+                <a id="prevPage" href="#"> Prev</a>
+            </div>
+            <div class="pagination_actions" id="nextPage_div">
+            	<div class="pagination_actionicon"><img src="images/pagination_nexticon.gif" title="next" /></div>
+                <a id="nextPage" href="#"> Next</a>
+            </div>
+        </div>
+    </div>
+</div>	
+
+<!-- ISO template -->
+<div style="height:25px;display:none;" id="vm_iso_template">   
+    <div id="row_container">  
+	    <!--
+	    <div class="tempgrid_row_cell4">
+		    <div class="netgrid_celltitles">
+			    <div class="temptypeicons"><img src="images/temp_windowsicon.gif" alt="windows" /></div>
+		    </div>
+	    </div>
+	    -->
+	    <div class="grid_smallgenrow_cell" style="width:5%;">
+		    <div class="netgrid_celltitles" id="iso_id"></div>
+	    </div>
+	    <div class="grid_smallgenrow_cell" style="width:20%;">
+		    <div class="netgrid_celltitles" id="iso_name"></div>
+	    </div>
+	    <div class="grid_smallgenrow_cell" style="width:25%;">
+		    <div class="netgrid_celltitles" id="iso_display_text"></div>
+	    </div>	
+	    <div class="grid_smallgenrow_cell" style="width:20%;">
+		    <div class="netgrid_celltitles" id="iso_status"></div>
+	    </div>	
+	    <div class="grid_smallgenrow_cell" style="width:11%;">
+		    <div class="netgrid_celltitles" id="iso_bootable"></div>
+	    </div>
+	    <div class="grid_smallgenrow_cell" style="width:10%;">
+		    <div class="netgrid_celltitles" id="iso_created"></div>
+	    </div>
+	    <div class="grid_smallgenrow_cell" id="iso_crud" style="width:8%;">
+		    <div class="netgrid_celltitles">
+			    <a href="#" id="iso_edit">Edit</a> |
+			    <a href="#" id="iso_delete">Delete</a>
+		    </div>
+	    </div>
+	</div>
+</div>
+
+<!-- Edit ISO Dialog -->
+<div id="dialog_edit_iso" title="Edit iso" style="display:none">
+	<p>Please review your changes before clicking 'Change'</p>
+	<div class="dialog_formcontent">
+		<form action="#" method="post" id="form1">
+			<ol>
+				<li>
+					<label for="user_name">Name:</label>
+					<input class="text" type="text" name="edit_iso_name" id="edit_iso_name" style="width:250px"/>
+					<div id="edit_iso_name_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div>
+				</li>
+				<li>
+					<label for="user_name">Display Text:</label>
+					<input class="text" type="text" name="edit_iso_display_text" id="edit_iso_display_text" style="width:250px"/>
+					<div id="edit_iso_display_text_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div>
+				</li>
+				<!--				
+				<li id="edit_iso_public_container" style="display:none">
+					<label for="user_name">Public:</label>
+					<select class="select" name="edit_iso_public" id="edit_iso_public">
+						<option value="true">Yes</option>
+						<option value="false">No</option>
+					</select>
+				</li>	
+				-->			
+			</ol>
+		</form>
+	</div>
+</div>
+
+<!-- Add iso Dialog -->
+<div id="dialog_add_iso" title="Add iso" style="display:none">
+	<p>Please enter the following data to create your new iso</p>
+	<div class="dialog_formcontent">
+		<form action="#" method="post" id="form2">
+			<ol>
+				<li>
+					<label for="user_name">Name:</label>
+					<input class="text" type="text" name="add_iso_name" id="add_iso_name" style="width:250px"/>
+					<div id="add_iso_name_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div>
+				</li>
+				<li>
+					<label for="user_name">Display Text:</label>
+					<input class="text" type="text" name="add_iso_display_text" id="add_iso_display_text" style="width:250px"/>
+					<div id="add_iso_display_text_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div>
+				</li>
+				<li>
+					<label for="user_name">URL:</label>
+					<input class="text" type="text" name="add_iso_url" id="add_iso_url" style="width:250px"/>
+					<div id="add_iso_url_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div>
+				</li>					
+				<li>
+					<label for="add_iso_public">Bootable:</label>
+					<select class="select" name="add_iso_bootable" id="add_iso_bootable">
+						<option value="true">Yes</option>
+						<option value="false">No</option>
+					</select>
+				</li>
+				<li>
+					<label for="add_iso_os_type">OS Type:</label>
+					<select class="select" name="add_iso_os_type" id="add_iso_os_type">
+					</select>
+				</li>
+			</ol>
+		</form>
+	</div>
+</div>
+<!-- *** ISO (end) *** -->

@@ -1,0 +1,1004 @@
+<volumes>
+
+<!--  Test case 1028 - attach volume to the running vm -->
+	<command>
+		<name>deployVirtualMachine</name>
+		<parameters>
+			<item getparam="true">
+			    <name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+			<item>
+			    <name>serviceofferingid</name>
+				<value>1</value>
+			</item>
+			<item>
+			    <name>diskofferingid</name>
+				<value>1</value>
+			</item>	
+			<item getparam="true">
+				<name>templateid</name>
+				<param>globaltemplateid</param>
+			</item>
+			<item>
+				<name>account</name>
+				<value>admin</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>createVolume</name>
+		<parameters>
+			<item>
+				<name>account</name>
+				<value>admin</value>
+			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
+			</item>
+			<item random="true">
+				<name>name</name>
+			</item>
+			<item getparam="true">
+				<name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+			<item>
+				<name>diskofferingid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>volumeid</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>attachVolume</name>
+		<testcase>1028</testcase>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>volumeid</param>
+			</item>
+			<item getparam="true">
+				<name>virtualmachineid</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>
+	
+
+<!--  Test case 1029 - attach volume to stopped vm -->
+	<command>
+		<name>stopVirtualMachine</name>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>createVolume</name>
+		<parameters>
+			<item>
+				<name>account</name>
+				<value>admin</value>
+			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
+			</item>
+			<item random="true">
+				<name>name</name>
+			</item>
+			<item getparam="true">
+				<name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+			<item>
+				<name>diskofferingid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>volumeid</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>attachVolume</name>
+		<testcase>1029</testcase>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>volumeid</param>
+			</item>
+			<item getparam="true">
+				<name>virtualmachineid</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	
+<!--  Test case 1030 - verify that type of the volume is DATADISK always-->
+	<command>
+		<name>createVolume</name>
+		<testcase>1030</testcase>
+		<parameters>
+			<item>
+				<name>account</name>
+				<value>admin</value>
+			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
+			</item>
+			<item random="true">
+				<name>name</name>
+			</item>
+			<item getparam="true">
+				<name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+			<item>
+				<name>diskofferingid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item>
+				<name>type</name>
+				<value>DATADISK</value>
+			</item>
+		</returnvalue>
+	</command>	
+	
+	
+<!--  Test case 1031 - verify that you can detach DataDisk from the vm-->
+	<command>
+		<name>deployVirtualMachine</name>
+		<parameters>
+			<item getparam="true">
+			    <name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+			<item>
+			    <name>serviceofferingid</name>
+				<value>1</value>
+			</item>
+			<item>
+			    <name>diskofferingid</name>
+				<value>1</value>
+			</item>	
+			<item getparam="true">
+				<name>templateid</name>
+				<param>globaltemplateid</param>
+			</item>
+			<item>
+				<name>account</name>
+				<value>admin</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>listVolumes</name>
+		<parameters>
+			<item getparam="true">
+				<name>virtualmachineid</name>
+				<param>vmid</param>
+			</item>
+			<item>
+				<name>type</name>
+				<value>DATADISK</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>datavolumeid</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>detachVolume</name>
+		<testcase>1031</testcase>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>datavolumeid</param>
+			</item>
+		</parameters>
+	</command>
+
+
+<!--  Test case 1033 - verify that you can't detach RootDisk from the vm-->
+	<command>
+		<name>listVolumes</name>
+		<parameters>
+			<item getparam="true">
+				<name>virtualmachineid</name>
+				<param>vmid</param>
+			</item>
+			<item>
+				<name>type</name>
+				<value>ROOT</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>rootvolumeid</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>detachVolume</name>
+		<testcase>1033</testcase>
+		<error>true</error>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>datavolumeid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	
+<!--  Test case 1035 - attach 5 volumes to Running vm-->
+	<command>
+		<name>deployVirtualMachine</name>
+		<parameters>
+			<item getparam="true">
+			    <name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+			<item>
+			    <name>serviceofferingid</name>
+				<value>1</value>
+			</item>
+			<item>
+			    <name>diskofferingid</name>
+				<value>1</value>
+			</item>	
+			<item getparam="true">
+				<name>templateid</name>
+				<param>globaltemplateid</param>
+			</item>
+			<item>
+				<name>account</name>
+				<value>admin</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>createVolume</name>
+		<parameters>
+			<item>
+				<name>account</name>
+				<value>admin</value>
+			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
+			</item>
+			<item random="true">
+				<name>name</name>
+			</item>
+			<item getparam="true">
+				<name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+			<item>
+				<name>diskofferingid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>volume1</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>createVolume</name>
+		<parameters>
+			<item>
+				<name>account</name>
+				<value>admin</value>
+			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
+			</item>
+			<item random="true">
+				<name>name</name>
+			</item>
+			<item getparam="true">
+				<name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+			<item>
+				<name>diskofferingid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>volume2</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>createVolume</name>
+		<parameters>
+			<item>
+				<name>account</name>
+				<value>admin</value>
+			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
+			</item>
+			<item random="true">
+				<name>name</name>
+			</item>
+			<item getparam="true">
+				<name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+			<item>
+				<name>diskofferingid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>volume3</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>createVolume</name>
+		<parameters>
+			<item>
+				<name>account</name>
+				<value>admin</value>
+			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
+			</item>
+			<item random="true">
+				<name>name</name>
+			</item>
+			<item getparam="true">
+				<name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+			<item>
+				<name>diskofferingid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>volume4</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>createVolume</name>
+		<parameters>
+			<item>
+				<name>account</name>
+				<value>admin</value>
+			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
+			</item>
+			<item random="true">
+				<name>name</name>
+			</item>
+			<item getparam="true">
+				<name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+			<item>
+				<name>diskofferingid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>volume5</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>attachVolume</name>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>volume1</param>
+			</item>
+			<item getparam="true">
+				<name>virtualmachineid</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>attachVolume</name>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>volume2</param>
+			</item>
+			<item getparam="true">
+				<name>virtualmachineid</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>attachVolume</name>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>volume3</param>
+			</item>
+			<item getparam="true">
+				<name>virtualmachineid</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>attachVolume</name>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>volume4</param>
+			</item>
+			<item getparam="true">
+				<name>virtualmachineid</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>attachVolume</name>
+		<testcase>1035</testcase>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>volume5</param>
+			</item>
+			<item getparam="true">
+				<name>virtualmachineid</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>
+
+
+<!--  Test case 1036 - reboot the vm after attaching 5 volumes to it -->
+	<command>
+		<name>rebootVirtualMachine</name>
+		<testcase>1036</testcase>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>
+	
+<!--  Test case 1037 - stop and start the vm after attaching 5 volumes to it -->
+	<command>
+		<name>stopVirtualMachine</name>
+		<testcase>1037</testcase>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>startVirtualMachine</name>
+		<testcase>1037</testcase>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	
+<!--  Test case 1039 - try to attach 6th volume to the vm - should fail -->
+	<command>
+		<name>createVolume</name>
+		<parameters>
+			<item>
+				<name>account</name>
+				<value>admin</value>
+			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
+			</item>
+			<item random="true">
+				<name>name</name>
+			</item>
+			<item getparam="true">
+				<name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+			<item>
+				<name>diskofferingid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>volume6</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>attachVolume</name>
+		<error>true</error>
+		<testcase>1039</testcase>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>volume6</param>
+			</item>
+			<item getparam="true">
+				<name>virtualmachineid</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>
+	
+
+<!--  Test case 1038 - destroy the vm and make sure that all attached volumes got destroyed -->
+	<command>
+		<name>destroyVirtualMachine</name>
+		<testcase>1038</testcase>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>	
+	
+	<command>
+		<name>listVolumes</name>
+		<empty>true</empty>
+		<testcase>1038</testcase>
+		<parameters>
+			<item getparam="true">
+				<name>virtualmachineid</name>
+				<param>vmid</param>
+			</item>
+			<item>
+				<name>type</name>
+				<value>DATADISK</value>
+			</item>
+		</parameters>
+	</command>
+	
+	
+<!--  Test case 1040 - detach all data disks from the vm and reboot -->
+	<command>
+		<name>deployVirtualMachine</name>
+		<parameters>
+			<item getparam="true">
+			    <name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+			<item>
+			    <name>serviceofferingid</name>
+				<value>1</value>
+			</item>
+			<item>
+			    <name>diskofferingid</name>
+				<value>1</value>
+			</item>	
+			<item getparam="true">
+				<name>templateid</name>
+				<param>globaltemplateid</param>
+			</item>
+			<item>
+				<name>account</name>
+				<value>admin</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>listVolumes</name>
+		<parameters>
+			<item getparam="true">
+				<name>virtualmachineid</name>
+				<param>vmid</param>
+			</item>
+			<item>
+				<name>type</name>
+				<value>DATADISK</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>datavolumeid</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>detachVolume</name>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>datavolumeid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>rebootVirtualMachine</name>
+		<testcase>1040</testcase>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>
+	
+<!--  Test case 1041 - detach all disks from the vm and stop/start -->
+	<command>
+		<name>stopVirtualMachine</name>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>startVirtualMachine</name>
+		<testcase>1041</testcase>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>
+
+
+
+<!--  Test case 1044 - detach volume from Running vm -->
+	<command>
+		<name>deployVirtualMachine</name>
+		<parameters>
+			<item getparam="true">
+			    <name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+			<item>
+			    <name>serviceofferingid</name>
+				<value>1</value>
+			</item>
+			<item>
+			    <name>diskofferingid</name>
+				<value>1</value>
+			</item>	
+			<item getparam="true">
+				<name>templateid</name>
+				<param>globaltemplateid</param>
+			</item>
+			<item>
+				<name>account</name>
+				<value>admin</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>listVolumes</name>
+		<parameters>
+			<item getparam="true">
+				<name>virtualmachineid</name>
+				<param>vmid</param>
+			</item>
+			<item>
+				<name>type</name>
+				<value>DATADISK</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>datavolumeid</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>detachVolume</name>
+		<testcase>1044</testcase>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>datavolumeid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>listVolumes</name>
+		<empty>true</empty>
+		<testcase>1044</testcase>
+		<parameters>
+			<item getparam="true">
+				<name>virtualmachineid</name>
+				<param>vmid</param>
+			</item>
+			<item>
+				<name>type</name>
+				<value>DATADISK</value>
+			</item>
+		</parameters>
+	</command>
+	
+<!--  Test case 1045 - detach volume from Stopped vm -->
+	<command>
+		<name>attachVolume</name>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>datavolumeid</param>
+			</item>
+			<item getparam="true">
+				<name>virtualmachineid</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>stopVirtualMachine</name>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>detachVolume</name>
+		<testcase>1045</testcase>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>datavolumeid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>listVolumes</name>
+		<empty>true</empty>
+		<testcase>1045</testcase>
+		<parameters>
+			<item getparam="true">
+				<name>virtualmachineid</name>
+				<param>vmid</param>
+			</item>
+			<item>
+				<name>type</name>
+				<value>DATADISK</value>
+			</item>
+		</parameters>
+	</command>
+	
+<!--  Test case 1046 - try to attach the same volume twice -->
+	<command>
+		<name>deployVirtualMachine</name>
+		<parameters>
+			<item getparam="true">
+			    <name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+			<item>
+			    <name>serviceofferingid</name>
+				<value>1</value>
+			</item>
+			<item>
+			    <name>diskofferingid</name>
+				<value>1</value>
+			</item>	
+			<item getparam="true">
+				<name>templateid</name>
+				<param>globaltemplateid</param>
+			</item>
+			<item>
+				<name>account</name>
+				<value>admin</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>vmid1</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>deployVirtualMachine</name>
+		<parameters>
+			<item getparam="true">
+			    <name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+			<item>
+			    <name>serviceofferingid</name>
+				<value>1</value>
+			</item>
+			<item>
+			    <name>diskofferingid</name>
+				<value>1</value>
+			</item>	
+			<item getparam="true">
+				<name>templateid</name>
+				<param>globaltemplateid</param>
+			</item>
+			<item>
+				<name>account</name>
+				<value>admin</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>vmid2</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>createVolume</name>
+		<parameters>
+			<item>
+				<name>account</name>
+				<value>admin</value>
+			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
+			</item>
+			<item random="true">
+				<name>name</name>
+			</item>
+			<item getparam="true">
+				<name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+			<item>
+				<name>diskofferingid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>volumeid</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>attachVolume</name>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>volumeid</param>
+			</item>
+			<item getparam="true">
+				<name>virtualmachineid</name>
+				<param>vmid1</param>
+			</item>
+		</parameters>
+	</command>
+	
+	<command>
+		<name>attachVolume</name>
+		<error>true</error>
+		<testcase>1046</testcase>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>volumeid</param>
+			</item>
+			<item getparam="true">
+				<name>virtualmachineid</name>
+				<param>vmid2</param>
+			</item>
+		</parameters>
+	</command>
+
+</volumes>

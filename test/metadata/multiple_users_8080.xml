@@ -1,0 +1,587 @@
+<multipleusers8080>
+<!--  THIS TEST DOES VERIFICATION THAT REGULAR USER1 CAN'T MANIPULATE WITH REGULAR USER2 OBJECTS -->
+	<command>
+		<name>createUser</name>
+		<parameters>
+			<item random="true">
+			    <name>username</name>
+			</item>
+			<item>
+			    <name>password</name>
+				<value>apiuser</value>
+			</item>
+			<item>
+				<name>firstname</name>
+				<value>apiuser</value>
+			</item>
+			<item>
+				<name>lastname</name>
+				<value>apiuser</value>
+			</item>
+			<item>
+				<name>email</name>
+				<value>apiuser@gmail.com</value>
+			</item>
+			<item>
+				<name>accounttype</name>
+				<value>0</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>userid1</param>
+			</item>
+			<item setparam="true">
+				<name>username</name>
+				<param>usernamevar1</param>
+			</item>
+			<item setparam="true">
+				<name>account</name>
+				<param>accountvar1</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>createUser</name>
+		<parameters>
+			<item random="true">
+			    <name>username</name>
+			</item>
+			<item>
+			    <name>password</name>
+				<value>apiuser</value>
+			</item>
+			<item>
+				<name>firstname</name>
+				<value>apiuser</value>
+			</item>
+			<item>
+				<name>lastname</name>
+				<value>apiuser</value>
+			</item>
+			<item>
+				<name>email</name>
+				<value>apiuser@gmail.com</value>
+			</item>
+			<item>
+				<name>accounttype</name>
+				<value>0</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>userid2</param>
+			</item>
+			<item setparam="true">
+				<name>username</name>
+				<param>usernamevar2</param>
+			</item>
+			<item setparam="true">
+				<name>account</name>
+				<param>accountvar2</param>
+			</item>
+		</returnvalue>
+	</command>
+
+
+<!-- Test case 1049 - verify that user1 can't list account of user2  -->
+	<command>
+		<name>register</name>
+		<parameters>
+			<item getparam="true">
+			    <name>username</name>
+				<param>usernamevar1</param>
+			</item>
+			<item>
+			    <name>domainid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>apikey</name>
+				<param>apikey</param>
+			</item>
+			<item setparam="true">
+				<name>secretkey</name>
+				<param>secretkey</param>
+			</item>
+		</returnvalue>
+	</command>	
+	
+	<command>
+		<name>listAccounts</name>
+		<usercommand>true</usercommand>
+		<testcase>1049</testcase>
+		<parameters>
+			<item getparam="true">
+			    <name>name</name>
+				<param>accountvar2</param>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item getparam="true">
+				<name>name</name>
+				<param>accountvar1</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	
+<!-- Test case 1050 - verify that user1 can't deploy a vm for user2; vm always gets deployed for user1  -->
+	<command>
+		<name>deployVirtualMachine</name>
+		<testcase>1050</testcase>
+		<usercommand>true</usercommand>
+		<parameters>
+			<item>
+			    <name>serviceofferingid</name>
+				<value>1</value>
+			</item>
+			<item>
+			    <name>diskofferingid</name>
+				<value>1</value>
+			</item>	
+			<item getparam="true">
+				<name>templateid</name>
+				<param>globaltemplateid</param>
+			</item>
+			<item getparam="true">
+			    <name>zoneid</name>
+				<param>globalzoneid</param>
+			</item>
+			<item getparam="true">
+			    <name>name</name>
+				<param>accountvar2</param>
+			</item>
+			<item>
+			    <name>domainid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item getparam="true">
+				<name>account</name>
+				<param>accountvar1</param>
+			</item>
+			<item setparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	
+<!-- Test case 1051 - verify that user2 can't reboot vm belonging to user  -->
+	<command>
+		<name>register</name>
+		<parameters>
+			<item getparam="true">
+			    <name>username</name>
+				<param>usernamevar2</param>
+			</item>
+			<item>
+			    <name>domainid</name>
+				<value>1</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>apikey</name>
+				<param>apikey</param>
+			</item>
+			<item setparam="true">
+				<name>secretkey</name>
+				<param>secretkey</param>
+			</item>
+		</returnvalue>
+	</command>	
+	
+	<command>
+		<name>rebootVirtualMachine</name>
+		<testcase>1051</testcase>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>	
+
+
+
+
+<!-- Test case 1052 - verify that user2 can't stop vm belonging to user  -->
+	<command>
+		<name>stopVirtualMachine</name>
+		<testcase>1052</testcase>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>	
+	
+	
+<!-- Test case 1053 - verify that user2 can't start vm belonging to user  -->
+	<command>
+		<name>startVirtualMachine</name>
+		<testcase>1053</testcase>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>	
+	
+	
+<!-- Test case 1054 - verify that user2 can't destroy vm belonging to user  -->
+	<command>
+		<name>destroyVirtualMachine</name>
+		<testcase>1054</testcase>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>	
+	
+<!-- Test case 1055 - verify that user2 can't reset password for vm belonging to user  -->
+	<command>
+		<name>resetPasswordForVirtualMachine</name>
+		<testcase>1055</testcase>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>	
+	
+<!-- Test case 1056 - verify that user2 can't update vm belonging to user  -->
+	<command>
+		<name>updateVirtualMachine</name>
+		<testcase>1056</testcase>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>	
+	
+<!-- Test case 1057 - verify that user2 can't change service offering for the vm belonging to user  -->
+	<command>
+		<name>changeServiceForVirtualMachine</name>
+		<testcase>1057</testcase>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>	
+	
+<!-- Test case 1058 - verify that user2 can't see vm belonging to user  -->
+	<command>
+		<name>listVirtualMachines</name>
+		<testcase>1058</testcase>
+		<usercommand>true</usercommand>
+		<empty>true</empty>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>	
+
+
+
+<!--  SNAPSHOT COMMANDS -->
+	<command>
+		<name>stopVirtualMachine</name>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>vmid</param>
+			</item>
+		</parameters>
+	</command>	
+	
+	<command>
+		<name>listVolumes</name>
+		<parameters>
+			<item getparam="true">
+				<name>virtualmachineid</name>
+				<param>vmid</param>
+			</item>
+			<item>
+				<name>type</name>
+				<value>DATADISK</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>volumeid</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+	<command>
+		<name>createSnapshot</name>
+		<parameters>
+			<item getparam="true">
+				<name>volumeid</name>
+				<param>volumeid</param>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>snapshotid</param>
+			</item>
+		</returnvalue>
+	</command>
+	
+<!--  Test case 1059 - being user2, try to create a snapshot for the user1's vm -->
+	<command>
+		<name>createSnapshot</name>
+		<testcase>1059</testcase>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item getparam="true">
+				<name>volumeid</name>
+				<param>volumeid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	
+<!--  Test case 1060 - being user2, try to delete a snapshot belonging to user1 -->
+	<command>
+		<name>deleteSnapshot</name>
+		<testcase>1060</testcase>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>snapshotid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	
+<!--  Test case 1061 - being user2, try to listSnapshots belongig to user1 -->
+	<command>
+		<name>listSnapshots</name>
+		<testcase>1061</testcase>
+		<usercommand>true</usercommand>
+		<empty>true</empty>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>snapshotid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	
+<!--  Test case 1062 - being user2, try to listRecurringSnapshotSchedule for the volume belongig to user1 -->
+	<command>
+		<name>listRecurringSnapshotSchedule</name>
+		<testcase>1062</testcase>
+		<usercommand>true</usercommand>
+		<empty>true</empty>
+		<parameters>
+			<item getparam="true">
+				<name>volumeid</name>
+				<param>volumeid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	
+<!--  Test case 1063 - being user2, try to scheduleRecurringSnapshots for the volume belongig to user1 -->
+	<command>
+		<name>scheduleRecurringSnapshots</name>
+		<testcase>1063</testcase>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item getparam="true">
+				<name>volumeid</name>
+				<param>volumeid</param>
+			</item>
+		</parameters>
+	</command>
+	
+<!--  Test case 1064 - being user2, try to rollback to snapshot belongig to user1 -->
+	<command>
+		<name>rollbackToSnapshot</name>
+		<testcase>1064</testcase>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>snapshotid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	
+<!--  TEMPLATE COMMANDS -->
+	<command>
+		<name>createTemplate</name>
+		<parameters>
+			<item getparam="true">
+				<name>volumeid</name>
+				<param>volumeid</param>
+			</item>
+			<item random="true">
+				<name>name</name>
+			</item>
+			<item>
+				<name>displaytext</name>
+				<value>newtext</value>
+			</item>
+			<item>
+				<name>osTypeId</name>
+				<value>1</value>
+			</item>
+		</parameters>
+		<returnvalue>
+			<item setparam="true">
+				<name>id</name>
+				<param>privatetemplateid</param>
+			</item>
+		</returnvalue>
+	</command>
+
+
+<!--  Test case 1066 - being user2, try to create a template for user1 -->
+	<command>
+		<name>createTemplate</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<testcase>1066</testcase>
+		<parameters>
+			<item getparam="true">
+				<name>volumeid</name>
+				<param>volumeid</param>
+			</item>
+			<item random="true">
+				<name>name</name>
+			</item>
+			<item>
+				<name>displaytext</name>
+				<value>newtext</value>
+			</item>
+			<item>
+				<name>osTypeId</name>
+				<value>1</value>
+			</item>
+		</parameters>
+	</command>
+	
+	
+<!--  Test case 1067 - being user2, try to update the template belonging to user1 -->
+	<command>
+		<name>updateTemplate</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<testcase>1067</testcase>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>privatetemplateid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	
+<!--  Test case 1068 - being user2, try to delete the template belonging to user1 -->
+	<command>
+		<name>deleteTemplate</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<testcase>1068</testcase>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>privatetemplateid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	
+<!--  Test case 1069 - being user2, try to list the template belonging to user1 -->
+	<command>
+		<name>listTemplates</name>
+		<usercommand>true</usercommand>
+		<empty>true</empty>
+		<testcase>1069</testcase>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>privatetemplateid</param>
+			</item>
+		</parameters>
+	</command>
+	
+	
+<!--  Test case 1070 - being user2, try to update template permissions for the template belonging to user1 -->
+	<command>
+		<name>updateTemplatePermissions</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<testcase>1070</testcase>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>privatetemplateid</param>
+			</item>
+		</parameters>
+	</command>
+
+
+<!--  Test case 1071 - being user2, try to list template permissions for the template belonging to user1 -->
+	<command>
+		<name>listTemplatePermissions</name>
+		<usercommand>true</usercommand>
+		<error>true</error>
+		<testcase>1071</testcase>
+		<parameters>
+			<item getparam="true">
+				<name>id</name>
+				<param>privatetemplateid</param>
+			</item>
+		</parameters>
+	</command>
+
+
+</multipleusers8080>
