@@ -85,6 +85,7 @@ import com.vmops.vm.UserVm;
 import com.vmops.vm.UserVmVO;
 import com.vmops.vm.VMInstanceVO;
 import com.vmops.vm.VirtualMachine;
+import com.vmops.vm.VmStats;
 
 /**
  * ManagementServer is the public interface to talk to the Managment Server.
@@ -1895,6 +1896,8 @@ public interface ManagementServer {
      * @return
      */
     String getSnapshotIntervalTypes(long snapshotId);
+	public List<VmStats> listVirtualMachineStatistics(List<Long> vmIds);
+	public List<HostStats> listHostStatistics(List<Long> hostIds);
     
     
 }

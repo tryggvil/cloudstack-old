@@ -29,7 +29,10 @@ public class VmStatsEntry implements VmStats {
 	double networkReadKBs;
 	double networkWriteKBs;
 	int numCPUs;
-    
+	double vcpuUtilization;
+	double diskReadKBs;
+	double diskWriteKBs;
+	
     public VmStatsEntry() {
     }
     
@@ -71,4 +74,28 @@ public class VmStatsEntry implements VmStats {
     public void setNumCPUs(int numCPUs) {
     	this.numCPUs = numCPUs;
     }
+
+	public double getVCPUUtilisation() {
+		return vcpuUtilization;
+	}
+
+	public void setVCPUUtilization(double vcpuUtilization) {
+		this.vcpuUtilization = vcpuUtilization;
+	}
+
+	public double getDiskReadKBs() {
+		return diskReadKBs;
+	}
+
+	public void setDiskReadKBs(double diskReadKBs) {
+		this.diskReadKBs = diskReadKBs;
+	}
+
+	public double getDiskWriteKBs() {
+		return diskWriteKBs;
+	}
+
+	public void setDiskWriteKBs(double diskWriteKBs) {
+		this.diskWriteKBs = diskWriteKBs;
+	}
 }

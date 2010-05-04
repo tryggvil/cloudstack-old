@@ -207,6 +207,10 @@ public class StatsCollector {
 		return _hostStats.get(id);
 	}
 
+	public VmStats getVMStats(long id){
+		return _vmStats.get(id);
+	}
+	
 	class StorageCollector implements Runnable {
 		public void run() {
 			try {

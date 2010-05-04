@@ -22,4 +22,7 @@ public interface VmStats {
 	public double getCPUUtilization();
     public double getNetworkReadKBs();
     public double getNetworkWriteKBs();
+	public double getVCPUUtilisation();
+	public double getDiskReadKBs();
+	public double getDiskWriteKBs();
 }

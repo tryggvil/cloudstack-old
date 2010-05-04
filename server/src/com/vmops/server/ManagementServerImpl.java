@@ -224,6 +224,7 @@ import com.vmops.vm.UserVmManager;
 import com.vmops.vm.UserVmVO;
 import com.vmops.vm.VMInstanceVO;
 import com.vmops.vm.VirtualMachine;
+import com.vmops.vm.VmStats;
 import com.vmops.vm.dao.ConsoleProxyDao;
 import com.vmops.vm.dao.DomainRouterDao;
 import com.vmops.vm.dao.UserVmDao;
@@ -6754,5 +6755,29 @@ public class ManagementServerImpl implements ManagementServer {
         return _asyncMgr.submitAsyncJob(job);
 
     }
+
+	@Override
+	public List<HostStats> listHostStatistics(List<Long> hostIds) {
+		List<HostStats> stats = new ArrayList<HostStats>();
+		for (Long hostId: hostIds) {
+			HostStats stat = getHostStatistics(hostId);
+			stats.add(stat);
+		}
+		return stats;
+	}
+
+    public VmStats getVMStatistics(long vmId) {
+    	return _statsCollector.getVMStats(vmId);
+    }
+	
+	@Override
+	public List<VmStats> listVirtualMachineStatistics(List<Long> vmIds) {
+		List<VmStats> stats = new ArrayList<VmStats>();
+		for (Long vmId: vmIds) {
+			VmStats stat = getVMStatistics(vmId);
+			stats.add(stat);
+		}
+		return stats;
+	}
 }
 
