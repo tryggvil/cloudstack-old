@@ -1,7 +1,1 @@
 /usr/share/java/vmops-usage.jar
-/etc/init.d/vmops-usage
-/usr/bin/usage-runner
-/var/log/vmops/usage
-/etc/vmops/usage/usage-components.xml
-/etc/vmops/usage/log4j-vmops_usage.xml
-/etc/vmops/usage/db.properties

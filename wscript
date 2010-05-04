@@ -776,6 +776,11 @@ def build(bld):
 	bld(features='subst', source='%s/libexec/%s-runner.in'%(proj,proj),
 		target='%s/libexec/%s-runner'%(proj,proj))
 	bld.install_files("${LIBEXECDIR}",'%s/libexec/%s-runner'%(proj,proj),chmod=0755)
+	bld(features='subst', source='%s/libexec/vmops-setup-%s.in'%(proj,proj),
+                target='%s/libexec/vmops-setup-%s'%(proj,proj))
+        bld.install_files("${LIBEXECDIR}",'%s/libexec/vmops-setup-%s'%(proj,proj),chmod=0755)
+
+
 	for infile in _glob(_join(proj,"bin","*.in")):
 		source = infile ; target = infile[:-3]
 		bld(features='subst', source=source, target=target)
