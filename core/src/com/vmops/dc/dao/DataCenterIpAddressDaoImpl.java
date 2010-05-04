@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -136,33 +136,33 @@ public class DataCenterIpAddressDaoImpl extends GenericDaoBase<DataCenterIpAddre
     protected DataCenterIpAddressDaoImpl() {
     	super();
         FreeIpSearch = createSearchBuilder();
-        FreeIpSearch.addAnd("dc", FreeIpSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
-        FreeIpSearch.addAnd("pod", FreeIpSearch.entity().getPodId(), SearchCriteria.Op.EQ);
-        FreeIpSearch.addAnd("taken", FreeIpSearch.entity().getTakenAt(), SearchCriteria.Op.NULL);
+        FreeIpSearch.and("dc", FreeIpSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        FreeIpSearch.and("pod", FreeIpSearch.entity().getPodId(), SearchCriteria.Op.EQ);
+        FreeIpSearch.and("taken", FreeIpSearch.entity().getTakenAt(), SearchCriteria.Op.NULL);
         FreeIpSearch.done();
         
         IpDcSearch = createSearchBuilder();
-        IpDcSearch.addAnd("ip", IpDcSearch.entity().getIpAddress(), SearchCriteria.Op.EQ);
-        IpDcSearch.addAnd("dc", IpDcSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
-        IpDcSearch.addAnd("instance", IpDcSearch.entity().getInstanceId(), SearchCriteria.Op.EQ);
+        IpDcSearch.and("ip", IpDcSearch.entity().getIpAddress(), SearchCriteria.Op.EQ);
+        IpDcSearch.and("dc", IpDcSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        IpDcSearch.and("instance", IpDcSearch.entity().getInstanceId(), SearchCriteria.Op.EQ);
         IpDcSearch.done();
         
         PodDcSearch = createSearchBuilder();
-        PodDcSearch.addAnd("podId", PodDcSearch.entity().getPodId(), SearchCriteria.Op.EQ);
-        PodDcSearch.addAnd("dataCenterId", PodDcSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        PodDcSearch.and("podId", PodDcSearch.entity().getPodId(), SearchCriteria.Op.EQ);
+        PodDcSearch.and("dataCenterId", PodDcSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
         PodDcSearch.done();
         
         PodDcIpSearch = createSearchBuilder();
-        PodDcIpSearch.addAnd("dcId", PodDcIpSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
-        PodDcIpSearch.addAnd("podId", PodDcIpSearch.entity().getPodId(), SearchCriteria.Op.EQ);
-        PodDcIpSearch.addAnd("ipAddress", PodDcIpSearch.entity().getIpAddress(), SearchCriteria.Op.EQ);
+        PodDcIpSearch.and("dcId", PodDcIpSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        PodDcIpSearch.and("podId", PodDcIpSearch.entity().getPodId(), SearchCriteria.Op.EQ);
+        PodDcIpSearch.and("ipAddress", PodDcIpSearch.entity().getIpAddress(), SearchCriteria.Op.EQ);
         PodDcIpSearch.done();
         
         FreePodDcIpSearch = createSearchBuilder();
-        FreePodDcIpSearch.addAnd("dcId", FreePodDcIpSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
-        FreePodDcIpSearch.addAnd("podId", FreePodDcIpSearch.entity().getPodId(), SearchCriteria.Op.EQ);
-        FreePodDcIpSearch.addAnd("ipAddress", FreePodDcIpSearch.entity().getIpAddress(), SearchCriteria.Op.EQ);
-        FreePodDcIpSearch.addAnd("taken", FreePodDcIpSearch.entity().getTakenAt(), SearchCriteria.Op.EQ);
+        FreePodDcIpSearch.and("dcId", FreePodDcIpSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        FreePodDcIpSearch.and("podId", FreePodDcIpSearch.entity().getPodId(), SearchCriteria.Op.EQ);
+        FreePodDcIpSearch.and("ipAddress", FreePodDcIpSearch.entity().getIpAddress(), SearchCriteria.Op.EQ);
+        FreePodDcIpSearch.and("taken", FreePodDcIpSearch.entity().getTakenAt(), SearchCriteria.Op.EQ);
         FreePodDcIpSearch.done();
     }
     

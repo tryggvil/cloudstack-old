@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -53,7 +53,13 @@ public class DummySecondaryStorageResource extends ServerResourceBase implements
     String _pod;
     String _guid;
     String _dummyPath;
+
+	private boolean _useServiceVm;
     
+	public DummySecondaryStorageResource(boolean useServiceVM) {
+		setUseServiceVm(useServiceVM);
+	}
+
 	@Override
 	protected String getDefaultScriptsDir() {
 		return "dummy";
@@ -98,19 +104,22 @@ public class DummySecondaryStorageResource extends ServerResourceBase implements
         
         cmd.setResourceType(Volume.StorageResourceType.SECONDARY_STORAGE);
         cmd.setIqn(null);
+        cmd.setNfsShare(_guid);
         
         fillNetworkInformation(cmd);
         cmd.setDataCenter(_dc);
         cmd.setPod(_pod);
         cmd.setGuid(_guid);
+        
         cmd.setName(_guid);
         cmd.setVersion(DummySecondaryStorageResource.class.getPackage().getImplementationVersion());
         /* gather TemplateInfo in second storage */
         final Map<String, TemplateInfo> tInfo = new HashMap<String, TemplateInfo>();
+        tInfo.put("routing", TemplateInfo.getDefaultSystemVmTemplateInfo());
         cmd.setTemplateInfo(tInfo);
         cmd.getHostDetails().put("mount.parent", "dummy");
         cmd.getHostDetails().put("mount.path", "dummy");
-        cmd.getHostDetails().put("orig.url", "dummy://dummy)");
+        cmd.getHostDetails().put("orig.url", _guid);
         
         String tok[] = _dummyPath.split(":");
         cmd.setPrivateIpAddress(tok[0]);
@@ -143,4 +152,12 @@ public class DummySecondaryStorageResource extends ServerResourceBase implements
         }
         return true;
     }
+
+	public void setUseServiceVm(boolean _useServiceVm) {
+		this._useServiceVm = _useServiceVm;
+	}
+
+	public boolean useServiceVm() {
+		return _useServiceVm;
+	}
 }

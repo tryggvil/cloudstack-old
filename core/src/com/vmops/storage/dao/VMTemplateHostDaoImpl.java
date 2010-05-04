@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -69,37 +69,37 @@ public class VMTemplateHostDaoImpl extends GenericDaoBase<VMTemplateHostVO, Long
 	
 	public VMTemplateHostDaoImpl () {
 		HostSearch = createSearchBuilder();
-		HostSearch.addAnd("host_id", HostSearch.entity().getHostId(), SearchCriteria.Op.EQ);
+		HostSearch.and("host_id", HostSearch.entity().getHostId(), SearchCriteria.Op.EQ);
 		HostSearch.done();
 		
 		TemplateSearch = createSearchBuilder();
-		TemplateSearch.addAnd("template_id", TemplateSearch.entity().getTemplateId(), SearchCriteria.Op.EQ);
+		TemplateSearch.and("template_id", TemplateSearch.entity().getTemplateId(), SearchCriteria.Op.EQ);
 		TemplateSearch.done();
 		
 		HostTemplateSearch = createSearchBuilder();
-		HostTemplateSearch.addAnd("host_id", HostTemplateSearch.entity().getHostId(), SearchCriteria.Op.EQ);
-		HostTemplateSearch.addAnd("template_id", HostTemplateSearch.entity().getTemplateId(), SearchCriteria.Op.EQ);
+		HostTemplateSearch.and("host_id", HostTemplateSearch.entity().getHostId(), SearchCriteria.Op.EQ);
+		HostTemplateSearch.and("template_id", HostTemplateSearch.entity().getTemplateId(), SearchCriteria.Op.EQ);
 		HostTemplateSearch.done();
 		
 		HostTemplatePoolSearch = createSearchBuilder();
-		HostTemplatePoolSearch.addAnd("host_id", HostTemplatePoolSearch.entity().getHostId(), SearchCriteria.Op.EQ);
-		HostTemplatePoolSearch.addAnd("template_id", HostTemplatePoolSearch.entity().getTemplateId(), SearchCriteria.Op.EQ);
-		HostTemplatePoolSearch.addAnd("pool_id", HostTemplatePoolSearch.entity().getPoolId(), SearchCriteria.Op.EQ);
+		HostTemplatePoolSearch.and("host_id", HostTemplatePoolSearch.entity().getHostId(), SearchCriteria.Op.EQ);
+		HostTemplatePoolSearch.and("template_id", HostTemplatePoolSearch.entity().getTemplateId(), SearchCriteria.Op.EQ);
+		HostTemplatePoolSearch.and("pool_id", HostTemplatePoolSearch.entity().getPoolId(), SearchCriteria.Op.EQ);
 		HostTemplatePoolSearch.done();
 		
 		TemplateStatusSearch = createSearchBuilder();
-		TemplateStatusSearch.addAnd("template_id", TemplateStatusSearch.entity().getTemplateId(), SearchCriteria.Op.EQ);
-		TemplateStatusSearch.addAnd("download_state", TemplateStatusSearch.entity().getDownloadState(), SearchCriteria.Op.EQ);
+		TemplateStatusSearch.and("template_id", TemplateStatusSearch.entity().getTemplateId(), SearchCriteria.Op.EQ);
+		TemplateStatusSearch.and("download_state", TemplateStatusSearch.entity().getDownloadState(), SearchCriteria.Op.EQ);
 		TemplateStatusSearch.done();
 		
 		TemplateStatesSearch = createSearchBuilder();
-		TemplateStatesSearch.addAnd("template_id", TemplateStatesSearch.entity().getTemplateId(), SearchCriteria.Op.EQ);
-		TemplateStatesSearch.addAnd("states", TemplateStatesSearch.entity().getDownloadState(), SearchCriteria.Op.IN);
+		TemplateStatesSearch.and("template_id", TemplateStatesSearch.entity().getTemplateId(), SearchCriteria.Op.EQ);
+		TemplateStatesSearch.and("states", TemplateStatesSearch.entity().getDownloadState(), SearchCriteria.Op.IN);
 		TemplateStatesSearch.done();
 		
 		PoolTemplateSearch = createSearchBuilder();
-		PoolTemplateSearch.addAnd("pool_id", PoolTemplateSearch.entity().getPoolId(), SearchCriteria.Op.EQ);
-		PoolTemplateSearch.addAnd("template_id", PoolTemplateSearch.entity().getTemplateId(), SearchCriteria.Op.EQ);
+		PoolTemplateSearch.and("pool_id", PoolTemplateSearch.entity().getPoolId(), SearchCriteria.Op.EQ);
+		PoolTemplateSearch.and("template_id", PoolTemplateSearch.entity().getTemplateId(), SearchCriteria.Op.EQ);
 		PoolTemplateSearch.done();
 	}
 	

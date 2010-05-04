@@ -5,7 +5,7 @@
         Secondary Storage</div>
     <div class="submenu_links_off" id="submenu_volume">
         Volume</div>
-    <div class="submenu_links_off" id="submenu_snapshot">
+    <div class="submenu_links_off" id="submenu_snapshot" style="display:none">
         Snapshots</div>
 </div>
 <!-- *** Primary Storage (begin) *** -->
@@ -200,15 +200,20 @@
                 </select>
             </li>
             <li>
-                <label for="user_name">
-                    Name:</label>
+                <label for="user_name">Name:</label>
                 <input class="text" type="text" name="add_pool_name" id="add_pool_name" />
                 <div id="add_pool_name_errormsg" class="dialog_formcontent_errormsg" style="display: none;">
                 </div>
             </li>
             <li>
-                <label for="add_pool_nfs_server">
-                    NFS Server:</label>
+                <label for="add_pool_nfs_server">Protocol:</label>
+				<select class="select" name="add_pool_protocol" id="add_pool_protocol">
+                    <option value="nfs">NFS</option>
+					<option value="iscsi">ISCSI</option>
+                </select>
+			</li>
+			<li>
+				<label for="add_pool_nfs_server">Server:</label>
                 <input class="text" type="text" name="add_pool_nfs_server" id="add_pool_nfs_server" />
                 <div id="add_pool_nfs_server_errormsg" class="dialog_formcontent_errormsg" style="display: none;">
                 </div>
@@ -518,11 +523,11 @@
                 Loading...</p>
         </div>
         <div class="grid_header">
-            <div class="grid_genheader_cell" style="width: 3%;">
+            <div class="grid_genheader_cell" style="width: 5%;">
                 <div class="grid_headertitles">
                     ID</div>
             </div>
-            <div class="grid_genheader_cell" style="width: 15%;">
+            <div class="grid_genheader_cell" style="width: 20%;">
                 <div class="grid_headertitles">
                     Name</div>
             </div>
@@ -530,7 +535,7 @@
                 <div class="grid_headertitles">
                     Type</div>
             </div>
-            <div class="grid_genheader_cell" style="width: 12%;">
+            <div class="grid_genheader_cell" style="width: 20%;">
                 <div class="grid_headertitles">
                     Instance Name</div>
             </div>
@@ -601,11 +606,11 @@
         </div>
     </div>
     <div id="volume_body" style="height: 45px;">
-        <div class="grid_smallgenrow_cell" style="width: 3%;">
+        <div class="grid_smallgenrow_cell" style="width: 5%;">
             <div class="netgrid_celltitles" id="volume_id">
                 ID</div>
         </div>
-        <div class="grid_smallgenrow_cell" style="width: 15%;">
+        <div class="grid_smallgenrow_cell" style="width: 20%;">
             <div class="netgrid_celltitles" id="volume_name">
                 Name</div>
         </div>
@@ -613,7 +618,7 @@
             <div class="netgrid_celltitles" id="volume_type">
                 Type</div>
         </div>
-        <div class="grid_smallgenrow_cell" style="width: 12%;">
+        <div class="grid_smallgenrow_cell" style="width: 20%;">
             <div class="netgrid_celltitles" id="volume_vmname">
             </div>
         </div>
@@ -637,13 +642,13 @@
         </div>
         <div id="grid_links_container" style="display: block">
             <div class="grid_links">
-                <div id="volume_action_snapshot_grid" class="vm_botactionslinks_down">
+                <div id="volume_action_snapshot_grid" class="vm_botactionslinks_down" style="display:none">
                     snapshots
                 </div>                
-                <div style="float: left">
+                <div style="float: left;display:none" id="volume_action_take_snapshot_container" >
                     <a id="volume_action_take_snapshot" href="#">take snapshot</a> |
                 </div>
-                <div style="float: left">
+                <div style="float: left;display:none" id="volume_action_recurring_snapshot_container">
                     <a id="volume_action_recurring_snapshot" href="#">recurring snapshot</a> |
                 </div>
                 <div style="display: none; float: left" id="volume_action_detach_span">
@@ -671,22 +676,25 @@
                 <div class="hostadmin_showdetailsheader_cell" style="width: 20%">
                     <div class="grid_headertitles">
                         Name</div>
-                </div>
-                <div class="hostadmin_showdetailsheader_cell" style="width: 30%">
-                    <div class="grid_headertitles">
-                        Path</div>
-                </div>               
-                <div class="hostadmin_showdetailsheader_cell" style="width: 10%">
+                </div>                            
+                <div class="hostadmin_showdetailsheader_cell" style="width: 20%">
                     <div class="grid_headertitles">
                         Created</div>
+                </div>          
+                
+                <div class="hostadmin_showdetailsheader_cell" style="width: 10%" id="volume_snapshot_account_header">
+                    <div class="grid_headertitles">
+                        Account</div>
                 </div>
-                <!--
+                <div class="hostadmin_showdetailsheader_cell" style="width: 10%" id="volume_snapshot_domain_header">
+                    <div class="grid_headertitles">
+                        Domain</div>
+                </div>                         
                 <div class="hostadmin_showdetailsheader_cell" style="width: 20%">
                     <div class="grid_headertitles">
                         Actions
                     </div>
-                </div>
-                -->
+                </div>                
             </div>
             <div id="volume_snapshot_grid">
                 <div class="hostadmin_showdetails_row_odd">
@@ -719,21 +727,25 @@
             <div class="netgrid_celltitles" id="name">
             </div>
         </div>       
-        <div class="hostadmin_showdetailsrow_cell" style="width: 30%">
-            <div class="netgrid_celltitles" id="path">
-            </div>
-        </div>
-        <div class="hostadmin_showdetailsrow_cell" style="width: 10%">
+        <div class="hostadmin_showdetailsrow_cell" style="width: 20%">
             <div class="netgrid_celltitles" id="created">
             </div>
+        </div>   
+        <div class="hostadmin_showdetailsrow_cell" style="width: 10%" id="volume_snapshot_account_container">
+            <div class="netgrid_celltitles" id="account">
+            </div>
         </div>
-        <!--
+        <div class="hostadmin_showdetailsrow_cell" style="width: 10%" id="volume_snapshot_domain_container">
+            <div class="netgrid_celltitles" id="domain">
+            </div>
+        </div>   
         <div class="hostadmin_showdetailsrow_cell" style="width: 20%">
-            <div class="netgrid_celltitles" id="detail_action">
-                <a id="volume_action_detach_disk" href="#">Detach Disk</a><span id="volume_acton_separator">&nbsp;&nbsp;|</span><a
-                    id="A1" href="#">Create Template</a></div>
-        </div>
-        -->
+            <div class="netgrid_celltitles" id="Div1">
+                <a id="volume_snapshot_action_create_volume" href="#">Create Volume</a>
+                <span id="Span1">&nbsp;&nbsp;|</span>
+                <a id="volume_snapshot_action_delete_snapshot" href="#">Delete</a>
+            </div>
+        </div>             
     </div>
 </div>
 <!-- Volume's Snapshot Template (end) -->
@@ -770,18 +782,33 @@
     </div>
 </div>
 <!-- Add Volume Dialog (end) -->
-<!-- Take Snapshots Dialog (begin) -->
-<div id="dialog_recurring_snapshot" class="dialog_snapshotbox" title="Recurring Snapshot" style="display:none;">
+
+<!-- Add Volume Dialog from Snapshot (begin) -->
+<div id="dialog_add_volume_from_snapshot" title="Add Volume from Snapshot" style="display: none">   
+    <div class="dialog_formcontent">
+        <form action="#" method="post" id="form5">
+        <ol>
+            <li>
+                <label>Name:</label>
+                <input class="text" type="text" id="name" />
+                <div id="name_errormsg" class="dialog_formcontent_errormsg" style="display: none;"></div>
+            </li>           
+        </ol>
+        </form>
+    </div>
+</div>
+<!-- Add Volume Dialog from Snapshot (end) -->
+
+<!-- Recurring Snapshots Dialog (begin) -->
+<div id="dialog_recurring_snapshot" title="Recurring Snapshot" style="display:none;">
     <div class="dialog_snapshotconatiner">
         <div class="dialog_snapshotleft">
-            <div class="dialog_formcontent">
+            
                 <div class="dialog_snapshotleft_list">
                     <div class="dialog_snapshotleft_label">
                         Hourly:</div>
-                    <div class="dialog_snapshotleft_info">
-                        <p>at minute</p>
-                        <span id="read_hourly_minute">mm</span>
-                        <p>every hour</p>
+                    <div class="dialog_snapshotleft_info">                        
+                        <span>00</span><span>:</span><span id="read_hourly_minute">mm</span>                        
                     </div>
                     <div class="dialog_snapshotleft_max">
                         <p>Max:</p>
@@ -792,8 +819,7 @@
                 <div class="dialog_snapshotleft_list">
                     <div class="dialog_snapshotleft_label">
                         Daily:</div>
-                    <div class="dialog_snapshotleft_info">
-                        <p>at</p>
+                    <div class="dialog_snapshotleft_info">                       
                         <span id="read_daily_hour">hh</span><span>:</span><span id="read_daily_minute">mm</span>
                         <span id="read_daily_meridiem">AM</span>
                     </div>
@@ -807,8 +833,7 @@
                 <div class="dialog_snapshotleft_list">
                     <div class="dialog_snapshotleft_label">
                         Weekly:</div>
-                    <div class="dialog_snapshotleft_info">
-                        <p>at</p>
+                    <div class="dialog_snapshotleft_info">                       
                         <span id="read_weekly_hour">hh</span><span>:</span><span id="read_weekly_minute">mm</span>
                         <span id="read_weekly_meridiem">AM</span>
                         <span id="read_weekly_day_of_week">day-of-week</span>
@@ -817,13 +842,12 @@
                         <p>Max:</p>
                         <span id="read_weekly_max">N</span></div>
                     <div class="dialog_snapshotleft_actions">
-                        <a id="weekly_edit_link" href="#">Edit</a> | <a id="weely_delete_link" href="#">Delete</a></div>
+                        <a id="weekly_edit_link" href="#">Edit</a> | <a id="weekly_delete_link" href="#">Delete</a></div>
                 </div>        
                 <div class="dialog_snapshotleft_list">
                     <div class="dialog_snapshotleft_label">
                         Monthly:</div>
-                    <div class="dialog_snapshotleft_info">
-                        <p>at</p>
+                    <div class="dialog_snapshotleft_info">                       
                         <span id="read_monthly_hour">hh</span><span>:</span><span id="read_monthly_minute">mm</span>
                         <span id="read_monthly_meridiem">AM</span>
                         <span id="read_monthly_day_of_month">day-of-month</span>
@@ -834,10 +858,10 @@
                     <div class="dialog_snapshotleft_actions">
                         <a id="monthly_edit_link" href="#">Edit</a> | <a id="monthly_delete_link" href="#">Delete</a></div>
                 </div>             
-            </div>
-        </div>
+              </div>
         <div class="dialog_snapshotright">
-            <div class="dialog_snapshots_editcontent">
+        	<div class="dialog_snapshotright_infotext" style="display:none"> Cick Edit to Schedule</div>
+            <div class="dialog_snapshots_editcontent" style="display:block;">
                 <div class="dialog_snapshots_editcontent_title">
                     <p>
                         Edit:</p>
@@ -849,9 +873,11 @@
                         <li>
                             <label for="add_volume_name">
                                 Time:</label>
+                            <span id="edit_hardcoding_hour" style="display:none">00</span>
                             <span id="edit_hour_container">
-                                <select id="edit_hour">
-                                    <option value="">hour</option>
+                            	
+                                <select class="snapselect" id="edit_hour">
+                                    <option value="">Hour</option>
                                     <option value="0">0</option>
                                     <option value="1">1</option>
                                     <option value="2">2</option>
@@ -864,14 +890,14 @@
                                     <option value="9">9</option>
                                     <option value="10">10</option>
                                     <option value="11">11</option>                                    
-                                </select>
-                            </span>
+                                </select>                               
+                            </span>                            
                             
                             <span id="edit_time_colon">:</span>
                             
                             <span id="edit_minute_container">
-                                <select id="edit_minute">
-                                    <option value="">minute</option>
+                                <select class="snapselect" id="edit_minute">
+                                    <option value="">Minute</option>
                                     <option value="00">00</option>
                                     <option value="01">01</option>
                                     <option value="02">02</option>
@@ -932,44 +958,45 @@
                                     <option value="57">57</option>
                                     <option value="58">58</option>
                                     <option value="59">59</option>                        
-                                </select>
+                                </select>                                
                             </span>
                             
                             <span id="edit_meridiem_container">
-                                <select id="edit_meridiem">                                                                
+                                <select class="snapselect"id="edit_meridiem">                                                                
                                     <option value="AM">AM</option>
                                     <option value="PM">PM</option>                                   
                                 </select>
                             </span>
                             
-                            <div id="Div6" class="dialog_formcontent_errormsg" style="display: none;">
-                            </div>
+                            <div id="edit_time_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div> 
                         </li>
-                        <li>
-                            <label for="add_volume_name">
+                        <li style="margin-top:10px;">
+                            <label for="edit_max">
                                 Max:</label>
-                            <input class="text" style="width: 60px;" type="text" name="add_volume_name" id="edit_max" />
-                            <div id="Div7" class="dialog_formcontent_errormsg" style="display: none;">
-                            </div>
+                            <span>Keep</span>
+                            <input class="text" style="width: 60px;" type="text" id="edit_max" />
+                            <span>snapshot</span>
+                            <div id="edit_max_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div>                             
                         </li>                       
-                        <li id="edit_day_of_week_container">
+                        <li style="margin-top:10px;" id="edit_day_of_week_container">
                             <label for="filter">
-                                Day of the Week:</label>
-                            <select id="edit_day_of_week">
+                                Day of Week:</label>
+                            <select class="snapselect"id="edit_day_of_week">
                                 <option value=""></option>
-                                <option value="1">Mon.</option>
-                                <option value="2">Tue.</option>
-                                <option value="3">Wed.</option>
-                                <option value="4">Thu.</option>
-                                <option value="5">Fri.</option>
-                                <option value="6">Sat.</option>
-                                <option value="7">Sun.</option>
+                                <option value="1">Sun.</option>
+                                <option value="2">Mon.</option>
+                                <option value="3">Tue.</option>
+                                <option value="4">Wed.</option>
+                                <option value="5">Thu.</option>
+                                <option value="6">Fri.</option>
+                                <option value="7">Sat.</option>                                
                             </select>
+                            <div id="edit_day_of_week_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div> 
                         </li>
-                        <li id="edit_day_of_month_container">
+                        <li style="margin-top:10px;" id="edit_day_of_month_container">
                             <label for="filter">
-                                Day of the Month:</label>
-                            <select id="edit_day_of_month">
+                                Day of Month:</label>
+                            <select class="snapselect" id="edit_day_of_month">
                                 <option value=""></option>
                                 <option value="1">1</option>
                                 <option value="2">2</option>
@@ -1000,9 +1027,10 @@
                                 <option value="27">27</option>
                                 <option value="28">28</option>
                             </select>
+                            <div id="edit_day_of_month_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div>
                         </li>
                     </ol>
-                    <input type="submit" id="apply_button" value="Apply Schedule" style="background-color:Yellow; width: 150px; height:25px"/>
+                    <input class="ui-state-default" type="submit" id="apply_button" value="Apply Schedule" style="background-color:Yellow; width: 150px; height:20px; margin:15px 0 0 0;"/>
                     </form>
                 </div>
             </div>
@@ -1046,7 +1074,7 @@
 </div>
 <!-- Delete Volume Dialog (end) -->
 <!-- Create Template Dialog (begin) -->
-<div id="dialog_create_template" title="Create Template">
+<div id="dialog_create_template" title="Create Template" style="display:none">
     <p>
         Please specify the following information before creating a template of your disk
         volume: <b><span id="volume_name"></span></b>. Creating a template could take up
@@ -1102,6 +1130,7 @@
 </div>
 <!-- Create Snapshot Dialog (end) -->
 <!--*** Volume (end) *** -->
+
 <!--*** Snapshot (begin) *** -->
 <div class="maincontent" style="display: none;" id="submenu_content_snapshot">
     <div id="maincontent_title">
@@ -1120,24 +1149,16 @@
             <a class="search_button" id="search_button" href="#"></a>
             <div id="advanced_search_link" class="advsearch_link">
                 Advanced</div>
-            <div id="advanced_search3" class="adv_searchpopup" style="display: none;">
+            <div id="advanced_search" class="adv_searchpopup" style="display: none;">
                 <div class="adv_searchformbox">
                     <h3>
                         Advance Search</h3>
                     <form action="#" method="post">
-                    <ol>
-                        <li>
+                    <ol>                       
+                        <li id="adv_search_account_li" style="display: none;">
                             <label for="filter">
-                                Name:</label>
-                            <input class="text" type="text" name="adv_search_name" id="adv_search_name" />
-                        </li>
-                        <li>
-                            <label for="filter">
-                                Role:</label>
-                            <select class="select" id="adv_search_role">
-                                <option value=""></option>
-                                <option value="1">Admin</option>
-                                <option value="0">User</option>
+                                Account:</label>
+                            <select class="select" id="adv_search_account">
                             </select>
                         </li>
                     </ol>
@@ -1166,14 +1187,23 @@
             <div class="hostadmin_showdetailsheader_cell" style="width: 20%">
                 <div class="grid_headertitles">
                     Name</div>
-            </div>
-            <div class="hostadmin_showdetailsheader_cell" style="width: 20%">
-                <div class="grid_headertitles">
-                    Path</div>
-            </div>
+            </div>            
             <div class="hostadmin_showdetailsheader_cell" style="width: 20%">
                 <div class="grid_headertitles">
                     Created</div>
+            </div>
+            <div class="hostadmin_showdetailsheader_cell" style="width: 10%" id="snapshot_account_header">
+                <div class="grid_headertitles">
+                    Account</div>
+            </div>
+            <div class="hostadmin_showdetailsheader_cell" style="width: 10%" id="snapshot_domain_header">
+                <div class="grid_headertitles">
+                    Domain</div>
+            </div>
+            <div class="hostadmin_showdetailsheader_cell" style="width: 20%">
+                <div class="grid_headertitles">
+                    Actions
+                </div>
             </div>
         </div>
         <div id="grid_content">
@@ -1200,8 +1230,16 @@
         </div>
     </div>
 </div>
-<!-- snapshots Template (begin) -->
+
+<!-- Snapshot Template (begin) -->
 <div id="snapshot_template" style="height: 24px; display: none">
+    <div class="adding_loading" style="height: 25px; display: none;">
+        <div class="adding_animation">
+        </div>
+        <div class="adding_text">
+            Waiting &hellip;
+        </div>
+    </div>
     <div id="snapshot_body">
         <div class="hostadmin_showdetailsrow_cell" style="width: 10%">
             <div class="netgrid_celltitles" id="id">
@@ -1210,16 +1248,27 @@
         <div class="hostadmin_showdetailsrow_cell" style="width: 20%">
             <div class="netgrid_celltitles" id="name">
             </div>
-        </div>
-        <div class="hostadmin_showdetailsrow_cell" style="width: 20%">
-            <div class="netgrid_celltitles" id="path">
-            </div>
-        </div>
+        </div>    
         <div class="hostadmin_showdetailsrow_cell" style="width: 20%">
             <div class="netgrid_celltitles" id="created">
             </div>
         </div>
+        <div class="hostadmin_showdetailsrow_cell" style="width: 10%" id="snapshot_account_container">
+            <div class="netgrid_celltitles" id="account">
+            </div>
+        </div>
+        <div class="hostadmin_showdetailsrow_cell" style="width: 10%" id="snapshot_domain_container">
+            <div class="netgrid_celltitles" id="domain">
+            </div>
+        </div>        
+        <div class="hostadmin_showdetailsrow_cell" style="width: 20%">
+            <div class="netgrid_celltitles" id="detail_action">
+                <a id="snapshot_action_create_volume" href="#">Create Volume</a>
+                <span id="volume_acton_separator">&nbsp;&nbsp;|</span>
+                <a id="snapshot_action_delete" href="#">Delete</a>
+            </div>
+        </div>        
     </div>
 </div>
-<!-- snapshots Template (end) -->
+<!-- Snapshot Template (begin) -->
 <!--*** Snapshot (end) *** -->

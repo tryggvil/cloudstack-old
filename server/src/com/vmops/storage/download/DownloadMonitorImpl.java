@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -426,7 +426,7 @@ public class DownloadMonitorImpl implements  DownloadMonitor {
 
 			} else {
 				s_logger.info("Template Sync did not find " + uniqueName + " on the server " + sserverId + ", will request download shortly");
-				VMTemplateHostVO templtHost = new VMTemplateHostVO(sserverId, tmplt.getId(), new Date(), 100, Status.NOT_DOWNLOADED, null, null, null, null);
+				VMTemplateHostVO templtHost = new VMTemplateHostVO(sserverId, tmplt.getId(), new Date(), 0, Status.NOT_DOWNLOADED, null, null, null, null);
 				_vmTemplateHostDao.persist(templtHost);
 			}
 			perhapsSetTemplateReady(tmplt.getId());

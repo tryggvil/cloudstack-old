@@ -1,0 +1,13 @@
+#!/bin/sh -e
+
+case "$1" in
+    configure)
+
+	for i in /var/log/cloud/agent
+	do
+		chmod 0770 $i
+	done
+    ;;
+esac
+
+#DEBHELPER#

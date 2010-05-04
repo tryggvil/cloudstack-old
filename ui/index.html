@@ -2,13 +2,16 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-	<title>VMOps - User Console</title>
+	<title>cloud.com - User Console</title>
 	
 	<!--  Style Sheet -->
 	<link rel= "stylesheet" href="css/main.css" type="text/css" />
 	<link rel= "stylesheet" href="css/jquery-ui-1.7.2.custom.css" type="text/css" />
 	<link rel= "stylesheet" href="css/logger.css" type="text/css" />
     <link rel= "stylesheet" href="css/options/v1/v1_main.css" type="text/css" />
+	
+	<!-- Custom Style Sheet -->
+	<link rel= "stylesheet" href="css/options/cloud/cloud_main.css" type="text/css" />
 	
 	<!-- Javascripts -->
 	<script type="text/javascript" src="scripts/jquery-1.4.min.js"></script>
@@ -21,24 +24,24 @@
 	<!-- Callback script for Single Signon -->
 	<script type="text/javascript" src="scripts/cloud.core.callbacks.js"></script>
 	
-	<!-- VMOps scripts -->
-	<script type="text/javascript" src="scripts/vmops.logger.js"></script>
-	<script type="text/javascript" src="scripts/vmops.core.js"></script>
-	<script type="text/javascript" src="scripts/vmops.core.instances.js"></script>
-	<script type="text/javascript" src="scripts/vmops.core.network.js"></script>
-	<script type="text/javascript" src="scripts/vmops.core.templates.js"></script>
-	<script type="text/javascript" src="scripts/vmops.core.events.js"></script>
-	<script type="text/javascript" src="scripts/vmops.core.hosts.js"></script>
-	<script type="text/javascript" src="scripts/vmops.core.storage.js"></script>
-	<script type="text/javascript" src="scripts/vmops.core.accounts.js"></script>
-	<script type="text/javascript" src="scripts/vmops.core.domains.js"></script>
-	<script type="text/javascript" src="scripts/vmops.core.configuration.js"></script>
+	<!-- cloud.com scripts -->
+	<script type="text/javascript" src="scripts/cloud.logger.js"></script>
+	<script type="text/javascript" src="scripts/cloud.core.js"></script>
+	<script type="text/javascript" src="scripts/cloud.core.instances.js"></script>
+	<script type="text/javascript" src="scripts/cloud.core.network.js"></script>
+	<script type="text/javascript" src="scripts/cloud.core.templates.js"></script>
+	<script type="text/javascript" src="scripts/cloud.core.events.js"></script>
+	<script type="text/javascript" src="scripts/cloud.core.hosts.js"></script>
+	<script type="text/javascript" src="scripts/cloud.core.storage.js"></script>
+	<script type="text/javascript" src="scripts/cloud.core.accounts.js"></script>
+	<script type="text/javascript" src="scripts/cloud.core.domains.js"></script>
+	<script type="text/javascript" src="scripts/cloud.core.configuration.js"></script>
 		
 	<!-- Favicon -->
 	<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 	
 	<!-- Title -->
-	<title>VMOps VM Console</title>
+	<title>cloud.com VM Console</title>
 </head>
 <body>
 <div id="logoutpage" style="display:none;">
@@ -121,7 +124,7 @@
             <div id="menutab_configuration" class="admin_menutab_off">Configuration</div>
         </div>
 		<div class="globalnav_container" id="menutab_role_domain" style="display:none">
-			<div id="menutab_dashboard_root" class="admin_menutab_off">Dashboard</div>
+			<div id="menutab_dashboard_domain" class="admin_menutab_off">Dashboard</div>
             <div id="menutab_vm" class="admin_menutab_off">Instances</div>
 			<div id="menutab_storage" class="admin_menutab_off">Storage</div>
 			<div id="menutab_networking" class="admin_menutab_off">Network</div>

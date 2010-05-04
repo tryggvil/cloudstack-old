@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -57,7 +57,7 @@ public class CreateDomainCmd extends BaseCmd {
         String name = (String)params.get(BaseCmd.Properties.NAME.getName());
         Long parentDomainId = (Long)params.get(BaseCmd.Properties.PARENT_DOMAIN_ID.getName());
 
-        //If account is null, consider System as an owner for this action
+        // If account is null, consider System as an owner for this action
         if (account == null) {
             account = getManagementServer().findAccountById(Long.valueOf(1L));
         }
@@ -70,6 +70,10 @@ public class CreateDomainCmd extends BaseCmd {
         	if (parentDomain == null) {
         		throw new ServerApiException(BaseCmd.PARAM_ERROR, "unable to find parent domain " + parentDomainId);
         	}
+        }
+
+        if (!getManagementServer().isChildDomain(account.getDomainId(), parentDomainId)) {
+            throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Invalid parent domain " + parentDomainId + ", unable to create domain " + name);
         }
 
         DomainVO domain = null;

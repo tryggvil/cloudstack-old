@@ -22,6 +22,8 @@ import shutil
 import subprocess
 import xs_errors
 import cleanup
+import hostvmstats
+import socket
 
 VHD_UTIL = '/usr/sbin/vhd-util'
 def echo(fn):
@@ -32,6 +34,16 @@ def echo(fn):
         util.SMlog("#### VMOPS exit  %s ####" % name )
         return res
     return wrapped
+
+@echo
+def gethostvmstats(session, args):
+	collect_host_stats = args['collectHostStats']
+	consolidation_function = args['consolidationFunction']
+	interval = args['interval']
+	start_time = args['startTime']
+	result = hostvmstats.get_stats(collect_host_stats, consolidation_function, interval, start_time)
+	util.SMlog("#### vmStats: " + result)
+	return result
 
 @echo
 def getvncport(session, args):
@@ -59,17 +71,6 @@ def getnetwork(session, args):
     except:
         txt = ''
     
-    return txt
-
-@echo
-def getgateway(session, args):
-    mgmt_ip = args['mgmtIP']
-    try:
-        cmd = ["bash", "/opt/xensource/bin/network_info.sh", "-g", mgmt_ip]
-        txt = util.pread2(cmd)
-    except:
-        txt = ''
-
     return txt
 
 @echo
@@ -122,6 +123,21 @@ def patchdomr(session, args):
 
     return txt
 
+@echo
+def pingdomr(session, args):
+    host = args['host']
+    port = args['port']
+    socket.setdefaulttimeout(3)
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.connect((host,int(port)))
+        txt = 'success'
+    except:
+        txt = ''
+    
+    s.close()
+
+    return txt
 
 @echo
 def ipassoc(session, args):
@@ -217,7 +233,7 @@ def checkMount(session, args):
 def isfile(path):
     try:
         if not os.path.isfile(path):
-            errMsg = " File " + path + " does not exist."
+            errMsg = "File " + path + " does not exist."
             util.SMlog(errMsg)
             raise xs_errors.XenError(errMsg)
     except OSError, (errno, strerror):
@@ -242,6 +258,7 @@ def chdir(path):
         errMsg = "Unable to chdir to " + path + " because of OSError with errno: " + str(errno) + " and strerr: " + strerror
         util.SMlog(errMsg)
         raise xs_errors.XenError(errMsg)
+    util.SMlog("Chdired to " + path)
     return
 
 def coalesce(vhdPath):
@@ -257,6 +274,36 @@ def coalesce(vhdPath):
     
     return
 
+def getParent(path):
+    parentUUID = ''
+    try :
+        parentUUID = vhdutil.getParent(path, cleanup.FileVDI.extractUuid)
+    except:
+        errMsg = "Could not get vhd parent of " + path
+        util.SMlog(errMsg)
+        raise xs_errors.XenError(errMsg)
+    return parentUUID
+
+def setParent(parent, child):
+    try:
+        cmd = [VHD_UTIL, "modify", "-p", parent, "-n", child]
+        txt = util.pread2(cmd)
+    except:
+        errMsg = "Unexpected error while trying to set parent of " + child + " to " + parent 
+        util.SMlog(errMsg)
+        raise xs_errors.XenError(errMsg)
+    util.SMlog("Successfully set parent of " + child + " to " + parent)
+    return
+
+def rename(originalVHD, newVHD):
+    try:
+        os.rename(originalVHD, newVHD)
+    except OSError, (errno, strerror):
+        errMsg = "OSError while renaming " + origiinalVHD + " to " + newVHD + "with errno: " + str(errno) + " and strerr: " + strerror
+        util.SMlog(errMsg)
+        raise xs_errors.XenError(errMsg)
+    return
+
 def coalesceToChild(backupVHD, childUUID):
     # coalesce childVHD with its parent
     childVHD = childUUID + '.' + SR.DEFAULT_TAP
@@ -267,12 +314,7 @@ def coalesceToChild(backupVHD, childUUID):
     
     # rename the existing backupVHD file to childVHD
     # childVHD file automatically gets overwritten
-    try:
-        os.rename(backupVHD, childVHD)
-    except OSError, (errno, strerror):
-        errMsg = "OSError while rename " + backupVHD + " to " + childVHD + "with errno: " + str(errno) + " and strerr: " + strerror
-        util.SMlog(errMsg)
-        raise xs_errors.XenError(errMsg)
+    rename(backupVHD, childVHD)
 
     # parent of the newly coalesced file still remains the same.
     # child of childVHD has it's parent name still set to childVHD.
@@ -333,18 +375,13 @@ def backupSnapshot(session, args):
     volumeName                = args['volumeName']
     secondaryStorageMountPath = args['secondaryStorageMountPath']
     lastBackedUpBaseCopy      = args['lastBackedUpSnapshotUuid']
+    isFirstSnapshotOfRootVolume = args['isFirstSnapshotOfRootVolume']
 
     primarySRPath = os.path.join(SR.MOUNT_BASE, primaryStorageSRUuid)
     snapshotVHD  = snapshotUuid + '.' + SR.DEFAULT_TAP
     snapshotPath = os.path.join(primarySRPath, snapshotVHD)
-    baseCopyUuid = ''
-    try :
-        baseCopyUuid = vhdutil.getParent(snapshotPath, cleanup.FileVDI.extractUuid)
-    except:
-        errMsg = "Could not get vhd parent of " + snapshotPath
-        util.SMlog(errMsg)
-        raise xs_errors.XenError(errMsg)
-
+    
+    baseCopyUuid = getParent(snapshotPath)
     baseCopyPath = os.path.join(primarySRPath, baseCopyUuid)
     baseCopyPath = baseCopyPath + '.' + SR.DEFAULT_TAP
     util.SMlog("Base copy path: " + baseCopyPath)
@@ -354,21 +391,27 @@ def backupSnapshot(session, args):
     backupsDir = mountSecondaryStorage(secondaryStorageMountPath, volumeName)
     util.SMlog("Backups dir " + backupsDir)
 
+    # chdir to the backupsDir for convenience
+    chdir(backupsDir)
+    baseCopyVHD = baseCopyUuid + '.' + SR.DEFAULT_TAP
+    lastBackedUpVHD = ''
+    if (len(lastBackedUpBaseCopy) != 0):
+        lastBackedUpVHD = lastBackedUpBaseCopy + '.' + SR.DEFAULT_TAP
+
     if baseCopyUuid == lastBackedUpBaseCopy:
+        # lastBackedUpBaseCopy exists.
         # There has been no change since the last snapshot so no need to backup 
-        lastBackedUpBaseCopyPath = os.path.join(backupsDir, lastBackedUpBaseCopy)
-        lastBackedUpBaseCopyPath = lastBackedUpBaseCopyPath + '.' + SR.DEFAULT_TAP
 
         try:
-            if not os.path.isfile(lastBackedUpBaseCopyPath):
-               util.SMlog("Serious error. Last known backed up base copy " + lastBackedUpBaseCopyPath + " is not present. Trying to backup it again")
+            if not os.path.isfile(lastBackedUpVHD):
+               util.SMlog("Serious error. Last known backed up base copy " + lastBackedUpVHD + " is not present. Trying to backup it again")
             else:
                 # The backing up is already done. So return without doing anything further.
                 # Set the uuid of the current backup to that of last backup
                 txt = "1#" + lastBackedUpBaseCopy
                 return txt
         except OSError, (errno, strerror):
-            errMsg = "OSError while checking existence of " + lastBackedUpBaseCopyPath + " with errno: " + str(errno) + " and strerr: " + strerror
+            errMsg = "OSError while checking existence of " + lastBackedUpVHD + " with errno: " + str(errno) + " and strerr: " + strerror
             util.SMlog(errMsg)
             raise xs_errors.XenError(errMsg)
 
@@ -378,12 +421,45 @@ def backupSnapshot(session, args):
     isfile(baseCopyPath)
     # copy baseCopyPath to backupsDir
     copyfile(baseCopyPath, backupsDir)
+
+    # Because the primary storage is always scanned, the parent of this base copy is always the first base copy.
+    # We don't want that, we want a chain of VHDs each of which is a delta from the previous.
+    # So set the parent of the current baseCopyVHD to lastBackedUpVHD
+    if (lastBackedUpVHD):
+        # If there was a previous backup
+        setParent(lastBackedUpVHD, baseCopyVHD)
+
     
+    if (isFirstSnapshotOfRootVolume) and (isFirstSnapshotOfRootVolume == 'true'):
+        # First snapshot of the root volume.
+        # It's parent is not null, but the template vhd.
+        # Create a dummy with the same virtual size as all the snapshots and set the parent of backupVHD to it.
+        # This will prevent deleteSnapshotBackup and createVolumeFromSnapshot from breaking
+        dummyVhd = ''
+        try:
+            newUUID = util.gen_uuid()
+            dummyVhd = newUUID + '.' + SR.DEFAULT_TAP
+            cmd = [VHD_UTIL, 'query', '-v', '-n', baseCopyVHD]
+            virtualSizeInMB = util.pread2(cmd)
+            util.SMlog("Virtual size of " + baseCopyVHD + " is " + virtualSizeInMB)
+            cmd = [VHD_UTIL, 'create', '-n', dummyVhd, '-s', virtualSizeInMB]
+            txt = util.pread2(cmd)
+        except:
+            txt = ''
+            errMsg = "Unexpected error while creating a dummy VHD " + dummyVhd + " with virtual size " + virtualSizeInMB + " on " + backupsDir
+            util.SMlog(errMsg)
+            xs_errors.XenError(errMsg)
+        util.SMlog("Successfully created a new dummy vhd " + dummyVhd + " with virtual size " + virtualSizeInMB + " on " + backupsDir)
+
+        # Set the parent of backupVhd to dummyVhd
+        setParent(dummyVhd, baseCopyVHD)
+
     txt = "1#" + baseCopyUuid
     return txt
 
 @echo
 def deleteSnapshotBackup(session, args):
+    util.SMlog("Calling deleteSnapshotBackup with " + str(args))
     volumeName                = args['volumeName']
     secondaryStorageMountPath = args['secondaryStorageMountPath']
     backupUUID                = args['backupUUID']
@@ -396,9 +472,10 @@ def deleteSnapshotBackup(session, args):
     backupVHD = backupUUID + '.' + SR.DEFAULT_TAP
     util.SMlog("checking existence of " + backupVHD)
     isfile(backupVHD)
-        
+
     # Case 1) childUUID exists
-    if childUUID is not None:
+    # I know empty strings default to false, but feel it's obscure programming.
+    if (childUUID is not None) and (len(childUUID) != 0):
         coalesceToChild(backupVHD, childUUID)
     else:
         # Just delete the backupVHD
@@ -413,6 +490,7 @@ def deleteSnapshotBackup(session, args):
 
 @echo
 def createVolumeFromSnapshot(session, args):
+    util.SMlog("Calling createVolumeFromSnapshot with " + str(args))
     primaryStorageSRUuid      = args['primaryStorageSRUuid']
     volumeName                = args['volumeName']
     secondaryStorageMountPath = args['secondaryStorageMountPath']
@@ -443,6 +521,11 @@ def createVolumeFromSnapshot(session, args):
     # Copy all the vhds to a temp directory
     # Create a temp directory
     tempDir = backupsDir + '_temp'
+
+    # Delete the temp directory if it already exists (from a previous createVolumeFromSnapshot)
+    rmtree(tempDir)
+    
+    # Now create a new one.
     try:
         os.mkdir(tempDir)
     except OSError, (errno, strerror):
@@ -488,9 +571,10 @@ def createVolumeFromSnapshot(session, args):
     
     finalVhd = vhdChain[len(vhdChain) - 1]
     util.SMlog("successfully coalesced all vhds to the parent " + finalVhd)
-    finalVhdPath = os.path.join(tempDir, finalVhd)
-
-    # Copy the final vhd to the primary storage with a different uuid
+    
+    # There is already a VDI (the original one from which this snapshot was taken)
+    # If we try to introduce this snapshot as it is, it will give an error saying uniqueness conflict.
+    # Rename the vhd with a new uuid so that it can get introduced into the VDI database
     # generate a uuid
     newUUID = ''
     try:
@@ -501,24 +585,64 @@ def createVolumeFromSnapshot(session, args):
         raise xs_errors.XenError(errMsg)
     util.SMlog("generated a uuid " + newUUID)
 
-    # new vhd on primary storage
     newVhd = newUUID + '.' + SR.DEFAULT_TAP
+    rename(finalVhd, newVhd)
 
-    # new vhdPath
-    newVhdPath = os.path.join(primarySRPath, newVhd)
-    copyfile(finalVhdPath, newVhdPath)
-
-    # delete the temporary directory created on secondary storage
+    # set the hidden flag of the final VHD to false, so that it doesn't get deleted when the SR scan is done.
     try:
-        shutil.rmtree(tempDir)
-    except OSError, (errno, strerror):
-        errMsg = "Error while deleting the " + tempDir + " on secondary storage with errno: " + str(errno) + " and strerr: " + strerror + ". Please delete it manually"
+        vhdutil.setHidden(newVhd, False)
+    except:
+        errMsg = "Unexpected error while trying to set Hidden flag of " + newVhd
         util.SMlog(errMsg)
-    util.SMlog("Successfully deleted " + tempDir)
+        raise xs_errors.XenError(errMsg)
+    util.SMlog("Successfully set hidden flag of " + newVhd)
 
-    txt = "1#" + newUUID
+    # The old method of copying the VHD directly to primary storage and doing a VDI.introduce doesn't work anymore
+    # There is a more complex process being done in XenServerResource.
+    return "1#" + newUUID 
+
+def rmtree(path):
+    if os.path.isdir(path):
+        try:
+            shutil.rmtree(path)
+        except OSError, (errno, strerror):
+            errMsg = "Error while deleting " + path + " on secondary storage with errno: " + str(errno) + " and strerr: " + strerror + ". Please delete it manually"
+            util.SMlog(errMsg)
+        util.SMlog("Successfully deleted " + path)
+    else:
+        util.SMlog("Could not find directory with path " + path)
+    return
+
+@echo
+def stitchSnapshotDeltaToTemplate(session, args):
+    util.SMlog("Calling stitchSnapshotDeltaToTemplate with " + str(args))
+    primaryStorageSRUuid = args['primaryStorageSRUuid']
+    rootVdiUUID          = args['rootVdiUUID']
+    snapshotVdiUUID      = args['snapshotVdiUUID']
+
+    primarySRPath = os.path.join(SR.MOUNT_BASE, primaryStorageSRUuid)
+    rootVHD = rootVdiUUID + '.' + SR.DEFAULT_TAP
+    rootVhdPath = os.path.join(primarySRPath, rootVHD)
+
+    snapshotVHD = snapshotVdiUUID + '.' + SR.DEFAULT_TAP
+    snapshotVHDPath = os.path.join(primarySRPath, snapshotVHD)
+    setParent(rootVhdPath, snapshotVHDPath)
+
+    return "1"
+
+@echo
+def networkUsage(session, args):
+    sargs = args['args']
+    cmd = sargs.split(' ')
+    cmd.insert(0, "/opt/xensource/bin/networkUsage.sh")
+    cmd.insert(0, "/bin/bash")
+    try:
+        txt = util.pread2(cmd)
+    except:
+        util.SMlog("  network usage error "  )
+        txt = '' 
+
     return txt
 
-
 if __name__ == "__main__":
-    XenAPIPlugin.dispatch({"getvncport": getvncport, "getnetwork": getnetwork, "getgateway": getgateway, "preparemigration": preparemigration, "setIptables": setIptables, "patchdomr": patchdomr, "ipassoc": ipassoc, "savePassword": savePassword, "saveDhcpEntry": saveDhcpEntry, "setFirewallRule": setFirewallRule, "checkMount": checkMount, "backupSnapshot": backupSnapshot, "deleteSnapshotBackup": deleteSnapshotBackup, "createVolumeFromSnapshot": createVolumeFromSnapshot})
+    XenAPIPlugin.dispatch({"gethostvmstats": gethostvmstats, "getvncport": getvncport, "getnetwork": getnetwork, "preparemigration": preparemigration, "setIptables": setIptables, "patchdomr": patchdomr, "pingdomr": pingdomr, "ipassoc": ipassoc, "savePassword": savePassword, "saveDhcpEntry": saveDhcpEntry, "setFirewallRule": setFirewallRule, "checkMount": checkMount, "backupSnapshot": backupSnapshot, "deleteSnapshotBackup": deleteSnapshotBackup, "createVolumeFromSnapshot": createVolumeFromSnapshot, "stitchSnapshotDeltaToTemplate": stitchSnapshotDeltaToTemplate, "networkUsage": networkUsage})

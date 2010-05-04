@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -31,6 +31,7 @@ import org.apache.log4j.Logger;
 
 import com.vmops.storage.Storage;
 import com.vmops.storage.VMTemplateVO;
+import com.vmops.user.Account;
 import com.vmops.utils.db.GenericDaoBase;
 import com.vmops.utils.db.SearchBuilder;
 import com.vmops.utils.db.SearchCriteria;
@@ -40,7 +41,7 @@ import com.vmops.utils.db.Transaction;
 public class VMTemplateDaoImpl extends GenericDaoBase<VMTemplateVO, Long> implements VMTemplateDao {
     private static final Logger s_logger = Logger.getLogger(VMTemplateDaoImpl.class);
 
-    private final String SELECT_ALL = "SELECT t.id, t.unique_name, t.name, t.public, t.type, t.hvm, t.bits, t.url, t.format, t.created, t.account_id, " +
+    private final String SELECT_ALL = "SELECT t.id, t.unique_name, t.name, t.public, t.featured, t.type, t.hvm, t.bits, t.url, t.format, t.created, t.account_id, " +
                                        "t.checksum, t.ready, t.create_status, t.display_text, t.enable_password, t.guest_os_id, t.bootable FROM vm_template t";
 
     protected SearchBuilder<VMTemplateVO> TemplateNameSearch;
@@ -115,7 +116,7 @@ public class VMTemplateDaoImpl extends GenericDaoBase<VMTemplateVO, Long> implem
 		boolean result = super.configure(name, params);
 		
 	    PublicSearch = createSearchBuilder();
-	    PublicSearch.addAnd("public", PublicSearch.entity().isPublicTemplate(), SearchCriteria.Op.EQ);
+	    PublicSearch.and("public", PublicSearch.entity().isPublicTemplate(), SearchCriteria.Op.EQ);
 
 		routerTmpltName = (String)params.get("routing.uniquename");
 		
@@ -131,13 +132,13 @@ public class VMTemplateDaoImpl extends GenericDaoBase<VMTemplateVO, Long> implem
 			s_logger.debug("Use console proxy template : " + consoleProxyTmpltName);
 		
 		TemplateNameSearch = createSearchBuilder();
-		TemplateNameSearch.addAnd("name", TemplateNameSearch.entity().getName(), SearchCriteria.Op.EQ);
+		TemplateNameSearch.and("name", TemplateNameSearch.entity().getName(), SearchCriteria.Op.EQ);
 		UniqueNameSearch = createSearchBuilder();
-		UniqueNameSearch.addAnd("uniqueName", UniqueNameSearch.entity().getUniqueName(), SearchCriteria.Op.EQ);
+		UniqueNameSearch.and("uniqueName", UniqueNameSearch.entity().getUniqueName(), SearchCriteria.Op.EQ);
 
 		AccountIdSearch = createSearchBuilder();
-		AccountIdSearch.addAnd("accountId", AccountIdSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
-        AccountIdSearch.addAnd("publicTemplate", AccountIdSearch.entity().isPublicTemplate(), SearchCriteria.Op.EQ);
+		AccountIdSearch.and("accountId", AccountIdSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
+        AccountIdSearch.and("publicTemplate", AccountIdSearch.entity().isPublicTemplate(), SearchCriteria.Op.EQ);
 		AccountIdSearch.done();
 
 		return result;
@@ -149,43 +150,49 @@ public class VMTemplateDaoImpl extends GenericDaoBase<VMTemplateVO, Long> implem
 	}
 
 	@Override
-	public List<VMTemplateVO> searchTemplates(String name, String keyword, Boolean isReady, Boolean isPublic, boolean isIso, Boolean bootable, Long accountId, Integer pageSize, Long startIndex) {
+	public List<VMTemplateVO> searchTemplates(String name, String keyword, TemplateFilter templateFilter, boolean isIso, Boolean bootable, Account account, Integer pageSize, Long startIndex) {
         Transaction txn = Transaction.currentTxn();
         List<VMTemplateVO> templates = new ArrayList<VMTemplateVO>();
         PreparedStatement pstmt = null;
         try {
+        	Long accountId = null;
+        	boolean isAdmin = false;
+        	if (account != null) {
+        		isAdmin = account.getType() == Account.ACCOUNT_TYPE_ADMIN;
+        		accountId = account.getId();
+        	} else {
+        		isAdmin = true;
+        	}
+        	
             String sql = SELECT_ALL;
-
-            // prepare the where, order by, and limit clauses
+            
             String whereClause = "";
-            if ((isPublic != null) && (isPublic.booleanValue() == true) &&
-                (isReady != null) && (isReady.booleanValue() == true)) {
-                whereClause = getPublicReadyTemplateWhere();
-            } else if ((isPublic != null) && (isPublic.booleanValue() == true) &&
-                       (isReady != null) && (isReady.booleanValue() == false)) {
-                whereClause = getPublicNonReadyTemplateWhere(accountId);
-            } else if ((isPublic != null) && (isPublic.booleanValue() == true) && (isReady == null)) {
-                whereClause = getPublicTemplateWhere(accountId);
-            } else if ((isPublic != null) && (isPublic.booleanValue() == false) &&
-                       (isReady != null) && (isReady.booleanValue() == true)) {
-                whereClause = getReadyPrivateTemplateWhere(accountId);
-            } else if ((isPublic != null) && (isPublic.booleanValue() == false) &&
-                       (isReady != null) && (isReady.booleanValue() == false)) {
-                whereClause = getNonReadyPrivateTemplateWhere(accountId);
-            } else if ((isPublic != null) && (isPublic.booleanValue() == false) && (isReady == null)) {
-                whereClause = getPrivateTemplateWhere(accountId);
-            } else if ((isPublic == null) && (isReady != null) && (isReady.booleanValue() == true)) {
-                whereClause = getReadyTemplateWhere(accountId);
-            } else if ((isPublic == null) && (isReady != null) && (isReady.booleanValue() == false)) {
-                whereClause = getNonReadyTemplateWhere(accountId);
-            } else if ((isPublic == null) && (isReady == null)) {
-                whereClause = getTemplateWhere(accountId);
+            if (templateFilter == templateFilter.featured) {
+            	whereClause += " WHERE t.public = 1 AND t.featured = 1 AND t.ready = 1";
+            } else if (templateFilter == templateFilter.self && accountId != null && !isAdmin) {
+            	whereClause += " WHERE t.account_id = " + accountId.toString();
+            } else if (templateFilter == templateFilter.selfexecutable) {
+            	if (accountId != null && !isAdmin) {
+            		whereClause += " LEFT JOIN launch_permission lp ON t.id = lp.template_id WHERE t.ready = 1 AND" +
+                	" (t.account_id = " + accountId.toString() + ") OR" +
+                	" (lp.account_id = " + accountId.toString() + ")";
+            	} else {
+            		whereClause += " WHERE t.ready = 1";
+            	}
+            } else if (templateFilter == templateFilter.community) {
+            	whereClause += " WHERE t.public = 1 AND t.featured = 0 AND t.ready = 1";
+            } else if (templateFilter == templateFilter.all && isAdmin) {
+            	whereClause += " WHERE ";
+            } else if (!isAdmin) {
+            	return templates;
             }
-            if ((whereClause == null) || "".equals(whereClause)) {
-                whereClause = " WHERE";
-            } else {
-                whereClause += " AND";
+            
+            if (whereClause.equals("")) {
+            	whereClause += " WHERE ";
+            } else if (!whereClause.equals(" WHERE ")) {
+            	whereClause += " AND ";
             }
+            
             sql += whereClause + getExtrasWhere(name, keyword, isIso, bootable) + getOrderByLimit(pageSize, startIndex);
 
             pstmt = txn.prepareAutoCloseStatement(sql);

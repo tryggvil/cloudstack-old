@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -37,6 +37,14 @@ public class NfsUtils {
         safe = safe.replace("\\", "");
         safe = safe.replace("/", "");
         return safe;
+    }
+    
+    public static String getHostPart(String nfsPath)  {
+    	String toks[] = nfsPath.split(":");
+    	if (toks != null && toks.length == 2) {
+    		return toks[0];
+    	}
+    	return null;
     }
 
 }

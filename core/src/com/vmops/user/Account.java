@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -24,6 +24,10 @@ public interface Account {
     public static final short ACCOUNT_TYPE_DOMAIN_ADMIN = 2;
     public static final short ACCOUNT_TYPE_READ_ONLY_ADMIN = 3;
 
+    public static final String ACCOUNT_STATE_DISABLED = "disabled";
+    public static final String ACCOUNT_STATE_ENABLED = "enabled";
+    public static final String ACCOUNT_STATE_LOCKED = "locked";
+
     public static final long ACCOUNT_ID_SYSTEM = 1; 
 
     public Long getId();
@@ -31,6 +35,8 @@ public interface Account {
     public void setAccountName(String accountId);
     public short getType();
     public void setType(short type);
+    public String getState();
+    public void setState(String state);
     public Long getDomainId();
     public void setDomainId(Long domainId);
 }

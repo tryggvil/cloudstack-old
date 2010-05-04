@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -115,6 +115,15 @@ public class DestroyVMExecutor extends VMOperationExecutor {
 	        List<VolumeVO> volumes = asyncMgr.getExecutorContext().getVolumeDao().findByInstance(param.getVmId());
 	        for (VolumeVO volume : volumes) {
 	        	asyncMgr.getExecutorContext().getVolumeDao().destroyVolume(volume.getId());
+	            String eventParams = "id=" + volume.getId();
+	            event = new EventVO();
+	            event.setAccountId(volume.getAccountId());
+	            event.setUserId(1L);
+	            event.setType(EventTypes.EVENT_VOLUME_DELETE);
+	            event.setParameters(eventParams);
+	            event.setDescription("Volume deleted");
+	            event.setLevel(EventVO.LEVEL_INFO);
+	            asyncMgr.getExecutorContext().getEventDao().persist(event);
 	        }
 	        
 	        asyncMgr.getExecutorContext().getAccountMgr().decrementResourceCount(vm.getAccountId(), ResourceType.volume, new Long(volumes.size()));

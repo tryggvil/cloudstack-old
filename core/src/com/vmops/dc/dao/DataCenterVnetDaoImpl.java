@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -121,20 +121,20 @@ public class DataCenterVnetDaoImpl extends GenericDaoBase<DataCenterVnetVO, Long
     protected DataCenterVnetDaoImpl() {
     	super();
         DcSearchAllocated = createSearchBuilder();
-        DcSearchAllocated.addAnd("dc", DcSearchAllocated.entity().getDataCenterId(), SearchCriteria.Op.EQ);
-        DcSearchAllocated.addAnd("allocated", DcSearchAllocated.entity().getTakenAt(), SearchCriteria.Op.NNULL);
+        DcSearchAllocated.and("dc", DcSearchAllocated.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        DcSearchAllocated.and("allocated", DcSearchAllocated.entity().getTakenAt(), SearchCriteria.Op.NNULL);
         DcSearchAllocated.done();
         
         FreeVnetSearch = createSearchBuilder();
-        FreeVnetSearch.addAnd("dc", FreeVnetSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
-        FreeVnetSearch.addAnd("taken", FreeVnetSearch.entity().getTakenAt(), SearchCriteria.Op.NULL);
+        FreeVnetSearch.and("dc", FreeVnetSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        FreeVnetSearch.and("taken", FreeVnetSearch.entity().getTakenAt(), SearchCriteria.Op.NULL);
         FreeVnetSearch.done();
 
         VnetDcSearch = createSearchBuilder();
-        VnetDcSearch.addAnd("vnet", VnetDcSearch.entity().getVnet(), SearchCriteria.Op.EQ);
-        VnetDcSearch.addAnd("dc", VnetDcSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
-        VnetDcSearch.addAnd("taken", VnetDcSearch.entity().getTakenAt(), SearchCriteria.Op.NNULL);
-        VnetDcSearch.addAnd("account", VnetDcSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
+        VnetDcSearch.and("vnet", VnetDcSearch.entity().getVnet(), SearchCriteria.Op.EQ);
+        VnetDcSearch.and("dc", VnetDcSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        VnetDcSearch.and("taken", VnetDcSearch.entity().getTakenAt(), SearchCriteria.Op.NNULL);
+        VnetDcSearch.and("account", VnetDcSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
         VnetDcSearch.done();
     }
 }

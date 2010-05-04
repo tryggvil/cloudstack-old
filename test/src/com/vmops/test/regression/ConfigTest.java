@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -57,7 +57,7 @@ public class ConfigTest extends TestCase{
 		    
 		    
 		    if (api.getName().equals("rebootManagementServer")) {
-		    	//ssh to the management servers listed in the xml and restart a vmops-management process
+		    	//ssh to the management servers listed in the xml and restart a cloud-management process
 		    	//NodeList ipList = fstElmnt.getElementsByTagName("ip");
 		    	//for (int j=0; j<ipList.getLength(); j++) {
 		    		//Element itemVariableElement = (Element) ipList.item(j);
@@ -77,7 +77,7 @@ public class ConfigTest extends TestCase{
 							return false;
 						}
 						
-						String restartCommand = "service vmops-management restart; service vmops-usage restart";
+						String restartCommand = "service cloud-management restart; service cloud-usage restart";
 						Session sess = conn.openSession();
 						s_logger.info("Executing : " + restartCommand);
 						sess.execCommand(restartCommand);

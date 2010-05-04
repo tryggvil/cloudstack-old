@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -391,7 +391,7 @@ public class AlertManagerImpl implements AlertManager {
                     for (VolumeVO volume : volumes) {
                         disk += volume.getSize();
                     }
-                    CapacityVO newStorageCapacity = new CapacityVO(pool.getId(), pool.getDataCenterId(), null, disk, pool.getCapacityBytes() * _overProvisioningFactor, CapacityVO.CAPACITY_TYPE_STORAGE_ALLOCATED);
+                    CapacityVO newStorageCapacity = new CapacityVO(pool.getId(), pool.getDataCenterId(), pool.getPodId(), disk, pool.getCapacityBytes() * _overProvisioningFactor, CapacityVO.CAPACITY_TYPE_STORAGE_ALLOCATED);
                     _capacityDao.persist(newStorageCapacity);
 
                     continue;

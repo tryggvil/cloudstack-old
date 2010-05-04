@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -27,6 +27,7 @@ import org.apache.log4j.Logger;
 import com.vmops.api.BaseCmd;
 import com.vmops.api.ServerApiException;
 import com.vmops.storage.VMTemplateVO;
+import com.vmops.user.Account;
 import com.vmops.utils.Pair;
 
 public class RegisterTemplateCmd extends BaseCmd {
@@ -43,6 +44,7 @@ public class RegisterTemplateCmd extends BaseCmd {
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.PASSWORD_ENABLED, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.REQUIRES_HVM, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.IS_PUBLIC, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.IS_FEATURED, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT_OBJ, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.USER_ID, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.FORMAT, Boolean.TRUE));
@@ -61,7 +63,7 @@ public class RegisterTemplateCmd extends BaseCmd {
 
     @Override
     public List<Pair<String, Object>> execute(Map<String, Object> params) {
-        //Account account = (Account)params.get(BaseCmd.Properties.ACCOUNT_OBJ.getName());
+        Account account = (Account)params.get(BaseCmd.Properties.ACCOUNT_OBJ.getName());
         Long userId = (Long)params.get(BaseCmd.Properties.USER_ID.getName());
         String description = (String)params.get(BaseCmd.Properties.DISPLAY_TEXT.getName());
         String name = (String)params.get(BaseCmd.Properties.NAME.getName());
@@ -70,6 +72,7 @@ public class RegisterTemplateCmd extends BaseCmd {
         Boolean requiresHVM = (Boolean)params.get(BaseCmd.Properties.REQUIRES_HVM.getName());
         String url = (String)params.get(BaseCmd.Properties.URL.getName());
         Boolean isPublic = (Boolean)params.get(BaseCmd.Properties.IS_PUBLIC.getName());
+        Boolean featured = (Boolean)params.get(BaseCmd.Properties.IS_FEATURED.getName());
         String format = (String)params.get(BaseCmd.Properties.FORMAT.getName());
         Long guestOSId = (Long) params.get(BaseCmd.Properties.OS_TYPE_ID.getName());
 
@@ -86,6 +89,23 @@ public class RegisterTemplateCmd extends BaseCmd {
         if (isPublic == null) {
             isPublic = true;
         }
+        
+        long accountId = 1L; // default to system account
+        if (account != null) {
+            accountId = account.getId().longValue();
+        }
+        
+        Account accountObj;
+        if (account == null) {
+        	accountObj = getManagementServer().findAccountById(accountId);
+        } else {
+        	accountObj = account;
+        }
+        
+        boolean isAdmin = (accountObj.getType() == Account.ACCOUNT_TYPE_ADMIN);
+        if (!isAdmin || featured == null) {
+        	featured = Boolean.FALSE;
+        }
 
         //If command is executed via 8096 port, set userId to the id of System account (1)
         if (userId == null) {
@@ -94,7 +114,7 @@ public class RegisterTemplateCmd extends BaseCmd {
 
         Long templateId;
         try {
-        	templateId = getManagementServer().createTemplate(userId, name, isPublic, format, "ext3", url, null, requiresHVM, bits, passwordEnabled, guestOSId, true);
+        	templateId = getManagementServer().createTemplate(userId, name, isPublic, featured, format, "ext3", url, null, requiresHVM, bits, passwordEnabled, guestOSId, true);
         } catch (Exception ex) {
             throw new ServerApiException(BaseCmd.INTERNAL_ERROR, ex.getMessage());
         }
@@ -103,18 +123,6 @@ public class RegisterTemplateCmd extends BaseCmd {
     	if (template != null) {
     		List<Pair<String, Object>> templateData = new ArrayList<Pair<String, Object>>();
     		
-    		// TODO : when UI has complated migration, remove following block
-            templateData.add(new Pair<String, Object>(BaseCmd.Properties.ID.getName(), template.getId().toString()));
-            templateData.add(new Pair<String, Object>(BaseCmd.Properties.NAME.getName(), template.getName()));
-            templateData.add(new Pair<String, Object>(BaseCmd.Properties.DISPLAY_TEXT.getName(), template.getDisplayText()));
-            templateData.add(new Pair<String, Object>(BaseCmd.Properties.IS_PUBLIC.getName(), Boolean.valueOf(template.isPublicTemplate()).toString()));
-            templateData.add(new Pair<String, Object>(BaseCmd.Properties.REQUIRES_HVM.getName(), new Boolean(template.requiresHvm()).toString()));
-            templateData.add(new Pair<String, Object>(BaseCmd.Properties.BITS.getName(), Integer.valueOf(template.getBits()).toString()));
-            templateData.add(new Pair<String, Object>(BaseCmd.Properties.CREATED.getName(), getDateString(template.getCreated())));
-            templateData.add(new Pair<String, Object>(BaseCmd.Properties.IS_READY.getName(), Boolean.valueOf(template.isReady()).toString()));
-            templateData.add(new Pair<String, Object>(BaseCmd.Properties.PASSWORD_ENABLED.getName(), Boolean.valueOf(template.getEnablePassword()).toString()));
-            templateData.add(new Pair<String, Object>(BaseCmd.Properties.FORMAT.getName(), template.getFormat().toString()));
-
             // Use embeded object for response
             List<Pair<String, Object>> listForEmbeddedObject = new ArrayList<Pair<String, Object>>();
             listForEmbeddedObject.add(new Pair<String, Object>(BaseCmd.Properties.ID.getName(), template.getId().toString()));
@@ -125,8 +133,10 @@ public class RegisterTemplateCmd extends BaseCmd {
             listForEmbeddedObject.add(new Pair<String, Object>(BaseCmd.Properties.BITS.getName(), Integer.valueOf(template.getBits()).toString()));
             listForEmbeddedObject.add(new Pair<String, Object>(BaseCmd.Properties.CREATED.getName(), getDateString(template.getCreated())));
             listForEmbeddedObject.add(new Pair<String, Object>(BaseCmd.Properties.IS_READY.getName(), Boolean.valueOf(template.isReady()).toString()));
+            listForEmbeddedObject.add(new Pair<String, Object>(BaseCmd.Properties.IS_FEATURED.getName(), Boolean.valueOf(template.isFeatured()).toString()));
             listForEmbeddedObject.add(new Pair<String, Object>(BaseCmd.Properties.PASSWORD_ENABLED.getName(), Boolean.valueOf(template.getEnablePassword()).toString()));
             listForEmbeddedObject.add(new Pair<String, Object>(BaseCmd.Properties.FORMAT.getName(), template.getFormat().toString()));
+            listForEmbeddedObject.add(new Pair<String, Object>(BaseCmd.Properties.OS_TYPE_ID.getName(), template.getGuestOSId()));
             
             templateData.add(new Pair<String, Object>("template", new Object[] { listForEmbeddedObject } ));
             return templateData;

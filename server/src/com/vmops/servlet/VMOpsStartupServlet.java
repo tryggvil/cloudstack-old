@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -50,6 +50,8 @@ public class VMOpsStartupServlet extends HttpServlet {
 	    	throw new ServletException (ipve.getMessage());
 	    } catch (InternalErrorException iee) {
 	    	throw new ServletException (iee.getMessage());
+	    } catch (Exception e) {
+	    	throw new ServletException (e.getMessage());
 	    }
 
 	    s_locator = ComponentLocator.getLocator(ManagementServer.Name);

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -71,12 +71,12 @@ public class ConsoleProxy {
 	static String management_host = "localhost";
 
 	private static void configLog4j() {
-		URL configUrl = System.class.getResource("/conf/log4j-vmops.xml");
+		URL configUrl = System.class.getResource("/conf/log4j-cloud.xml");
 		if(configUrl == null)
-			configUrl = System.class.getClassLoader().getSystemResource("log4j-vmops.xml");
+			configUrl = System.class.getClassLoader().getSystemResource("log4j-cloud.xml");
 		
 		if(configUrl == null)
-			configUrl = System.class.getClassLoader().getSystemResource("conf/log4j-vmops.xml");
+			configUrl = System.class.getClassLoader().getSystemResource("conf/log4j-cloud.xml");
 			
 		if(configUrl != null) {
 			try {

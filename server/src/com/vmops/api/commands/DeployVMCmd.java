@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -91,19 +91,17 @@ public class DeployVMCmd extends BaseCmd {
         if (template == null) {
             throw new ServerApiException(BaseCmd.VM_INVALID_PARAM_ERROR, "Unable to find template with id " + templateId);
         }
-        
+
     	if (getManagementServer().findDiskOfferingById(diskOfferingId) == null) {
     		throw new ServerApiException (BaseCmd.VM_INVALID_PARAM_ERROR, "Disk offering with id " + diskOfferingId + " doesn't exist in the system");
     	}
-        
-        
+
         if (Storage.ImageFormat.ISO.equals(template.getFormat())) {
         	rootDiskOfferingId = diskOfferingId;
-        }
-        else {
+        } else {
         	dataDiskOfferingId = diskOfferingId;
         }
-        	
+
         DataCenterVO zone = getManagementServer().findDataCenterById(zoneId);
         if (zone == null) {
         	throw new ServerApiException (BaseCmd.VM_INVALID_PARAM_ERROR, "Zone with id " + zoneId + " doesn't exist in the system");
@@ -114,34 +112,38 @@ public class DeployVMCmd extends BaseCmd {
         	throw new ServerApiException (BaseCmd.VM_INVALID_PARAM_ERROR, "Service offering with id " + serviceOfferingId + " doesn't exist in the system");
         }
 
-    	if (account != null) {
-            accountId = account.getId();
+        if ((account == null) || isAdmin(account.getType())) {
+            if (domainId != null) {
+                if ((account != null) && !getManagementServer().isChildDomain(account.getDomainId(), domainId)) {
+                    throw new ServerApiException(BaseCmd.PARAM_ERROR, "Invalid domain id (" + domainId + ") given, unable to list snapshot policies.");
+                }
+                if (accountName != null) {
+                    Account userAccount = getManagementServer().findActiveAccount(accountName, domainId);
+                    if (userAccount == null) {
+                        throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to find account " + accountName + " in domain " + domainId);
+                    }
+                    accountId = userAccount.getId();
+                }
+            } else {
+                accountId = ((account != null) ? account.getId() : null);
+            }
         } else {
-        	if (accountName != null) {
-        		if (domainId == null) {
-        			domainId = Long.valueOf(1);
-        		}
-                account = getManagementServer().findActiveAccount(accountName, domainId);
-                if (account != null) {
-                    accountId = account.getId();
-                }
-                else {
-                	throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "could not find account " + accountName + " in domain " + domainId);
-                }
-	        } else {
-	        	throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "no account is specified");
-	        }
+            accountId = account.getId();
         }
-    	
-    	//If command is executed via 8096 port, set userId to the id of System account (1)
+
+        if (accountId == null) {
+            throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "No valid account specified for deploying a virtual machine.");
+        }
+
+    	// If command is executed via 8096 port, set userId to the id of System account (1)
     	if (userId == null) {
             userId = Long.valueOf(1);
         }
-         
+
     	password = getManagementServer().generateRandomPassword();
-    	
+
     	ManagementServer mgr = getManagementServer();
-    	
+
     	try {
     		long jobId = mgr.deployVirtualMachineAsync(userId.longValue(), accountId.longValue(), zoneId.longValue(),
     				serviceOfferingId.longValue(), dataDiskOfferingId.longValue(),
@@ -149,10 +151,10 @@ public class DeployVMCmd extends BaseCmd {
     				null, password, displayName, group, userData);
 
     		long vmId = 0;
-    		if(jobId == 0) {
+    		if (jobId == 0) {
     			s_logger.warn("Unable to schedule async-job for DeployVMAsync comamnd");
     		} else {
-    			if(s_logger.isDebugEnabled())
+    			if (s_logger.isDebugEnabled())
     				s_logger.debug("DeployVMAsync command has been accepted, job id: " + jobId);
 
     			vmId = waitInstanceCreation(jobId);
@@ -167,13 +169,13 @@ public class DeployVMCmd extends BaseCmd {
     		throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Failed to create VM: " + ex.getMessage());
     	}
     }
-    
+
 	protected long getInstanceIdFromJobSuccessResult(String result) {
 		DeployVMResultObject resultObject = (DeployVMResultObject)AsyncJobResult.fromResultString(result);
-		if(resultObject != null) {
+		if (resultObject != null) {
 			return resultObject.getId();
 		}
-		
+
 		return 0;
 	}
 }

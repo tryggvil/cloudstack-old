@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -112,7 +112,7 @@ public class CreateUserCmd extends BaseCmd {
         returnValues.add(new Pair<String, Object>(BaseCmd.Properties.LASTNAME.getName(), createdUser.getLastname()));
     	returnValues.add(new Pair<String, Object>(BaseCmd.Properties.EMAIL.getName(), createdUser.getEmail())); 
     	returnValues.add(new Pair<String, Object>(BaseCmd.Properties.CREATED.getName(), getDateString(createdUser.getCreated())));
-    	returnValues.add(new Pair<String, Object>(BaseCmd.Properties.IS_DISABLED.getName(), Boolean.valueOf(createdUser.getDisabled()).toString()));
+    	returnValues.add(new Pair<String, Object>(BaseCmd.Properties.STATE.getName(), createdUser.getState()));
     	returnValues.add(new Pair<String, Object>(BaseCmd.Properties.ACCOUNT.getName(), accountName)); 
         returnValues.add(new Pair<String, Object>(BaseCmd.Properties.ACCOUNT_TYPE.getName(), accountType)); 
         returnValues.add(new Pair<String, Object>(BaseCmd.Properties.DOMAIN_ID.getName(), domainId.toString()));

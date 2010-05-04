@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -47,6 +47,7 @@ import com.vmops.agent.api.CheckVirtualMachineAnswer;
 import com.vmops.agent.api.CheckVirtualMachineCommand;
 import com.vmops.agent.api.Command;
 import com.vmops.agent.api.GetVmStatsAnswer;
+import com.vmops.agent.api.VmStatsEntry;
 import com.vmops.agent.api.GetVmStatsCommand;
 import com.vmops.agent.api.ManageSnapshotAnswer;
 import com.vmops.agent.api.ManageSnapshotCommand;
@@ -114,7 +115,6 @@ import com.vmops.network.dao.LoadBalancerVMMapDao;
 import com.vmops.network.dao.SecurityGroupDao;
 import com.vmops.network.dao.SecurityGroupVMMapDao;
 import com.vmops.pricing.dao.PricingDao;
-import com.vmops.server.ManagementServer;
 import com.vmops.service.ServiceOffering;
 import com.vmops.service.ServiceOfferingVO;
 import com.vmops.service.ServiceOffering.GuestIpType;
@@ -155,6 +155,7 @@ import com.vmops.user.dao.AccountDao;
 import com.vmops.user.dao.ScheduledVolumeBackupDao;
 import com.vmops.user.dao.UserDao;
 import com.vmops.user.dao.UserStatisticsDao;
+import com.vmops.utils.DateUtil;
 import com.vmops.utils.NumbersUtil;
 import com.vmops.utils.Pair;
 import com.vmops.utils.component.ComponentLocator;
@@ -865,21 +866,32 @@ public class UserVmManagerImpl implements UserVmManager {
     }
 
     @Override
-    public List<VmStats> listVirtualMachineStatistics(List<Long> vmIds) throws InternalErrorException {
-    	List<VmStats> vmStatsList = new ArrayList<VmStats>();
+    public HashMap<Long, VmStatsEntry> getVirtualMachineStatistics(long hostId, List<Long> vmIds) throws InternalErrorException {
+    	HashMap<Long, VmStatsEntry> vmStatsById = new HashMap<Long, VmStatsEntry>();
+    	
+    	if (vmIds.isEmpty()) {
+    		return vmStatsById;
+    	}
+    	
+    	List<String> vmNames = new ArrayList<String>();
     	
     	for (Long vmId : vmIds) {
     		UserVmVO vm = _vmDao.findById(vmId);
-    		GetVmStatsCommand cmd = new GetVmStatsCommand(vm.getInstanceName());
-    		Answer answer = _agentMgr.easySend(vm.getHostId(), cmd);
-    		if (answer == null || !answer.getResult()) {
-    			throw new InternalErrorException("Unable to obtain VM statistics.");
-    		} else {
-    			vmStatsList.add((GetVmStatsAnswer) answer);
+    		vmNames.add(vm.getInstanceName());
+    	}
+    	
+    	Answer answer = _agentMgr.easySend(hostId, new GetVmStatsCommand(vmNames));
+    	if (answer == null || !answer.getResult()) {
+    		throw new InternalErrorException("Unable to obtain VM statistics.");
+    	} else {
+    		HashMap<String, VmStatsEntry> vmStatsByName = ((GetVmStatsAnswer) answer).getVmStatsMap();
+    		
+    		for (String vmName : vmStatsByName.keySet()) {
+    			vmStatsById.put(vmIds.get(vmNames.indexOf(vmName)), vmStatsByName.get(vmName));
     		}
     	}
-
-        return vmStatsList;
+    	
+    	return vmStatsById;
     }
 
     @Override @DB
@@ -1069,6 +1081,15 @@ public class UserVmManagerImpl implements UserVmManager {
         List<VolumeVO> volumes = _volsDao.findByInstance(vmId);
         for (VolumeVO volume : volumes) {
         	_volsDao.destroyVolume(volume.getId());
+            String eventParams = "id=" + volume.getId();
+            event = new EventVO();
+            event.setAccountId(volume.getAccountId());
+            event.setUserId(1L);
+            event.setType(EventTypes.EVENT_VOLUME_DELETE);
+            event.setParameters(eventParams);
+            event.setDescription("Volume deleted");
+            event.setLevel(EventVO.LEVEL_INFO);
+            _eventDao.persist(event);
         }
         
         _accountMgr.decrementResourceCount(user.getAccountId(), ResourceType.volume, new Long(volumes.size()));
@@ -1526,7 +1547,6 @@ public class UserVmManagerImpl implements UserVmManager {
     @Override
     @DB
     public void completeStopCommand(long userId, UserVmVO vm, Event e) {
-        int i = 0;
         Transaction txn = Transaction.currentTxn();
         try {
             vm.setVnet(null);
@@ -1644,22 +1664,20 @@ public class UserVmManagerImpl implements UserVmManager {
 
         return stopped;
     }
-    
+
     @Override @DB
     public boolean destroy(UserVmVO vm) {
         if (s_logger.isDebugEnabled()) {
             s_logger.debug("Destroying vm " + vm.toString());
         }
-        
-        Transaction txn = Transaction.currentTxn();
+
         if (!_vmDao.updateIf(vm, VirtualMachine.Event.DestroyRequested, vm.getHostId())) {
             s_logger.debug("Unable to destroy the vm because it is not in the correct state: " + vm.toString());
             return false;
         }
-        
+
         return true;
     }
-    
 
     @Override
     public HostVO prepareForMigration(UserVmVO vm) throws StorageUnavailableException {
@@ -1974,8 +1992,8 @@ public class UserVmManagerImpl implements UserVmManager {
     }
 
     @Override @DB
-    public boolean destroySnapshot(Long userId, long snapshotId) {
-        boolean success = true;
+    public boolean destroyTemplateSnapshot(Long userId, long snapshotId) {
+        boolean success = false;
         SnapshotVO snapshot = _snapshotDao.findById(Long.valueOf(snapshotId));
         if (snapshot != null) {
         	VolumeVO volume = _volsDao.findById(snapshot.getVolumeId());
@@ -1986,34 +2004,89 @@ public class UserVmManagerImpl implements UserVmManager {
 
             if ((answer != null) && answer.getResult()) {
                 // delete the snapshot from the database
-                Transaction txn = Transaction.currentTxn();
-                try {
-                    _snapshotDao.remove(snapshotId);
-                } catch(Exception e) {
-                    s_logger.warn("Exception while deleting snapshot: " + snapshotId);
-                    success = false;
-                }
-            } else {
-                success = false;
+                _snapshotDao.remove(snapshotId);
+                success = true;
             }
-        } else {
-            success = false;
         }
-
-        // create the event
-        String eventParams = "id=" + snapshotId;
-        EventVO event = new EventVO();
-        if (userId != null) {
-            event.setUserId(userId.longValue());
-        }
-        event.setAccountId((snapshot != null) ? snapshot.getAccountId() : 0);
-        event.setType(EventTypes.EVENT_SNAPSHOT_DELETE);
-        event.setDescription("Deleted snapshot " + snapshotId);
-        event.setParameters(eventParams);
-        event.setLevel(success ? EventVO.LEVEL_INFO : EventVO.LEVEL_ERROR);
-        _eventDao.persist(event);
 
         return success;
+    }
+    
+    @Override @DB
+    public SnapshotVO createTemplateSnapshot(long userId, long volumeId) {
+        SnapshotVO createdSnapshot = null;
+        VolumeVO volume = _volsDao.findById(volumeId);
+        Long instanceId = volume.getInstanceId();
+        VMInstanceVO vm = null;
+        
+        if (instanceId != null) {
+            vm = _vmDao.findById(instanceId);
+        }
+        
+        String volumeNameLabel  = _storageMgr.getVolumeNameLabel(volume, vm);
+        
+        Long id = null;
+        
+        // Determine the name for this snapshot
+        String timeString = DateUtil.getDateDisplayString(DateUtil.GMT_TIMEZONE, new Date(), DateUtil.YYYYMMDD_FORMAT);
+        String snapshotName = volume.getName() + "_" + timeString;
+        
+        // Create the Snapshot object and save it so we can return it to the user
+        id = _snapshotDao.persist(new SnapshotVO(volume.getAccountId(), volume.getHostId(), volume.getPoolId(), volume.getId(), null, snapshotName, Snapshot.TYPE_TEMPLATE, Snapshot.TYPE_DESCRIPTIONS[Snapshot.TYPE_TEMPLATE]));
+
+        // Send a ManageSnapshotCommand to the agent
+        // ManageSnapshotCommand needs a list of policyIds. This parameter is not used for Template Snapshots.
+        List<Long> policyIds = new ArrayList<Long>();
+        // Manual policy.
+        policyIds.add(0L);
+        ManageSnapshotCommand cmd = new ManageSnapshotCommand(ManageSnapshotCommand.CREATE_SNAPSHOT, id, volume.getFolder(), volume.getPath(), volumeNameLabel, snapshotName, policyIds);
+        ManageSnapshotAnswer answer = null;
+        try {
+            Long hostId = _storageMgr.chooseHostForVolume(volume);
+            if (hostId != null) {
+                answer = (ManageSnapshotAnswer) _agentMgr.send(hostId, cmd);
+            } else {
+                s_logger.warn("Failed to create snapshot for volume: " + volume.getId() + ", no hosts available to make snapshot");
+            }
+        } catch (AgentUnavailableException e1) {
+            s_logger.warn("Failed to create snapshot for volume: " + volume.getId() + ", reason: " + e1);
+        } catch (OperationTimedoutException e1) {
+            s_logger.warn("Failed to create snapshot for volume: " + volume.getId(), e1);
+        }
+        // Don't Create an event for Template Snapshots for now.
+        
+        // Update the snapshot in the database
+        if ((answer != null) && answer.getResult()) {
+            // The snapshot was successfully created
+            
+            long snapshotIdCreated = answer.getSnapshotId();
+            if(id.longValue() != snapshotIdCreated) {
+                s_logger.warn("Incorrect return value in ManageSnapshotAnswer command. Expected " + id + " returned " + snapshotIdCreated);
+            }
+            
+            Transaction txn = Transaction.currentTxn();
+            txn.start();
+            createdSnapshot = _snapshotDao.findById(id);
+            createdSnapshot.setPath(answer.getSnapshotPath());
+            createdSnapshot.setStatus(AsyncInstanceCreateStatus.Created);
+            _snapshotDao.update(id, createdSnapshot);
+            txn.commit();
+            
+            
+        } else {
+            // The snapshot was not successfully created
+            Transaction txn = Transaction.currentTxn();
+            txn.start();
+            createdSnapshot = _snapshotDao.findById(id);
+            createdSnapshot.setStatus(AsyncInstanceCreateStatus.Corrupted);
+            _snapshotDao.update(id, createdSnapshot);
+            // mark it as removed in the snapshots table
+            _snapshotDao.remove(id);
+            txn.commit();
+            
+        }
+
+        return createdSnapshot;
     }
 
     @Override
@@ -2213,7 +2286,7 @@ public class UserVmManagerImpl implements UserVmManager {
         }
     }
     
-    public VMTemplateVO createPrivateTemplateRecord(Long userId, long volumeId, String name, String description, long guestOSId, Boolean requiresHvm, Integer bits, Boolean passwordEnabled, boolean isPublic)
+    public VMTemplateVO createPrivateTemplateRecord(Long userId, long volumeId, String name, String description, long guestOSId, Boolean requiresHvm, Integer bits, Boolean passwordEnabled, boolean isPublic, boolean featured)
     	throws InvalidParameterValueException {
 
     	VMTemplateVO privateTemplate = null;
@@ -2256,7 +2329,7 @@ public class UserVmManagerImpl implements UserVmManager {
         String uniqueName = Long.valueOf((userId == null)?1:userId).toString() + Long.valueOf(volumeId).toString() + UUID.nameUUIDFromBytes(name.getBytes()).toString();
     	Long nextTemplateId = _templateDao.getNextInSequence(Long.class, "id");
 
-    	privateTemplate = new VMTemplateVO(nextTemplateId, uniqueName, name, ImageFormat.RAW, isPublic, null,
+    	privateTemplate = new VMTemplateVO(nextTemplateId, uniqueName, name, ImageFormat.RAW, isPublic, featured, null,
     			null, null, requiresHvmValue, bitsValue, volume.getAccountId(),
     			null, description, passwordEnabledValue, guestOS.getId(), true);
         privateTemplate.setCreateStatus(AsyncInstanceCreateStatus.Creating);
@@ -2324,16 +2397,14 @@ public class UserVmManagerImpl implements UserVmManager {
                     }
 
                     if ((origTemplate != null) && !Storage.ImageFormat.ISO.equals(origTemplate.getFormat())) {
-                    	// We made a private template from a root volume that was cloned from a template
-                    	privateTemplate.setPublicTemplate(false);
+                    	// We made a template from a root volume that was cloned from a template
                     	privateTemplate.setDiskType(origTemplate.getDiskType());
                     	privateTemplate.setRequiresHvm(origTemplate.requiresHvm());
                     	privateTemplate.setBits(origTemplate.getBits());
                     	privateTemplate.setEnablePassword(origTemplate.getEnablePassword());
                         privateTemplate.setFormat(ImageFormat.RAW);
                     } else {
-                    	// We made a private template from a root volume that was not cloned from a template, or a data volume
-                    	privateTemplate.setPublicTemplate(false);
+                    	// We made a template from a root volume that was not cloned from a template, or a data volume
                     	privateTemplate.setDiskType("none");
                     	privateTemplate.setRequiresHvm(true);
                     	privateTemplate.setBits(64);

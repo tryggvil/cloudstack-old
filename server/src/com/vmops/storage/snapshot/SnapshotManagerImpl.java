@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -19,7 +19,6 @@
 package com.vmops.storage.snapshot;
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -60,8 +59,6 @@ import com.vmops.exception.InternalErrorException;
 import com.vmops.exception.InvalidParameterValueException;
 import com.vmops.exception.OperationTimedoutException;
 import com.vmops.exception.ResourceAllocationException;
-import com.vmops.host.DetailVO;
-import com.vmops.host.HostVO;
 import com.vmops.host.dao.DetailsDao;
 import com.vmops.host.dao.HostDao;
 import com.vmops.serializer.GsonHelper;
@@ -78,6 +75,7 @@ import com.vmops.storage.Volume;
 import com.vmops.storage.VolumeVO;
 import com.vmops.storage.Volume.MirrorState;
 import com.vmops.storage.Volume.StorageResourceType;
+import com.vmops.storage.Volume.VolumeType;
 import com.vmops.storage.dao.SnapshotDao;
 import com.vmops.storage.dao.SnapshotPolicyDao;
 import com.vmops.storage.dao.SnapshotPolicyRefDao;
@@ -93,6 +91,7 @@ import com.vmops.user.UserContext;
 import com.vmops.user.UserVO;
 import com.vmops.user.dao.AccountDao;
 import com.vmops.user.dao.UserDao;
+import com.vmops.utils.DateUtil;
 import com.vmops.utils.DateUtil.IntervalType;
 import com.vmops.utils.component.ComponentLocator;
 import com.vmops.utils.db.DB;
@@ -132,6 +131,7 @@ public class SnapshotManagerImpl implements SnapshotManager {
     String _name;
 
     protected SearchBuilder<SnapshotVO> PolicySnapshotSearch;
+    protected SearchBuilder<SnapshotPolicyVO> PoliciesForSnapSearch;
 
     @Override @DB
     public long createSnapshotAsync(long userId, long volumeId, List<Long> policies) throws InvalidParameterValueException, ResourceAllocationException {
@@ -139,16 +139,23 @@ public class SnapshotManagerImpl implements SnapshotManager {
         boolean runSnap = true;
         VolumeVO volume = _volsDao.findById(volumeId);
         if (_storageMgr.volumeInactive(volume) || volume.getNameLabel().equals("detached")) {
-            s_logger.warn("Snapshot not created. Volume is attached to a non-running VM or detached.");
-            // XXX: For testing let runSnap = true;
-            // runSnap = false;
+            // For manual policies, we should still take a snapshot, but only for that policy.
+            if (!policies.contains(MANUAL_POLICY_ID)) {
+                s_logger.info("Snapshot creation skipped for the moment. Volume is attached to a non-running VM or detached.");
+                runSnap = false;
+            }
+            else {
+                // Take a snapshot, but only for the manual policy
+                policies = new ArrayList<Long>();
+                policies.add(MANUAL_POLICY_ID);
+            }
 
         }
         else {
             for (Long policyId : policies) {
                 // If it's a manual policy then it won't be there in the volume_snap_policy_ref table.
                 // We need to run the snapshot
-                if(policyId == 0) {
+                if(policyId == MANUAL_POLICY_ID) {
                     // Check if the resource limit for snapshots has been exceeded
                     UserVO user = _userDao.findById(userId);
                     AccountVO account = _accountDao.findById(user.getId());
@@ -208,24 +215,9 @@ public class SnapshotManagerImpl implements SnapshotManager {
         Long id = null;
         
         // Determine the name for this snapshot
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(new Date());
+        String timeString = DateUtil.getDateDisplayString(DateUtil.GMT_TIMEZONE, new Date(), DateUtil.YYYYMMDD_FORMAT);
+        String snapshotName = volume.getName() + "_" + timeString;
         
-        int month = cal.get(Calendar.MONTH) + 1;
-        int dayOfMonth = cal.get(Calendar.DAY_OF_MONTH);
-        int year = cal.get(Calendar.YEAR);
-        int hourOfDay = cal.get(Calendar.HOUR_OF_DAY);
-        int minutes = cal.get(Calendar.MINUTE);
-        int seconds = cal.get(Calendar.SECOND);
-        
-        String snapshotName = "";
-        snapshotName += ((month < 10) ? "0" : "") + month;
-        snapshotName += ((dayOfMonth < 10) ? "0" : "") + dayOfMonth;
-        snapshotName += ("" + year);
-        snapshotName += ((hourOfDay < 10) ? "0" : "") + hourOfDay;
-        snapshotName += ((minutes < 10) ? "0" : "") + minutes;
-        snapshotName += ((seconds < 10) ? "0" : "") + seconds;
-
         // Create the Snapshot object and save it so we can return it to the user
         id = _snapshotDao.persist(new SnapshotVO(volume.getAccountId(), volume.getHostId(), volume.getPoolId(), volume.getId(), null, snapshotName, Snapshot.TYPE_USER, Snapshot.TYPE_DESCRIPTIONS[Snapshot.TYPE_USER]));
 
@@ -246,12 +238,10 @@ public class SnapshotManagerImpl implements SnapshotManager {
         }
         
         // Create an event
-        String eventParams = "id=" + volumeId + "\nssName=" + snapshotName;
         EventVO event = new EventVO();
         event.setUserId(userId);
         event.setAccountId(volume.getAccountId());
         event.setType(EventTypes.EVENT_SNAPSHOT_CREATE);
-        event.setParameters(eventParams);
         
         // Update the snapshot in the database
         if ((answer != null) && answer.getResult()) {
@@ -270,23 +260,22 @@ public class SnapshotManagerImpl implements SnapshotManager {
             // We cannot say that it's created until it's been backed up
             _snapshotDao.update(id, createdSnapshot);
             txn.commit();
-            
+            String eventParams = "id=" + volumeId + "\nssName=" + snapshotName+"\nsize=" + volume.getSize()+"\ndcId=" + volume.getDataCenterId();
             event.setDescription("Created snapshot " + snapshotName + " for volume " + volumeId);
-
+            event.setParameters(eventParams);
             
             
         } else {
             // The snapshot was not successfully created
             Transaction txn = Transaction.currentTxn();
-            try {
-                txn.start();
-                createdSnapshot = _snapshotDao.findById(id);
-                createdSnapshot.setStatus(AsyncInstanceCreateStatus.Corrupted);
-                _snapshotDao.update(id, createdSnapshot);
-                txn.commit();
-            } catch (Exception e) {
-                s_logger.error("Unhandled exception while saving snapshot " + snapshotName + " for volume: " + volumeId, e);
-            }
+            txn.start();
+            createdSnapshot = _snapshotDao.findById(id);
+            createdSnapshot.setStatus(AsyncInstanceCreateStatus.Corrupted);
+            _snapshotDao.update(id, createdSnapshot);
+            // mark it as removed in the snapshots table
+            _snapshotDao.remove(id);
+            txn.commit();
+            
             event.setLevel(EventVO.LEVEL_ERROR);
             event.setDescription("Failed to create snapshot " + snapshotName + " for volume " + volumeId);
         }
@@ -298,8 +287,8 @@ public class SnapshotManagerImpl implements SnapshotManager {
         if(asyncExecutor != null) {
             AsyncJobVO job = asyncExecutor.getJob();
 
-            if(s_logger.isInfoEnabled())
-                s_logger.info("CreateSnapshot created a new instance " + id + ", update async job-" + job.getId() + " progress status");
+            if(s_logger.isDebugEnabled())
+                s_logger.debug("CreateSnapshot created a new instance " + id + ", update async job-" + job.getId() + " progress status");
 
             _asyncMgr.updateAsyncJobAttachment(job.getId(), "snapshot", id);
             _asyncMgr.updateAsyncJobStatus(job.getId(), BaseCmd.PROGRESS_INSTANCE_CREATED, id);
@@ -323,7 +312,8 @@ public class SnapshotManagerImpl implements SnapshotManager {
         String primaryStoragePoolUuid = primaryStoragePool.getUuid();
         
         String snapshotUuid = snapshot.getPath();
-        String volumeName = volume.getName();
+        Long dcId = volume.getDataCenterId();
+        Long accountId = volume.getAccountId();
         
         String secondaryStoragePoolUrl = _storageMgr.getSecondaryStorageURL(volume.getDataCenterId());
         
@@ -331,20 +321,28 @@ public class SnapshotManagerImpl implements SnapshotManager {
         String lastBackedUpSnapshotUuid = null;
         SnapshotVO prevSnapshot = null;
         
+        boolean isFirstSnapshotOfRootVolume = false;
         long prevSnapshotId = snapshot.getPrevSnapshotId();
         if (prevSnapshotId > 0) {
             prevSnapshot = _snapshotDao.findById(prevSnapshotId);
             prevSnapshotUuid = prevSnapshot.getPath();
             lastBackedUpSnapshotUuid = prevSnapshot.getBackupSnapshotId();
         }
+        else {
+            // This is the first snapshot of the volume.
+            if (volume.getVolumeType() == VolumeType.ROOT) {
+                isFirstSnapshotOfRootVolume = true;
+            }
+        }
         
         BackupSnapshotCommand backupSnapshotCommand = 
             new BackupSnapshotCommand(primaryStoragePoolUuid, 
                                       snapshotUuid, 
-                                      volumeName, 
+                                      volume.getName(),
                                       secondaryStoragePoolUrl, 
                                       lastBackedUpSnapshotUuid, 
-                                      prevSnapshotUuid);
+                                      prevSnapshotUuid,
+                                      isFirstSnapshotOfRootVolume);
         BackupSnapshotAnswer answer = null;
         String backedUpSnapshotUuid = null;
         // By default, assume failed.
@@ -410,26 +408,30 @@ public class SnapshotManagerImpl implements SnapshotManager {
 
     @Override
     @DB
-    public void postCreateSnapshot(long userId, long volumeId, long snapshotId, List<Long> policyIds) {
+    public void postCreateSnapshot(long userId, long volumeId, long snapshotId, List<Long> policyIds, boolean backedUp) {
         // Update the snapshot_policy_ref table with the created snapshot
         // Get the list of policies for this snapshot
         for (long policyId : policyIds) {
-            // create an entry in snap_policy_ref table
-            SnapshotPolicyRefVO snapPolicyRef = new SnapshotPolicyRefVO(snapshotId, volumeId, policyId);
+            if (backedUp) {
+                // create an entry in snap_policy_ref table
+                SnapshotPolicyRefVO snapPolicyRef = new SnapshotPolicyRefVO(snapshotId, volumeId, policyId);
+                
+                Transaction txn = Transaction.currentTxn();
+                txn.start();
+                _snapPolicyRefDao.persist(snapPolicyRef);
+                txn.commit();
             
-            Transaction txn = Transaction.currentTxn();
-            txn.start();
-            _snapPolicyRefDao.persist(snapPolicyRef);
-            txn.commit();
             
-            if (policyId != 0) {
-                postCreateRecurringSnapshotForPolicy(userId, volumeId, snapshotId, policyId);
-            } else {
             	// This is a manual create, so increment the count of snapshots for this account
-                if (policyId == 0) {
+                if (policyId == MANUAL_POLICY_ID) {
                 	Snapshot snapshot = _snapshotDao.findById(snapshotId);
                 	_accountMgr.incrementResourceCount(snapshot.getAccountId(), ResourceType.snapshot);
                 }
+            }
+            
+            // Even if the current snapshot failed, we should schedule the next recurring snapshot for this policy.
+            if (policyId != MANUAL_POLICY_ID) {
+                postCreateRecurringSnapshotForPolicy(userId, volumeId, snapshotId, policyId);
             }
         }
     }
@@ -631,13 +633,13 @@ public class SnapshotManagerImpl implements SnapshotManager {
         String primaryStoragePoolUuid = primaryStoragePool.getUuid();
         
         String volumeName = volume.getName();
-        
+
         String secondaryStoragePoolUrl = _storageMgr.getSecondaryStorageURL(volume.getDataCenterId());
         
         String backedUpSnapshotUuid = snapshot.getBackupSnapshotId();
         
         CreateVolumeFromSnapshotCommand createVolumeFromSnapshotCommand =
-            new CreateVolumeFromSnapshotCommand(primaryStoragePoolUuid, volumeName, secondaryStoragePoolUrl, backedUpSnapshotUuid);
+            new CreateVolumeFromSnapshotCommand(primaryStoragePoolUuid, volumeName, secondaryStoragePoolUrl, backedUpSnapshotUuid, templateUuid);
         CreateVolumeFromSnapshotAnswer answer = null;
         try {
             Long hostId = _storageMgr.chooseHostForVolume(volume);
@@ -674,17 +676,17 @@ public class SnapshotManagerImpl implements SnapshotManager {
         VolumeVO originalVolume = _volsDao.findById(snapshot.getVolumeId());
         String templateUuid = null;
         if(originalVolume.getVolumeType().equals(Volume.VolumeType.ROOT)){
-                if(originalVolume.getTemplateId() == null){
-                        s_logger.error("Invalid Template Id. Cannot create volume from snapshot of root disk.");
-                        return null;
-                }
-                VMTemplateVO template = _templatesDao.findById(originalVolume.getTemplateId());
-                if(template == null){
-                        s_logger.error("Unable find template with name: "+originalVolume.getTemplateName()+" to create volume from root disk");
-                        return null;
-                }
-                VMTemplateStoragePoolVO templatePool = _vmTemplatePoolDao.findByHostTemplate(originalVolume.getHostId(), template.getId());
-                templateUuid = templatePool.getInstallPath();
+            if(originalVolume.getTemplateId() == null){
+                s_logger.error("Invalid Template Id. Cannot create volume from snapshot of root disk.");
+                return null;
+            }
+            VMTemplateVO template = _templatesDao.findById(originalVolume.getTemplateId());
+            if(template == null){
+                s_logger.error("Unable find template with name: "+originalVolume.getTemplateName()+" to create volume from root disk");
+                return null;
+            }
+            VMTemplateStoragePoolVO templatePool = _vmTemplatePoolDao.findByPoolTemplate(originalVolume.getPoolId(), template.getId());
+            templateUuid = templatePool.getInstallPath();
         }
 
         
@@ -706,6 +708,7 @@ public class SnapshotManagerImpl implements SnapshotManager {
         volume.setDomainId(account.getDomainId().longValue());
         volume.setMirrorState(MirrorState.NOT_MIRRORED);
         volume.setDiskOfferingId(originalVolume.getDiskOfferingId());
+        volume.setTemplateId(originalVolume.getTemplateId());
         volume.setStorageResourceType(StorageResourceType.STORAGE_POOL);
         volume.setInstanceId(null);
         volume.setNameLabel("detached");
@@ -724,7 +727,15 @@ public class SnapshotManagerImpl implements SnapshotManager {
         }
         
         // Create an event
-        String eventParams = "id=" + volumeId;
+        long templateId = -1;
+        long diskOfferingId = -1;
+        if(volume.getTemplateId() !=null){
+            templateId = volume.getTemplateId();
+        }
+        if(volume.getDiskOfferingId() !=null){
+            diskOfferingId = volume.getDiskOfferingId();
+        }
+        String eventParams = "id=" + volumeId +"\ndoId="+diskOfferingId+"\ntId="+templateId+"\ndcId="+volume.getDataCenterId();
         EventVO event = new EventVO();
         event.setAccountId(accountId);
         event.setUserId(userId);
@@ -746,7 +757,8 @@ public class SnapshotManagerImpl implements SnapshotManager {
                 createdVolume.setPath(volumePath);
                 createdVolume.setSize(originalVolume.getSize());
                 createdVolume.setPath(volumePath);
-                event.setDescription("Created volume with size: " + volumeSize + " GB in pool: " + pool.getName());
+                long sizeMB = createdVolume.getSize()/(1024*1024);
+                event.setDescription("Created volume: "+ createdVolume.getName() +" with size: " + sizeMB + " MB in pool: " + pool.getName());
             } else {
                 createdVolume.setStatus(AsyncInstanceCreateStatus.Corrupted);
                 createdVolume.setDestroyed(true);
@@ -857,14 +869,9 @@ public class SnapshotManagerImpl implements SnapshotManager {
     
     @Override
     public List<SnapshotPolicyVO> listPoliciesforSnapshot(long snapshotId) {
-        //ToDo: use join for the query
-        List<SnapshotPolicyRefVO> snapPolicyRefs = _snapPolicyRefDao.listBySnapshotId(snapshotId);
-        List<SnapshotPolicyVO> snapPolicies = new ArrayList<SnapshotPolicyVO>();
-        for(SnapshotPolicyRefVO snapPolicyRef : snapPolicyRefs){
-            SnapshotPolicyVO snapPolicy = _snapshotPolicyDao.findById(snapPolicyRef.getPolicyId());
-            snapPolicies.add(snapPolicy);
-        }
-        return snapPolicies;
+        SearchCriteria sc = PoliciesForSnapSearch.create();
+        sc.setJoinParameters("policyRef", "snapshotId", snapshotId);
+        return _snapshotPolicyDao.search(sc, null);
     }
 
     @Override
@@ -1003,12 +1010,20 @@ public class SnapshotManagerImpl implements SnapshotManager {
         PolicySnapshotSearch = _snapshotDao.createSearchBuilder();
         
         SearchBuilder<SnapshotPolicyRefVO> policySearch = _snapPolicyRefDao.createSearchBuilder();
-        policySearch.addAnd("policyId", policySearch.entity().getPolicyId(), SearchCriteria.Op.EQ);
+        policySearch.and("policyId", policySearch.entity().getPolicyId(), SearchCriteria.Op.EQ);
         
         PolicySnapshotSearch.join("policy", policySearch, policySearch.entity().getSnapshotId(), PolicySnapshotSearch.entity().getId());
         policySearch.done();
         PolicySnapshotSearch.done();
         
+        PoliciesForSnapSearch = _snapshotPolicyDao.createSearchBuilder();
+        
+        SearchBuilder<SnapshotPolicyRefVO> policyRefSearch = _snapPolicyRefDao.createSearchBuilder();
+        policyRefSearch.and("snapshotId", policyRefSearch.entity().getSnapshotId(), SearchCriteria.Op.EQ);
+        
+        PoliciesForSnapSearch.join("policyRef", policyRefSearch, policyRefSearch.entity().getPolicyId(), PoliciesForSnapSearch.entity().getId());
+        policyRefSearch.done();
+        PoliciesForSnapSearch.done();
         s_logger.info("Snapshot Manager is configured.");
 
         return true;

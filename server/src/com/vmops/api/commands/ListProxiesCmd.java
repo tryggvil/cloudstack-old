@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -33,7 +33,7 @@ import com.vmops.vm.ConsoleProxyVO;
 public class ListProxiesCmd extends BaseCmd  {
     public static final Logger s_logger = Logger.getLogger(ListProxiesCmd.class.getName());
 	
-    private static final String s_name = "listproxiesresponse";
+    private static final String s_name = "listconsoleproxiesresponse";
     private static final List<Pair<Enum, Boolean>> s_properties = new ArrayList<Pair<Enum, Boolean>>();
     
     static {

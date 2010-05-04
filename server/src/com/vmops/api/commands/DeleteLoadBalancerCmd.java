@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -62,13 +62,13 @@ public class DeleteLoadBalancerCmd extends BaseCmd {
         LoadBalancerVO loadBalancer = getManagementServer().findLoadBalancerById(loadBalancerId.longValue());
         if (loadBalancer == null) {
             throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to find load balancer, with id " + loadBalancerId);
-        } else if ((account != null) && !isAdmin(account.getType()) && (loadBalancer.getAccountId() != account.getId().longValue())) {
-            throw new ServerApiException(BaseCmd.PARAM_ERROR, "Account " + account.getAccountName() + " does not own load balancer " + loadBalancer.getName() + " (id:" + loadBalancerId + ")");
-        }
-        
-        if ((account != null) && !isAdmin(account.getType())) {
-            if (account.getId().longValue() != loadBalancer.getAccountId()) {
-                throw new ServerApiException(BaseCmd.PARAM_ERROR, "unable to find a load balancer with id " + loadBalancerId + " for this account");
+        } else if (account != null) {
+            if (!isAdmin(account.getType())) {
+                if (loadBalancer.getAccountId() != account.getId().longValue()) {
+                    throw new ServerApiException(BaseCmd.PARAM_ERROR, "Account " + account.getAccountName() + " does not own load balancer " + loadBalancer.getName() + " (id:" + loadBalancerId + ")");
+                }
+            } else if (!getManagementServer().isChildDomain(account.getDomainId(), loadBalancer.getDomainId())) {
+                throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to delete load balancer " + loadBalancer.getName() + " (id:" + loadBalancerId + "), permission denied.");
             }
         }
 
@@ -77,10 +77,10 @@ public class DeleteLoadBalancerCmd extends BaseCmd {
         }
 
         long jobId = getManagementServer().deleteLoadBalancerAsync(userId, loadBalancerId.longValue());
-        if(jobId == 0) {
+        if (jobId == 0) {
         	s_logger.warn("Unable to schedule async-job for DeleteLoadBalancer comamnd");
         } else {
-	        if(s_logger.isDebugEnabled())
+	        if (s_logger.isDebugEnabled())
 	        	s_logger.debug("DeleteLoadBalancer command has been accepted, job id: " + jobId);
         }
         

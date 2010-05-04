@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -86,7 +86,7 @@ public class ListZonesByCmd extends BaseCmd {
             if ((dataCenter.getDescription() != null) && !dataCenter.getDescription().equalsIgnoreCase("null")) {
                 dcData.add(new Pair<String, Object>(BaseCmd.Properties.DESCRIPTION.getName(), dataCenter.getDescription()));
             }
-            if ((account == null) || isAdmin(account.getType())) {
+            if ((account == null) || (account.getType() == Account.ACCOUNT_TYPE_ADMIN)) {
             	if (dataCenter.getDns1() != null) {
             		dcData.add(new Pair<String, Object>(BaseCmd.Properties.DNS1.getName(), dataCenter.getDns1()));
             	}

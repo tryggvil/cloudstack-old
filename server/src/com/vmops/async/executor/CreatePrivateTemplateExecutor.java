@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -24,22 +24,25 @@ import java.util.List;
 import org.apache.log4j.Logger;
 
 import com.google.gson.Gson;
-import com.vmops.agent.api.Answer;
 import com.vmops.api.BaseCmd;
 import com.vmops.async.AsyncJobExecutorContext;
 import com.vmops.async.AsyncJobManager;
 import com.vmops.async.AsyncJobResult;
 import com.vmops.async.AsyncJobVO;
+import com.vmops.configuration.ResourceCount.ResourceType;
 import com.vmops.exception.InvalidParameterValueException;
 import com.vmops.serializer.GsonHelper;
 import com.vmops.server.ManagementServer;
 import com.vmops.storage.Snapshot;
 import com.vmops.storage.VMTemplateVO;
+import com.vmops.storage.VolumeVO;
 import com.vmops.storage.snapshot.SnapshotManager;
+import com.vmops.user.AccountManager;
+import com.vmops.user.AccountVO;
 import com.vmops.utils.exception.VmopsRuntimeException;
 import com.vmops.vm.UserVmManager;
 
-public class CreatePrivateTemplateExecutor extends VMOperationExecutor {
+public class CreatePrivateTemplateExecutor extends VolumeOperationExecutor {
     public static final Logger s_logger = Logger.getLogger(CreatePrivateTemplateExecutor.class.getName());
 	
 	public boolean execute() {
@@ -48,8 +51,8 @@ public class CreatePrivateTemplateExecutor extends VMOperationExecutor {
     	AsyncJobVO job = getJob();
 
 		if(getSyncSource() == null) {
-	    	VMOperationParam param = gson.fromJson(job.getCmdInfo(), VMOperationParam.class);
-	    	asyncMgr.syncAsyncJobExecution(job.getId(), "UserVM", param.getVmId());
+		    CreatePrivateTemplateParam param = gson.fromJson(job.getCmdInfo(), CreatePrivateTemplateParam.class);
+	    	asyncMgr.syncAsyncJobExecution(job.getId(), "Volume", param.getVolumeId());
 	    	
 	    	// always true if it does not have sync-source
 	    	return true;
@@ -58,12 +61,21 @@ public class CreatePrivateTemplateExecutor extends VMOperationExecutor {
 	    	
 	    	AsyncJobExecutorContext asyncJobExecutorContext = asyncMgr.getExecutorContext();
 	    	ManagementServer managerServer = asyncJobExecutorContext.getManagementServer();
+	    	AccountManager accountManager = asyncJobExecutorContext.getAccountMgr();
 	    	UserVmManager vmMgr = asyncJobExecutorContext.getVmMgr();
 	    	SnapshotManager snapshotManager = asyncJobExecutorContext.getSnapshotMgr();
 			try {
+		        // Check that the resource limit for templates won't be exceeded
+				VolumeVO volume = managerServer.findVolumeById(param.getVolumeId());
+		    	AccountVO account = (AccountVO) managerServer.findAccountById(volume.getAccountId());
+		        if (accountManager.resourceLimitExceeded(account, ResourceType.template)) {
+		        	asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_FAILED, BaseCmd.INTERNAL_ERROR, "The maximum number of templates for the specified account has been exceeded.");
+		        	return true;
+		        }
+		        
 		    	VMTemplateVO template = vmMgr.createPrivateTemplateRecord(param.getUserId(), 
 		    		param.getVolumeId(), param.getName(), param.getDescription(), param.getGuestOsId(),
-		    		param.getRequiresHvm(), param.getBits(), param.isPasswordEnabled(), param.isPublic());
+		    		param.getRequiresHvm(), param.getBits(), param.isPasswordEnabled(), param.isPublic(), param.isFeatured());
 
 		    	if (template == null) {
 					asyncMgr.completeAsyncJob(getJob().getId(), 
@@ -133,15 +145,6 @@ public class CreatePrivateTemplateExecutor extends VMOperationExecutor {
 			}
 	    	return true;
 		}
-	}
-
-	public void processAnswer(VMOperationListener listener, long agentId, long seq, Answer answer) {
-	}
-	
-	public void processDisconnect(VMOperationListener listener, long agentId) {
-	}
-
-	public void processTimeout(VMOperationListener listener, long agentId, long seq) {
 	}
 	
 	private CreatePrivateTemplateResultObject composeResultObject(VMTemplateVO template) {

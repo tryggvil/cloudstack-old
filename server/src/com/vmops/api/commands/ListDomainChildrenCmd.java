@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -25,8 +25,10 @@ import java.util.Map;
 import org.apache.log4j.Logger;
 
 import com.vmops.api.BaseCmd;
+import com.vmops.api.ServerApiException;
 import com.vmops.domain.DomainVO;
 import com.vmops.server.Criteria;
+import com.vmops.user.Account;
 import com.vmops.utils.Pair;
 
 public class ListDomainChildrenCmd extends BaseCmd {
@@ -36,6 +38,7 @@ public class ListDomainChildrenCmd extends BaseCmd {
     private static final List<Pair<Enum, Boolean>> s_properties = new ArrayList<Pair<Enum, Boolean>>();
 
     static {
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT_OBJ, Boolean.FALSE));
     	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ID, Boolean.TRUE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.NAME, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.KEYWORD, Boolean.FALSE));
@@ -55,12 +58,23 @@ public class ListDomainChildrenCmd extends BaseCmd {
     
     @Override
     public List<Pair<String, Object>> execute(Map<String, Object> params) {
+        Account account = (Account)params.get(BaseCmd.Properties.ACCOUNT_OBJ.getName());
     	Long domainId = (Long)params.get(BaseCmd.Properties.ID.getName());
         String domainName = (String)params.get(BaseCmd.Properties.NAME.getName());
         String keyword = (String)params.get(BaseCmd.Properties.KEYWORD.getName());
         Boolean isRecursive = (Boolean)params.get(BaseCmd.Properties.IS_RECURSIVE.getName());
         Integer page = (Integer)params.get(BaseCmd.Properties.PAGE.getName());
         Integer pageSize = (Integer)params.get(BaseCmd.Properties.PAGESIZE.getName());
+
+        if (account != null) {
+            if (domainId != null) {
+                if (!getManagementServer().isChildDomain(account.getDomainId(), domainId)) {
+                    throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to list domains children for domain id " + domainId + ", permission denied.");
+                }
+            } else {
+                domainId = account.getDomainId();
+            }
+        }
 
         Long startIndex = Long.valueOf(0);
         int pageSizeNum = 50;

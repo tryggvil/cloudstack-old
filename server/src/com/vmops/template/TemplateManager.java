@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -35,11 +35,15 @@ import com.vmops.utils.component.Manager;
  * also responsible for downloading.
  */
 public interface TemplateManager extends Manager {
+	public static final String DEFAULT_ROOT_DIR = "template";
+	public static final String DEFAULT_FIRST_LEVEL_DIR = "tmpl";
+	
     /**
      * Creates a Template
      * 
      * @param displayText user readable name.
      * @param isPublic is this a public template?
+     * @param featured is this template featured?
      * @param format which image format is the template.
      * @param fs what is the file system on the template
      * @param url url to download the template from.
@@ -51,7 +55,7 @@ public interface TemplateManager extends Manager {
      * @param bootable true if this template will represent a bootable ISO
      * @return id of the template created.
      */
-    Long create(long userId, String displayText, boolean isPublic, ImageFormat format, FileSystem fs, URI url, String chksum, boolean requiresHvm, int bits, boolean enablePassword, long guestOSId, boolean bootable);
+    Long create(long userId, String displayText, boolean isPublic, boolean featured, ImageFormat format, FileSystem fs, URI url, String chksum, boolean requiresHvm, int bits, boolean enablePassword, long guestOSId, boolean bootable);
     
     /**
      * Prepares a template for vm creation for a certain storage pool.
@@ -65,11 +69,12 @@ public interface TemplateManager extends Manager {
     /**
      * Copies a template from its current secondary storage server to the secondary storage server in the specified zone.
      * @param templateId
-     * @param zoneId
+     * @param sourceZoneId
+     * @param destZoneId
      * @return true if success
      * @throws InternalErrorException
      */
-    boolean copy(long templateId, long zoneId) throws InternalErrorException;
+    boolean copy(long templateId, long sourceZoneId, long destZoneId) throws InternalErrorException;
     
     /**
      * Deletes a template from secondary storage servers

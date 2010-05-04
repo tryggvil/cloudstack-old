@@ -1,7 +1,7 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
- * This software is licensed under the GNU General Public License v3 or later.  
+ * This software is licensed under the GNU General Public License v3 or later.
  * 
  * It is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,12 +23,15 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -38,9 +41,14 @@ import java.util.Set;
 
 import javax.ejb.Local;
 import javax.naming.ConfigurationException;
+import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.log4j.Logger;
 import org.apache.xmlrpc.XmlRpcException;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 
 import com.trilead.ssh2.SCPClient;
 import com.vmops.agent.IAgentControl;
@@ -96,6 +104,7 @@ import com.vmops.agent.api.StartupStorageCommand;
 import com.vmops.agent.api.StopAnswer;
 import com.vmops.agent.api.StopCommand;
 import com.vmops.agent.api.StoragePoolInfo;
+import com.vmops.agent.api.VmStatsEntry;
 import com.vmops.agent.api.WatchNetworkAnswer;
 import com.vmops.agent.api.WatchNetworkCommand;
 import com.vmops.agent.api.proxy.CheckConsoleProxyLoadCommand;
@@ -136,6 +145,7 @@ import com.vmops.vm.ConsoleProxyVO;
 import com.vmops.vm.DomainRouter;
 import com.vmops.vm.SecondaryStorageVmVO;
 import com.vmops.vm.State;
+import com.vmops.vm.VirtualMachineName;
 import com.xensource.xenapi.Connection;
 import com.xensource.xenapi.Console;
 import com.xensource.xenapi.Host;
@@ -144,24 +154,22 @@ import com.xensource.xenapi.HostMetrics;
 import com.xensource.xenapi.Network;
 import com.xensource.xenapi.PBD;
 import com.xensource.xenapi.PIF;
-import com.xensource.xenapi.PIFMetrics;
 import com.xensource.xenapi.Pool;
 import com.xensource.xenapi.SR;
 import com.xensource.xenapi.Types;
 import com.xensource.xenapi.VBD;
-import com.xensource.xenapi.VBDMetrics;
 import com.xensource.xenapi.VDI;
 import com.xensource.xenapi.VIF;
-import com.xensource.xenapi.VIFMetrics;
 import com.xensource.xenapi.VLAN;
 import com.xensource.xenapi.VM;
 import com.xensource.xenapi.VMGuestMetrics;
-import com.xensource.xenapi.VMMetrics;
 import com.xensource.xenapi.XenAPIObject;
 import com.xensource.xenapi.Types.BadServerResponse;
 import com.xensource.xenapi.Types.JoiningHostCannotContainSharedSrs;
 import com.xensource.xenapi.Types.VmPowerState;
 import com.xensource.xenapi.Types.XenAPIException;
+
+
 
 /**
  * Encapsulates the interface to the XenServer API.
@@ -176,8 +184,6 @@ public class XenServerResource implements ServerResource {
     String _password;
     String _hostUrl;
     String _scriptsDir = "scripts/vm/storage/xenserver";
-    String _mgmtNetCidr;
-    String _localGateway;
     private final int _retry = 24;
     private final int _sleep = 5000;
     long _dcId;
@@ -190,6 +196,14 @@ public class XenServerResource implements ServerResource {
     String _publicNic;
     protected int _wait;
     private IAgentControl _agentControl;
+    Map<String, String> _domrIPMap = new HashMap<String, String>();
+    private String _poolUuid;
+    
+    // Guest and Host Performance Statistics
+    boolean _collectHostStats = true;
+    String _consolidationFunction = "AVERAGE";
+    int _pollingIntervalInSeconds = 60;
+    
 
     private enum SRType {
         NFS, LVM, ISCSI, ISO;
@@ -221,7 +235,8 @@ public class XenServerResource implements ServerResource {
 
     @Override
     public void disconnected() {
-        _connPool.disconnect(_hostUuid, null);
+        _connPool.disconnect(_hostUuid, _poolUuid);
+        _poolUuid = null;
     }
 
     protected void cleanupDiskMounts() {
@@ -295,6 +310,18 @@ public class XenServerResource implements ServerResource {
             s_logger.debug("currently not attached " + rec.uuid);
             return false;
         }
+    }
+    
+    protected boolean pingdomr(String host, String port) {
+        String status;
+        status = callHostPlugin("pingdomr", "host", host, "port", port);
+
+        if (status == null || status.isEmpty()) { 
+            return false;
+        }
+
+        return true;
+
     }
 
     private String logX(XenAPIObject obj, String msg) {
@@ -439,6 +466,8 @@ public class XenServerResource implements ServerResource {
             return execute((ModifyVlanCommand) cmd);
         } else if (cmd instanceof GetHostStatsCommand) {
             return execute((GetHostStatsCommand) cmd);
+        } else if (cmd instanceof GetVmStatsCommand) {
+        	return execute((GetVmStatsCommand) cmd);
         } else if (cmd instanceof WatchNetworkCommand) {
             return execute((WatchNetworkCommand) cmd);
         } else if (cmd instanceof CheckHealthCommand) {
@@ -500,9 +529,9 @@ public class XenServerResource implements ServerResource {
 
     private Answer execute(StartSecStorageVmCommand cmd) {
     	SecondaryStorageVmVO secStorageVmVO = cmd.getSecondaryStorageVmVO();
-		String result = startSystemVM (cmd.getVmName(), cmd.getSecondaryStorageVmVO().getVlanId(), 
-				cmd.getVolumes(), cmd.getBootArgs(), secStorageVmVO.getPrivateIpAddress(), 
-				secStorageVmVO.getPrivateMacAddress(), secStorageVmVO.getPublicIpAddress(), 
+		String result = startSystemVM (cmd.getVmName(), cmd.getSecondaryStorageVmVO().getVlanId(),
+				cmd.getVolumes(), cmd.getBootArgs(), secStorageVmVO.getPrivateIpAddress(),
+				secStorageVmVO.getPrivateMacAddress(), secStorageVmVO.getPublicIpAddress(),
 				secStorageVmVO.getPublicMacAddress(), cmd.getProxyCmdPort(), secStorageVmVO.getRamSize());
 		if (result == null) {
 			return new StartSecStorageVmAnswer(cmd);
@@ -608,6 +637,20 @@ public class XenServerResource implements ServerResource {
         return true;
 
     }
+    
+    private String networkUsage(final String privateIpAddress, final String option) {
+        String args = null;
+        if (option.equals("get")) {
+            args = "-g";
+        } else if (option.equals("create")){
+            args = "-c";
+        } else if (option.equals("reset")){
+            args = "-r";
+        }
+        args += " -i ";
+        args += privateIpAddress;
+        return callHostPlugin("networkUsage", "args", args);
+    }
 
     protected Answer execute(final IPAssocCommand cmd) {
         final boolean status = assignPublicIpAddress(cmd.getRouterName(), cmd.getRouterIp(), cmd.getPublicIp(), cmd.isAdd(), cmd.isSourceNat(), cmd.getVlanId(), cmd
@@ -643,7 +686,25 @@ public class XenServerResource implements ServerResource {
     }
 
     protected WatchNetworkAnswer execute(WatchNetworkCommand cmd) {
-        return new WatchNetworkAnswer(cmd);
+        WatchNetworkAnswer answer = new WatchNetworkAnswer(cmd);
+        for(String domr : _domrIPMap.keySet()){
+            long[] stats = getNetworkStats(domr);
+            answer.addStats(domr, stats[0], stats[1]);
+        }
+        return answer;
+    }
+    
+    private long[] getNetworkStats(String domr){
+        String result = networkUsage(_domrIPMap.get(domr), "get");
+        long[] stats = new long[2];
+        if( result!=null ){
+            String[] splitResult = result.split(":");
+            if(splitResult.length > 1){
+                stats[0] = (new Long(splitResult[0])).longValue();
+                stats[1] = (new Long(splitResult[1])).longValue();
+            }
+        }
+        return stats;
     }
 
     protected GetHostStatsAnswer execute(GetHostStatsCommand cmd) {
@@ -667,20 +728,7 @@ public class XenServerResource implements ServerResource {
             final long freeMemory = metrics.getMemoryFree(conn);
             final long totalMemory = metrics.getMemoryTotal(conn);
 
-            // Determine network utilisation
-            double publicNetworkReadKBs = 0;
-            double publicNetworkWriteKBs = 0;
-            Network network = getNetwork(_publicNic);
-            if (network != null) {
-                Set<PIF> pifs = network.getPIFs(conn);
-                if (pifs.size() == 1) {
-                    PIFMetrics pifMetrics = ((PIF) pifs.toArray()[0]).getMetrics(conn);
-                    publicNetworkReadKBs = pifMetrics.getIoReadKbs(conn);
-                    publicNetworkWriteKBs = pifMetrics.getIoWriteKbs(conn);
-                }
-            }
-
-            return new GetHostStatsAnswer(cmd, cpuUtilization, freeMemory, totalMemory, publicNetworkReadKBs, publicNetworkWriteKBs);
+            return new GetHostStatsAnswer(cmd, cpuUtilization, freeMemory, totalMemory, 0, 0);
         } catch (XenAPIException e) {
             String msg = "Unable to get host stats" + e.toString();
             s_logger.warn(msg, e);
@@ -693,59 +741,219 @@ public class XenServerResource implements ServerResource {
     }
     
     protected GetVmStatsAnswer execute(GetVmStatsCommand cmd) {
-    	String vmName = cmd.getVmName();
+    	List<String> vmNames = cmd.getVmNames();
     	
     	Connection conn = getConnection();
     	try {
-    		VM vm = getVM(conn, vmName);
     		
-    		// Determine CPU utilisation
-    		VMMetrics vmMetrics = vm.getMetrics(conn);
-    		double vCpuUtilisation = 0.0d;
-    		Map<Long, Double> vCpuUtilisations = vmMetrics.getVCPUsUtilisation(conn);
-    		for (Long vCpuUtilisationId : vCpuUtilisations.keySet()) {
-    			vCpuUtilisation += vCpuUtilisations.get(vCpuUtilisationId);
+    		// Determine the UUIDs of the requested VMs
+    		List<String> vmUUIDs = new ArrayList<String>();
+    		for (String vmName : vmNames) {
+    			VM vm = getVM(conn, vmName);
+    			vmUUIDs.add(vm.getUuid(conn));
     		}
-    		
-    		vCpuUtilisation = vCpuUtilisation / vCpuUtilisations.size();
-    		
-    		// Determine disk utilisation
-    		double diskReadKBs = 0;
-    		double diskWriteKBs = 0;
-    		Set<VBD> vmVBDs = vm.getVBDs(conn);
-    		for (VBD vbd : vmVBDs) {
-    			if (vbd.getDevice(conn).equals("3")) {
-    				// Skip the CD-ROM device
-    				continue;
-    			}
     			
-    			VBDMetrics vbdMetrics = vbd.getMetrics(conn);
-    			diskReadKBs += vbdMetrics.getIoReadKbs(conn);
-    			diskWriteKBs += vbdMetrics.getIoWriteKbs(conn);
+    		HashMap<String, VmStatsEntry> vmStatsUUIDMap = getVmStats(cmd, vmUUIDs);
+    		HashMap<String, VmStatsEntry> vmStatsNameMap = new HashMap<String, VmStatsEntry>();
+    		
+    		for (String vmUUID : vmStatsUUIDMap.keySet()) {
+    			vmStatsNameMap.put(vmNames.get(vmUUIDs.indexOf(vmUUID)), vmStatsUUIDMap.get(vmUUID));
     		}
     		
-    		// Determine network utilisation
-    		double networkReadKBs = 0;
-    		double networkWriteKBs = 0;
-    		Set<VIF> vmVIFs = vm.getVIFs(conn);
-    		for (VIF vif : vmVIFs) {
-    			VIFMetrics vifMetrics = vif.getMetrics(conn);
-    			networkReadKBs += vifMetrics.getIoReadKbs(conn);
-    			networkWriteKBs += vifMetrics.getIoWriteKbs(conn);
-    		}
-    
-    		return new GetVmStatsAnswer(cmd, vCpuUtilisation, diskReadKBs, diskWriteKBs, networkReadKBs, networkWriteKBs);
+    		return new GetVmStatsAnswer(cmd, vmStatsNameMap);
     	} catch (XenAPIException e) {
             String msg = "Unable to get VM stats" + e.toString();
             s_logger.warn(msg, e);
-            return new GetVmStatsAnswer(cmd, 0, 0, 0, 0, 0);
+            return new GetVmStatsAnswer(cmd, null);
         } catch (XmlRpcException e) {
             String msg = "Unable to get VM stats" + e.getMessage();
             s_logger.warn(msg, e);
-            return new GetVmStatsAnswer(cmd, 0, 0, 0, 0, 0);
+            return new GetVmStatsAnswer(cmd, null);
         }
     }
-
+    
+    private GetHostStatsAnswer getHostStats(GetHostStatsCommand cmd, String publicNic) {
+    	Object[] rrdData = getRRDData();
+    	Integer numRows = (Integer) rrdData[0];
+    	Integer numColumns = (Integer) rrdData[1];
+    	Node legend = (Node) rrdData[2];
+    	Node dataNode = (Node) rrdData[3];
+    	
+    	int numCPUs = 0;
+    	double cpuUtilization = 0;
+    	double networkReadKb = 0;
+    	double networkWriteKb = 0;
+    	double memoryTotalKb = 0;
+    	double memoryFreeKb = 0;
+    	NodeList legendChildren = legend.getChildNodes();
+    	for (int col = 0; col < numColumns; col++) {
+    		
+    		if (legendChildren == null || legendChildren.item(col) == null) {
+    			continue;
+    		}
+    		
+    		String columnMetadata = getXMLNodeValue(legendChildren.item(col));
+    		
+    		if (columnMetadata == null) {
+    			continue;
+    		}
+    		
+    		String[] columnMetadataList = columnMetadata.split(":");
+    		
+    		if (columnMetadataList.length != 4) {
+    			continue;
+    		}
+    		
+    		String type = columnMetadataList[1];
+    		String uuid = columnMetadataList[2];
+    		String param = columnMetadataList[3];
+    		
+    		if (type.equals("host")) {
+    			if (param.contains("cpu")) {
+    				numCPUs += 1;
+    				cpuUtilization += getDataAverage(dataNode, col, numRows);
+    			} else if (param.equals("pif_" + publicNic + "_rx")) {
+    				networkReadKb = getDataAverage(dataNode, col, numRows);
+    			} else if (param.equals("pif_" + publicNic + "_tx")) {
+    				networkWriteKb = getDataAverage(dataNode, col, numRows);
+    			} else if (param.equals("memory_total_kib")) {
+    				memoryTotalKb = getDataAverage(dataNode, col, numRows);
+    			} else if (param.equals("memory_free_kib")) {
+    				memoryFreeKb = getDataAverage(dataNode, col, numRows);
+    			}
+    		}
+    		
+    	}
+    	
+    	cpuUtilization = cpuUtilization / numCPUs;
+    	
+    	return new GetHostStatsAnswer(cmd, cpuUtilization, new Double(memoryFreeKb).longValue(), new Double(memoryTotalKb).longValue(), networkReadKb, networkWriteKb);
+    }
+    
+    private HashMap<String, VmStatsEntry> getVmStats(GetVmStatsCommand cmd, List<String> vmUUIDs) {
+    	HashMap<String, VmStatsEntry> vmResponseMap = new HashMap<String, VmStatsEntry>();
+    	
+    	for (String vmUUID : vmUUIDs) {
+    		vmResponseMap.put(vmUUID, new VmStatsEntry(0, 0, 0, 0));
+    	}
+    	
+    	Object[] rrdData = getRRDData();
+    	Integer numRows = (Integer) rrdData[0];
+    	Integer numColumns = (Integer) rrdData[1];
+    	Node legend = (Node) rrdData[2];
+    	Node dataNode = (Node) rrdData[3];
+    	
+    	NodeList legendChildren = legend.getChildNodes();
+    	for (int col = 0; col < numColumns; col++) {
+    		
+    		if (legendChildren == null || legendChildren.item(col) == null) {
+    			continue;
+    		}
+    		
+    		String columnMetadata = getXMLNodeValue(legendChildren.item(col));
+    		
+    		if (columnMetadata == null) {
+    			continue;
+    		}
+    		
+    		String[] columnMetadataList = columnMetadata.split(":");
+    		
+    		if (columnMetadataList.length != 4) {
+    			continue;
+    		}
+    		
+    		String type = columnMetadataList[1];
+    		String uuid = columnMetadataList[2];
+    		String param = columnMetadataList[3];
+    		
+    		if (type.equals("vm") && vmResponseMap.keySet().contains(uuid)) {
+    			VmStatsEntry vmStatsAnswer = vmResponseMap.get(uuid);
+    			
+    			if (param.contains("cpu")) {
+    				vmStatsAnswer.setNumCPUs(vmStatsAnswer.getNumCPUs() + 1);
+    				vmStatsAnswer.setCPUUtilization(vmStatsAnswer.getCPUUtilization() + getDataAverage(dataNode, col, numRows));
+    			} else if (param.equals("vif_0_rx")) {
+    				vmStatsAnswer.setNetworkReadKBs(vmStatsAnswer.getNetworkReadKBs() + getDataAverage(dataNode, col, numRows));
+    			} else if (param.equals("vif_0_tx")) {
+    				vmStatsAnswer.setNetworkWriteKBs(vmStatsAnswer.getNetworkWriteKBs() + getDataAverage(dataNode, col, numRows));
+    			}
+    		}
+    		
+    	}
+    	
+    	for (String vmUUID : vmResponseMap.keySet()) {
+    		VmStatsEntry vmStatsAnswer = vmResponseMap.get(vmUUID);
+    		vmStatsAnswer.setCPUUtilization(vmStatsAnswer.getCPUUtilization() / vmStatsAnswer.getNumCPUs());
+    	}
+    	
+    	return vmResponseMap;
+    }
+    
+    private Object[] getRRDData() {
+    	String stats = getHostAndVmStatsRawXML();
+    	StringReader statsReader = new StringReader(stats);
+    	InputSource statsSource = new InputSource(statsReader);
+    	
+    	Document doc = null;
+    	try {
+    		doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(statsSource);
+    	} catch (Exception e) {
+    	}
+    	
+    	NodeList firstLevelChildren = doc.getChildNodes();
+    	NodeList secondLevelChildren = (firstLevelChildren.item(0)).getChildNodes();
+    	Node metaNode = secondLevelChildren.item(0);
+    	Node dataNode = secondLevelChildren.item(1);
+    	
+    	Integer numRows = 0;
+    	Integer numColumns = 0;
+    	Node legend = null;
+    	NodeList metaNodeChildren = metaNode.getChildNodes();
+    	for (int i = 0; i < metaNodeChildren.getLength(); i++) {
+    		Node n = metaNodeChildren.item(i);
+    		if (n.getNodeName().equals("rows")) {
+    			numRows = Integer.valueOf(getXMLNodeValue(n));
+    		} else if (n.getNodeName().equals("columns")) {
+    			numColumns = Integer.valueOf(getXMLNodeValue(n));
+    		} else if (n.getNodeName().equals("legend")) {
+    			legend = n;
+    		}
+    	}
+    	
+    	return new Object[]{numRows, numColumns, legend, dataNode};
+    }
+    
+    private String getXMLNodeValue(Node n) {
+    	return n.getChildNodes().item(0).getNodeValue();
+    }
+    
+    private double getDataAverage(Node dataNode, int col, int numRows) {
+    	double value = 0;
+    	
+    	int numRowsUsed = 0;
+    	for (int row = 0; row < numRows; row ++) {
+			Node data = dataNode.getChildNodes().item(numRows - 1 - row).getChildNodes().item(col + 1);
+			Double currentDataAsDouble = Double.valueOf(getXMLNodeValue(data));
+			if (!currentDataAsDouble.equals(Double.NaN)) {
+				numRowsUsed +=1;
+				value += currentDataAsDouble;
+			}
+		}
+		
+    	return (numRowsUsed == 0) ? value : (value / numRowsUsed);
+    }
+    
+    private String getHostAndVmStatsRawXML() {
+    	Date currentDate = new Date();
+    	String startTime = String.valueOf(currentDate.getTime()/1000 - 1000);
+    	
+    	return callHostPlugin("gethostvmstats",
+    						  "collectHostStats", String.valueOf(_collectHostStats),
+    						  "consolidationFunction", _consolidationFunction,
+    						  "interval", String.valueOf(_pollingIntervalInSeconds),
+    						  "startTime", startTime);
+    }
+    
     private Map<VM, VM.Record> getAllVmsSlowly() {
         Connection conn = getConnection();
         final Map<VM, VM.Record> vmrecs = new HashMap<VM, VM.Record>();
@@ -972,7 +1180,9 @@ public class XenServerResource implements ServerResource {
         String tmplturl = cmd.getUrl();
         int index = tmplturl.lastIndexOf("/");
         String mountpoint = tmplturl.substring(0, index);
-        String tmpltname = tmplturl.substring(index + 1).replace(".vhd", "");
+        String tmpltname = null;
+        if (index < tmplturl.length() -1)
+        	tmpltname = tmplturl.substring(index + 1).replace(".vhd", "");
         try {
             Connection conn = getConnection();
             String pUuid = cmd.getPoolUuid();
@@ -1004,11 +1214,27 @@ public class XenServerResource implements ServerResource {
                 tmpltsr.scan(conn);
                 VDI tmpltvdi = null;
 
-                tmpltvdi = getVDIbyUuid(tmpltname);
+                if (tmpltname != null) {
+                	tmpltvdi = getVDIbyUuid(tmpltname);
+                }
+                if (tmpltvdi == null) {
+                	vdis = tmpltsr.getVDIs(conn);
+                	for (VDI vdi: vdis) {
+                		tmpltvdi = vdi;
+                		break;
+                	}
+                }
+                if (tmpltvdi == null) {
+                	 String msg = "Unable to find template vdi on secondary storage" + "host:" + _hostUuid + "pool: " + tmplturl;
+                     s_logger.warn(msg);
+                     return new DownloadAnswer(null, 0, msg, com.vmops.storage.VMTemplateStorageResourceAssoc.Status.DOWNLOAD_ERROR, "", "", 0);
+                }
                 vmtmpltvdi = tmpltvdi.copy(conn, poolsr);
+
                 vmtmpltvdi.setNameLabel(conn, "Template " + cmd.getName());
                 // vmtmpltvdi.setNameDescription(conn, cmd.getDescription());
                 uuid = vmtmpltvdi.getUuid(conn);
+
             } else
                 uuid = vmtmpltvdi.getUuid(conn);
 
@@ -1385,10 +1611,23 @@ public class XenServerResource implements ServerResource {
     }
 
     protected Answer execute(RebootRouterCommand cmd) {
-        Answer answer = execute((RebootCommand) cmd);
+        Long bytesSent = 0L;
+        Long bytesRcvd = 0L;
+        if(VirtualMachineName.isValidRouterName(cmd.getVmName())){
+            long[] stats = getNetworkStats(cmd.getVmName());
+            bytesSent = stats[0];
+            bytesRcvd = stats[1];
+        }
+        RebootAnswer answer = (RebootAnswer)execute((RebootCommand) cmd);
+        answer.setBytesSent(bytesSent);
+        answer.setBytesReceived(bytesRcvd);
         if (answer.getResult()) {
-            String cnct = connect(cmd.getPrivateIpAddress());
+            String cnct = connect(cmd.getVmName(), cmd.getPrivateIpAddress());
+            networkUsage(cmd.getPrivateIpAddress(), "create");
             if (cnct == null) {
+                synchronized (_domrIPMap) {
+                    _domrIPMap.put(cmd.getVmName(),cmd.getPrivateIpAddress());
+                }
                 return answer;
             } else {
                 return new Answer(cmd, false, cnct);
@@ -1418,19 +1657,34 @@ public class XenServerResource implements ServerResource {
         return vm;
     }
 
-    public boolean joinPool(String masterAddress, String username, String password) {
+    public boolean joinPool(String address, String username, String password) {
         Connection conn = getConnection();
         try {
-            Pool.join(conn, masterAddress, username, password);
+            // set the _poolUuid to the old pool uuid in case it's not set.
+            _poolUuid = getPoolUuid();
+            
+            // Connect and find out about the new connection to the new pool.
+            Connection poolConn = _connPool.connect(address, username, password, _wait);
+            Map<Pool, Pool.Record> pools = Pool.getAllRecords(poolConn);
+            Pool.Record pr = pools.values().iterator().next();
+            
+            // Now join it.
+            String masterAddr = pr.master.getAddress(poolConn);
+            Pool.join(conn, masterAddr, username, password);
+            disconnected();
+            
+            // Set the pool uuid now to the newest pool.
+            _poolUuid = pr.uuid;
+            
             return true;
         } catch (JoiningHostCannotContainSharedSrs e) {
-            s_logger.warn("Unable to allow host " + _hostUuid + " to join pool " + masterAddress, e);
+            s_logger.warn("Unable to allow host " + _hostUuid + " to join pool " + address, e);
             return false;
         } catch (XenAPIException e) {
-            s_logger.warn("Unable to allow host " + _hostUuid + " to join pool " + masterAddress, e);
+            s_logger.warn("Unable to allow host " + _hostUuid + " to join pool " + address, e);
             return false;
         } catch (XmlRpcException e) {
-            s_logger.warn("Unable to allow host " + _hostUuid + " to join pool " + masterAddress, e);
+            s_logger.warn("Unable to allow host " + _hostUuid + " to join pool " + address, e);
             return false;
         }
     }
@@ -1543,7 +1797,7 @@ public class XenServerResource implements ServerResource {
 
                 String mountpoint = isopath.substring(0, index);
 
-                SR isosr = getIsoSRbyMountPoint(mountpoint, false);
+                SR isosr = getIsoSRbyMountPoint(mountpoint, true);
 
                 isosr.scan(conn);
 
@@ -1575,13 +1829,17 @@ public class XenServerResource implements ServerResource {
             state = State.Running;
             return new StartAnswer(cmd);
 
-        } catch (XenAPIException e) {
-            String msg = "Exception caught while starting VM due to " + e.toString();
-            s_logger.warn(msg, e);
-            return new StartAnswer(cmd, msg);
         } catch (Exception e) {
-            String msg = "Exception caught while starting VM due to " + e.getMessage();
+            String msg = "Exception caught while starting VM due to message:" + e.getMessage()
+            + " String:" + e.toString();
             s_logger.warn(msg, e);
+            if( vm != null) {
+                try {
+                    vm.hardShutdown(conn);
+                } catch (Exception e1) {
+                    
+                }
+            }
             return new StartAnswer(cmd, msg);
         } finally {
             try {
@@ -1589,10 +1847,7 @@ public class XenServerResource implements ServerResource {
                     vm.destroy(conn);
                     state = State.Stopped;
                 }
-            } catch (XmlRpcException e1) {
-                String msg = "VM destroy failed due to " + e1.getMessage();
-                s_logger.warn(msg, e1);
-            } catch (XenAPIException e1) {
+            } catch (Exception e1) {
                 String msg = "VM destroy failed due to " + e1.toString();
                 s_logger.warn(msg, e1);
             }
@@ -1627,7 +1882,8 @@ public class XenServerResource implements ServerResource {
                 }
                 return new StopAnswer(cmd, "VM does not exist", 0, 0L, 0L);
             }
-
+            Long bytesSent = 0L;
+            Long bytesRcvd = 0L;
             for (VM vm : vms) {
 
                 if (vm.getIsControlDomain(conn)) {
@@ -1639,12 +1895,16 @@ public class XenServerResource implements ServerResource {
                     state = _vms.get(vmName);
                     _vms.put(vmName, State.Stopping);
                 }
-
                 try {
                     if (vm.getPowerState(conn) == VmPowerState.RUNNING && vm.getResidentOn(conn).getUuid(conn).equals(_hostUuid)) {
                         /* when stop a vm, set affinity to current xenserver */
                         vm.setAffinity(conn, vm.getResidentOn(conn));
                         try {
+                            if(VirtualMachineName.isValidRouterName(vmName)){
+                                long[] stats = getNetworkStats(vmName);
+                                bytesSent = stats[0];
+                                bytesRcvd = stats[1];
+                            }
                             vm.cleanShutdown(conn);
                         } catch (XenAPIException e) {
                             s_logger.debug("Do Not support Clean Shutdown, fall back to hard Shutdown: " + e.toString());
@@ -1674,6 +1934,11 @@ public class XenServerResource implements ServerResource {
                         if (vm.getPowerState(conn) == VmPowerState.HALTED) {
                             vm.destroy(conn);
                             state = State.Stopped;
+                            if(VirtualMachineName.isValidRouterName(vmName)){
+                                synchronized (_domrIPMap) {
+                                    _domrIPMap.remove(vmName);
+                                }
+                            }
                         }
                     } catch (XmlRpcException e) {
                         String msg = "VM destroy failed in Stop Command due to " + e.getMessage();
@@ -1681,13 +1946,14 @@ public class XenServerResource implements ServerResource {
                     } catch (XenAPIException e) {
                         String msg = "VM destroy failed in Stop Command due to " + e.toString();
                         s_logger.warn(msg, e);
-                    }
-                    synchronized (_vms) {
-                        _vms.put(vmName, state);
+                    } finally {
+                        synchronized (_vms) {
+                            _vms.put(vmName, state);
+                        }
                     }
                 }
             }
-            return new StopAnswer(cmd, "Stop VM " + cmd.getVmName() + " Succeed", 0, 0L, 0L);
+            return new StopAnswer(cmd, "Stop VM " + cmd.getVmName() + " Succeed", 0, bytesSent, bytesRcvd);
         } catch (XenAPIException e) {
             String msg = "Stop Vm " + cmd.getVmName() + " fail due to " + e.toString();
             s_logger.warn(msg, e);
@@ -1699,31 +1965,27 @@ public class XenServerResource implements ServerResource {
         }
     }
 
-    protected String connect(final String ipAddress, final int port) {
+    protected String connect(final String vmName, final String ipAddress, final int port) {
         for (int i = 0; i <= _retry; i++) {
-            SocketChannel sch = null;
             try {
-                if (s_logger.isDebugEnabled()) {
-                    s_logger.debug("Trying to connect to " + ipAddress);
-                }
-                sch = SocketChannel.open();
-                sch.configureBlocking(true);
+                Connection conn = getConnection();
 
-                final InetSocketAddress addr = new InetSocketAddress(ipAddress, port);
-                sch.connect(addr);
-                return null;
-            } catch (final IOException e) {
-                if (s_logger.isDebugEnabled()) {
-                    s_logger.debug("Could not connect to " + ipAddress);
+                Set<VM> vms = VM.getByNameLabel(conn, vmName);
+                if( vms.size() < 1 ) {
+                    String msg = "VM " + vmName + " is not running";
+                    s_logger.warn(msg);
+                    return msg;
                 }
-            } finally {
-                if (sch != null) {
-                    try {
-                        sch.close();
-                    } catch (final IOException e) {
-                    }
-                }
+            } catch ( Exception e ) {
+                String msg = "VM.getByNameLabel " + vmName + " failed due to " + e.toString();
+                s_logger.warn(msg, e);
+                return msg;
             }
+            if (s_logger.isDebugEnabled()) {
+                s_logger.debug("Trying to connect to " + ipAddress);
+            }
+            if (pingdomr(ipAddress, Integer.toString(port)))
+                return null;
             try {
                 Thread.sleep(_sleep);
             } catch (final InterruptedException e) {
@@ -1735,8 +1997,8 @@ public class XenServerResource implements ServerResource {
         return "Unable to connect";
     }
 
-    protected String connect(final String ipAddress) {
-        return connect(ipAddress, 3922);
+    protected String connect(final String vmname, final String ipAddress) {
+        return connect(vmname, ipAddress, 3922);
     }
 
     protected StartRouterAnswer execute(StartRouterCommand cmd) {
@@ -1836,14 +2098,9 @@ public class XenServerResource implements ServerResource {
 
             VIF.create(conn, vifr);
 
-            getLocalGateway();
-
             /* set up PV dom argument */
             String pvargs = vm.getPVArgs(conn);
             pvargs = pvargs + cmd.getBootArgs();
-            if (_localGateway != null && _mgmtNetCidr != null) {
-                pvargs = pvargs + " mgmtcidr=" + _mgmtNetCidr + " localgw=" + _localGateway;
-            }
             s_logger.debug("PV args for router are " + pvargs);
             vm.setPVArgs(conn, pvargs);
 
@@ -1859,12 +2116,15 @@ public class XenServerResource implements ServerResource {
 
             vm.start(conn, false, true);
 
-            String result = connect(router.getPrivateIpAddress());
+            String result = connect(cmd.getVmName(), router.getPrivateIpAddress());
             if (result != null) {
                 s_logger.warn(" can not ping domr");
             }
-
             state = State.Running;
+            networkUsage(router.getPrivateIpAddress(), "create");
+            synchronized (_domrIPMap) {
+                _domrIPMap.put(cmd.getVmName(), router.getPrivateIpAddress());
+            }
             return new StartRouterAnswer(cmd);
 
         } catch (XenAPIException e) {
@@ -1982,17 +2242,12 @@ public class XenServerResource implements ServerResource {
 
             VIF.create(conn, vifr);
 
-            getLocalGateway();
-
             /* set up PV dom argument */
             String pvargs = vm.getPVArgs(conn);
             pvargs = pvargs + bootArgs;
-            if (_localGateway != null && _mgmtNetCidr != null) {
-                pvargs = pvargs + " mgmtcidr=" + _mgmtNetCidr + " localgw=" + _localGateway;
-            }
+
             pvargs += " zone=" + _dcId;
             pvargs += " pod=" + _pod;
-;
 
             if (s_logger.isInfoEnabled())
                 s_logger.info("PV args for system vm are " + pvargs);
@@ -2014,7 +2269,7 @@ public class XenServerResource implements ServerResource {
                 s_logger.info("Ping system vm command port, " + privateIp + ":" + cmdPort);
 
             state = State.Running;
-            String result = connect(privateIp, cmdPort);
+            String result = connect(vmName, privateIp, cmdPort);
             if (result != null) {
                 s_logger.warn(" can not ping system vm " + vmName);
 
@@ -2143,14 +2398,10 @@ public class XenServerResource implements ServerResource {
 
             VIF.create(conn, vifr);
 
-            getLocalGateway();
-
             /* set up PV dom argument */
             String pvargs = vm.getPVArgs(conn);
             pvargs = pvargs + cmd.getBootArgs();
-            if (_localGateway != null && _mgmtNetCidr != null) {
-                pvargs = pvargs + " mgmtcidr=" + _mgmtNetCidr + " localgw=" + _localGateway;
-            }
+
             pvargs += " zone=" + _dcId;
             pvargs += " pod=" + _pod;
             pvargs += " guid=Proxy." + cmd.getProxy().getId();
@@ -2176,7 +2427,7 @@ public class XenServerResource implements ServerResource {
                 s_logger.info("Ping console proxy command port, " + proxy.getPrivateIpAddress() + ":" + cmd.getProxyCmdPort());
 
             state = State.Running;
-            String result = connect(proxy.getPrivateIpAddress(), cmd.getProxyCmdPort());
+            String result = connect(cmd.getVmName(), proxy.getPrivateIpAddress(), cmd.getProxyCmdPort());
             if (result != null) {
                 s_logger.warn(" can not ping domp");
 
@@ -2319,6 +2570,7 @@ public class XenServerResource implements ServerResource {
     }
 
     private String callHostPlugin(String cmd, String... params) {
+        String argString = "";
         try {
             Connection conn = getConnection();
             Host host = Host.getByUuid(conn, _hostUuid);
@@ -2326,12 +2578,17 @@ public class XenServerResource implements ServerResource {
             for (int i = 0; i < params.length; i += 2) {
                 args.put(params[i], params[i + 1]);
             }
+            
+            for (Map.Entry<String, String> arg : args.entrySet()) {
+                argString = arg.getKey() + ": " + arg.getValue() + ", ";
+            }
+            
             String result = host.callPlugin(conn, "vmops", cmd, args);
             return result.replace("\n", "");
         } catch (XenAPIException e) {
-            s_logger.warn("Unable to get network info due to " + e.toString());
+            s_logger.warn("callHostPlugin failed for cmd: " + cmd + " with args " + argString + " due to " + e.toString());
         } catch (XmlRpcException e) {
-            s_logger.debug("Unable to get network info due to " + e.getMessage());
+            s_logger.debug("callHostPlugin failed for cmd: " + cmd + " with args " + argString + " due to " + e.getMessage());
         }
         return null;
     }
@@ -2342,17 +2599,13 @@ public class XenServerResource implements ServerResource {
             return false;
         return true;
     }
-
+    
     private boolean getNetworkInfo() {
         Connection conn = getConnection();
         String localGateway, privateNic;
         Host myself;
         try {
             myself = Host.getByUuid(conn, _hostUuid);
-            localGateway = callHostPlugin("getgateway", "mgmtIP", myself.getAddress(conn));
-            if (localGateway == null || localGateway.isEmpty()) {
-                return false;
-            }
             privateNic = callHostPlugin("getnetwork", "mgmtIP", myself.getAddress(conn));
             if (privateNic == null || privateNic.isEmpty()) {
                 return false;
@@ -2365,7 +2618,6 @@ public class XenServerResource implements ServerResource {
             return false;
         }
 
-        _localGateway = localGateway;
         _privateNic = privateNic;
         if (_publicNic == null) {
             _publicNic = _privateNic;
@@ -2571,6 +2823,19 @@ public class XenServerResource implements ServerResource {
             changes = sync();
         }
 
+        synchronized (_domrIPMap) {
+            _domrIPMap.clear();
+            if(changes != null){
+                for (final Map.Entry<String, State> entry : changes.entrySet()) {
+                    final String vm = entry.getKey();
+                    State state = entry.getValue();
+                    if(VirtualMachineName.isValidRouterName(vm) && (state == State.Running)){
+                        syncDomRIPMap(vm);
+                    }
+                }
+            }
+        }
+        
         cmd.setHypervisorType(HypervisorType.XenServer);
         cmd.setChanges(changes);
 
@@ -2581,27 +2846,26 @@ public class XenServerResource implements ServerResource {
             getPVISO(sscmd);
             return new StartupCommand[] { cmd, sscmd };
         }
+        
+        _poolUuid = getPoolUuid();
 
         return new StartupCommand[] { cmd };
     }
-
-    private void getLocalGateway() throws BadServerResponse, XenAPIException, XmlRpcException {
-        if (_localGateway != null) {
-            return;
-        }
-
+    
+    private String getPoolUuid() {
         Connection conn = getConnection();
-
-        Network network = getNetwork(_privateNic);
-        Set<PIF> pifs = network.getPIFs(conn);
-        for (PIF pif : pifs) {
-            PIF.Record rec = pif.getRecord(conn);
-            if (rec.VLAN == -1 && rec.gateway != null) {
-                _localGateway = rec.gateway;
-                break;
-            }
+        try {
+        Map<Pool, Pool.Record> pools = Pool.getAllRecords(conn);
+        assert (pools.size() == 1) : "Tell me how pool size can be " + pools.size();
+        Pool.Record rec = pools.values().iterator().next();
+        return rec.uuid;
+        } catch(XenAPIException e) {
+            throw new VmopsRuntimeException("Unable to get pool ", e);
+        } catch(XmlRpcException e) {
+            throw new VmopsRuntimeException("Unable to get pool ", e);
         }
     }
+
 
     protected void setupServer() {
         Connection conn = getConnection();
@@ -2616,12 +2880,10 @@ public class XenServerResource implements ServerResource {
             Host.Record hr = host.getRecord(conn);
 
             Iterator<String> it = hr.tags.iterator();
-            boolean needrestart = true;
 
             while (it.hasNext()) {
                 String tag = it.next();
                 if (tag.startsWith("vmops-version-")) {
-                    needrestart = false;
                     if (tag.equals("vmops-version-" + version)) {
                         s_logger.info(logX(host, "Host " + hr.address + " is already setup."));
                         getNetworkInfo();
@@ -2676,25 +2938,6 @@ public class XenServerResource implements ServerResource {
 
             hr.tags.add("vmops-version-" + version);
             host.setTags(conn, hr.tags);
-            if (needrestart) {
-                host.restartAgent(conn);
-
-                // wait 2 min for xapi restart
-                for (int i = 0; i < 12; i++) {
-                    try {
-                        Thread.sleep(20000);
-                    } catch (InterruptedException e1) {
-                        // TODO Auto-generated catch block
-                        s_logger.debug("sleep is interrupted");
-                    }
-                    try {
-                        conn = getConnection();
-                        return;
-                    } catch (Exception e) {
-                    }
-                }
-                throw new VmopsRuntimeException("Restart xapi does not come back ");
-            }
         } catch (XenAPIException e) {
             String msg = "Xen setup failed due to " + e.toString();
             s_logger.warn(msg, e);
@@ -2723,6 +2966,30 @@ public class XenServerResource implements ServerResource {
                     break;
                 }
             }
+        }
+        return ressr;
+    }
+    
+    private SR forgetSRByNameLabelandHost(String name) throws BadServerResponse, XenAPIException, XmlRpcException {
+        Connection conn = getConnection();
+        Set<SR> srs = SR.getByNameLabel(conn, name);
+        SR ressr = null;
+        for (SR sr : srs) {
+            Set<PBD> pbds;
+            pbds = sr.getPBDs(conn);
+            for (PBD pbd : pbds) {
+                PBD.Record pbdr = pbd.getRecord(conn);
+                if (pbdr.host != null && pbdr.host.getUuid(conn).equals(_hostUuid)) {
+                    if (pbdr.currentlyAttached) {
+                        pbd.unplug(conn);
+                    }
+                    ressr = sr;
+                    break;
+                }
+            }
+        }
+        if (ressr != null) {
+            ressr.forget(conn);
         }
         return ressr;
     }
@@ -2815,7 +3082,6 @@ public class XenServerResource implements ServerResource {
             }
             details.put("private.network.device", _privateNic);
             details.put("public.network.device", _publicNic);
-            details.put("local.gateway", _localGateway);
             cmd.setHostDetails(details);
             cmd.setPrivateIpAddress(hr.address);
             cmd.setStorageIpAddress(hr.address);
@@ -2908,12 +3174,11 @@ public class XenServerResource implements ServerResource {
         _username = (String) params.get("username");
         _password = (String) params.get("password");
         _pod = (String) params.get("pod");
-        _mgmtNetCidr = (String) params.get("management.network.cidr");
         _privateNic = (String) params.get("private.network.device");
         _publicNic = (String) params.get("public.network.device");
 
         String value = (String) params.get("wait");
-        _wait = NumbersUtil.parseInt(value, 1800);
+        _wait = NumbersUtil.parseInt(value, 1800 * 1000);
 
         if (_pod == null) {
             throw new ConfigurationException("Unable to get the pod");
@@ -3134,8 +3399,13 @@ public class XenServerResource implements ServerResource {
                 if (SRType.NFS.equals(record.type) && record.contentType.equals("user")) {
                     Set<PBD> pbds = record.PBDs;
                     for (PBD pbd : pbds) {
+                        Host host = pbd.getHost(conn);
+                        if(isRefNull(host))
+                            break;
                         Map<String, String> dconfig = pbd.getDeviceConfig(conn);
-                        if (uri.getHost().equals(dconfig.get("server")) && path.equals(dconfig.get("serverpath"))) {
+                        if (host.equals(Host.getByUuid(conn, _hostUuid))
+                                && uri.getHost().equals(dconfig.get("server"))
+                                && path.equals(dconfig.get("serverpath"))) {
                             SR sr = entry.getKey();
                             if (s_logger.isDebugEnabled()) {
                                 s_logger.debug(logX(sr, "Found SR for " + mountpoint + " UUID=" + record.uuid));
@@ -3164,19 +3434,25 @@ public class XenServerResource implements ServerResource {
             URI uri = new URI(mountpoint);
             String location = uri.getHost() + ":" + uri.getPath();
             Set<SR> srs = SR.getAll(conn);
+            
             for (SR sr : srs) {
-                if( !sr.getType(conn).equalsIgnoreCase(SRType.ISO.toString()) )
-                    continue;
-                Set<PBD> pbds = sr.getPBDs(conn);
-                for (PBD pbd : pbds) {
-                    Map<String, String> dconfig = pbd.getDeviceConfig(conn);
-                    Host host = pbd.getHost(conn);
-                    if(isRefNull(host))
+                SR.Record record = sr.getRecord(conn);
+                if (SRType.ISO.equals(record.type) && record.contentType.equals("user")) {
+                    Set<PBD> pbds = record.PBDs;
+                    for (PBD pbd : pbds) {
+                        Host host = pbd.getHost(conn);
+                        if(isRefNull(host))
+                            break;
+                        Map<String, String> dconfig = pbd.getDeviceConfig(conn);
+                        if (host.equals(Host.getByUuid(conn, _hostUuid))
+                                && location.equals(dconfig.get("location"))) {
+                            if (s_logger.isDebugEnabled()) {
+                                s_logger.debug(logX(sr, "Found SR for " + mountpoint + " UUID=" + record.uuid));
+                            }
+                            return sr;
+                        }
                         break;
-                    if (host.equals(Host.getByUuid(conn, _hostUuid)) && location.equals(dconfig.get("location"))) {
-                        return sr;
                     }
-                    break;
                 }
             }
             return createIsoSRbyURI(uri, shared);
@@ -3418,9 +3694,9 @@ public class XenServerResource implements ServerResource {
 
             return new Answer(cmd, true, "Success");
         } catch (Exception e) {
-            String msg = "Destroy vm failed " + " due to  " + e.getMessage();
+            String msg = "Destroy vm failed " + " due to  " + e.getMessage() + e.toString();
             s_logger.warn(msg, e);
-            return new Answer(cmd, false, msg);
+            return new Answer(cmd, true, msg);
         }
     }
 
@@ -3650,8 +3926,6 @@ public class XenServerResource implements ServerResource {
                     }
                 }
                 
-                removeSR(sr);
-
                 return new Answer(cmd);
             }
         } catch (XenAPIException e) {
@@ -3744,78 +4018,196 @@ public class XenServerResource implements ServerResource {
         String primaryStorageNameLabel = cmd.getPrimaryStoragePoolUuid();
         String snapshotUuid = cmd.getSnapshotUuid(); // not null: Precondition.
         String volumeName = cmd.getVolumeName();
-        String secondaryStoragePoolName = cmd.getSecondaryStoragePoolName();
+        String secondaryStoragePoolURL = cmd.getSecondaryStoragePoolURL();
         String lastBackedUpSnapshotUuid = cmd.getLastBackedUpSnapshotUuid();
         String prevSnapshotUuid = cmd.getPrevSnapshotUuid();
+        boolean isFirstSnapshotOfRootVolume = cmd.isFirstSnapshotOfRootVolume();
 
+        String details = null;
+        boolean success = false;
+        String backupSnapshotName = null;
         try {
             Connection conn = getConnection();
             SR primaryStorageSR = getSRByNameLabelandHost(primaryStorageNameLabel);
             String primaryStorageUuid = primaryStorageSR.getUuid(conn);
-            String secondaryStorageMountPath = getNFSStorageMountPath(secondaryStoragePoolName);
-            String backupSnapshotName = backupSnapshot(primaryStorageUuid, snapshotUuid, volumeName, secondaryStorageMountPath, lastBackedUpSnapshotUuid);
-            boolean success = (backupSnapshotName != null);
-            // In any case destroy the previous snapshot, if it exists.
-            if (prevSnapshotUuid != null) {
-                destroySnapshotOnPrimaryStorage(prevSnapshotUuid);
+            String secondaryStorageMountPath = getNFSStorageMountPath(secondaryStoragePoolURL);
+            
+            if (secondaryStorageMountPath == null) {
+                details = "Couldn't backup snapshot because the URL passed: " + secondaryStoragePoolURL + " is invalid.";
             }
+            else {
+                backupSnapshotName = backupSnapshot(primaryStorageUuid, snapshotUuid, volumeName, secondaryStorageMountPath, lastBackedUpSnapshotUuid, isFirstSnapshotOfRootVolume);
+                success = (backupSnapshotName != null);
+            }
+            
             if (!success) {
                 // destroy the VDI corresponding to the current snapshotId too
                 // And hope that XenServer coalesces back the base copy (which we couldn't backup)
                 // to it's parent.
                 // Else further snapshots will be corrupted.
                 // snapshotUuid is not null.
+                details = "Couldn't backup the snapshot " + snapshotUuid + " to secondary storage. Destroying it on primary storage.";
                 destroySnapshotOnPrimaryStorage(snapshotUuid);
+                
             }
-            return new BackupSnapshotAnswer(cmd, success, null, backupSnapshotName);
+            else if (prevSnapshotUuid != null) {
+                // Destroy the previous snapshot, if it exists.
+                // We destroy the previous snapshot only if the current snapshot backup succeeds.
+                // The aim is to keep the VDI of the last 'successful' snapshot so that it doesn't get merged with the new one
+                // and muddle the vhd chain on the secondary storage.
+                details = "Successfully backedUp the snapshot " + snapshotUuid + " to secondary storage.";
+                destroySnapshotOnPrimaryStorage(prevSnapshotUuid);
+            }
 
         } catch (XenAPIException e) {
-            s_logger.warn("BackupSnapshot Failed due to " + e.toString(), e);
-            return new BackupSnapshotAnswer(cmd, false, e.toString(), null);
+            details = "BackupSnapshot Failed due to " + e.toString();
+            s_logger.warn(details, e);
         } catch (Exception e) {
-            s_logger.warn("BackupSnapshot Failed due to " + e.getMessage(), e);
-            return new BackupSnapshotAnswer(cmd, false, e.getMessage(), null);
+            details = "BackupSnapshot Failed due to " + e.getMessage();
+            s_logger.warn(details, e);
         }
+        
+        s_logger.debug(details);
+        return new BackupSnapshotAnswer(cmd, success, details, backupSnapshotName);
     }
 
     protected CreateVolumeFromSnapshotAnswer execute(final CreateVolumeFromSnapshotCommand cmd) {
         String primaryStorageNameLabel = cmd.getPrimaryStoragePoolUuid();
         String volumeName = cmd.getVolumeName();
-        String secondaryStoragePoolName = cmd.getSecondaryStoragePoolName();
+        String secondaryStoragePoolURL = cmd.getSecondaryStoragePoolName();
         String backedUpSnapshotUuid = cmd.getBackedUpSnapshotUuid();
-
+        String templateUUID = cmd.getTemplateUUID();
+        
+        // By default, assume the command has failed and set the params to be
+        // passed to CreateVolumeFromSnapshotAnswer appropriately
+        boolean result = false;
+        // Generic error message.
+        String details = "Failed to create volume from snapshot for volume: " + volumeName + " with backupUuid: " + backedUpSnapshotUuid;
+        String newVdiUUID = null;
         try {
             Connection conn = getConnection();
             SR primaryStorageSR = getSRByNameLabelandHost(primaryStorageNameLabel);
             String primaryStorageSRUUID = primaryStorageSR.getUuid(conn);
 
-            String secondaryStorageMountPath = getNFSStorageMountPath(secondaryStoragePoolName);
+            String rootVdiUUID = null;
+            if (templateUUID != null) {
+                VDI rootVDI = null;
+                VDI tmpltvdi = getVDIbyUuid(templateUUID);
+    
+                synchronized (this.getClass()) {
+                    rootVDI = tmpltvdi.createClone(conn, new HashMap<String, String>());
+                }
+    
+                rootVDI.setNameLabel(conn, volumeName);
+                rootVdiUUID = rootVDI.getUuid(conn);
+            }
+
+            String secondaryStorageMountPath = getNFSStorageMountPath(secondaryStoragePoolURL);
+
+            if (secondaryStorageMountPath == null) {
+                details += " because the URL passed: " + secondaryStoragePoolURL + " is invalid.";
+                return new CreateVolumeFromSnapshotAnswer(cmd, result, details, newVdiUUID);
+            }
             String vdiUUID = createVolumeFromSnapshot(primaryStorageSRUUID, primaryStorageNameLabel, volumeName, secondaryStorageMountPath, backedUpSnapshotUuid);
-
-            return new CreateVolumeFromSnapshotAnswer(cmd, true, null, vdiUUID);
-
+            if (vdiUUID == null) {
+                details += " because the vmops plugin on XenServer failed at some point";
+            }
+            else {
+                String mountPointOfTemporaryDirOnSecondaryStorage = secondaryStoragePoolURL + File.separator + "snapshots" + File.separator + volumeName + "_temp";
+                URI uri = new URI(mountPointOfTemporaryDirOnSecondaryStorage);
+                // No need to check if the SR already exists. It's a temporary SR destroyed when this method exits.
+                // And two createVolumeFromSnapshot operations cannot proceed at the same time.
+                SR temporarySROnSecondaryStorage = createNfsSRbyURI(uri, false);
+                if (temporarySROnSecondaryStorage == null) {
+                    details += "because SR couldn't be created on " + mountPointOfTemporaryDirOnSecondaryStorage;
+                }
+                else {
+                    s_logger.debug("Successfully created temporary SR on secondary storage " + temporarySROnSecondaryStorage.getNameLabel(conn) + "with uuid " + temporarySROnSecondaryStorage.getUuid(conn) + " and scanned it");
+                    // createNFSSRbyURI also scans the SR and introduces the VDI
+                    
+                    VDI vdi = getVDIbyUuid(vdiUUID);
+                    
+                    if (vdi != null) {
+                       s_logger.debug("Successfully created VDI on secondary storage SR " + temporarySROnSecondaryStorage.getNameLabel(conn) + " with uuid " + vdiUUID);
+                       s_logger.debug("Copying VDI from secondary to primary");
+                       VDI vdiOnPrimaryStorage = vdi.copy(conn, primaryStorageSR);
+                       // vdi.copy introduces the vdi into the database. Don't need to do a scan on the primary storage.
+                       
+                       // Whether the vdi was copied successfully or not, we need to destroy the temporary SR created.
+                       // This will unmount the temp dir
+                       // Then delete the contents of the temp dir
+                       String tempSRNameLabel = secondaryStorageMountPath + File.separator + volumeName + "_temp";
+                       SR temporarySR = forgetSRByNameLabelandHost(tempSRNameLabel);
+                       if (temporarySR == null) {
+                           // Do we have to raise a more severe alarm?
+                           s_logger.error("Could not destroy the temporary SR mounted on " + tempSRNameLabel);
+                       }
+                       if (vdiOnPrimaryStorage != null) {
+                           newVdiUUID = vdiOnPrimaryStorage.getUuid(conn);
+                           s_logger.debug("Successfully copied and introduced VDI on primary storage with path " + vdiOnPrimaryStorage.getLocation(conn) + " and uuid " + newVdiUUID);
+                           if (rootVdiUUID != null) {
+                               boolean stitched = stitchSnapshotDeltaToTemplate(primaryStorageSRUUID, rootVdiUUID, newVdiUUID);
+                               if (stitched) {
+                                   result = true;
+                                   details = null;
+                               }
+                               else {
+                                   details += " because the newly cloned root VDI " + rootVdiUUID + " and the snapshot VDI " + newVdiUUID + " couldn't be stitched together";
+                                   // result is false, set resultObject to null.
+                                   newVdiUUID = null;
+                               }
+                           }
+                           else {
+                               // Creating volume of data disk. No stitching needs to be done. Volume has been successfully created.  
+                               result = true;
+                               details = null;
+                           }
+                       }
+                       else {
+                           details += ". Could not copy the vdi " + vdi.getUuid(conn) + " to primary storage";
+                       }
+                    }
+                    else {
+                        details += ". Could not scan and introduce vdi with uuid: " + vdiUUID;
+                    }
+                }
+            }
         } catch (XenAPIException e) {
-            s_logger.warn("CreateVolumeFromSnapshot Failed due to " + e.toString(), e);
-            return new CreateVolumeFromSnapshotAnswer(cmd, false, e.toString(), null);
+            details += " due to " + e.toString();
+            s_logger.warn(details, e);
         } catch (Exception e) {
-            s_logger.warn("CreateVolumeFromSnapshot Failed due to " + e.getMessage(), e);
-            return new CreateVolumeFromSnapshotAnswer(cmd, false, e.getMessage(), null);
+            details += " due to " + e.getMessage();
+            s_logger.warn(details, e);
         }
+        if (!result) {
+            // Is this logged at a higher level?
+            s_logger.error(details);
+        }
+        
+        // In all cases return something.
+        return new CreateVolumeFromSnapshotAnswer(cmd, result, details, newVdiUUID);
     }
+
+    
 
     protected DeleteSnapshotBackupAnswer execute(final DeleteSnapshotBackupCommand cmd) {
         String volumeName = cmd.getVolumeName();
-        String secondaryStoragePoolName = cmd.getSecondaryStoragePoolName();
+        String secondaryStoragePoolURL = cmd.getSecondaryStoragePoolURL();
         String backupUUID = cmd.getBackupUUID();
         String childUUID = cmd.getChildUUID();
 
-        // Don't ask me why, but the SR name-label is this for some reason
-        secondaryStoragePoolName += "/template";
-        String secondaryStorageMountPath = getNFSStorageMountPath(secondaryStoragePoolName);
-        String details = deleteSnapshotBackup(volumeName, secondaryStorageMountPath, backupUUID, childUUID);
-        boolean success = (details != null && details.equals("1"));
-        if (success) {
-            s_logger.debug("Successfully deleted snapshot backup " + backupUUID);
+        String secondaryStorageMountPath = getNFSStorageMountPath(secondaryStoragePoolURL);
+        String details = null;
+        boolean success = false;
+        if (secondaryStorageMountPath == null) {
+            details = "Couldn't delete snapshot because the URL passed: " + secondaryStoragePoolURL + " is invalid.";
+        }
+        else {
+            details = deleteSnapshotBackup(volumeName, secondaryStorageMountPath, backupUUID, childUUID);
+            success = (details != null && details.equals("1"));
+            if (success) {
+                s_logger.debug("Successfully deleted snapshot backup " + backupUUID);
+            }
         }
 
         return new DeleteSnapshotBackupAnswer(cmd, success, details);
@@ -3864,7 +4256,7 @@ public class XenServerResource implements ServerResource {
 
         int index = isoURL.lastIndexOf("/");
         mountpoint = isoURL.substring(0, index);
-        isoSR = getIsoSRbyMountPoint(mountpoint, false);
+        isoSR = getIsoSRbyMountPoint(mountpoint, true);
 
         try {
             isoSR.scan(conn);
@@ -3959,11 +4351,32 @@ public class XenServerResource implements ServerResource {
         return new ConsoleProxyLoadAnswer(cmd, proxyVmId, proxyVmName, success, result);
     }
 
-    private String backupSnapshot(String primaryStorageSRUuid, String snapshotUuid, String volumeName, String secondaryStorageMountPath, String lastBackedUpSnapshotUuid) {
+    // Each argument is put in a separate line for readability.
+    // Using more lines does not harm the environment.
+    private String backupSnapshot(String primaryStorageSRUuid,
+                                  String snapshotUuid,
+                                  String volumeName,
+                                  String secondaryStorageMountPath,
+                                  String lastBackedUpSnapshotUuid,
+                                  Boolean isFirstSnapshotOfRootVolume)
+    {
         String backupSnapshotUuid = null;
 
-        String results = callHostPlugin("backupSnapshot", "primaryStorageSRUuid", primaryStorageSRUuid, "snapshotUuid", snapshotUuid, "volumeName", volumeName,
-                "secondaryStorageMountPath", secondaryStorageMountPath, "lastBackedUpSnapshotUuid", lastBackedUpSnapshotUuid);
+        // Each argument is put in a separate line for readability.
+        // Using more lines does not harm the environment.
+        String results = callHostPlugin("backupSnapshot",
+                                        "primaryStorageSRUuid",
+                                        primaryStorageSRUuid,
+                                        "snapshotUuid",
+                                        snapshotUuid,
+                                        "volumeName",
+                                        volumeName,
+                                        "secondaryStorageMountPath",
+                                        secondaryStorageMountPath,
+                                        "lastBackedUpSnapshotUuid",
+                                        lastBackedUpSnapshotUuid,
+                                        "isFirstSnapshotOfRootVolume",
+                                        isFirstSnapshotOfRootVolume.toString());
 
         if (results == null || results.isEmpty()) {
             // errString is already logged.
@@ -3987,20 +4400,20 @@ public class XenServerResource implements ServerResource {
         return backupSnapshotUuid;
     }
 
-    private boolean destroySnapshotOnPrimaryStorage(String prevSnapshotUuid) {
+    private boolean destroySnapshotOnPrimaryStorage(String snapshotUuid) {
         // Precondition prevSnapshotUuid != null
 
         try {
             Connection conn = getConnection();
-            VDI prevSnapshot = getVDIbyUuid(prevSnapshotUuid);
+            VDI prevSnapshot = getVDIbyUuid(snapshotUuid);
             prevSnapshot.destroy(conn);
-            s_logger.debug("Successfully destroyed previous snapshot " + prevSnapshotUuid);
+            s_logger.debug("Successfully destroyed snapshot " + snapshotUuid + " on primary storage");
             return true;
         } catch (XenAPIException e) {
-            String msg = "Destroy previous snapshot " + prevSnapshotUuid + " failed due to " + e.toString();
+            String msg = "Destroy snapshot on primary storage " + snapshotUuid + " failed due to " + e.toString();
             s_logger.error(msg, e);
         } catch (Exception e) {
-            String msg = "Destroy previous snapshot " + prevSnapshotUuid + " failed due to " + e.getMessage();
+            String msg = "Destroy snapshot on primary storage " + snapshotUuid + " failed due to " + e.getMessage();
             s_logger.warn(msg, e);
         }
 
@@ -4015,13 +4428,25 @@ public class XenServerResource implements ServerResource {
         return result;
     }
 
-    private String createVolumeFromSnapshot(String primaryStorageSRUUID, String primaryStorageSRNameLabel, String volumeName, String secondaryStorageMountPath,
-            String backedUpSnapshotUuid) {
+    private String createVolumeFromSnapshot(String primaryStorageSRUUID,
+                                            String primaryStorageSRNameLabel,
+                                            String volumeName,
+                                            String secondaryStorageMountPath,
+                                            String backedUpSnapshotUuid)
+    {
         String vdiUUID = null;
 
         String failureString = "Could not create volume from " + backedUpSnapshotUuid;
-        String results = callHostPlugin("createVolumeFromSnapshot", "primaryStorageSRUuid", primaryStorageSRUUID, "volumeName", volumeName, "secondaryStorageMountPath",
-                secondaryStorageMountPath, "backedUpSnapshotUuid", backedUpSnapshotUuid);
+        String results = callHostPlugin("createVolumeFromSnapshot",
+                                        "primaryStorageSRUuid",
+                                        primaryStorageSRUUID,
+                                        "volumeName",
+                                        volumeName,
+                                        "secondaryStorageMountPath",
+                                        secondaryStorageMountPath,
+                                        "backedUpSnapshotUuid",
+                                        backedUpSnapshotUuid);
+        
 
         if (results == null || results.isEmpty()) {
             // Command threw an exception which has already been logged.
@@ -4032,25 +4457,84 @@ public class XenServerResource implements ServerResource {
         vdiUUID = tmp[1];
         // status == "1" if and only if vdiUUID != null
         // So we don't rely on status value but return vdiUUID as an indicator of success.
-        try {
-            if (status != null && status.equalsIgnoreCase("1") && vdiUUID != null) {
-                VDI vdi = getVDIbyUuid(vdiUUID);
-                if (vdi != null) {
-                    s_logger.debug("Successfully created Volume with uuid " + vdiUUID);
-                }
-            } else {
-                s_logger.debug(failureString + ". Failed with status " + status + " with vdiUuid " + vdiUUID);
-            }
-            return vdiUUID;
-        } catch (Exception e) {
-            String msg = "createVolumeFromSnapshot failed due to " + e.getMessage();
-            s_logger.warn(msg, e);
+    
+        if (status != null && status.equalsIgnoreCase("1") && vdiUUID != null) {
+            s_logger.debug("Successfully created vhd file with all data on secondary storage : " + vdiUUID);
+        } else {
+            s_logger.debug(failureString + ". Failed with status " + status + " with vdiUuid " + vdiUUID);
         }
-        return null;
+        return vdiUUID;
+        
     }
 
-    private String getNFSStorageMountPath(String secondaryStoragePoolName) {
-        return secondaryStoragePoolName + File.separator + "snapshots";
+    private boolean stitchSnapshotDeltaToTemplate(String primaryStorageSRUuid,
+                                                  String rootVdiUUID,
+                                                  String newVdiUUID)
+    {
+        boolean stitched = false;
+        String results =  callHostPlugin("stitchSnapshotDeltaToTemplate",
+                                         "primaryStorageSRUuid",
+                                         primaryStorageSRUuid,
+                                         "rootVdiUUID",
+                                         rootVdiUUID,
+                                         "snapshotVdiUUID",
+                                         newVdiUUID);
+        
+        if (results != null && !results.isEmpty()) {
+            String[] tmp = results.split("#");
+            String status = tmp[0];
+            if (status != null && status.equalsIgnoreCase("1")) {
+                s_logger.debug("Successfully stitched rootVdi: " + rootVdiUUID + " and snapshotVdi: " + newVdiUUID);
+                stitched = true;
+            } else {
+                s_logger.debug("Could not stitch rootVdi: " + rootVdiUUID + " and snapshotVdi: " + newVdiUUID);
+            }
+        }
+        
+        return stitched;
+    }
+    
+    private String getNFSStorageMountPath(String secondaryStoragePoolURL) {
+        URI uri = null;
+        try {
+            uri = new URI(secondaryStoragePoolURL);
+            
+        } catch (URISyntaxException e) {
+            s_logger.error("Given URL: " + secondaryStoragePoolURL + " is not valid " + e.getMessage(), e);
+            return null;
+        }
+        String secondaryStorageMountPath = uri.getHost() + ":" + uri.getPath() + File.separator + "snapshots";
+        return secondaryStorageMountPath;
+    }
+    
+    private void syncDomRIPMap(String vm){
+        //VM is a DomR, get its IP and add to domR-IP map
+        Connection conn = getConnection();
+        VM vm1 = getVM(conn, vm);
+        try {
+            String pvargs = vm1.getPVArgs(conn);
+            if(pvargs != null){
+                pvargs = pvargs.replaceAll(" ", "\n");
+                Properties pvargsProps = new Properties();
+                pvargsProps.load(new StringReader(pvargs));
+                String ip = pvargsProps.getProperty("eth1ip");
+                if(ip != null){
+                    _domrIPMap.put(vm, ip);
+                }
+            }
+        } catch (BadServerResponse e) {
+            String msg = "Unable to update domR IP map due to: " + e.toString();
+            s_logger.warn(msg, e);
+        } catch (XenAPIException e) {
+            String msg = "Unable to update domR IP map due to: " + e.toString();
+            s_logger.warn(msg, e);
+        } catch (XmlRpcException e) {
+            String msg = "Unable to update domR IP map due to: " + e.toString();
+            s_logger.warn(msg, e);
+        } catch (IOException e) {
+            String msg = "Unable to update domR IP map due to: " + e.toString();
+            s_logger.warn(msg, e);
+        }
     }
 
     @Override

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -17,8 +17,10 @@
  */
 package com.vmops.resource;
 
+import java.util.List;
 import java.util.Map;
 
+import com.vmops.host.HostVO;
 import com.vmops.utils.component.Adapter;
 
 /**
@@ -35,4 +37,6 @@ public interface Discoverer extends Adapter {
      * @return ServerResource
      */
     Map<? extends ServerResource, Map<String, String>> find(long dcId, Long podId, String url, String username, String password);
+
+	void postDiscovery(List<HostVO> hosts, long msId);
 }

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -31,6 +31,7 @@ public class BackupSnapshotCommand extends Command {
     private String secondaryStoragePoolName;
     private String lastBackedUpSnapshotUuid;
     private String prevSnapshotUuid;
+    private boolean isFirstSnapshotOfRootVolume;
     
     protected BackupSnapshotCommand() {
         
@@ -46,13 +47,15 @@ public class BackupSnapshotCommand extends Command {
      * @param lastBackedUpSnapshotUuid This is the UUID of the vhd file which was last backed up on secondary storage.
      *                                 It may not be the UUID of the base copy of the current snapshot, if no data was written since last snapshot.
      * @param prevSnapshotUuid         The UUID of the previous snapshot for this volume. This will be destroyed on the primary storage.
+     * @param isFirstSnapshotOfRootVolume true if this is the first snapshot of a root volume. Set the parent of the backup to null.
      */
     public BackupSnapshotCommand(String primaryStoragePoolUuid,
                                  String snapshotUuid, 
                                  String volumeName,
                                  String secondaryStoragePoolName, 
                                  String lastBackedUpSnapshotUuid,
-                                 String prevSnapshotUuid) 
+                                 String prevSnapshotUuid,
+                                 boolean isFirstSnapshotOfRootVolume) 
     {
         this.primaryStoragePoolUuid = primaryStoragePoolUuid;
         this.snapshotUuid = snapshotUuid;
@@ -60,6 +63,7 @@ public class BackupSnapshotCommand extends Command {
         this.secondaryStoragePoolName = secondaryStoragePoolName;
         this.lastBackedUpSnapshotUuid = lastBackedUpSnapshotUuid;
         this.prevSnapshotUuid = prevSnapshotUuid;
+        this.isFirstSnapshotOfRootVolume = isFirstSnapshotOfRootVolume;
     }
 
     /**
@@ -79,7 +83,7 @@ public class BackupSnapshotCommand extends Command {
     /**
      * @return the secondaryStoragePoolName
      */
-    public String getSecondaryStoragePoolName() {
+    public String getSecondaryStoragePoolURL() {
         return secondaryStoragePoolName;
     }
 
@@ -104,6 +108,10 @@ public class BackupSnapshotCommand extends Command {
         return prevSnapshotUuid;
     }
 
+    public boolean isFirstSnapshotOfRootVolume() {
+        return isFirstSnapshotOfRootVolume;
+    }
+    
     /**
      * {@inheritDoc}
      */

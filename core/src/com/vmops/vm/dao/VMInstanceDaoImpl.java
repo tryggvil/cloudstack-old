@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -60,44 +60,44 @@ public class VMInstanceDaoImpl extends GenericDaoBase<VMInstanceVO, Long> implem
     
 	protected VMInstanceDaoImpl() {
         IdStatesSearch = createSearchBuilder();
-        IdStatesSearch.addAnd("id", IdStatesSearch.entity().getId(), SearchCriteria.Op.EQ);
-        IdStatesSearch.addAnd("states", IdStatesSearch.entity().getState(), SearchCriteria.Op.IN);
+        IdStatesSearch.and("id", IdStatesSearch.entity().getId(), SearchCriteria.Op.EQ);
+        IdStatesSearch.and("states", IdStatesSearch.entity().getState(), SearchCriteria.Op.IN);
         IdStatesSearch.done();
         
         HostSearch = createSearchBuilder();
-        HostSearch.addAnd("host", HostSearch.entity().getHostId(), SearchCriteria.Op.EQ);
+        HostSearch.and("host", HostSearch.entity().getHostId(), SearchCriteria.Op.EQ);
         HostSearch.done();
         
         ZoneSearch = createSearchBuilder();
-        ZoneSearch.addAnd("zone", ZoneSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        ZoneSearch.and("zone", ZoneSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
         ZoneSearch.done();
         
         PoolTemplateActiveSearch = createSearchBuilder();
-        PoolTemplateActiveSearch.addAnd("pool", PoolTemplateActiveSearch.entity().getPoolId(), SearchCriteria.Op.EQ);
-        PoolTemplateActiveSearch.addAnd("template", PoolTemplateActiveSearch.entity().getTemplateId(), SearchCriteria.Op.EQ);
-        PoolTemplateActiveSearch.addAnd("removed", PoolTemplateActiveSearch.entity().getRemoved(), SearchCriteria.Op.NULL);
+        PoolTemplateActiveSearch.and("pool", PoolTemplateActiveSearch.entity().getPoolId(), SearchCriteria.Op.EQ);
+        PoolTemplateActiveSearch.and("template", PoolTemplateActiveSearch.entity().getTemplateId(), SearchCriteria.Op.EQ);
+        PoolTemplateActiveSearch.and("removed", PoolTemplateActiveSearch.entity().getRemoved(), SearchCriteria.Op.NULL);
         PoolTemplateActiveSearch.done();
         
         PoolISOActiveSearch = createSearchBuilder();
-        PoolISOActiveSearch.addAnd("pool", PoolISOActiveSearch.entity().getPoolId(), SearchCriteria.Op.EQ);
-        PoolISOActiveSearch.addAnd("iso", PoolISOActiveSearch.entity().getIsoId(), SearchCriteria.Op.EQ);
-        PoolISOActiveSearch.addAnd("removed", PoolISOActiveSearch.entity().getRemoved(), SearchCriteria.Op.NULL);
+        PoolISOActiveSearch.and("pool", PoolISOActiveSearch.entity().getPoolId(), SearchCriteria.Op.EQ);
+        PoolISOActiveSearch.and("iso", PoolISOActiveSearch.entity().getIsoId(), SearchCriteria.Op.EQ);
+        PoolISOActiveSearch.and("removed", PoolISOActiveSearch.entity().getRemoved(), SearchCriteria.Op.NULL);
         PoolISOActiveSearch.done();
         
         NameLikeSearch = createSearchBuilder();
-        NameLikeSearch.addAnd("name", NameLikeSearch.entity().getName(), SearchCriteria.Op.LIKE);
+        NameLikeSearch.and("name", NameLikeSearch.entity().getName(), SearchCriteria.Op.LIKE);
         NameLikeSearch.done();
         
         StateChangeSearch = createSearchBuilder();
-        StateChangeSearch.addAnd("id", StateChangeSearch.entity().getId(), SearchCriteria.Op.EQ);
-        StateChangeSearch.addAnd("states", StateChangeSearch.entity().getState(), SearchCriteria.Op.EQ);
-        StateChangeSearch.addAnd("host", StateChangeSearch.entity().getHostId(), SearchCriteria.Op.EQ);
-        StateChangeSearch.addAnd("update", StateChangeSearch.entity().getUpdated(), SearchCriteria.Op.EQ);
+        StateChangeSearch.and("id", StateChangeSearch.entity().getId(), SearchCriteria.Op.EQ);
+        StateChangeSearch.and("states", StateChangeSearch.entity().getState(), SearchCriteria.Op.EQ);
+        StateChangeSearch.and("host", StateChangeSearch.entity().getHostId(), SearchCriteria.Op.EQ);
+        StateChangeSearch.and("update", StateChangeSearch.entity().getUpdated(), SearchCriteria.Op.EQ);
         StateChangeSearch.done();
         
         TransitionSearch = createSearchBuilder();
-        TransitionSearch.addAnd("updateTime", TransitionSearch.entity().getUpdateTime(), SearchCriteria.Op.LT);
-        TransitionSearch.addAnd("states", TransitionSearch.entity().getState(), SearchCriteria.Op.IN);
+        TransitionSearch.and("updateTime", TransitionSearch.entity().getUpdateTime(), SearchCriteria.Op.LT);
+        TransitionSearch.and("states", TransitionSearch.entity().getState(), SearchCriteria.Op.IN);
         TransitionSearch.done();
         
         _updateTimeAttr = _allAttributes.get("updateTime");

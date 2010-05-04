@@ -1,7 +1,7 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
- * This software is licensed under the GNU General Public License v3 or later.  
+ * This software is licensed under the GNU General Public License v3 or later.
  * 
  * It is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,12 +24,17 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Savepoint;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.log4j.Logger;
 
+import com.vmops.utils.Pair;
 import com.vmops.utils.Ternary;
 import com.vmops.utils.exception.VmopsRuntimeException;
 import com.vmops.utils.net.MacAddress;
@@ -42,6 +47,8 @@ public class Merovingian {
 	private static final String INQUIRE_SQL = "SELECT op_lock.ip FROM op_lock WHERE op_lock.key = ?";
 	private static final String RELEASE_SQL = "DELETE FROM op_lock WHERE op_lock.key = ?";
 	private static final String CLEAR_SQL = "DELETE FROM op_lock WHERE op_lock.mac = ? AND op_lock.ip = ?";
+	
+	private final static HashMap<String, Pair<Lock, Integer>> s_memLocks = new HashMap<String, Pair<Lock, Integer>>(1027);
 	
 	private final LinkedHashMap<String, Ternary<Savepoint, Integer, Long>> _locks = new LinkedHashMap<String, Ternary<Savepoint, Integer, Long>>();
 	private int _previousIsolation = Connection.TRANSACTION_NONE;
@@ -89,81 +96,107 @@ public class Merovingian {
 	}
 	
 	public boolean acquire(String key, int timeInSeconds) {
-		Ternary<Savepoint, Integer, Long> lock = _locks.get(key);
-		if (lock != null) {
-			lock.second(lock.second() + 1);
-			if (s_logger.isTraceEnabled()) {
-				s_logger.trace("Lock: Reacquiring " + key + " Count: " + lock.second());
-			}
-			return true;
-		}
-		
-		if (_locks.size() == 0) {
-			getConnection(key);
-		}
-		
-		PreparedStatement pstmt = null;
-		long startTime = InaccurateClock.getTime();
-		while ((InaccurateClock.getTime() - startTime) < (timeInSeconds * 1000)) {
-			if (isLocked(key)) {
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {
-				}
-			} else {
-				boolean acquired = doAcquire(key);
-				if (acquired) {
-					return true;
-				}
-			}
-		}
-		if (s_logger.isTraceEnabled()) {
-			s_logger.trace("Lock: Timed out on acquiring lock " + key);
-		}
-		return false;
+		Pair<Lock, Integer> memLock = null;
+	    boolean acquiredDbLock = false;
+	    boolean acquiredMemLock = false;
+	    try {
+    	    synchronized(s_memLocks) {
+    	        memLock = s_memLocks.get(key);
+    	        if (memLock == null) {
+    	            Lock l = new ReentrantLock();
+    	            memLock = new Pair<Lock, Integer>(l, 0);
+    	            s_memLocks.put(key, memLock);
+    	        }
+    	        
+    	        memLock.second(memLock.second() + 1);
+    	    }
+    	    
+    	    if (!memLock.first().tryLock(timeInSeconds, TimeUnit.SECONDS)) {
+    	        return false;
+    	    }
+    	    acquiredMemLock = true;
+    	    
+    		Ternary<Savepoint, Integer, Long> lock = _locks.get(key);
+    		if (lock != null) {
+    			lock.second(lock.second() + 1);
+    			if (s_logger.isTraceEnabled()) {
+    				s_logger.trace("Lock: Reacquiring " + key + " Count: " + lock.second());
+    			}
+    			acquiredDbLock = true;
+    			return true;
+    		}
+    		
+    		if (_locks.size() == 0) {
+    			getConnection(key);
+    		}
+    		
+    		PreparedStatement pstmt = null;
+    		long startTime = InaccurateClock.getTime();
+    		while ((InaccurateClock.getTime() - startTime) < (timeInSeconds * 1000)) {
+    			if (isLocked(key)) {
+    				try {
+    					Thread.sleep(1000);
+    				} catch (InterruptedException e) {
+    				}
+    			} else {
+    				acquiredDbLock = doAcquire(key);
+    				if (acquiredDbLock) {
+    					return true;
+    				}
+    			}
+    		}
+    		if (s_logger.isTraceEnabled()) {
+    			s_logger.trace("Lock: Timed out on acquiring lock " + key);
+    		}
+    		return false;
+	    } catch (InterruptedException e) {
+	        s_logger.debug("Interrupted while trying to acquire " + key);
+	        return false;
+	    } finally {
+	        if (!acquiredMemLock || !acquiredDbLock) {
+	            synchronized(s_memLocks) {
+	                if (memLock.second(memLock.second() - 1) <= 0) {
+	                    s_memLocks.remove(key);
+	                }
+	            }
+            }
+	        
+            if (acquiredMemLock && !acquiredDbLock) {
+                memLock.first().unlock();
+            }
+	    }
 	}
 	
 	protected boolean doAcquire(String key) {
-		synchronized(key.intern()) {
-			PreparedStatement pstmt = null;
+		PreparedStatement pstmt = null;
+		try {
+			Savepoint sp = _txn.setSavepoint(key);
+
+			pstmt = _txn.prepareAutoCloseStatement(ACQUIRE_SQL);
+			pstmt.setString(1, key);
+			pstmt.setString(2, s_macAddress);
+			pstmt.setString(3, s_ipAddress);
+			pstmt.setString(4, Thread.currentThread().getName());
+			long startTime = InaccurateClock.getTime();
+			String exceptionMessage = null;
 			try {
-				Savepoint sp = _txn.setSavepoint(key);
-	
-				pstmt = _txn.prepareAutoCloseStatement(ACQUIRE_SQL);
-				pstmt.setString(1, key);
-				pstmt.setString(2, s_macAddress);
-				pstmt.setString(3, s_ipAddress);
-				pstmt.setString(4, Thread.currentThread().getName());
-				long startTime = InaccurateClock.getTime();
-				String exceptionMessage = null;
-				try {
-					int rows = pstmt.executeUpdate();
-					if (rows == 1) {
-						if (s_logger.isTraceEnabled()) {
-							s_logger.trace("Lock: lock acquired for " + key);
-						}
-						Ternary<Savepoint, Integer, Long> lock = new Ternary<Savepoint, Integer, Long>(sp, 1, InaccurateClock.getTime());
-						_locks.put(key, lock);
-						return true;
-					}
-				} catch(SQLException e) {
-					// if someone holds a lock for too long, expect to see lock wait timeout exception
-					exceptionMessage = e.getMessage();
+				int rows = pstmt.executeUpdate();
+				if (rows == 1) {
 					if (s_logger.isTraceEnabled()) {
-						s_logger.trace("Lock: Retrying lock " + key + " on " + e.getClass().getName() + ": " + e.getMessage());
+						s_logger.trace("Lock: lock acquired for " + key);
 					}
+					Ternary<Savepoint, Integer, Long> lock = new Ternary<Savepoint, Integer, Long>(sp, 1, InaccurateClock.getTime());
+					_locks.put(key, lock);
+					return true;
 				}
-				
-				if(exceptionMessage != null) {
-					// SQL exception in between setSavePoint() and rollback() will cause MySQL to release all previous
-					// savepoints!
-					s_logger.warn("This is not so good guys, SQL exception " + exceptionMessage + " will wipe out poor Merovingian save points");
-				}
-				_txn.rollback(sp);
-				s_logger.trace("Lock: Unable to acquire DB lock " + key);
-			} catch (SQLException e) {
-				s_logger.warn("Lock: Unable to acquire db connection for locking " + key, e);
+			} catch(SQLException e) {
+				s_logger.warn("Lock: Retrying lock " + key + ".  Waited " + (InaccurateClock.getTime() - startTime), e);
 			}
+			
+			_txn.rollback(sp);
+			s_logger.trace("Lock: Unable to acquire DB lock " + key);
+		} catch (SQLException e) {
+			s_logger.warn("Lock: Unable to acquire db connection for locking " + key, e);
 		}
 		return false;
 	}
@@ -173,11 +206,7 @@ public class Merovingian {
 		
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
-		int previousIsolation = Connection.TRANSACTION_NONE;
 		try {
-			previousIsolation = conn.getTransactionIsolation();
-			conn.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
-			
 			pstmt = conn.prepareStatement(INQUIRE_SQL);
 			pstmt.setString(1, key);
 			rs = pstmt.executeQuery();
@@ -187,9 +216,6 @@ public class Merovingian {
 			throw new VmopsRuntimeException("SQL Exception on inquiry", e);
 		} finally {
 			try {
-				if (conn != null) {
-					conn.setTransactionIsolation(previousIsolation);
-				}
 				if (rs != null) {
 					rs.close();
 				}
@@ -226,33 +252,49 @@ public class Merovingian {
 	}
 	
 	public boolean release(String key) {
-		assert _locks.size() > 0 : "There are no locks here. Why are you trying to release " + key;
-		if (s_logger.isDebugEnabled() && _locks.keySet().iterator().next().equals(key)) {
-			s_logger.trace("Lock: Releasing out of order for " + key);
-		}
-		
-		Ternary<Savepoint, Integer, Long> lock = _locks.get(key);
-		if (lock == null) {
-			assert false : "Releasing a lock that is not acquired: " + key;
-			return false;
-		}
-		
-		if (lock.second() > 1) {
-			lock.second(lock.second() -1);
-			if (s_logger.isTraceEnabled()) {
-				s_logger.trace("Lock: Releasing " + key + " but not in DB " + lock.second());
-			}
-			return false;
-		}
-		
-		if (s_logger.isTraceEnabled()) {
-			s_logger.trace("Lock: Releasing " + key + " after " + (InaccurateClock.getTime() - lock.third()));
-		}
-		_txn.rollback(lock.first());
-		_locks.remove(key);
-		if (_locks.size() == 0) {
-			closeConnection();
-		}
+		boolean lastRef = false;
+	    try {
+    		assert _locks.size() > 0 : "There are no locks here. Why are you trying to release " + key;
+    		if (s_logger.isDebugEnabled() && _locks.keySet().iterator().next().equals(key)) {
+    			s_logger.trace("Lock: Releasing out of order for " + key);
+    		}
+    		
+    		Ternary<Savepoint, Integer, Long> lock = _locks.get(key);
+    		if (lock == null) {
+    			assert false : "Releasing a lock that is not acquired: " + key;
+    			return false;
+    		}
+    		
+    		if (lock.second() > 1) {
+    			lock.second(lock.second() -1);
+    			if (s_logger.isTraceEnabled()) {
+    				s_logger.trace("Lock: Releasing " + key + " but not in DB " + lock.second());
+    			}
+    			return false;
+    		}
+    		
+    		if (s_logger.isTraceEnabled()) {
+    			s_logger.trace("Lock: Releasing " + key + " after " + (InaccurateClock.getTime() - lock.third()));
+    		}
+    		_txn.rollback(lock.first());
+    		_locks.remove(key);
+    		if (_locks.size() == 0) {
+    			closeConnection();
+    		}
+    		lastRef = true;
+    		
+	    } finally {
+    		synchronized(s_memLocks) {
+    		    Pair<Lock, Integer> memLock = s_memLocks.get(key);
+    		    memLock.second(memLock.second() - 1);
+    		    if (memLock.second() <= 0) {
+    		        s_memLocks.remove(key);
+    		    }
+    		    
+    		    if(lastRef)
+    		    	memLock.first().unlock();
+    		}
+	    }
 		return true;
 	}
 	

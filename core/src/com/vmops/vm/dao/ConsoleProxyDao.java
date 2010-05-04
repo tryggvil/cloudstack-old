@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -40,7 +40,7 @@ public interface ConsoleProxyDao extends GenericDao<ConsoleProxyVO, Long> {
     public List<ConsoleProxyLoadInfo> getDatacenterProxyLoadMatrix();
     public List<ConsoleProxyLoadInfo> getDatacenterVMLoadMatrix();
     public List<ConsoleProxyLoadInfo> getDatacenterSessionLoadMatrix();
-    public List<Pair<Long, Integer>> getDatacenterStoragePoolHostInfo(long dcId);
+    public List<Pair<Long, Integer>> getDatacenterStoragePoolHostInfo(long dcId, boolean countAllPoolTypes);
     public List<Pair<Long, Integer>> getProxyLoadMatrix();
     public int getProxyStaticLoad(long proxyVmId);
     public int getProxyActiveLoad(long proxyVmId);

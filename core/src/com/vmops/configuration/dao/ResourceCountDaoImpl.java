@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -34,8 +34,8 @@ public class ResourceCountDaoImpl extends GenericDaoBase<ResourceCountVO, Long> 
 	
 	public ResourceCountDaoImpl() {
 		IdTypeSearch = createSearchBuilder();
-		IdTypeSearch.addAnd("type", IdTypeSearch.entity().getType(), SearchCriteria.Op.EQ);
-	    IdTypeSearch.addAnd("accountId", IdTypeSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
+		IdTypeSearch.and("type", IdTypeSearch.entity().getType(), SearchCriteria.Op.EQ);
+	    IdTypeSearch.and("accountId", IdTypeSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
 	    IdTypeSearch.done();
 	}
 	

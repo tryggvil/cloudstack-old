@@ -7,9 +7,9 @@ import os
 expressions = [
 	("c1",
 		(
-			re.compile(r"/\*\*.*Copyright \(c\) 20(.+?)VMOps Inc(.*?) \*/",re.DOTALL),
+			re.compile(r"/\*\*.*Copyright \(C\) 20(.+?)Cloud.com(.*?) \*/",re.DOTALL),
 			"""/**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -28,9 +28,9 @@ expressions = [
 		)),
 	("c2",
 		(
-			re.compile(r"//.*Copyright \(C\) 20[0-9][0-9] VMOps, Inc\.  All Rights Reserved\.",re.DOTALL),
+			re.compile(r"//.*Copyright \(C\) 20[0-9][0-9] Cloud.com.  All Rights Reserved\.",re.DOTALL),
 			"""/**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -101,7 +101,7 @@ def java_analyzer(path):
 	else:
 		print "%90s"%path,"no license detected"
 		newtext = """/**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 

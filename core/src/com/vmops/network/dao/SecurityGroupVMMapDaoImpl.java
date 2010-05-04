@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -36,20 +36,20 @@ public class SecurityGroupVMMapDaoImpl extends GenericDaoBase<SecurityGroupVMMap
 
     protected SecurityGroupVMMapDaoImpl() {
         ListByIpAndVmId  = createSearchBuilder();
-        ListByIpAndVmId.addAnd("ipAddress", ListByIpAndVmId.entity().getIpAddress(), SearchCriteria.Op.EQ);
-        ListByIpAndVmId.addAnd("instanceId", ListByIpAndVmId.entity().getInstanceId(), SearchCriteria.Op.EQ);
+        ListByIpAndVmId.and("ipAddress", ListByIpAndVmId.entity().getIpAddress(), SearchCriteria.Op.EQ);
+        ListByIpAndVmId.and("instanceId", ListByIpAndVmId.entity().getInstanceId(), SearchCriteria.Op.EQ);
         ListByIpAndVmId.done();
 
         ListBySecurityGroup = createSearchBuilder();
-        ListBySecurityGroup.addAnd("securityGroupId", ListBySecurityGroup.entity().getSecurityGroupId(), SearchCriteria.Op.EQ);
+        ListBySecurityGroup.and("securityGroupId", ListBySecurityGroup.entity().getSecurityGroupId(), SearchCriteria.Op.EQ);
         ListBySecurityGroup.done();
 
         ListByIp  = createSearchBuilder();
-        ListByIp.addAnd("ipAddress", ListByIp.entity().getIpAddress(), SearchCriteria.Op.EQ);
+        ListByIp.and("ipAddress", ListByIp.entity().getIpAddress(), SearchCriteria.Op.EQ);
         ListByIp.done();
 
         ListByVmId  = createSearchBuilder();
-        ListByVmId.addAnd("instanceId", ListByVmId.entity().getInstanceId(), SearchCriteria.Op.EQ);
+        ListByVmId.and("instanceId", ListByVmId.entity().getInstanceId(), SearchCriteria.Op.EQ);
         ListByVmId.done();
     }
 

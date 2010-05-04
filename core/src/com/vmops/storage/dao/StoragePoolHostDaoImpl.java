@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -55,16 +55,16 @@ public class StoragePoolHostDaoImpl extends GenericDaoBase<StoragePoolHostVO, Lo
 	
 	public StoragePoolHostDaoImpl () {
 		PoolSearch = createSearchBuilder();
-		PoolSearch.addAnd("pool_id", PoolSearch.entity().getPoolId(), SearchCriteria.Op.EQ);
+		PoolSearch.and("pool_id", PoolSearch.entity().getPoolId(), SearchCriteria.Op.EQ);
 		PoolSearch.done();
 		
 		HostSearch = createSearchBuilder();
-		HostSearch.addAnd("host_id", HostSearch.entity().getHostId(), SearchCriteria.Op.EQ);
+		HostSearch.and("host_id", HostSearch.entity().getHostId(), SearchCriteria.Op.EQ);
 		HostSearch.done();
 		
 		PoolHostSearch = createSearchBuilder();
-		PoolHostSearch.addAnd("pool_id", PoolHostSearch.entity().getPoolId(), SearchCriteria.Op.EQ);
-		PoolHostSearch.addAnd("host_id", PoolHostSearch.entity().getHostId(), SearchCriteria.Op.EQ);
+		PoolHostSearch.and("pool_id", PoolHostSearch.entity().getPoolId(), SearchCriteria.Op.EQ);
+		PoolHostSearch.and("host_id", PoolHostSearch.entity().getHostId(), SearchCriteria.Op.EQ);
 		PoolHostSearch.done();
 
 	}

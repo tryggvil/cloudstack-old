@@ -160,6 +160,7 @@ create_datadisk() {
   local datadiskfolder=$1
   local datadiskname=$2
   local datadisksize=$3
+  local diskfmt=$4
   
   datadisksize=$(convert_size_to_gb $datadisksize)
   
@@ -168,7 +169,7 @@ create_datadisk() {
     return 1
   fi
 
-  qemu-img create -f qcow2 ${datadiskfolder}/${datadiskname} $datadisksize
+  qemu-img create -f $diskfmt ${datadiskfolder}/${datadiskname} $datadisksize
   
   return $?
 }
@@ -178,6 +179,8 @@ convert_size_to_gb() {
   
   suffix=${size:(-1)}
   case $suffix in
+    M)
+        ;;
     G)   
          ;;
     [0-9])   size=${size}G
@@ -253,8 +256,30 @@ then
   cleanup_and_exit_if_error $? "Failed to create datadisk in $datadiskfolder; datadisk with $datadiskname already exists." $rootdiskfolder 
 
   # Create the datadisk
-  create_datadisk $datadiskfolder $datadiskname $datadisksize
+  create_datadisk $datadiskfolder $datadiskname $datadisksize qcow2
   cleanup_and_exit_if_error $? "Failed to create datadisk in $datadiskfolder of size $datadisksize." $rootdiskfolder $datadiskfolder $datadiskname
+else
+  # Create a datadisk for domr/domp
+    create_datadisk $rootdiskfolder datadisk 10M raw
+    exit_if_error $? "Failed to create datadisk"
+    losetup -f $rootdiskfolder/datadisk &>/dev/null
+    exit_if_error $? "Failed to losetup the $rootdiskfolder/datadisk"
+    loopdev=$(losetup -j $rootdiskfolder/datadisk 2>/dev/null|cut -d: -f 1)
+    mke2fs -t ext3 $loopdev &>/dev/null
+    exit_if_error $? "Failed to mke2fs $loopdev"
+    retry=10
+    while [ $retry -gt 0 ]
+    do 
+        losetup -d $loopdev &>/dev/null
+        if [ $? -gt 0 ]
+        then
+            sleep 5
+        else
+            break
+        fi
+        retry=$(($retry-1))
+    done
+    exit_if_error $? "Failed to losetup -d $loopdev"
 fi
 
 exit 0

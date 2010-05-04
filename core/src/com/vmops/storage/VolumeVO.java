@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -131,9 +131,6 @@ public class VolumeVO implements Volume {
     @Enumerated(value=EnumType.STRING)
     private AsyncInstanceCreateStatus status;
     
-    @Column(name="last_snap_id")
-    long lastSnapshotId;
-    
     public VolumeVO(String name, long size, String folder, String path, String iscsiName, String hostIp, Long mirrorVolume, Volume.MirrorState state, Volume.VolumeType type) {
     	this(null, name, -1, -1, -1, -1, -1, null, type, folder, path, iscsiName, size);
     }
@@ -152,7 +149,6 @@ public class VolumeVO implements Volume {
         this.dataCenterId = dcId;
         this.volumeType = vType;
         this.status = AsyncInstanceCreateStatus.Created;
-        this.lastSnapshotId = 0;
     }
 
     public VolumeVO(Long id, String name, long hostId, long dcId, long podId, long accountId, long domainId, Long instanceId, Volume.VolumeType vType, String folder, String path, String iscsiName, long size) {
@@ -170,7 +166,6 @@ public class VolumeVO implements Volume {
         this.volumeType = vType;
         this.iscsiName = iscsiName;
         this.status = AsyncInstanceCreateStatus.Created;
-        this.lastSnapshotId = 0;
     }
     
     public String getIscsiName() {
@@ -248,14 +243,6 @@ public class VolumeVO implements Volume {
     	return instanceId;
     }
     
-	public long getLastSnapshotId() {
-		return lastSnapshotId;
-	}
-	
-	public void setLastSnapshotId(long lastSnapshotId) {
-		this.lastSnapshotId = lastSnapshotId;
-	}
-	
 	@Override
 	public VolumeType getVolumeType() {
 		return volumeType;

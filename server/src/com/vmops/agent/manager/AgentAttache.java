@@ -1,7 +1,7 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
- * This software is licensed under the GNU General Public License v3 or later.  
+ * This software is licensed under the GNU General Public License v3 or later.
  * 
  * It is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,7 +39,9 @@ import com.vmops.agent.api.Command;
 import com.vmops.agent.api.MigrateCommand;
 import com.vmops.agent.api.PingTestCommand;
 import com.vmops.agent.api.ReadyCommand;
+import com.vmops.agent.api.StartupAnswer;
 import com.vmops.agent.api.StopCommand;
+import com.vmops.agent.manager.DirectAgentAttache.PingTask;
 import com.vmops.agent.transport.Request;
 import com.vmops.agent.transport.Response;
 import com.vmops.exception.AgentUnavailableException;
@@ -91,6 +93,7 @@ public abstract class AgentAttache {
     protected final ConcurrentHashMap<Long, Listener> _waitForList;
     protected final LinkedList<Request> _requests;
     protected Long _currentSequence;
+    protected Status _status = Status.Connecting;
     protected boolean _maintenance;
     
     public final static String[] s_commandsAllowedInMaintenanceMode =
@@ -395,6 +398,10 @@ public abstract class AgentAttache {
         }
         _currentSequence = req.getSequence();
     }
+    
+	public void process(Answer[] answers) {
+        //do nothing
+	}
 
     /**
      * sends the request asynchronously.

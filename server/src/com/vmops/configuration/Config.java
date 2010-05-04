@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -56,7 +56,6 @@ public enum Config {
 	GuestNetmask("Network", AgentManager.class, String.class, "guest.netmask", "255.255.255.0", "The netmask of the guest virtual network.", "netmask"),
 	MulticastThrottlingRate("Network", ManagementServer.class, Integer.class, "multicast.throttling.rate", "10", "Default multicast rate in megabits per second allowed.", null),
 	NetworkThrottlingRate("Network", ManagementServer.class, Integer.class, "network.throttling.rate", "200", "Default data transfer rate in megabits per second allowed.", null),
-	ManagementServerNetwork("Network", AgentManager.class, String.class, "management.network.cidr", "192.168.1.0/24", "The private network CIDR of the management server cluster. Virtual routers need to know this if the management server programs the virtual router directly", null),
 	XenPublicNetwork("Network", AgentManager.class, String.class, "xen.public.network.device", null, "[ONLY IF THE PUBLIC NETWORK IS ON A DEDICATED NIC]:The network name label of the physical device dedicated to the public network on a XenServer host", null),
 
 	
@@ -116,7 +115,7 @@ public enum Config {
 	UpdateWait("Advanced", AgentManager.class, Integer.class, "update.wait", "600", "Time to wait before alerting on a updating agent", null),
 	Wait("Advanced", AgentManager.class, Integer.class, "wait", "1800", "Time to wait for control commands to return", null),
 	Workers("Advanced", AgentManager.class, Integer.class, "workers", "5", "Number of worker threads.", null),
-	MountParent("Advanced", ManagementServer.class, String.class, "mount.parent", "/var/lib/vmops/mnt", "The mount point on the Management Server for Secondary Storage.", null),
+	MountParent("Advanced", ManagementServer.class, String.class, "mount.parent", "/var/lib/cloud/mnt", "The mount point on the Management Server for Secondary Storage.", null),
 	UpgradeURL("Advanced", ManagementServer.class, String.class, "upgrade.url", "http://example.com:8080/client/agent/update.zip", "The upgrade URL is the URL of the management server that agents will connect to in order to automatically upgrade.", null),
 	SystemVMUseLocalStorage("Advanced", ManagementServer.class, Boolean.class, "system.vm.use.local.storage", "false", "Indicates whether to use local storage pools or shared storage pools for system VMs.", null),
 	CPUOverprovisioningFactor("Advanced", ManagementServer.class, String.class, "cpu.overprovisioning.factor", "1", "Used for CPU overprovisioning calculation; available CPU will be (actualCpuCapacity * cpu.overprovisioning.factor)", null),
@@ -127,6 +126,8 @@ public enum Config {
 	NetworkType("Advanced", ManagementServer.class, String.class, "network.type", "vnet", "The type of network that this deployment will use.", "vnet/vlan/direct.attached"),
 	HypervisorType("Advanced", ManagementServer.class, String.class, "hypervisor.type", "kvm", "The type of hypervisor that this deployment will use.", "kvm/xenserver"),
 	ManagementHostIPAdr("Advanced", ManagementServer.class, String.class, "host", "localhost", "The ip address of management server", null),
+	UseSecondaryStorageVm("Advanced", ManagementServer.class, Boolean.class, "secondary.storage.vm", "false", "Deploys a VM per zone to manage secondary storage if true, otherwise secondary storage is mounted on management server", null),
+
 	
 	// Premium
 	

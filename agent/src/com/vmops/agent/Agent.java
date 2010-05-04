@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -46,7 +46,7 @@ import com.vmops.agent.api.StartupCommand;
 import com.vmops.agent.api.StartupComputingCommand;
 import com.vmops.agent.api.UpgradeAnswer;
 import com.vmops.agent.api.UpgradeCommand;
-import com.vmops.agent.api.WatchCommand;
+import com.vmops.agent.api.CronCommand;
 import com.vmops.agent.transport.Request;
 import com.vmops.agent.transport.Response;
 import com.vmops.agent.transport.UpgradeResponse;
@@ -335,10 +335,12 @@ public class Agent implements HandlerFactory, IAgentControl {
         final String hostname = result == null ? parser.getLine() : addr.toString();
     	
         startup.setId(getId());
-        startup.setName(hostname);
+        if (startup.getName() == null)
+        	startup.setName(hostname);
         startup.setDataCenter(getZone());
         startup.setPod(getPod());
         startup.setGuid(getResourceGuid());
+        startup.setResourceName(getResourceName());
         startup.setVersion(getVersion());
         if(startup instanceof StartupComputingCommand) {
         	((StartupComputingCommand)startup).setProxyPort(_shell.getProxyPort());
@@ -435,8 +437,8 @@ public class Agent implements HandlerFactory, IAgentControl {
                         s_logger.debug("Processing command: " + cmd.toString());
                     }
 
-                    if (cmd instanceof WatchCommand) {
-                        final WatchCommand watch = (WatchCommand)cmd;
+                    if (cmd instanceof CronCommand) {
+                        final CronCommand watch = (CronCommand)cmd;
                         scheduleWatch(link, request, watch.getInterval() * 1000, watch.getInterval() * 1000);
                         answer = new Answer(cmd, true, null);
                     } else if (cmd instanceof UpgradeCommand) {

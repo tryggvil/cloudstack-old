@@ -1,7 +1,7 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
- * This software is licensed under the GNU General Public License v3 or later.
+ * This software is licensed under the GNU General Public License v3 or later.  
  * 
  * It is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -85,84 +85,84 @@ public class HostDaoImpl extends GenericDaoBase<HostVO, Long> implements HostDao
         
         TypePodDcStatusSearch = createSearchBuilder();
         HostVO entity = TypePodDcStatusSearch.entity();
-        TypePodDcStatusSearch.addAnd("type", entity.getType(), SearchCriteria.Op.EQ);
-        TypePodDcStatusSearch.addAnd("pod", entity.getPodId(), SearchCriteria.Op.EQ);
-        TypePodDcStatusSearch.addAnd("dc", entity.getDataCenterId(), SearchCriteria.Op.EQ);
-        TypePodDcStatusSearch.addAnd("status", entity.getStatus(), SearchCriteria.Op.EQ);
+        TypePodDcStatusSearch.and("type", entity.getType(), SearchCriteria.Op.EQ);
+        TypePodDcStatusSearch.and("pod", entity.getPodId(), SearchCriteria.Op.EQ);
+        TypePodDcStatusSearch.and("dc", entity.getDataCenterId(), SearchCriteria.Op.EQ);
+        TypePodDcStatusSearch.and("status", entity.getStatus(), SearchCriteria.Op.EQ);
         TypePodDcStatusSearch.done();
 
         LastPingedSearch = createSearchBuilder();
-        LastPingedSearch.addAnd("ping", LastPingedSearch.entity().getLastPinged(), SearchCriteria.Op.LT);
-        LastPingedSearch.addAnd("state", LastPingedSearch.entity().getStatus(), SearchCriteria.Op.IN);
+        LastPingedSearch.and("ping", LastPingedSearch.entity().getLastPinged(), SearchCriteria.Op.LT);
+        LastPingedSearch.and("state", LastPingedSearch.entity().getStatus(), SearchCriteria.Op.IN);
         LastPingedSearch.done();
         
         LastPingedSearch2 = createSearchBuilder();
-        LastPingedSearch2.addAnd("ping", LastPingedSearch2.entity().getLastPinged(), SearchCriteria.Op.LT);
-        LastPingedSearch2.addAnd("type", LastPingedSearch2.entity().getType(), SearchCriteria.Op.EQ);
+        LastPingedSearch2.and("ping", LastPingedSearch2.entity().getLastPinged(), SearchCriteria.Op.LT);
+        LastPingedSearch2.and("type", LastPingedSearch2.entity().getType(), SearchCriteria.Op.EQ);
         LastPingedSearch2.done();
         
         MsStatusSearch = createSearchBuilder();
-        MsStatusSearch.addAnd("ms", MsStatusSearch.entity().getManagementServerId(), SearchCriteria.Op.EQ);
-        MsStatusSearch.addAnd("statuses", MsStatusSearch.entity().getStatus(), SearchCriteria.Op.IN);
+        MsStatusSearch.and("ms", MsStatusSearch.entity().getManagementServerId(), SearchCriteria.Op.EQ);
+        MsStatusSearch.and("statuses", MsStatusSearch.entity().getStatus(), SearchCriteria.Op.IN);
         MsStatusSearch.done();
         
         TypeDcSearch = createSearchBuilder();
-        TypeDcSearch.addAnd("type", TypeDcSearch.entity().getType(), SearchCriteria.Op.EQ);
-        TypeDcSearch.addAnd("dc", TypeDcSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        TypeDcSearch.and("type", TypeDcSearch.entity().getType(), SearchCriteria.Op.EQ);
+        TypeDcSearch.and("dc", TypeDcSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
         TypeDcSearch.done();
         
         TypeDcStatusSearch = createSearchBuilder();
-        TypeDcStatusSearch.addAnd("type", TypeDcStatusSearch.entity().getType(), SearchCriteria.Op.EQ);
-        TypeDcStatusSearch.addAnd("dc", TypeDcStatusSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
-        TypeDcStatusSearch.addAnd("status", TypeDcStatusSearch.entity().getStatus(), SearchCriteria.Op.EQ);
+        TypeDcStatusSearch.and("type", TypeDcStatusSearch.entity().getType(), SearchCriteria.Op.EQ);
+        TypeDcStatusSearch.and("dc", TypeDcStatusSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        TypeDcStatusSearch.and("status", TypeDcStatusSearch.entity().getStatus(), SearchCriteria.Op.EQ);
         TypeDcStatusSearch.done();
         
         IdStatusSearch = createSearchBuilder();
-        IdStatusSearch.addAnd("id", IdStatusSearch.entity().getId(), SearchCriteria.Op.EQ);
-        IdStatusSearch.addAnd("states", IdStatusSearch.entity().getStatus(), SearchCriteria.Op.IN);
+        IdStatusSearch.and("id", IdStatusSearch.entity().getId(), SearchCriteria.Op.EQ);
+        IdStatusSearch.and("states", IdStatusSearch.entity().getStatus(), SearchCriteria.Op.IN);
         IdStatusSearch.done();
         
         DcPrivateIpAddressSearch = createSearchBuilder();
-        DcPrivateIpAddressSearch.addAnd("privateIpAddress", DcPrivateIpAddressSearch.entity().getPrivateIpAddress(), SearchCriteria.Op.EQ);
-        DcPrivateIpAddressSearch.addAnd("dc", DcPrivateIpAddressSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        DcPrivateIpAddressSearch.and("privateIpAddress", DcPrivateIpAddressSearch.entity().getPrivateIpAddress(), SearchCriteria.Op.EQ);
+        DcPrivateIpAddressSearch.and("dc", DcPrivateIpAddressSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
         DcPrivateIpAddressSearch.done();
         
         DcStorageIpAddressSearch = createSearchBuilder();
-        DcStorageIpAddressSearch.addAnd("storageIpAddress", DcStorageIpAddressSearch.entity().getStorageIpAddress(), SearchCriteria.Op.EQ);
-        DcStorageIpAddressSearch.addAnd("dc", DcStorageIpAddressSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        DcStorageIpAddressSearch.and("storageIpAddress", DcStorageIpAddressSearch.entity().getStorageIpAddress(), SearchCriteria.Op.EQ);
+        DcStorageIpAddressSearch.and("dc", DcStorageIpAddressSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
         DcStorageIpAddressSearch.done();
 
         GuidSearch = createSearchBuilder();
-        GuidSearch.addAnd("guid", GuidSearch.entity().getGuid(), SearchCriteria.Op.EQ);
+        GuidSearch.and("guid", GuidSearch.entity().getGuid(), SearchCriteria.Op.EQ);
         GuidSearch.done();
         
         DcSearch = createSearchBuilder();
-        DcSearch.addAnd("dc", DcSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        DcSearch.and("dc", DcSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
         DcSearch.done();
         
         PodSearch = createSearchBuilder();
-        PodSearch.addAnd("pod", PodSearch.entity().getPodId(), SearchCriteria.Op.EQ);
+        PodSearch.and("pod", PodSearch.entity().getPodId(), SearchCriteria.Op.EQ);
         PodSearch.done();
         
         TypeSearch = createSearchBuilder();
-        TypeSearch.addAnd("type", TypeSearch.entity().getType(), SearchCriteria.Op.EQ);
+        TypeSearch.and("type", TypeSearch.entity().getType(), SearchCriteria.Op.EQ);
         TypeSearch.done();
         
         StatusSearch =createSearchBuilder();
-        StatusSearch.addAnd("status", StatusSearch.entity().getStatus(), SearchCriteria.Op.IN);
+        StatusSearch.and("status", StatusSearch.entity().getStatus(), SearchCriteria.Op.IN);
         StatusSearch.done();
         
         NameLikeSearch = createSearchBuilder();
-        NameLikeSearch.addAnd("name", NameLikeSearch.entity().getName(), SearchCriteria.Op.LIKE);
+        NameLikeSearch.and("name", NameLikeSearch.entity().getName(), SearchCriteria.Op.LIKE);
         NameLikeSearch.done();
         
         SequenceSearch = createSearchBuilder();
-        SequenceSearch.addAnd("id", SequenceSearch.entity().getId(), SearchCriteria.Op.EQ);
+        SequenceSearch.and("id", SequenceSearch.entity().getId(), SearchCriteria.Op.EQ);
 //        SequenceSearch.addRetrieve("sequence", SequenceSearch.entity().getSequence());
         SequenceSearch.done();
         
         DirectlyConnectedSearch = createSearchBuilder();
-        DirectlyConnectedSearch.addAnd("resource", DirectlyConnectedSearch.entity().getResource(), SearchCriteria.Op.NNULL);
+        DirectlyConnectedSearch.and("resource", DirectlyConnectedSearch.entity().getResource(), SearchCriteria.Op.NNULL);
         DirectlyConnectedSearch.done();
         
         _statusAttr = _allAttributes.get("status");
@@ -205,32 +205,23 @@ public class HostDaoImpl extends GenericDaoBase<HostVO, Long> implements HostDao
     @Override
     public List<HostVO> findDirectAgentToLoad(Long msid, boolean msidInclusive, Long lastPingSecondsAfter, Long limit) {
         SearchBuilder<HostVO> sb = createSearchBuilder();
-		SearchBuilder<HostVO> sb2 = createSearchBuilder();
-        sb.addAnd("resource", sb.entity().getResource(), SearchCriteria.Op.NNULL);
+        sb.and("resource", sb.entity().getResource(), SearchCriteria.Op.NNULL);
         if(msid != null) {
         	if(msidInclusive) {
-        		sb.addAnd("managementServerId", sb.entity().getManagementServerId(), SearchCriteria.Op.EQ);
+        		sb.and("managementServerId", sb.entity().getManagementServerId(), SearchCriteria.Op.EQ);
         	} else {
-        		sb2.addAnd("managementServerId", sb2.entity().getManagementServerId(), SearchCriteria.Op.NEQ);
-        		sb2.addOr("server", sb2.entity().getManagementServerId(), SearchCriteria.Op.NULL);
-        		
-        		sb.addAnd("abc", sb.entity().getManagementServerId(), SearchCriteria.Op.SC);
+        		sb.openParen(SearchCriteria.Op.AND, "managementServerId", sb.entity().getManagementServerId(), SearchCriteria.Op.NEQ);
+        		sb.or("server", sb.entity().getManagementServerId(), SearchCriteria.Op.NULL);
+        		sb.closeParen();
         	}
         }
         if(lastPingSecondsAfter != null)
-        	sb.addAnd("lastPinged", sb.entity().getLastPinged(), SearchCriteria.Op.LTEQ);
+        	sb.and("lastPinged", sb.entity().getLastPinged(), SearchCriteria.Op.LTEQ);
         sb.done();
         
     	SearchCriteria sc = sb.create();
     	if(msid != null) {
-        	if(msidInclusive) {
-        		sc.setParameters("managementServerId", msid);
-        	} else {
-		    	SearchCriteria sc2 = sb2.create();
-		    	
-        		sc2.setParameters("managementServerId", msid);
-		    	sc.setParameters("abc", sc2);
-        	}
+    		sc.setParameters("managementServerId", msid);
     	}
     	
     	if(lastPingSecondsAfter != null)

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -17,20 +17,22 @@
  */
 package com.vmops.agent.api;
 
+import java.util.List;
+
 import com.vmops.vm.VirtualMachine;
 
 public class GetVmStatsCommand extends Command {
-    String vmName;
+    List<String> vmNames;
     
     protected GetVmStatsCommand() {
     }
     
-    public GetVmStatsCommand(String vmName) {
-        this.vmName = vmName;
+    public GetVmStatsCommand(List<String> vmNames) {
+        this.vmNames = vmNames;
     }
     
-    public String getVmName() {
-        return vmName;
+    public List<String> getVmNames() {
+        return vmNames;
     }
     
     @Override

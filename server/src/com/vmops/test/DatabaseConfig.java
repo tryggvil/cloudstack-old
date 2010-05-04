@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -180,8 +180,7 @@ public class DatabaseConfig {
         s_configurationDescriptions.put("expunge.interval", "the interval to wait before running the expunge thread");
         s_configurationDescriptions.put("network.throttling.rate", "default data transfer rate in megabits per second allowed per user");
         s_configurationDescriptions.put("multicast.throttling.rate", "default multicast rate in megabits per second allowed");
-        s_configurationDescriptions.put("management.network.cidr", "The private network CIDR of the management server cluster. Virtual routers need to know this if the management server programs the virtual router directly");
-        
+
         s_configurationComponents.put("host.stats.interval", "management-server");
         s_configurationComponents.put("storage.stats.interval", "management-server");
         s_configurationComponents.put("volume.stats.interval", "management-server");
@@ -241,7 +240,6 @@ public class DatabaseConfig {
         s_configurationComponents.put("migrate.retry.interval", "HighAvailabilityManager");
         s_configurationComponents.put("storage.overwrite.provisioning", "UserVmManager");
         s_configurationComponents.put("init", "none");
-        s_configurationComponents.put("management.network.cidr", "AgentManager");
         s_configurationComponents.put("system.vm.use.local.storage", "ManagementServer");
 
         s_defaultConfigurationValues.put("host.stats.interval", "60000");

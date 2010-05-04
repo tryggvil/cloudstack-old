@@ -1,7 +1,7 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
- * This software is licensed under the GNU General Public License v3 or later.  
+ * This software is licensed under the GNU General Public License v3 or later.
  * 
  * It is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,12 +34,14 @@ public class Pair<T, U> {
         return u;
     }
     
-    public void second(U value) {
+    public U second(U value) {
     	u = value;
+    	return u;
     }
     
-    public void first(T value) {
+    public T first(T value) {
     	t = value;
+    	return t;
     }
     
     @Override

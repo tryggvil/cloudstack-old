@@ -121,15 +121,6 @@
 	</div>
 </div>
 
-<!-- Dashboard-User -->
-<div class="maincontent" id="tab_dashboard_domain_admin" style="display:none;">
-	<div id="maincontent_title">
-    	<div class="maintitle_icon"> <img src="images/dashboardtitle_icons.gif" title="dashboard" /> </div>
-		<h1>Dashboard</h1>
-	</div>
-	<div>Under Construction</div>
-</div>
-
 <!-- Recent Errors Template -->
 <div class="dbsmallrow_odd" style="height:70px;display:none;" id="recent_error_template">
 	<div class="alert_box">
@@ -147,12 +138,12 @@
 
 
 <!-- Dashboard-Admin -->
-<div class="maincontent" id="tab_dashboard_root" style="display:none;">
+<div class="maincontent" id="tab_dashboard_root" style="display:block;">
     <div id="maincontent_title">
     	<div class="maintitle_icon"> <img src="images/dashboardtitle_icons.gif" title="dashboard" /> </div>
 		<h1>Dashboard</h1>
     </div>
-    <div class="net_gridwrapper" style="height:auto;">
+    <div class="net_gridwrapper" style="height:auto;"></div>
 
     <div class="db_admingrid_leftcontainer">
     	<div class="db_admingrid_capacitypanel">
@@ -385,3 +376,71 @@
 		</div>
 	</div>
 </div>
+
+<!-- Domain-Admin Dashboard -->
+<div class="maincontent" id="tab_dashboard_domain" style="display:none;">
+	<div id="maincontent_title">
+    	<div class="maintitle_icon"> <img src="images/dashboardtitle_icons.gif" title="dashboard" /> </div>
+		<h1>Dashboard</h1>
+	</div>
+	<div class="net_gridwrapper" style="height:auto;"></div>
+    <div class="db_admingrid_leftcontainer">
+    	<div class="db_admingrid_capacitypanel">
+        	<div class="db_domain_top"></div>
+            <div class="db_capacitypanel_mid">
+                    <div class="db_domainbg">
+                            <div class="db_domainbg_left">
+                                <div class="db_domainicons"> <img src="images/domain_dbinstance.gif" alt="#" /></div>
+                            </div>
+                            <div class="db_domainbg_right">
+                                <p>Instances: <span id="dashboard_instances">0</span></p>
+                            </div>
+                    </div>
+                    <div class="db_domainbg">
+                        <div class="db_domainbg_left">
+                            <div class="db_domainicons"> <img src="images/domain_dbdiskoff.gif" alt="#" /></div>
+                        </div>
+                        <div class="db_domainbg_right">
+                            <p>Disk Volume: <span id="dashboard_volumes">0</span></p>
+                        </div>
+				   </div>
+                   
+                   <div class="db_domainbg">
+                        <div class="db_domainbg_left">
+                            <div class="db_domainicons"> <img src="images/domain_dbsnapshots.gif" alt="#" /></div>
+                        </div>
+                        <div class="db_domainbg_right">
+                            <p>Snapshots: <span id="dashboard_snapshots">0</span></p>
+                        </div>
+				   </div>
+                   
+                   <div class="db_domainbg">
+                        <div class="db_domainbg_left">
+                            <div class="db_domainicons"> <img src="images/domain_dbaccount.gif" alt="#" /></div>
+                        </div>
+                        <div class="db_domainbg_right">
+                            <p>Accounts: <span id="dashboard_accounts">0</span></p>
+                        </div>
+				   </div>
+                </div>
+            </div>
+            <div class="db_capacitypanel_bot"></div>
+        </div>
+        
+        <div class="db_admingrid_rightpanel">
+		<div class="dbadmin_grid_container" id="db_recent_errors">
+			<div class="grid_header">
+				  <div class="grid_headertitles">Recent Errors!</div>
+			</div>
+			<div id="alert_grid_content">
+				<div style="height:450px;text-align:center;"><i>No Recent Errors</i></div>
+			</div>
+		</div>
+		
+	</div>
+    </div>
+    
+
+	
+ 	
+	

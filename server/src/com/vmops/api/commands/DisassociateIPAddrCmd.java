@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -56,25 +56,29 @@ public class DisassociateIPAddrCmd extends BaseCmd {
         Account account = (Account)params.get(BaseCmd.Properties.ACCOUNT_OBJ.getName());
         String ipAddress = (String)params.get(BaseCmd.Properties.IP_ADDRESS.getName());
         boolean result = false;
-        
+
         // Verify input parameters
         Account accountByIp = getManagementServer().findAccountByIpAddress(ipAddress);
         if(accountByIp == null) {
             throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to find account owner for ip " + ipAddress);
         }
-        
+
         Long accountId = accountByIp.getId();
-        if ((account != null) && !isAdmin(account.getType())) {
-            if (account.getId().longValue() != accountId) {
-                throw new ServerApiException(BaseCmd.PARAM_ERROR, "account " + account.getAccountName() + " doesn't own ip address " + ipAddress);
+        if (account != null) {
+            if (!isAdmin(account.getType())) {
+                if (account.getId().longValue() != accountId.longValue()) {
+                    throw new ServerApiException(BaseCmd.PARAM_ERROR, "account " + account.getAccountName() + " doesn't own ip address " + ipAddress);
+                }
+            } else if (!getManagementServer().isChildDomain(account.getDomainId(), accountByIp.getDomainId())) {
+                throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to disassociate IP address " + ipAddress + ", permission denied.");
             }
         }
-        
-        //If command is executed via 8096 port, set userId to the id of System account (1)
+
+        // If command is executed via 8096 port, set userId to the id of System account (1)
         if (userId == null) {
             userId = Long.valueOf(1);
         }
-        
+
         try {
             result = getManagementServer().disassociateIpAddress(userId.longValue(), accountId.longValue(), ipAddress);
         } catch (PermissionDeniedException ex) {

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -46,12 +46,12 @@ public class LoadBalancerDaoImpl extends GenericDaoBase<LoadBalancerVO, Long> im
 
     protected LoadBalancerDaoImpl() {
         ListByIp  = createSearchBuilder();
-        ListByIp.addAnd("ipAddress", ListByIp.entity().getIpAddress(), SearchCriteria.Op.EQ);
+        ListByIp.and("ipAddress", ListByIp.entity().getIpAddress(), SearchCriteria.Op.EQ);
         ListByIp.done();
 
         IpAndPublicPortSearch = createSearchBuilder();
-        IpAndPublicPortSearch.addAnd("ipAddress", IpAndPublicPortSearch.entity().getIpAddress(), SearchCriteria.Op.EQ);
-        IpAndPublicPortSearch.addAnd("publicPort", IpAndPublicPortSearch.entity().getPublicPort(), SearchCriteria.Op.EQ);
+        IpAndPublicPortSearch.and("ipAddress", IpAndPublicPortSearch.entity().getIpAddress(), SearchCriteria.Op.EQ);
+        IpAndPublicPortSearch.and("publicPort", IpAndPublicPortSearch.entity().getPublicPort(), SearchCriteria.Op.EQ);
         IpAndPublicPortSearch.done();
     }
 

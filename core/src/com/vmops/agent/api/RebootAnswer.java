@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -45,9 +45,16 @@ public class RebootAnswer extends Answer {
         bytesReceived = null;
     }
     
+    public void setBytesReceived(Long bytesReceived) {
+        this.bytesReceived = bytesReceived;
+    }
     
     public Long getBytesReceived() {
         return bytesReceived;
+    }
+    
+    public void setBytesSent(Long bytesSent) {
+        this.bytesSent = bytesSent;
     }
     
     public Long getBytesSent() {

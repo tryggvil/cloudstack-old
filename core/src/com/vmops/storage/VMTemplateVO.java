@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -56,6 +56,9 @@ public class VMTemplateVO implements VirtualMachineTemplate {
     
     @Column(name="public")
 	private boolean publicTemplate = true;
+    
+    @Column(name="featured")
+    private boolean featured;
     
     @Column(name="type")
     private String diskType = null;
@@ -117,14 +120,15 @@ public class VMTemplateVO implements VirtualMachineTemplate {
 	/**
 	 * Proper constructor for a new vm template.
 	 */
-    public VMTemplateVO(long id, String name, ImageFormat format, boolean isPublic,  FileSystem fs, String url, boolean requiresHvm, int bits, long accountId, String cksum, String displayText, boolean enablePassword, long guestOSId, boolean bootable) {
-	    this(id, generateUniqueName(id, accountId, name), name, format, isPublic, fs.toString(), url, null, requiresHvm, bits, accountId, cksum, displayText, enablePassword, guestOSId, bootable);
+    public VMTemplateVO(long id, String name, ImageFormat format, boolean isPublic, boolean featured, FileSystem fs, String url, boolean requiresHvm, int bits, long accountId, String cksum, String displayText, boolean enablePassword, long guestOSId, boolean bootable) {
+	    this(id, generateUniqueName(id, accountId, name), name, format, isPublic, featured, fs.toString(), url, null, requiresHvm, bits, accountId, cksum, displayText, enablePassword, guestOSId, bootable);
     }
 
-	public VMTemplateVO(Long id, String uniqueName, String name, ImageFormat format, boolean isPublic, String diskType, String url, Date created, boolean requiresHvm, int bits, long accountId, String cksum, String displayText, boolean enablePassword, long guestOSId, boolean bootable) {
+	public VMTemplateVO(Long id, String uniqueName, String name, ImageFormat format, boolean isPublic, boolean featured, String diskType, String url, Date created, boolean requiresHvm, int bits, long accountId, String cksum, String displayText, boolean enablePassword, long guestOSId, boolean bootable) {
 	    this.id = id;
 	    this.name = name;
 	    this.publicTemplate = isPublic;
+	    this.featured = featured;
 	    this.diskType = diskType;
 	    this.url = url;
 	    this.requiresHvm = requiresHvm;
@@ -223,6 +227,14 @@ public class VMTemplateVO implements VirtualMachineTemplate {
     
     public void setPublicTemplate(boolean publicTemplate) {
     	this.publicTemplate = publicTemplate;
+    }
+    
+    public boolean isFeatured() {
+    	return featured;
+    }
+    
+    public void setFeatured(boolean featured) {
+    	this.featured = featured;
     }
     
 	public Date getCreated() {

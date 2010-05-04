@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -103,6 +103,9 @@ public class JavaStorageLayer implements StorageLayer {
     public String[] listFiles(String path) {
         File file = new File(path);
         File[] files = file.listFiles();
+        if (files == null) {
+        	return new String[0];
+        }
         String[] paths = new String[files.length];
         for (int i = 0; i < files.length; i++) {
             paths[i] = files[i].getAbsolutePath();
@@ -119,7 +122,7 @@ public class JavaStorageLayer implements StorageLayer {
                 return file.isDirectory();
             }
             
-            return (file.mkdir() && setWorldReadableAndWriteable(file));
+            return (file.mkdirs() && setWorldReadableAndWriteable(file));
         }
     }
     

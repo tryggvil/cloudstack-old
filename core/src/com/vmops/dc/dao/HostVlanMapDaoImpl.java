@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -50,12 +50,12 @@ public class HostVlanMapDaoImpl extends GenericDaoBase<HostVlanMapVO, Long> impl
 	
     public HostVlanMapDaoImpl() {
     	HostSearch = createSearchBuilder();
-    	HostSearch.addAnd("hostId", HostSearch.entity().getHostId(), SearchCriteria.Op.EQ);
+    	HostSearch.and("hostId", HostSearch.entity().getHostId(), SearchCriteria.Op.EQ);
         HostSearch.done();
         
         HostVlanSearch = createSearchBuilder();
-        HostVlanSearch.addAnd("hostId", HostVlanSearch.entity().getHostId(), SearchCriteria.Op.EQ);
-        HostVlanSearch.addAnd("vlanId", HostVlanSearch.entity().getVlanId(), SearchCriteria.Op.EQ);
+        HostVlanSearch.and("hostId", HostVlanSearch.entity().getHostId(), SearchCriteria.Op.EQ);
+        HostVlanSearch.and("vlanId", HostVlanSearch.entity().getVlanId(), SearchCriteria.Op.EQ);
         HostVlanSearch.done();
     }
     

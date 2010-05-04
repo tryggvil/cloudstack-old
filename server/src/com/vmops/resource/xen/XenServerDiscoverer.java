@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -71,7 +71,6 @@ public class XenServerDiscoverer implements Discoverer {
     private String _maxXenVersion;
     private AlertManager _alertMgr;
     private List<Pair<String, String>> _requiredPatches;
-    private String _cidr;
     private String _publicNic;
     private String _privateNic;
     private int _wait;
@@ -152,7 +151,6 @@ public class XenServerDiscoverer implements Discoverer {
                 params.put("zone", Long.toString(dcId));
                 params.put("guid", record.uuid);
                 params.put("pod", pod);
-                params.put("management.network.cidr", _cidr);
                 details.put(HostInfo.HOST_OS, hostOS);
                 details.put(HostInfo.HOST_OS_VERSION, hostOSVer);
                 details.put(HostInfo.HOST_OS_KERNEL_VERSION, hostKernelVer);
@@ -494,10 +492,8 @@ public class XenServerDiscoverer implements Discoverer {
         _publicNic = dbParams.get("xen.public.network.device");
         _privateNic = dbParams.get("xen.private.network.device");
         
-        _cidr = dbParams.get("management.network.cidr");
-        
         value = dbParams.get(Config.Wait.toString());
-        _wait = NumbersUtil.parseInt(value, Integer.parseInt(Config.Wait.getDefaultValue()));
+        _wait = NumbersUtil.parseInt(value, Integer.parseInt(Config.Wait.getDefaultValue())) * 1000;
         
         value = dbParams.get(Config.CreatePoolsInPod);
         _formPoolsInPod = value == null ? true : Boolean.parseBoolean(value);
@@ -537,4 +533,9 @@ public class XenServerDiscoverer implements Discoverer {
     public boolean stop() {
         return true;
     }
+
+	@Override
+	public void postDiscovery(List<HostVO> hosts, long msId) {
+		//do nothing
+	}
 }

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -60,8 +60,8 @@ public class AttachIsoCmd extends BaseCmd {
     	Long userId = (Long) params.get(BaseCmd.Properties.USER_ID.getName());
     	Long vmId = (Long) params.get(BaseCmd.Properties.VIRTUAL_MACHINE_ID.getName());
     	Long isoId = (Long) params.get(BaseCmd.Properties.ID.getName());
-    	
-    	//Verify input parameters
+
+    	// Verify input parameters
     	UserVmVO vmInstanceCheck = getManagementServer().findUserVMInstanceById(vmId.longValue());
     	if (vmInstanceCheck == null) {
             throw new ServerApiException (BaseCmd.VM_INVALID_PARAM_ERROR, "Unable to find a virtual machine with id " + vmId);
@@ -70,17 +70,28 @@ public class AttachIsoCmd extends BaseCmd {
     	if (iso == null) {
             throw new ServerApiException (BaseCmd.PARAM_ERROR, "Unable to find an ISO with id " + isoId);
     	}
-    	
-    	if ((account != null) && !isAdmin(account.getType())) {
-            if (account.getId().longValue() != vmInstanceCheck.getAccountId()) {
-                throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to attach ISO " + iso.getName() + " to virtual machine " + vmInstanceCheck.getName() + " for this account");
-            }
-            if (!iso.isPublicTemplate() && (account.getId().longValue() != iso.getAccountId()) && (!iso.getName().startsWith("xs-tools"))) {
-                throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to attach ISO " + iso.getName() + " to virtual machine " + vmInstanceCheck.getName() + " for this account");
-            }
-        }
 
-    	//If command is executed via 8096 port, set userId to the id of System account (1)
+    	if (account != null) {
+    	    if (!isAdmin(account.getType())) {
+                if (account.getId().longValue() != vmInstanceCheck.getAccountId()) {
+                    throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to attach ISO " + iso.getName() + " to virtual machine " + vmInstanceCheck.getName() + " for this account");
+                }
+                if (!iso.isPublicTemplate() && (account.getId().longValue() != iso.getAccountId()) && (!iso.getName().startsWith("xs-tools"))) {
+                    throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to attach ISO " + iso.getName() + " to virtual machine " + vmInstanceCheck.getName() + " for this account");
+                }
+    	    } else {
+    	        if (!getManagementServer().isChildDomain(account.getDomainId(), vmInstanceCheck.getDomainId())) {
+                    throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to attach ISO " + iso.getName() + " to virtual machine " + vmInstanceCheck.getName());
+    	        }
+    	        // FIXME:  if ISO owner is null we probably need to throw some kind of exception
+    	        Account isoOwner = getManagementServer().findAccountById(iso.getAccountId());
+    	        if ((isoOwner != null) && !getManagementServer().isChildDomain(account.getDomainId(), isoOwner.getDomainId())) {
+                    throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to attach ISO " + iso.getName() + " to virtual machine " + vmInstanceCheck.getName());
+    	        }
+    	    }
+    	}
+
+    	// If command is executed via 8096 port, set userId to the id of System account (1)
     	if (userId == null)
     		userId = new Long(1);
     	
@@ -90,7 +101,7 @@ public class AttachIsoCmd extends BaseCmd {
             if (jobId == 0) {
             	s_logger.warn("Unable to schedule async-job for AttachIsoCmd");
             } else {
-    	        if(s_logger.isDebugEnabled())
+    	        if (s_logger.isDebugEnabled())
     	        	s_logger.debug("AttachIsoCmd has been accepted, job id: " + jobId);
             }
 			

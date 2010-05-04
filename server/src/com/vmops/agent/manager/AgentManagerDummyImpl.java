@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -31,6 +31,7 @@ import com.vmops.agent.api.GetFileStatsAnswer;
 import com.vmops.agent.api.GetFileStatsCommand;
 import com.vmops.agent.api.GetStorageStatsCommand;
 import com.vmops.agent.api.GetVmStatsAnswer;
+import com.vmops.agent.api.VmStatsEntry;
 import com.vmops.agent.api.GetVmStatsCommand;
 import com.vmops.agent.api.StartAnswer;
 import com.vmops.agent.api.StartCommand;
@@ -90,7 +91,7 @@ public class AgentManagerDummyImpl extends AgentManagerImpl implements AgentMana
         } else if (cmd instanceof StopCommand) {
         	answers[0] = new StopAnswer((StopCommand)cmd, "", 0, 111111L, 1123123L);
         } else if (cmd instanceof GetVmStatsCommand) {
-        	answers[0] = new GetVmStatsAnswer((GetVmStatsCommand)cmd, 0, 0, 0, 0, 0);
+        	answers[0] = new GetVmStatsAnswer((GetVmStatsCommand) cmd, null);
         } else if (cmds[0] instanceof GetFileStatsCommand) {
         	for (int i = 0; i < cmds.length; i++) {
         		answers[i] = new GetFileStatsAnswer((GetFileStatsCommand)cmds[i], ran.nextInt(500) * 1024L * 1024L);
@@ -133,10 +134,8 @@ public class AgentManagerDummyImpl extends AgentManagerImpl implements AgentMana
     }
     
     @Override
-    public List<HostStats> listHostStatistics(List<Long> hostIds) {
-    	List<HostStats> hostStatsList = new ArrayList<HostStats>();
-    	
-    	hostStatsList.add(new HostStats() {
+    public HostStats getHostStatistics(long hostId) {
+    	return (new HostStats() {
     		double d = ran.nextDouble();
 			public double getCpuUtilization() {
 				return d;
@@ -163,7 +162,5 @@ public class AgentManagerDummyImpl extends AgentManagerImpl implements AgentMana
 				return 0;
 			}
     	});
-    	
-    	return hostStatsList;
     }
 }

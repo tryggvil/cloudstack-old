@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -67,31 +67,34 @@ public class DeleteVolumeCmd extends BaseCmd {
     		// User API call
     		isAdmin = isAdmin(account.getType());
     	}
-    	
+
     	// Check that the volume ID is valid
     	VolumeVO volume = getManagementServer().findVolumeById(volumeId);
     	if (volume == null)
     		throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to find volume with ID: " + volumeId);
-    		
+
     	// If the account is not an admin, check that the volume is owned by the account that was passed in
     	if (!isAdmin) {
-    		if (account.getId() != volume.getAccountId())
-    			throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to find volume with ID: " + volumeId + " for account: " + account.getAccountName());
+    		if (account.getId() != volume.getAccountId()) {
+                throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to find volume with ID: " + volumeId + " for account: " + account.getAccountName());
+    		}
+    	} else if ((account != null) && !getManagementServer().isChildDomain(account.getDomainId(), volume.getDomainId())) {
+            throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to delete volume with id " + volumeId + ", permission denied.");
     	}
-    	
+
     	try {
     		long jobId = getManagementServer().deleteVolumeAsync(volumeId);
     		
     		if (jobId == 0) {
             	s_logger.warn("Unable to schedule async-job for DeleteVolume comamnd");
             } else {
-    	        if(s_logger.isDebugEnabled())
+    	        if (s_logger.isDebugEnabled())
     	        	s_logger.debug("DeleteVolume command has been accepted, job id: " + jobId);
             }
-    		
+
     		List<Pair<String, Object>> returnValues = new ArrayList<Pair<String, Object>>();
             returnValues.add(new Pair<String, Object>(BaseCmd.Properties.JOB_ID.getName(), Long.valueOf(jobId))); 
-            
+
             return returnValues;
     	} catch (Exception ex) {
     		throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Failed to delete volume: " + ex.getMessage());

@@ -14,13 +14,13 @@ echo "copy from $4 to $1 directory $MANAGEMENTDIR"
   scp -r ../templates.sql ../server-setup.xml $4/vmops*rpm $4/daemonize*x86_64*rpm root@$1:$MANAGEMENTDIR
   if [ $? -gt 0 ]; then echo "failed to copy to $1"; return 2; fi
   echo "Deploying management server"
-  ssh root@$1 "cd $MANAGEMENTDIR; yum remove -y vmops-management vmops-usage vmops-update-agent daemonize daemonize-debuginfo ;rm -rf /usr/local/tomcat/*;  rpm -ivh --replacefiles --replacepkgs vmops-management* vmops-usage* vmops-agent-update* daemonize-*"
+  ssh root@$1 "cd $MANAGEMENTDIR; yum remove -y cloud-management cloud-usage cloud-update-agent daemonize daemonize-debuginfo ;rm -rf /usr/local/tomcat/*;  rpm -ivh --replacefiles --replacepkgs cloud-management* cloud-usage* cloud-agent-update* daemonize-*"
   scp -r ../db.properties  root@$1:$SERVERDIR/conf/
   ipaddress=$(ssh root@$1 "ifconfig  | grep 'inet addr:'| grep -v '127.0.0.1' | cut -d: -f2 | awk {'print \$1'};")
   ssh root@$1 "cd $SERVERDIR/conf; sed -e 's/cluster.node.IP=.*$/cluster.node.IP=$ipaddress/g' db.properties > db.properties1; dos2unix db.properties1; mv -f db.properties1 db.properties"
   ssh root@$1 "cd $SERVERDIR/conf; sed -e 's/db.vmops.host=.*$/db.vmops.host=$DB/g' db.properties > db.properties1; dos2unix db.properties1; mv -f db.properties1 db.properties"
   ssh root@$1 "cd $SERVERDIR/conf; sed -e 's/db.usage.host=.*$/db.usage.host=$DB/g' db.properties > db.properties1; dos2unix db.properties1; mv -f db.properties1 db.properties"
-  ssh root@$1 "line=\`grep -n 'export JAVA_OPTS' /etc/init.d/vmops-management | tail -1 | cut -d : -f 1\`; line=\`expr \$line - 1\`; awk '{print} NR == '\$line' {print \"JAVA_OPTS=\\\"\$JAVA_OPTS -Xms256M -Xmx512M -Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=n -ea -Dcom.sun.management.jmxremote.port=8788 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false\\\"\"}' /etc/init.d/vmops-management > /etc/init.d/vmops-management1; mv -f /etc/init.d/vmops-management1 /etc/init.d/vmops-management; chmod +x /etc/init.d/vmops-management"
+  ssh root@$1 "line=\`grep -n 'export JAVA_OPTS' /etc/init.d/cloud-management | tail -1 | cut -d : -f 1\`; line=\`expr \$line - 1\`; awk '{print} NR == '\$line' {print \"JAVA_OPTS=\\\"\$JAVA_OPTS -Xms256M -Xmx512M -Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=n -ea -Dcom.sun.management.jmxremote.port=8788 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false\\\"\"}' /etc/init.d/cloud-management > /etc/init.d/cloud-management1; mv -f /etc/init.d/cloud-management1 /etc/init.d/cloud-management; chmod +x /etc/init.d/cloud-management"
   if [ $? -gt 0 ]; then echo "failed to install on $1"; return 2; fi
  echo "Management server is deployed successfully"
 }
@@ -55,7 +55,7 @@ run_agent_solaris() {
 
 run_server() {
   kill_server $1 $SERVERDIR/bin
-  ssh root@$1 "service vmops-management start; service vmops-usage start 2>&1 &"
+  ssh root@$1 "service cloud-management start; service cloud-usage start 2>&1 &"
   echo "server $1 is started under  $SERVERDIR/bin"
 }
 

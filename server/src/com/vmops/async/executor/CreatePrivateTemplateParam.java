@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -29,11 +29,12 @@ public class CreatePrivateTemplateParam {
 	private Integer bits;
 	private Boolean passwordEnabled;
 	private Boolean isPublic;
+	private Boolean isFeatured;
 
 	public CreatePrivateTemplateParam() {
 	}
 
-	public CreatePrivateTemplateParam(long userId, long volumeId, long guestOsId, String name, String description, Boolean requiresHvm, Integer bits, Boolean passwordEnabled, Boolean isPublic) {
+	public CreatePrivateTemplateParam(long userId, long volumeId, long guestOsId, String name, String description, Boolean requiresHvm, Integer bits, Boolean passwordEnabled, Boolean isPublic, Boolean featured) {
 		this.userId = userId;
 		this.name = name;
 		this.description = description;
@@ -43,6 +44,7 @@ public class CreatePrivateTemplateParam {
 		this.bits = bits;
 		this.passwordEnabled = passwordEnabled;
 		this.isPublic = isPublic;
+		this.isFeatured = featured;
 	}
 	
 	public long getUserId() {
@@ -119,6 +121,10 @@ public class CreatePrivateTemplateParam {
 	
 	public Boolean isPublic() {
 		return isPublic;
+	}
+	
+	public boolean isFeatured() {
+		return isFeatured;
 	}
 	
 	public void setIsPublic(Boolean isPublic) {

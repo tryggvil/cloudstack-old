@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -19,7 +19,6 @@
 package com.vmops.api.commands;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +27,6 @@ import org.apache.log4j.Logger;
 
 import com.vmops.api.BaseCmd;
 import com.vmops.api.ServerApiException;
-import com.vmops.configuration.ResourceCount;
 import com.vmops.configuration.ResourceCount.ResourceType;
 import com.vmops.domain.DomainVO;
 import com.vmops.server.Criteria;
@@ -48,7 +46,7 @@ public class ListAccountsCmd extends BaseCmd{
     	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ID, Boolean.FALSE));
     	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.NAME, Boolean.FALSE));
     	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT_TYPE, Boolean.FALSE));
-    	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.IS_DISABLED, Boolean.FALSE));
+    	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.STATE, Boolean.FALSE));
     	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.IS_CLEANUP_REQUIRED, Boolean.FALSE));
     	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.KEYWORD, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT_OBJ, Boolean.FALSE));
@@ -71,7 +69,7 @@ public class ListAccountsCmd extends BaseCmd{
         Account account = (Account)params.get(BaseCmd.Properties.ACCOUNT_OBJ.getName());
         Long domainId = (Long)params.get(BaseCmd.Properties.DOMAIN_ID.getName());
         Long type = (Long)params.get(BaseCmd.Properties.ACCOUNT_TYPE.getName());
-        Boolean isDisabled = (Boolean)params.get(BaseCmd.Properties.IS_DISABLED.getName()); 
+        String state = (String)params.get(BaseCmd.Properties.STATE.getName()); 
         Boolean needCleanup = (Boolean)params.get(BaseCmd.Properties.IS_CLEANUP_REQUIRED.getName());
         Integer page = (Integer)params.get(BaseCmd.Properties.PAGE.getName());
         Integer pageSize = (Integer)params.get(BaseCmd.Properties.PAGESIZE.getName());
@@ -115,7 +113,7 @@ public class ListAccountsCmd extends BaseCmd{
 				c.addCriteria(Criteria.ACCOUNTNAME, accountName);
 				c.addCriteria(Criteria.DOMAINID, domainId);
 				c.addCriteria(Criteria.TYPE, type);
-				c.addCriteria(Criteria.ISDISABLED, isDisabled);
+				c.addCriteria(Criteria.STATE, state);
 				c.addCriteria(Criteria.ISCLEANUPREQUIRED, needCleanup);
 			} else {
 				c.addCriteria(Criteria.KEYWORD, keyword);
@@ -229,7 +227,7 @@ public class ListAccountsCmd extends BaseCmd{
 
         	    //show this info to admins only
         	    if (isAdmin == true) {
-        	    	accountData.add(new Pair<String, Object>(BaseCmd.Properties.IS_DISABLED.getName(), Boolean.valueOf(accountO.getDisabled()).toString()));
+        	    	accountData.add(new Pair<String, Object>(BaseCmd.Properties.STATE.getName(), accountO.getState()));
                     accountData.add(new Pair<String, Object>(BaseCmd.Properties.IS_CLEANUP_REQUIRED.getName(), Boolean.valueOf(accountO.getNeedsCleanup()).toString()));
         	    }
 

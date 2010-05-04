@@ -44,8 +44,9 @@
         	<form action="#" method="post">
             	<label for="filter">Filters:</label>
 				<select class="select" id="template_type">
-                  <option value="true">Public</option>
-                  <option value="false">Private</option>
+                  <option value="self">My Templates</option>
+                  <option value="featured">Featured</option>
+                  <option value="community">Community</option>
          		</select>
 			</form>
          </div>
@@ -57,33 +58,31 @@
                    <p>Loading...</p>
              </div>
 		<div class="grid_header">
-			<!--
-			<div class="temp_gridheader_cell4">
-				<div class="grid_headertitles">Type</div>
-			</div>
-			-->
-			<div class="grid_genheader_cell" style="width:5%;">
+			<div class="grid_genheader_cell" style="width:4%;">
 				<div class="grid_headertitles">ID</div>
 			</div>
-			<div class="grid_genheader_cell" style="width:15%;">
+			<div class="grid_genheader_cell" style="width:14%;">
 				<div class="grid_headertitles">Name</div>
 			</div>
-			<div class="grid_genheader_cell" style="width:20%;">
+			<div class="grid_genheader_cell" style="width:14%;">
 				<div class="grid_headertitles">Display Text</div>
 			</div>
-			<div class="grid_genheader_cell" style="width:10%;">
+			<div class="grid_genheader_cell" style="width:14%;">
 				<div class="grid_headertitles">Status</div>
 			</div>
-            <div class="grid_genheader_cell" style="width:10%;">
+            <div class="grid_genheader_cell" style="width:20%;">
 				<div class="grid_headertitles">Attributes</div>
 			</div>
-			<div class="grid_genheader_cell" style="width:18%;">
+			<div class="grid_genheader_cell" style="width:7%;">
 				<div class="grid_headertitles">OS Type</div>
 			</div>
-            <div class="grid_genheader_cell" style="width:10%;">
+			<div class="grid_genheader_cell" style="width:7%;">
+				<div class="grid_headertitles">Account</div>
+			</div>
+            <div class="grid_genheader_cell" style="width:9%;">
 				<div class="grid_headertitles">Created</div>
 			</div>
-            <div class="grid_genheader_cell" style="width:8%;">
+            <div class="grid_genheader_cell" style="width:10%;">
 				<div class="grid_headertitles"></div>
 			</div>
 		</div>
@@ -113,41 +112,35 @@
 <!-- VM Template template -->
 <div style="height:25px;display:none;" id="vm_template_template">  
     <div id="row_container">  
-	    <!--
-	    <div class="tempgrid_row_cell4">
-		    <div class="netgrid_celltitles">
-			    <div class="temptypeicons"><img src="images/temp_windowsicon.gif" alt="windows" /></div>
-		    </div>
-	    </div>
-	    -->
-	    <div class="grid_smallgenrow_cell" style="width:5%;" >
+	    <div class="grid_smallgenrow_cell" style="width:4%;" >
 		    <div class="netgrid_celltitles" id="template_id"></div>
 	    </div>
-	    <div class="grid_smallgenrow_cell" style="width:15%;" >
+	    <div class="grid_smallgenrow_cell" style="width:14%;" >
 		    <div class="netgrid_celltitles" id="template_name"></div>
 	    </div>
-	    <div class="grid_smallgenrow_cell" style="width:20%;" >
+	    <div class="grid_smallgenrow_cell" style="width:14%;" >
 		    <div class="netgrid_celltitles" id="template_display_text"></div>
 	    </div>
-	    <div class="grid_smallgenrow_cell" style="width:10%;" >
+	    <div class="grid_smallgenrow_cell" style="width:14%;" >
 		    <div class="netgrid_celltitles" id="template_status"></div>
 	    </div>
-	    <div class="grid_smallgenrow_cell" style="width:10%;" >
+	    <div class="grid_smallgenrow_cell" style="width:20%;" >
 		    <div class="netgrid_celltitles">
-		        <!--
-			    <div class="tempbiticons"><img src="images/64bit_icon.gif" alt="bits" id="template_bit" /></div>			
-			    <div class="tempbiticons"><img src="images/hvm_selectedicon.gif" alt="HVM selected" id="template_hvm" /></div>
-			    !-->
-			    <div class="tempbiticons"><img src="images/password_selectedicon.gif" alt="password enabled" id="template_password"/></div>			
+			    <div class="tempbiticons"><img src="images/password_selectedicon.gif" id="template_password"/></div>	
+			    <div class="tempbiticons"><img src="images/public_selectedicon.gif"   id="template_public"/></div>		
+                <div class="tempbiticons"><img src="images/featured_selectedicon.gif" id="template_featured"/></div>				
 		    </div>
 	    </div>
-	    <div class="grid_smallgenrow_cell" style="width:18%;" >
+	    <div class="grid_smallgenrow_cell" style="width:7%;" >
 		    <div class="netgrid_celltitles" id="template_ostype"></div>
+	    </div>
+	    <div class="grid_smallgenrow_cell" style="width:7%;" >
+		    <div class="netgrid_celltitles" id="template_account"></div>
 	    </div>
 	    <div class="grid_smallgenrow_cell" style="width:10%;" >
 		    <div class="netgrid_celltitles" id="template_created"></div>
 	    </div>
-	    <div class="grid_smallgenrow_cell" id="template_crud" style="width:8%;">
+	    <div class="grid_smallgenrow_cell" id="template_crud" style="width:9%;">
 		    <div class="netgrid_celltitles">
 			    <a href="#" id="template_edit"> Edit</a> | 
 			    <a href="#" id="template_delete">Delete</a>
@@ -163,24 +156,29 @@
 		<form action="#" method="post" id="form_acquire">
 			<ol>
 				<li>
-					<label for="user_name">Name:</label>
-					<input class="text" type="text" name="edit_template_name" id="edit_template_name" style="width:250px"/>
+					<label>Name:</label>
+					<input class="text" type="text" id="edit_template_name" style="width:250px"/>
 					<div id="edit_template_name_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div> 
 				</li>
 				<li>
-					<label for="user_name">Display Text:</label>
-					<input class="text" type="text" name="edit_template_display_text" id="edit_template_display_text" style="width:250px"/>
+					<label>Display Text:</label>
+					<input class="text" type="text" id="edit_template_display_text" style="width:250px"/>
 					<div id="edit_template_display_text_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div>
 				</li>
-				<!--
-				<li id="edit_template_public_container" style="display:none">
-					<label for="user_name">Public:</label>
-					<select class="select" name="edit_template_public" id="edit_template_public">
+				<li>
+					<label>Public?:</label>
+					<select class="select" id="edit_template_public">
+						<option value="true">Yes</option>
+						<option value="false">No</option>
+					</select>
+				</li>				
+				<li id="edit_template_featured_container" style="display:none">
+					<label>Featured?:</label>
+					<select class="select" id="edit_template_featured">
 						<option value="true">Yes</option>
 						<option value="false">No</option>
 					</select>
 				</li>
-				!-->
 			</ol>
 		</form>
 	</div>
@@ -215,11 +213,6 @@
 				<li>
 					<label for="add_template_format">Format:</label>
 					<select class="select" name="add_template_format" id="add_template_format">
-						<!--
-						<option value="QCOW2">QCOW2</option>
-						<option value="RAW">RAW</option>
-						-->
-						<option value="VHD">VHD</option>
 					</select>
 				</li>	
 				<!--		
@@ -239,8 +232,22 @@
 				</li>
 				!-->
 				<li>
-					<label for="user_name">Password Enabled?:</label>
-					<select class="select" name="add_template_password" id="add_template_password">
+					<label>Password Enabled?:</label>
+					<select class="select" id="add_template_password">
+						<option value="true">Yes</option>
+						<option value="false">No</option>
+					</select>
+				</li>
+				<li>
+					<label>Public?:</label>
+					<select class="select" id="add_template_public">
+						<option value="true">Yes</option>
+						<option value="false">No</option>
+					</select>
+				</li>				
+				<li id="add_template_featured_container" style="display:none">
+					<label>Featured?:</label>
+					<select class="select" id="add_template_featured">
 						<option value="true">Yes</option>
 						<option value="false">No</option>
 					</select>

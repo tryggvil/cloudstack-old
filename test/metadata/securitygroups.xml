@@ -719,7 +719,6 @@
 <!-- Test case 892 - delete network rule from the group assigned to the running vm-->
 	<command>
 		<name>deployVirtualMachine</name>
-		
 		<parameters>
 			<item getparam="true">
 			    <name>zoneid</name>
@@ -740,6 +739,10 @@
 			<item>
 				<name>account</name>
 				<value>admin</value>
+			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
 			</item>
 			<item>
 				<name>displayname</name>
@@ -768,6 +771,10 @@
 			<item>
 				<name>account</name>
 				<value>admin</value>
+			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
 			</item>
 		</parameters>
 		<returnvalue> 
@@ -977,6 +984,10 @@
 				<value>admin</value>
 			</item>
 			<item>
+				<name>domainid</name>
+				<value>1</value>
+			</item>
+			<item>
 				<name>displayname</name>
 				<value>namefordisplay</value>
 			</item>
@@ -1003,6 +1014,10 @@
 			<item>
 				<name>account</name>
 				<value>admin</value>
+			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
 			</item>
 		</parameters>
 		<returnvalue> 
@@ -1468,6 +1483,10 @@
 				<value>admin</value>
 			</item>
 			<item>
+				<name>domainid</name>
+				<value>1</value>
+			</item>
+			<item>
 				<name>displayname</name>
 				<value>namefordisplay</value>
 			</item>
@@ -1494,6 +1513,10 @@
 			<item>
 				<name>account</name>
 				<value>admin</value>
+			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
 			</item>
 		</parameters>
 		<returnvalue> 
@@ -1720,6 +1743,10 @@
 				<value>admin</value>
 			</item>
 			<item>
+				<name>domainid</name>
+				<value>1</value>
+			</item>
+			<item>
 				<name>displayname</name>
 				<value>namefordisplay</value>
 			</item>
@@ -1758,6 +1785,10 @@
 			<item>
 				<name>account</name>
 				<value>admin</value>
+			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
 			</item>
 			<item>
 				<name>displayname</name>
@@ -1837,6 +1868,10 @@
 				<name>account</name>
 				<value>admin</value>
 			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
+			</item>
 		</parameters>
 		<returnvalue> 
 			<item setparam="true">
@@ -1857,6 +1892,10 @@
 			<item>
 				<name>account</name>
 				<value>admin</value>
+			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
 			</item>
 		</parameters>
 		<returnvalue> 
@@ -1977,6 +2016,10 @@
 				<value>admin</value>
 			</item>
 			<item>
+				<name>domainid</name>
+				<value>1</value>
+			</item>
+			<item>
 				<name>displayname</name>
 				<value>namefordisplay</value>
 			</item>
@@ -2003,6 +2046,10 @@
 			<item>
 				<name>account</name>
 				<value>admin</value>
+			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
 			</item>
 		</parameters>
 		<returnvalue> 
@@ -2057,6 +2104,10 @@
 				<name>account</name>
 				<value>admin</value>
 			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
+			</item>
 		</parameters>
 	</command>
 	
@@ -2088,6 +2139,10 @@
 			<item>
 				<name>account</name>
 				<value>admin</value>
+			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
 			</item>
 		</parameters>
 		<returnvalue> 
@@ -2260,6 +2315,10 @@
 				<value>admin</value>
 			</item>
 			<item>
+				<name>domainid</name>
+				<value>1</value>
+			</item>
+			<item>
 				<name>displayname</name>
 				<value>namefordisplay</value>
 			</item>
@@ -2287,6 +2346,10 @@
 			<item>
 				<name>account</name>
 				<value>admin</value>
+			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
 			</item>
 		</parameters>
 		<returnvalue> 

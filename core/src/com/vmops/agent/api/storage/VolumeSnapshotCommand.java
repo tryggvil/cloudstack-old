@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -18,9 +18,9 @@
 
 package com.vmops.agent.api.storage;
 
-import com.vmops.agent.api.WatchCommand;
+import com.vmops.agent.api.CronCommand;
 
-public class VolumeSnapshotCommand extends StorageCommand implements WatchCommand {
+public class VolumeSnapshotCommand extends StorageCommand implements CronCommand {
     private short snapshotType;
     private int interval;
 

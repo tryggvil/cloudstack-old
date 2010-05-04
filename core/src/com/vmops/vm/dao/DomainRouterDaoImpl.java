@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -60,44 +60,44 @@ public class DomainRouterDaoImpl extends GenericDaoBase<DomainRouterVO, Long> im
     
     protected DomainRouterDaoImpl () {
         DcSearch = createSearchBuilder();
-        DcSearch.addAnd("dc", DcSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        DcSearch.and("dc", DcSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
         DcSearch.done();
         
         IdStatesSearch = createSearchBuilder();
-        IdStatesSearch.addAnd("id", IdStatesSearch.entity().getId(), SearchCriteria.Op.EQ);
-        IdStatesSearch.addAnd("states", IdStatesSearch.entity().getState(), SearchCriteria.Op.IN);
+        IdStatesSearch.and("id", IdStatesSearch.entity().getId(), SearchCriteria.Op.EQ);
+        IdStatesSearch.and("states", IdStatesSearch.entity().getState(), SearchCriteria.Op.IN);
         IdStatesSearch.done();
         
         AccountDcSearch = createSearchBuilder();
-        AccountDcSearch.addAnd("account", AccountDcSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
-        AccountDcSearch.addAnd("dc", AccountDcSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        AccountDcSearch.and("account", AccountDcSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
+        AccountDcSearch.and("dc", AccountDcSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
         AccountDcSearch.done();
         
         AccountSearch = createSearchBuilder();
-        AccountSearch.addAnd("account", AccountSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
+        AccountSearch.and("account", AccountSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
         AccountSearch.done();
         
         IpSearch = createSearchBuilder();
-        IpSearch.addAnd("ip", IpSearch.entity().getPublicIpAddress(), SearchCriteria.Op.EQ);
+        IpSearch.and("ip", IpSearch.entity().getPublicIpAddress(), SearchCriteria.Op.EQ);
         IpSearch.done();
         
         HostSearch = createSearchBuilder();
-        HostSearch.addAnd("host", HostSearch.entity().getHostId(), SearchCriteria.Op.EQ);
+        HostSearch.and("host", HostSearch.entity().getHostId(), SearchCriteria.Op.EQ);
         HostSearch.done();
         
         DomainIdSearch = createSearchBuilder();
-        DomainIdSearch.addAnd("domainId", DomainIdSearch.entity().getDomainId(), SearchCriteria.Op.EQ);
+        DomainIdSearch.and("domainId", DomainIdSearch.entity().getDomainId(), SearchCriteria.Op.EQ);
         DomainIdSearch.done();
         
         VlanDbIdSearch = createSearchBuilder();
-        VlanDbIdSearch.addAnd("vlanDbId", VlanDbIdSearch.entity().getVlanDbId(), SearchCriteria.Op.EQ);
+        VlanDbIdSearch.and("vlanDbId", VlanDbIdSearch.entity().getVlanDbId(), SearchCriteria.Op.EQ);
         VlanDbIdSearch.done();
         
         StateChangeSearch = createSearchBuilder();
-        StateChangeSearch.addAnd("id", StateChangeSearch.entity().getId(), SearchCriteria.Op.EQ);
-        StateChangeSearch.addAnd("states", StateChangeSearch.entity().getState(), SearchCriteria.Op.EQ);
-        StateChangeSearch.addAnd("host", StateChangeSearch.entity().getHostId(), SearchCriteria.Op.EQ);
-        StateChangeSearch.addAnd("update", StateChangeSearch.entity().getUpdated(), SearchCriteria.Op.EQ);
+        StateChangeSearch.and("id", StateChangeSearch.entity().getId(), SearchCriteria.Op.EQ);
+        StateChangeSearch.and("states", StateChangeSearch.entity().getState(), SearchCriteria.Op.EQ);
+        StateChangeSearch.and("host", StateChangeSearch.entity().getHostId(), SearchCriteria.Op.EQ);
+        StateChangeSearch.and("update", StateChangeSearch.entity().getUpdated(), SearchCriteria.Op.EQ);
         StateChangeSearch.done();
         
         _updateTimeAttr = _allAttributes.get("updateTime");

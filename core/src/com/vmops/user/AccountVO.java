@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -46,8 +46,8 @@ public class AccountVO implements Account {
     @Column(name="domain_id")
     private Long domainId = null;
 
-    @Column(name="disabled")
-    private boolean disabled;
+    @Column(name="state")
+    private String state;
 
     @Column(name=GenericDao.REMOVED_COLUMN)
     private Date removed;
@@ -92,15 +92,14 @@ public class AccountVO implements Account {
         this.domainId = domainId;
     }
 
-    public boolean getDisabled() {
-        return disabled;
+    public String getState() {
+        return state;
     }
-    public void setDisabled(boolean disabled) {
-        this.disabled = disabled;
+    public void setState(String state) {
+        this.state = state;
     }
 
     public Date getRemoved() {
         return removed;
     }
-
 }

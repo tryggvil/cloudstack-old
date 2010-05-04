@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -30,19 +30,17 @@ import com.vmops.user.AccountVO;
 import com.vmops.user.User;
 import com.vmops.user.UserVO;
 import com.vmops.utils.Pair;
-import com.vmops.utils.db.Attribute;
 import com.vmops.utils.db.Filter;
 import com.vmops.utils.db.GenericDaoBase;
 import com.vmops.utils.db.SearchBuilder;
 import com.vmops.utils.db.SearchCriteria;
 import com.vmops.utils.db.Transaction;
-import com.vmops.utils.db.UpdateBuilder;
 import com.vmops.utils.db.SearchCriteria.Op;
 
 @Local(value={AccountDao.class})
 public class AccountDaoImpl extends GenericDaoBase<AccountVO, Long> implements AccountDao {
-    private final String FIND_USER_ACCOUNT_BY_API_KEY = "SELECT u.id, u.username, u.account_id, u.secret_key, " +
-    		                                      "a.id, a.account_name, a.type, a.domain_id " +
+    private final String FIND_USER_ACCOUNT_BY_API_KEY = "SELECT u.id, u.username, u.account_id, u.secret_key, u.state, " +
+    		                                      "a.id, a.account_name, a.type, a.domain_id, a.state " +
     		                                      "FROM `vmops`.`user` u, `vmops`.`account` a " +
     		                                      "WHERE u.account_id = a.id AND u.api_key = ? and u.removed IS NULL";
     
@@ -53,17 +51,17 @@ public class AccountDaoImpl extends GenericDaoBase<AccountVO, Long> implements A
     
     protected AccountDaoImpl() {
         AccountNameSearch = createSearchBuilder();
-        AccountNameSearch.addAnd("accountName", AccountNameSearch.entity().getAccountName(), SearchCriteria.Op.EQ);
+        AccountNameSearch.and("accountName", AccountNameSearch.entity().getAccountName(), SearchCriteria.Op.EQ);
         AccountNameSearch.done();
         
         AccountTypeSearch = createSearchBuilder();
-        AccountTypeSearch.addAnd("domainId", AccountTypeSearch.entity().getDomainId(), SearchCriteria.Op.EQ);
-        AccountTypeSearch.addAnd("type", AccountTypeSearch.entity().getType(), SearchCriteria.Op.EQ);
+        AccountTypeSearch.and("domainId", AccountTypeSearch.entity().getDomainId(), SearchCriteria.Op.EQ);
+        AccountTypeSearch.and("type", AccountTypeSearch.entity().getType(), SearchCriteria.Op.EQ);
         AccountTypeSearch.done();
         
         CleanupSearch = createSearchBuilder();
-        CleanupSearch.addAnd("cleanup", CleanupSearch.entity().getNeedsCleanup(), SearchCriteria.Op.EQ);
-        CleanupSearch.addAnd("removed", CleanupSearch.entity().getRemoved(), SearchCriteria.Op.NNULL);
+        CleanupSearch.and("cleanup", CleanupSearch.entity().getNeedsCleanup(), SearchCriteria.Op.EQ);
+        CleanupSearch.and("removed", CleanupSearch.entity().getRemoved(), SearchCriteria.Op.NNULL);
         CleanupSearch.done();
         
     }
@@ -91,11 +89,13 @@ public class AccountDaoImpl extends GenericDaoBase<AccountVO, Long> implements A
                 u.setUsername(rs.getString(2));
                 u.setAccountId(rs.getLong(3));
                 u.setSecretKey(rs.getString(4));
+                u.setState(rs.getString(5));
 
-                Account a = new AccountVO(rs.getLong(5));
-                a.setAccountName(rs.getString(6));
-                a.setType(rs.getShort(7));
-                a.setDomainId(rs.getLong(8));
+                Account a = new AccountVO(rs.getLong(6));
+                a.setAccountName(rs.getString(7));
+                a.setType(rs.getShort(8));
+                a.setDomainId(rs.getLong(9));
+                a.setState(rs.getString(10));
 
                 userAcctPair = new Pair<User, Account>(u, a);
             }

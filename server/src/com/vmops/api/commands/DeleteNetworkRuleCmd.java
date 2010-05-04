@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -55,24 +55,25 @@ public class DeleteNetworkRuleCmd extends BaseCmd {
         Long userId = (Long)params.get(BaseCmd.Properties.USER_ID.getName());
         Long netRuleId = (Long)params.get(BaseCmd.Properties.ID.getName());
         Account account = (Account)params.get(BaseCmd.Properties.ACCOUNT_OBJ.getName());
-        
+
         //If command is executed via 8096 port, set userId to the id of System account (1)
         if (userId == null) {
             userId = Long.valueOf(1);
         }
+
         try {
-        long jobId = getManagementServer().deleteNetworkRuleConfigAsync(userId, account, netRuleId);
+            long jobId = getManagementServer().deleteNetworkRuleConfigAsync(userId, account, netRuleId);
 
-        if (jobId == 0) {
-            s_logger.warn("Unable to schedule async-job for DeleteNetworkRuleCmd command");
-        } else {
-            if (s_logger.isDebugEnabled())
-                s_logger.debug("DeleteNetworkRuleCmd command has been accepted, job id: " + jobId);
-        }
+            if (jobId == 0) {
+                s_logger.warn("Unable to schedule async-job for DeleteNetworkRuleCmd command");
+            } else {
+                if (s_logger.isDebugEnabled())
+                    s_logger.debug("DeleteNetworkRuleCmd command has been accepted, job id: " + jobId);
+            }
 
-        List<Pair<String, Object>> returnValues = new ArrayList<Pair<String, Object>>();
-        returnValues.add(new Pair<String, Object>(BaseCmd.Properties.JOB_ID.getName(), Long.valueOf(jobId))); 
-        return returnValues;
+            List<Pair<String, Object>> returnValues = new ArrayList<Pair<String, Object>>();
+            returnValues.add(new Pair<String, Object>(BaseCmd.Properties.JOB_ID.getName(), Long.valueOf(jobId))); 
+            return returnValues;
         } catch (PermissionDeniedException ex) {
             throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, ex.getMessage());
         }

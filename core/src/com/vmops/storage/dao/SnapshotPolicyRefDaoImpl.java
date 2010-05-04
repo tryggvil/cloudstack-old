@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -36,17 +36,17 @@ public class SnapshotPolicyRefDaoImpl extends GenericDaoBase<SnapshotPolicyRefVO
 	
 	protected SnapshotPolicyRefDaoImpl() {
 		snapPolicy = createSearchBuilder();
-		snapPolicy.addAnd("snapshotId", snapPolicy.entity().getSnapshotId(), SearchCriteria.Op.EQ);
-		snapPolicy.addAnd("policyId", snapPolicy.entity().getPolicyId(), SearchCriteria.Op.EQ);
+		snapPolicy.and("snapshotId", snapPolicy.entity().getSnapshotId(), SearchCriteria.Op.EQ);
+		snapPolicy.and("policyId", snapPolicy.entity().getPolicyId(), SearchCriteria.Op.EQ);
 		snapPolicy.done();
 		
 		snapSearch = createSearchBuilder();
-		snapSearch.addAnd("snapshotId", snapSearch.entity().getSnapshotId(), SearchCriteria.Op.EQ);
+		snapSearch.and("snapshotId", snapSearch.entity().getSnapshotId(), SearchCriteria.Op.EQ);
 		snapSearch.done();
 		
 		policySearch = createSearchBuilder();
-		policySearch.addAnd("policyId", policySearch.entity().getPolicyId(), SearchCriteria.Op.EQ);
-		policySearch.addAnd("volumeId", policySearch.entity().getVolumeId(), SearchCriteria.Op.EQ);
+		policySearch.and("policyId", policySearch.entity().getPolicyId(), SearchCriteria.Op.EQ);
+		policySearch.and("volumeId", policySearch.entity().getVolumeId(), SearchCriteria.Op.EQ);
 		policySearch.done();
 	}
 	

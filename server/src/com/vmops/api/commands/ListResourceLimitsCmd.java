@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -27,9 +27,11 @@ import org.apache.log4j.Logger;
 import com.vmops.api.BaseCmd;
 import com.vmops.api.ServerApiException;
 import com.vmops.configuration.ResourceLimitVO;
+import com.vmops.configuration.ResourceCount.ResourceType;
 import com.vmops.domain.DomainVO;
 import com.vmops.server.Criteria;
 import com.vmops.user.Account;
+import com.vmops.user.AccountVO;
 import com.vmops.utils.Pair;
 
 public class ListResourceLimitsCmd extends BaseCmd {
@@ -42,10 +44,8 @@ public class ListResourceLimitsCmd extends BaseCmd {
     	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ID, Boolean.FALSE));
     	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.DOMAIN_ID, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT, Boolean.FALSE));
-        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT_ID, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT_OBJ, Boolean.FALSE));
-        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.TYPE, Boolean.FALSE));
-        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.KEYWORD, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.RESOURCE_TYPE, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.PAGE, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.PAGESIZE, Boolean.FALSE));
     }
@@ -61,33 +61,61 @@ public class ListResourceLimitsCmd extends BaseCmd {
 
     @Override
     public List<Pair<String, Object>> execute(Map<String, Object> params) {
-    	Long id = (Long) params.get(BaseCmd.Properties.ID.getName());
         Account account = (Account)params.get(BaseCmd.Properties.ACCOUNT_OBJ.getName());
         String accountName = (String)params.get(BaseCmd.Properties.ACCOUNT.getName());
     	Long domainId = (Long) params.get(BaseCmd.Properties.DOMAIN_ID.getName());
-        Long accountId = (Long) params.get(BaseCmd.Properties.ACCOUNT_ID.getName());
-        String type = (String) params.get(BaseCmd.Properties.TYPE.getName());
-        String keyword = (String)params.get(BaseCmd.Properties.KEYWORD.getName());
+        Integer type = (Integer) params.get(BaseCmd.Properties.RESOURCE_TYPE.getName());
         Integer page = (Integer)params.get(BaseCmd.Properties.PAGE.getName());
         Integer pageSize = (Integer)params.get(BaseCmd.Properties.PAGESIZE.getName());
-
-        // validate domainId before proceeding
-        if (domainId != null) {
-            if ((account != null) && !getManagementServer().isChildDomain(account.getDomainId(), domainId)) {
-                throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to list resource limits, invalid domain (" + domainId + ") given.");
+        Long accountId = null;
+        
+        // If account is specified, you must be an admin
+        if (accountName != null) {
+        	if (domainId == null) {
+        		throw new ServerApiException(BaseCmd.PARAM_ERROR, "You must specify domain Id for the account: " + accountName);
+        	}
+        	Account userAccount = getManagementServer().findAccountByName(accountName, domainId);
+        	if (userAccount == null) {
+                throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to find account " + accountName + " in domain " + domainId);
             }
-            if (accountName != null) {
-                Account userAccount = getManagementServer().findAccountByName(accountName, domainId);
-                if (userAccount != null) {
-                    accountId = userAccount.getId();
-                } else {
-                    throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to find account " + accountName + " in domain " + domainId);
-                }
-            }
+        	// Now verify the admin can see this account
+        	// if account is null, it must be accessing from 8096
+        	if (account != null) {
+        		if (account.getType() == Account.ACCOUNT_TYPE_NORMAL) {
+        			throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "You do not have permission to access this account: " + accountName);
+        		} else if (account.getType() == Account.ACCOUNT_TYPE_DOMAIN_ADMIN || account.getType() == Account.ACCOUNT_TYPE_READ_ONLY_ADMIN){
+        			// If this is a domain admin, we make sure the domain admin and the account belong in the same domain or
+        			// the account's domain is a child domain of the parent
+        			if (account.getDomainId() != userAccount.getDomainId() && !getManagementServer().isChildDomain(account.getDomainId(), userAccount.getDomainId())) {
+        				throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "You do not have permission as domain-admin to access limits for this account: " + accountName);
+        			}
+        		}
+        	}
+        	accountId = userAccount.getId();
+        	domainId = DomainVO.ROOT_DOMAIN;
+        } else if (domainId != null) {
+        	if (!domainId.equals(DomainVO.ROOT_DOMAIN)) {
+        		throw new ServerApiException(BaseCmd.PARAM_ERROR, "Only ROOT domain limits can be retrieved right now");
+        	}
         } else {
-            domainId = ((account == null) ? DomainVO.ROOT_DOMAIN : account.getDomainId());
+        	if (account != null) {
+        		accountId = account.getId();
+        	} else {
+        		accountId = AccountVO.ACCOUNT_ID_SYSTEM;
+        	}
+        	domainId = DomainVO.ROOT_DOMAIN;
         }
-
+        
+        // Map resource type
+        ResourceType resourceType = null;
+        try {
+        	if (type != null) {
+        		resourceType = ResourceType.values()[type];
+        	}
+        } catch (ArrayIndexOutOfBoundsException e) {
+        	throw new ServerApiException(BaseCmd.PARAM_ERROR, "Please specify a valid resource type.");
+        }
+        
         Long startIndex = Long.valueOf(0);
         int pageSizeNum = 50;
     	if (pageSize != null) {
@@ -99,17 +127,13 @@ public class ListResourceLimitsCmd extends BaseCmd {
                 startIndex = Long.valueOf(pageSizeNum * (pageNum-1));
             }
         }
+        
         Criteria c = new Criteria("id", Boolean.FALSE, startIndex, Long.valueOf(pageSizeNum));
-        c.addCriteria(Criteria.ACCOUNTID, accountId);
-        if (keyword != null) {
-        	c.addCriteria(Criteria.KEYWORD, keyword);
-        } else {
-        	c.addCriteria(Criteria.ID, id);
-            c.addCriteria(Criteria.DOMAINID, domainId);
-            c.addCriteria(Criteria.TYPE, type);
-        }
-
-        List<ResourceLimitVO> limits = null;
+    	c.addCriteria(Criteria.ACCOUNTID, accountId);
+    	c.addCriteria(Criteria.DOMAINID, domainId);
+    	c.addCriteria(Criteria.TYPE, resourceType);
+    	
+    	List<ResourceLimitVO> limits = null;
         try {
             limits = getManagementServer().searchForLimits(c);
         } catch (Exception ex) {
@@ -117,15 +141,12 @@ public class ListResourceLimitsCmd extends BaseCmd {
             throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Failed to list resource limits due to exception: " + ex.getMessage());
         }
 
-        if (limits == null)
-        	throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Failed to list resource limits.");
-
         List<Pair<String, Object>> limitTags = new ArrayList<Pair<String, Object>>();
         Object[] lTag = new Object[limits.size()];
         int i = 0;
         for (ResourceLimitVO limit : limits) {
             List<Pair<String, Object>> limitData = new ArrayList<Pair<String, Object>>();
-            limitData.add(new Pair<String, Object>(BaseCmd.Properties.ID.getName(), limit.getId()));
+            //limitData.add(new Pair<String, Object>(BaseCmd.Properties.ID.getName(), limit.getId()));
             if (limit.getDomainId() != null)
             {
             	limitData.add(new Pair<String, Object>(BaseCmd.Properties.DOMAIN_ID.getName(), limit.getDomainId().toString()));
@@ -141,7 +162,16 @@ public class ListResourceLimitsCmd extends BaseCmd {
                 }
         	}
             	
-        		limitData.add(new Pair<String, Object>(BaseCmd.Properties.TYPE.getName(), limit.getType()));
+            ResourceType limitType = limit.getType();
+            ResourceType[] possibleLimitTypes = ResourceType.values();
+            int limitNum = 0;
+            for (int j = 0; j < possibleLimitTypes.length; j++) {
+            	if (possibleLimitTypes[j].equals(limitType)) {
+            		limitNum = j;
+            		break;
+            	}
+            }
+        	limitData.add(new Pair<String, Object>(BaseCmd.Properties.RESOURCE_TYPE.getName(), limitNum));
             limitData.add(new Pair<String, Object>(BaseCmd.Properties.MAX.getName(), limit.getMax()));
 
             lTag[i++] = limitData;

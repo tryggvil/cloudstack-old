@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -38,6 +38,7 @@ public class StartupCommand extends Command {
     String storageMacAddressDeux;
     String storageNetmaskDeux;
     String agentTag;
+    String resourceName;
     
     public StartupCommand() {
     }
@@ -118,6 +119,11 @@ public class StartupCommand extends Command {
 
     public void setGuid(String guid) {
         this.guid = guid;
+    }
+    
+    public void setGuid(String guid, String resourceName) {
+    	this.resourceName = resourceName;
+    	this.guid = guid + "-" + resourceName;
     }
 
     public String getPublicNetmask() {
@@ -212,6 +218,33 @@ public class StartupCommand extends Command {
     	agentTag = tag;
     }
 
+    public void setResourceName(String resourceName) {
+    	this.resourceName = resourceName;
+    }
+    
+    public String getGuidWithoutResource() {
+    	if (resourceName == null)
+    	  return guid;
+    	else {
+    	  int hyph = guid.lastIndexOf('-');
+    	  if (hyph == -1) {
+    		  return guid;
+    	  }
+    	  String tmpResource = guid.substring(hyph+1, guid.length());
+    	  if (resourceName.equals(tmpResource)){
+    		  return guid.substring(0, hyph);
+    	  } else {
+    		  return guid;
+    	  }
+    	}
+    }
+    
+    public String getResourceName() {
+    	return resourceName;
+    }
+    
+  
+    
     @Override
     public boolean executeInSequence() {
         return false;

@@ -35,6 +35,7 @@
 	                        <p><div class="domain_detailsbox_label">Accounts:</div><span id="redirect_to_account_page" class="domain_search_contentlinks"></span></p>                  
 	                        <p><div class="domain_detailsbox_label">Instances:</div><span id="redirect_to_instance_page" class="domain_search_contentlinks"></span></p>
 	                        <p><div class="domain_detailsbox_label">Volume:</div><span id="redirect_to_volume_page" class="domain_search_contentlinks"></span></p>
+							<div id="limits_container" style="display:none"><p><div class="domain_detailsbox_label">Limits:</div><span class="domain_search_contentlinks"><a href="#" id="account_resource_limits">change resource limits</a></span></p></div>
 	                        <!--
 	                        <p><span>Snapshots:</span><span id="domain_snapshot"></span></p> 	
 	                        -->                                               
@@ -109,3 +110,38 @@
 <!-- breadcrumb piece template (begin)-->
 <div id="breadcrumb_piece_template" class="breadcrumb_contentlinks" style="display:none">breadcrumb</div>
 <!-- breadcrumb piece template (end)-->
+
+<div id="dialog_resource_limits" title="Resource Limits" style="display:none">
+	<p>Please specify limits to the various resources.  A "-1" means the resource has no limits.</p>
+	<div class="dialog_formcontent">
+		<form action="#" method="post" id="form_acquire">
+			<ol>
+				<li>
+					<label for="user_name">Instance Limit:</label>
+					<input class="text" type="text" name="limits_vm" id="limits_vm" value="-1" />
+					<div id="limits_vm_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div> 
+				</li>
+				<li>
+					<label for="user_name">Public IP Limit:</label>
+					<input class="text" type="text" name="limits_ip" id="limits_ip" value="-1" />
+					<div id="limits_ip_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div> 
+				</li>
+				<li>
+					<label for="user_name">Disk Volume Limit:</label>
+					<input class="text" type="text" name="limits_volume" id="limits_volume" value="-1" />
+					<div id="limits_volume_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div> 
+				</li>
+				<li>
+					<label for="user_name">Snapshot Limit:</label>
+					<input class="text" type="text" name="limits_snapshot" id="limits_snapshot" value="-1" />
+					<div id="limits_snapshot_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div> 
+				</li>
+				<li>
+					<label for="user_name">Template Limit:</label>
+					<input class="text" type="text" name="limits_template" id="limits_template" value="-1" />
+					<div id="limits_template_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div> 
+				</li>
+			</ol>
+		</form>
+	</div>
+</div>

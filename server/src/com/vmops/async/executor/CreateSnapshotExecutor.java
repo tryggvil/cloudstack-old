@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -23,7 +23,6 @@ import java.util.List;
 import org.apache.log4j.Logger;
 
 import com.google.gson.Gson;
-import com.vmops.agent.api.Answer;
 import com.vmops.api.BaseCmd;
 import com.vmops.async.AsyncInstanceCreateStatus;
 import com.vmops.async.AsyncJobManager;
@@ -70,7 +69,7 @@ public class CreateSnapshotExecutor extends VolumeOperationExecutor {
 		    	if (snapshot != null && snapshot.getStatus() != AsyncInstanceCreateStatus.Corrupted) {
 				    snapshotId = snapshot.getId();
 				    backedUp = snapshotManager.backupSnapshotToSecondaryStorage(userId, snapshot);
-				    if (backedUp && snapshot.getStatus() == AsyncInstanceCreateStatus.Created) {
+				    if (backedUp) {
 				        result = AsyncJobResult.STATUS_SUCCEEDED;
 				        errorCode = 0; // Success
 				        resultObject = composeResultObject(snapshot);
@@ -87,20 +86,11 @@ public class CreateSnapshotExecutor extends VolumeOperationExecutor {
 
 			// In all cases, ensure that we call completeAsyncJob to the asyncMgr.
 	    	asyncMgr.completeAsyncJob(jobId, result, errorCode, resultObject);
-	    	if (backedUp) {
-	    	    snapshotManager.postCreateSnapshot(userId, volumeId, snapshotId, policyIds);
-	    	}
-			return backedUp;
+	    	
+	    	// Cleanup jobs to do after the snapshot has been created.
+	    	snapshotManager.postCreateSnapshot(userId, volumeId, snapshotId, policyIds, backedUp);
+	    	return true;
 		}
-	}
-	
-	public void processAnswer(VolumeOperationListener listener, long agentId, long seq, Answer answer) {
-	}
-	
-	public void processDisconnect(VolumeOperationListener listener, long agentId) {
-	}
-
-	public void processTimeout(VolumeOperationListener listener, long agentId, long seq) {
 	}
 	
 	private CreateSnapshotResultObject composeResultObject(Snapshot snapshot) {

@@ -325,6 +325,10 @@
       <name>hypervisor.type</name>
       <value>xenserver</value>
     </configuration>
+    <configuration>
+      <name>secondary.storage.vm</name>
+      <value>false</value>
+    </configuration>
 
     <!-- 
         The following are for configuring alerts and a proper email (where system
@@ -371,7 +375,7 @@
     <!--
     <configuration>
       <name>mount.parent</name>
-      <value>/var/lib/vmops/mnt</value>
+      <value>/var/lib/cloud/mnt</value>
     </configuration>
     -->
   </configurationEntries>

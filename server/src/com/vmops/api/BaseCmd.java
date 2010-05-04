@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -119,6 +119,7 @@ public abstract class BaseCmd {
         CAPACITY_TOTAL("capacitytotal", BaseCmd.TYPE_LONG, "capacitytotal"),
         CAPACITY_USED("capacityused", BaseCmd.TYPE_LONG, "capacityused"),
         CATEGORY("category", BaseCmd.TYPE_STRING, "category"),
+        CLEANUP("cleanup", BaseCmd.TYPE_BOOLEAN, "cleanup"),
         CONSOLE_HOST("consolehost", BaseCmd.TYPE_STRING, "consoleHost"),
         CONSOLE_IMAGE_URL("consoleimageurl", BaseCmd.TYPE_STRING, "consoleImageUrl"),
         CONSOLE_PASSWORD("consolepassword", BaseCmd.TYPE_STRING, "consolePassword"),
@@ -152,6 +153,7 @@ public abstract class BaseCmd {
         DOMAIN("domain", BaseCmd.TYPE_STRING, "domain"),
         DOMAIN_ID("domainid", BaseCmd.TYPE_LONG, "domainId"),
         DOMAIN_LEVEL("level", BaseCmd.TYPE_INT, "level"),
+        DEST_ZONE_ID("destzoneid", BaseCmd.TYPE_LONG, "destZoneId"),
         END_DATE("enddate", BaseCmd.TYPE_DATE, "endDate"),
         EMAIL("email", BaseCmd.TYPE_STRING, "email"),
         FIREWALL_ENABLE_PASSWORD("firewallenablepassword", BaseCmd.TYPE_STRING, "firewallEnablePassword"),
@@ -182,8 +184,9 @@ public abstract class BaseCmd {
         IP_LIMIT("iplimit", BaseCmd.TYPE_INT, "iplimit"),
         IP_TOTAL("iptotal", BaseCmd.TYPE_INT, "iptotal"),
         IS_RECURSIVE("isrecursive", BaseCmd.TYPE_BOOLEAN, "isrecursive"),
+        IS_FEATURED("isfeatured", BaseCmd.TYPE_BOOLEAN, "isfeatured"),
+        IS_MINE("ismine", BaseCmd.TYPE_BOOLEAN, "isMine"),
         IS_PUBLIC("ispublic", BaseCmd.TYPE_BOOLEAN, "isPublic"),
-        IS_DISABLED("isdisabled", BaseCmd.TYPE_BOOLEAN, "isdisabled"),
         IS_CLEANUP_REQUIRED("iscleanuprequired", BaseCmd.TYPE_BOOLEAN, "iscleanuprequired"),
         IS_ENABLED("isenabled", BaseCmd.TYPE_BOOLEAN, "isEnabled"),
         IS_MIRRORED("ismirrored", BaseCmd.TYPE_BOOLEAN, "isMirrored"),
@@ -243,7 +246,9 @@ public abstract class BaseCmd {
         SECURITY_GROUP_ID("securitygroupid", BaseCmd.TYPE_LONG, "securityGroupId"),
         SENT("sent", BaseCmd.TYPE_DATE, "sent"),
         SERVICE_OFFERING_ID("serviceofferingid", BaseCmd.TYPE_LONG, "serviceOfferingId"),
+        OFFERING_ID("offeringid", BaseCmd.TYPE_LONG, "offeringId"),
         SERVICE_OFFERING_NAME("serviceofferingname", BaseCmd.TYPE_STRING, "serviceOfferingName"),
+        SOURCE_ZONE_ID("sourcezoneid", BaseCmd.TYPE_LONG, "sourceZoneId"),
         START_DATE("startdate", BaseCmd.TYPE_DATE, "startDate"),
         START_IP("startip", BaseCmd.TYPE_STRING, "startIp"),
         END_IP("endip", BaseCmd.TYPE_STRING, "endIp"),
@@ -258,6 +263,7 @@ public abstract class BaseCmd {
         SNAPSHOT_POLICY_IDS("snapshotpolicyids", BaseCmd.TYPE_STRING, "snapshotPolicyIds"),
         SCHEDULED("scheduled", BaseCmd.TYPE_DATE, "scheduled"),
         STORAGE_TYPE("storagetype", BaseCmd.TYPE_STRING, "storageType"),
+        TEMPLATE_FILTER("templatefilter", BaseCmd.TYPE_STRING, "templateFilter"),
         TEMPLATE_ID("templateid", BaseCmd.TYPE_LONG, "templateId"),
         TEMPLATE_NAME("templatename", BaseCmd.TYPE_STRING, "templateName"),
         TEMPLATE_DISPLAY_TEXT("templatedisplaytext", BaseCmd.TYPE_STRING, "templateDisplayText"),
@@ -282,6 +288,7 @@ public abstract class BaseCmd {
         VNET("vlan", BaseCmd.TYPE_STRING, "vlan"),
         //VIRTUAL_MACHINE_PASSWORD("virtualmachinepassword", BaseCmd.TYPE_STRING, "virtualMachinePassword"),
         VOLUME_ID("volumeid", BaseCmd.TYPE_LONG, "volumeId"), // FIXME: this is an array of longs
+        VOLUME_NAME("volumename", BaseCmd.TYPE_STRING, "volumeName"),
         WEEKLY_MAX("weeklymax", BaseCmd.TYPE_INT, "weeklyMax"),
         ZONE_ID("zoneid", BaseCmd.TYPE_LONG, "zoneId"),
         ZONE_NAME("zonename", BaseCmd.TYPE_STRING, "zoneName"),

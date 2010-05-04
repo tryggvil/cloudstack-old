@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -19,6 +19,7 @@
 package com.vmops.resource;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -26,6 +27,8 @@ import javax.ejb.Local;
 import javax.naming.ConfigurationException;
 
 import org.apache.log4j.Logger;
+
+import com.vmops.host.HostVO;
 
 @Local(value=Discoverer.class)
 public class DummyHostDiscoverer implements Discoverer {
@@ -84,4 +87,9 @@ public class DummyHostDiscoverer implements Discoverer {
     public boolean stop() {
         return true;
     }
+
+	@Override
+	public void postDiscovery(List<HostVO> hosts, long msId) {
+		//do nothing
+	}
 }

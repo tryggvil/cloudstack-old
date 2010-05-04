@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -37,6 +37,7 @@ import com.vmops.configuration.Config;
 import com.vmops.configuration.ConfigurationManager;
 import com.vmops.configuration.ConfigurationManagerImpl;
 import com.vmops.configuration.ConfigurationVO;
+import com.vmops.configuration.ResourceCount.ResourceType;
 import com.vmops.configuration.dao.ConfigurationDao;
 import com.vmops.dc.DataCenterVO;
 import com.vmops.dc.VlanVO;
@@ -44,6 +45,8 @@ import com.vmops.dc.dao.DataCenterDao;
 import com.vmops.domain.DomainVO;
 import com.vmops.exception.InternalErrorException;
 import com.vmops.exception.InvalidParameterValueException;
+import com.vmops.storage.SnapshotPolicyVO;
+import com.vmops.storage.dao.SnapshotPolicyDao;
 import com.vmops.user.dao.UserDao;
 import com.vmops.utils.PropertiesUtil;
 import com.vmops.utils.component.ComponentLocator;
@@ -60,6 +63,7 @@ public class ConfigurationServerImpl implements ConfigurationServer {
 	private final ConfigurationManager _configMgr;
 	private final UserDao _userDao;
 	private final DataCenterDao _zoneDao;
+	private final SnapshotPolicyDao _snapPolicyDao;
 	
 	public ConfigurationServerImpl() {
 		ComponentLocator locator = ComponentLocator.getLocator(Name);
@@ -67,6 +71,7 @@ public class ConfigurationServerImpl implements ConfigurationServer {
 		_configMgr = locator.getManager(ConfigurationManager.class);
 		_userDao = locator.getDao(UserDao.class);
 		_zoneDao = locator.getDao(DataCenterDao.class);
+		_snapPolicyDao = locator.getDao(SnapshotPolicyDao.class);
 	}
 
 	public void persistDefaultValues() throws InvalidParameterValueException, InternalErrorException {
@@ -122,15 +127,6 @@ public class ConfigurationServerImpl implements ConfigurationServer {
 			_configMgr.createDiskOffering(DomainVO.ROOT_DOMAIN, "Medium", "Medium Disk, 20 GB", 20, false);
 			_configMgr.createDiskOffering(DomainVO.ROOT_DOMAIN, "Large", "Large Disk, 100 GB", 100, false);
 			
-			// Save the management network CIDR to the configuration table
-			String managementNetworkCIDR = getManagementNetworkCIDR();
-			if (managementNetworkCIDR != null) {
-				_configMgr.updateConfiguration("management.network.cidr", managementNetworkCIDR);
-				s_logger.debug("ConfigurationServer saved " + managementNetworkCIDR + " as management.network.cidr.");
-			} else {
-				s_logger.debug("ConfigurationServer could not detect the management server CIDR.");
-			}
-			
 			// Save the mount parent to the configuration table
 			String mountParent = getMountParent();
 			if (mountParent != null) {
@@ -174,6 +170,9 @@ public class ConfigurationServerImpl implements ConfigurationServer {
 				s_logger.debug("ConfigurationServer could not detect the gateway and netmask of the management server.");
 			}
 			
+		     //Add default manual snapshot policy
+	        SnapshotPolicyVO snapPolicy = new SnapshotPolicyVO(0L, "", (short)4, 0);
+	        _snapPolicyDao.persist(snapPolicy);
 		}
 			
 		// Create system user and admin user
@@ -181,22 +180,6 @@ public class ConfigurationServerImpl implements ConfigurationServer {
 			
 		// Set init to true
 		_configDao.update("init", "true");
-	}
-	
-	private String getManagementNetworkCIDR() {
-		String[] gatewayAndNetmask = getGatewayAndNetmask();
-		
-		if (gatewayAndNetmask == null) {
-			return null;
-		} else {
-			String gateway = gatewayAndNetmask[0];
-			String netmask = gatewayAndNetmask[1];
-			
-			String subnet = NetUtils.getSubNet(gateway, netmask);
-			long cidrSize = NetUtils.getCidrSize(netmask);
-			
-			return subnet + "/" + cidrSize;
-		}
 	}
 	
 	private String[] getGatewayAndNetmask() {
@@ -227,6 +210,22 @@ public class ConfigurationServerImpl implements ConfigurationServer {
 		} else {
 			return new String[] {gateway, netmask};
 		}
+	}
+	
+	private String getEthDevice() {
+		String defaultRoute = Script.runSimpleBashScript("route | grep default");
+		
+		if (defaultRoute == null) {
+			return null;
+		}
+		
+		String[] defaultRouteList = defaultRoute.split("\\s+");
+		
+		if (defaultRouteList.length != 8) {
+			return null;
+		}
+		
+		return defaultRouteList[7];
 	}
 	
 	private String getMountParent() {
@@ -268,13 +267,11 @@ public class ConfigurationServerImpl implements ConfigurationServer {
 	@DB
 	protected String getHost() {
 		NetworkInterface nic = null;
+		String pubNic = getEthDevice();
 		
-		Script getPubNic = new Script("/bin/bash", s_logger);
-		getPubNic.add("-c");
-		getPubNic.add("ip route |grep default|awk '{print $5}'");
-		final OutputInterpreter.OneLineParser getNicParser = new OutputInterpreter.OneLineParser();
-		getPubNic.execute(getNicParser);
-		String pubNic = getNicParser.getLine();
+		if (pubNic == null) {
+			return null;
+		}
 		
 		try {
 			nic = NetworkInterface.getByName(pubNic);

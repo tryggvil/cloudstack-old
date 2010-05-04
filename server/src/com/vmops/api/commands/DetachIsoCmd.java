@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -57,26 +57,30 @@ public class DetachIsoCmd extends BaseCmd {
         Account account = (Account) params.get(BaseCmd.Properties.ACCOUNT_OBJ.getName());
         Long userId = (Long) params.get(BaseCmd.Properties.USER_ID.getName());
         Long vmId = (Long) params.get(BaseCmd.Properties.VIRTUAL_MACHINE_ID.getName());
-        
-        //Verify input parameters
+
+        // Verify input parameters
         UserVmVO vmInstanceCheck = getManagementServer().findUserVMInstanceById(vmId.longValue());
         if (vmInstanceCheck == null) {
             throw new ServerApiException (BaseCmd.VM_INVALID_PARAM_ERROR, "Unable to find a virtual machine with id " + vmId);
         }
-        
-        if ((account != null) && !isAdmin(account.getType())) {
-            if (account.getId().longValue() != vmInstanceCheck.getAccountId()) {
-                throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to detach ISO from virtual machine " + vmInstanceCheck.getName() + " for this account");
+
+        if (account != null) {
+            if (!isAdmin(account.getType())) {
+                if (account.getId().longValue() != vmInstanceCheck.getAccountId()) {
+                    throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to detach ISO from virtual machine " + vmInstanceCheck.getName() + " for this account");
+                }
+            } else if (!getManagementServer().isChildDomain(account.getDomainId(), vmInstanceCheck.getDomainId())) {
+                throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to detach ISO from virtual machine " + vmInstanceCheck.getName() + ", permission denied.");
             }
         }
 
-        //If command is executed via 8096 port, set userId to the id of System account (1)
+        // If command is executed via 8096 port, set userId to the id of System account (1)
         if (userId == null)
             userId = new Long(1);
-        
+
         try {
             long jobId = getManagementServer().detachISOFromVMAsync(vmId.longValue(), userId);
-            
+
             if (jobId == 0) {
                 s_logger.warn("Unable to schedule async-job for AttachIsoCmd");
             } else {

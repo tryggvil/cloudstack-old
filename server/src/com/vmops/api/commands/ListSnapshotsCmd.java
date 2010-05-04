@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -151,6 +151,7 @@ public class ListSnapshotsCmd extends BaseCmd {
             }
             snapshotData.add(new Pair<String, Object>(BaseCmd.Properties.TYPE.getName(), snapshot.getSnapshotType()));
             snapshotData.add(new Pair<String, Object>(BaseCmd.Properties.VOLUME_ID.getName(), snapshot.getVolumeId()));
+            snapshotData.add(new Pair<String, Object>(BaseCmd.Properties.VOLUME_NAME.getName(), getManagementServer().findVolumeById(snapshot.getVolumeId()).getName()));
             snapshotData.add(new Pair<String, Object>(BaseCmd.Properties.CREATED.getName(), snapshot.getCreated()));
             snapshotData.add(new Pair<String, Object>(BaseCmd.Properties.NAME.getName(), snapshot.getName()));
             snapshotData.add(new Pair<String, Object>(BaseCmd.Properties.PATH.getName(), snapshot.getPath()));
@@ -160,7 +161,7 @@ public class ListSnapshotsCmd extends BaseCmd {
             	snapshotData.add(new Pair<String, Object>(BaseCmd.Properties.JOB_ID.getName(), asyncJob.getId().toString()));
             	snapshotData.add(new Pair<String, Object>(BaseCmd.Properties.JOB_STATUS.getName(), String.valueOf(asyncJob.getStatus())));
             } 
-
+            snapshotData.add(new Pair<String, Object>(BaseCmd.Properties.INTERVAL_TYPE.getName(), getManagementServer().getSnapshotIntervalTypes(snapshot.getId())));
             snapshotTag[i++] = snapshotData;
         }
         List<Pair<String, Object>> returnTags = new ArrayList<Pair<String, Object>>();

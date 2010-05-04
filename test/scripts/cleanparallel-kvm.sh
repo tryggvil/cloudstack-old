@@ -11,7 +11,7 @@ kill_agent_linux() {
 
 kill_server() {
 echo "Killing management server and usage process..."
-ssh root@$1 "service vmops-management stop; service vmops-usage stop 2>&1 &"
+ssh root@$1 "service cloud-management stop; service cloud-usage stop 2>&1 &"
 }
 
 cleanup_linux() {
@@ -27,9 +27,9 @@ cleanup_linux() {
 }
 
 cleanup_solaris() {
-  ssh root@$1 "cd /tank/vmops-nfs/vm && rm -rf * " > /dev/null
+  ssh root@$1 "cd /tank/cloud-nfs/vm && rm -rf * " > /dev/null
   if [ $? -gt 0 ]; then echo "failed to cleanup user vm on $1"; fi
-  ssh root@$1 "cd /tank/vmops-nfs/template/private && cp -rf u000000 /root/. && rm -rf * && mv /root/u000000 ." > /dev/null
+  ssh root@$1 "cd /tank/cloud-nfs/template/private && cp -rf u000000 /root/. && rm -rf * && mv /root/u000000 ." > /dev/null
   if [ $? -gt 0 ]; then echo "failed to cleanup private templates on $1"; fi
   return 0
 }
@@ -40,8 +40,8 @@ cleanup_server() {
   t=$(date  +"%h%d_%H_%M_%S")
   ssh root@$1 "mkdir $3/logs.$t; mv $3/vmops.log $3/logs.$t/vmops.log.$t  ;echo sssssssssssssssssssssssss > $3/vmops.log"
   ssh root@$1 "mv $3/vmops_usage.log $3/logs.$t/vmops_usage.log.$t  ;echo sssssssssssssssssssssssss > $3/vmops_usage.log.log"
-  ssh root@$1 "mv $3/vmops-management.stderr $3/logs.$t/vmops-management.stderr.$t  ;echo sssssssssssssssssssssssss > $3/vmops-management.stderr"
-  ssh root@$1 "mv $3/vmops-usage.stderr $3/logs.$t/vmops-usage.stderr.$t  ;echo sssssssssssssssssssssssss > $3/vmops-usage.stderr"
+  ssh root@$1 "mv $3/cloud-management.stderr $3/logs.$t/cloud-management.stderr.$t  ;echo sssssssssssssssssssssssss > $3/cloud-management.stderr"
+  ssh root@$1 "mv $3/cloud-usage.stderr $3/logs.$t/cloud-usage.stderr.$t  ;echo sssssssssssssssssssssssss > $3/cloud-usage.stderr"
   echo "Cleaning logs for management server"
   return 0
 }

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -383,6 +383,11 @@ public class ApiServer implements HttpRequestHandler {
             user = userAcctPair.first();
             Account account = userAcctPair.second();
 
+            if (!user.getState().equals(Account.ACCOUNT_STATE_ENABLED) || !account.getState().equals(Account.ACCOUNT_STATE_ENABLED)) {
+                s_logger.info("disabled or locked user accessing the api, userid = " + user.getId() + "; name = " + user.getUsername() + "; state: " + user.getState() + "; accountState: " + account.getState());
+                return false;
+            }
+
             requestParameters.put(BaseCmd.Properties.USER_ID.getName(), new String[] { user.getId().toString() });
             requestParameters.put(BaseCmd.Properties.ACCOUNT.getName(), new String[] { account.getAccountName().toString() });
             requestParameters.put(BaseCmd.Properties.ACCOUNT_OBJ.getName(), new Object[] { account });
@@ -469,8 +474,8 @@ public class ApiServer implements HttpRequestHandler {
 
     public boolean verifyUser(Long userId) {
     	User user = _ms.findUserById(userId);
-    	if ((user == null) || (user.getRemoved() != null) || (user.getDisabled() == true)) {
-    		s_logger.warn("Deleted/Disabled user with id=" + userId + " attempting to access public API");
+    	if ((user == null) || (user.getRemoved() != null) || !user.getState().equals(Account.ACCOUNT_STATE_ENABLED)) {
+    		s_logger.warn("Deleted/Disabled/Locked user with id=" + userId + " attempting to access public API");
     		return false;
     	}
     	return true;

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -100,6 +100,12 @@ public class ConsoleProxyDaoImpl extends GenericDaoBase<ConsoleProxyVO, Long> im
     	" FROM storage_pool p, storage_pool_host_ref ph " +
     	" WHERE p.id = ph.pool_id AND p.data_center_id = ? " +
     	" GROUP by p.data_center_id";
+    
+    private static final String SHARED_STORAGE_POOL_HOST_INFO =
+    	"SELECT p.data_center_id,  count(ph.host_id) " +
+    	" FROM storage_pool p, storage_pool_host_ref ph " +
+    	" WHERE p.pool_type <> 'LVM' AND p.id = ph.pool_id AND p.data_center_id = ? " +
+    	" GROUP by p.data_center_id";
     	
     protected SearchBuilder<ConsoleProxyVO> DataCenterStatusSearch;
     protected SearchBuilder<ConsoleProxyVO> StateSearch;
@@ -110,23 +116,23 @@ public class ConsoleProxyDaoImpl extends GenericDaoBase<ConsoleProxyVO, Long> im
     
     public ConsoleProxyDaoImpl() {
         DataCenterStatusSearch = createSearchBuilder();
-        DataCenterStatusSearch.addAnd("dc", DataCenterStatusSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
-        DataCenterStatusSearch.addAnd("states", DataCenterStatusSearch.entity().getState(), SearchCriteria.Op.IN);
+        DataCenterStatusSearch.and("dc", DataCenterStatusSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        DataCenterStatusSearch.and("states", DataCenterStatusSearch.entity().getState(), SearchCriteria.Op.IN);
         DataCenterStatusSearch.done();
         
         StateSearch = createSearchBuilder();
-        StateSearch.addAnd("states", StateSearch.entity().getState(), SearchCriteria.Op.IN);
+        StateSearch.and("states", StateSearch.entity().getState(), SearchCriteria.Op.IN);
         StateSearch.done();
         
         HostSearch = createSearchBuilder();
-        HostSearch.addAnd("host", HostSearch.entity().getHostId(), SearchCriteria.Op.EQ);
+        HostSearch.and("host", HostSearch.entity().getHostId(), SearchCriteria.Op.EQ);
         HostSearch.done();
         
         StateChangeSearch = createSearchBuilder();
-        StateChangeSearch.addAnd("id", StateChangeSearch.entity().getId(), SearchCriteria.Op.EQ);
-        StateChangeSearch.addAnd("states", StateChangeSearch.entity().getState(), SearchCriteria.Op.EQ);
-        StateChangeSearch.addAnd("host", StateChangeSearch.entity().getHostId(), SearchCriteria.Op.EQ);
-        StateChangeSearch.addAnd("update", StateChangeSearch.entity().getUpdated(), SearchCriteria.Op.EQ);
+        StateChangeSearch.and("id", StateChangeSearch.entity().getId(), SearchCriteria.Op.EQ);
+        StateChangeSearch.and("states", StateChangeSearch.entity().getState(), SearchCriteria.Op.EQ);
+        StateChangeSearch.and("host", StateChangeSearch.entity().getHostId(), SearchCriteria.Op.EQ);
+        StateChangeSearch.and("update", StateChangeSearch.entity().getUpdated(), SearchCriteria.Op.EQ);
         StateChangeSearch.done();
         
         _updateTimeAttr = _allAttributes.get("updateTime");
@@ -263,13 +269,16 @@ public class ConsoleProxyDaoImpl extends GenericDaoBase<ConsoleProxyVO, Long> im
     }
     
     @Override
-    public List<Pair<Long, Integer>> getDatacenterStoragePoolHostInfo(long dcId) {
+    public List<Pair<Long, Integer>> getDatacenterStoragePoolHostInfo(long dcId, boolean countAllPoolTypes) {
     	ArrayList<Pair<Long, Integer>> l = new ArrayList<Pair<Long, Integer>>();
     	
         Transaction txn = Transaction.currentTxn();;
         PreparedStatement pstmt = null;
         try {
-            pstmt = txn.prepareAutoCloseStatement(STORAGE_POOL_HOST_INFO);
+        	if(countAllPoolTypes)
+        		pstmt = txn.prepareAutoCloseStatement(STORAGE_POOL_HOST_INFO);
+        	else
+        		pstmt = txn.prepareAutoCloseStatement(SHARED_STORAGE_POOL_HOST_INFO);
             pstmt.setLong(1, dcId);
             
             ResultSet rs = pstmt.executeQuery();

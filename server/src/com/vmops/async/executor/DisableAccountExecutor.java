@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -18,6 +18,9 @@
 
 package com.vmops.async.executor;
 
+
+import java.util.List;
+
 import org.apache.log4j.Logger;
 
 import com.google.gson.Gson;
@@ -26,8 +29,13 @@ import com.vmops.async.AsyncJobManager;
 import com.vmops.async.AsyncJobResult;
 import com.vmops.async.AsyncJobVO;
 import com.vmops.async.BaseAsyncJobExecutor;
+import com.vmops.async.SyncQueueItemVO;
 import com.vmops.serializer.GsonHelper;
 import com.vmops.server.ManagementServer;
+import com.vmops.user.AccountVO;
+import com.vmops.utils.db.DB;
+import com.vmops.utils.db.Transaction;
+import com.vmops.vm.DomainRouterVO;
 
 public class DisableAccountExecutor extends BaseAsyncJobExecutor {
     public static final Logger s_logger = Logger.getLogger(DisableAccountExecutor.class.getName());
@@ -39,19 +47,116 @@ public class DisableAccountExecutor extends BaseAsyncJobExecutor {
 		ManagementServer managementServer = asyncMgr.getExecutorContext().getManagementServer();
 		Long param = gson.fromJson(job.getCmdInfo(), Long.class);
 		
-		try {
-			if(managementServer.disableAccount(param.longValue())) {
-				asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_SUCCEEDED, 0, 
-					"success");
+		SyncQueueItemVO syncItem = getSyncSource();
+		if(syncItem == null) {
+			initialSchedule(managementServer, param.longValue());
+		} else {
+			if(allRouterOperationCeased(job)) {
+				if(s_logger.isInfoEnabled())
+					s_logger.info("All previous router operations have ceased, we can now disable account " + param);
+				
+				if(managementServer.disableAccount(param.longValue())) {
+					asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_SUCCEEDED, 0, 
+						"success");
+				} else {
+					asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_FAILED, BaseCmd.INTERNAL_ERROR, 
+						"failed");
+				}
 			} else {
-				asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_FAILED, BaseCmd.INTERNAL_ERROR, 
-					"failed");
+				if(s_logger.isInfoEnabled())
+					s_logger.info("Previous operation on router " + syncItem.getContentId() 
+						+ " has ceased, still more to go to disable account " + param);
 			}
-		} catch(Exception e) {
+		}
+		return true;
+	}
+	
+	public void initialSchedule(ManagementServer managementServer, long accountId) {
+		AsyncJobManager asyncMgr = getAsyncJobMgr();
+		
+		AccountVO account = asyncMgr.getExecutorContext().getAccountDao().acquire(accountId);
+		
+		if(account == null) {
+			s_logger.warn("Unable to acquire account." + accountId + " to execute disable account command");
+			asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_FAILED, BaseCmd.INTERNAL_ERROR, 
+				"unabled to acquire account." + accountId + " lock");
+			return;
+		}
+		
+		try {
+	        List<DomainRouterVO> routers = asyncMgr.getExecutorContext().getRouterDao().listBy(accountId);
+	        if(routers.size() > 0) {
+	        	scheduleOperationAfterAllRouterOperations(managementServer, accountId, routers);
+	        } else {
+	        	if(s_logger.isInfoEnabled())
+	        		s_logger.info("Account " + accountId + " does not have running router, disable the account directly");
+	        	
+				if(managementServer.disableAccount(accountId)) {
+					asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_SUCCEEDED, 0, 
+						"success");
+				} else {
+					asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_FAILED, BaseCmd.INTERNAL_ERROR, 
+						"failed");
+				}
+	        }
+		} catch (Exception e) {
 			s_logger.warn("Unable to disable account: " + e.getMessage(), e);
 			asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_FAILED, BaseCmd.INTERNAL_ERROR, 
 				e.getMessage());
+		} finally {
+			asyncMgr.getExecutorContext().getAccountDao().release(accountId);
 		}
-		return true;
+	}
+	
+	@DB
+	protected void scheduleOperationAfterAllRouterOperations(ManagementServer managementServer, long accountId, 
+		List<DomainRouterVO> routers) {
+		
+		AsyncJobManager asyncMgr = getAsyncJobMgr();
+		AsyncJobVO job = getJob();
+		
+		Transaction txn = Transaction.currentTxn();
+		try {
+			txn.start();
+			
+			asyncMgr.updateAsyncJobStatus(job.getId(), routers.size(), "");
+			for(DomainRouterVO router : routers) {
+				if(s_logger.isInfoEnabled())
+					s_logger.info("Serialize DisableAccount operation on account " + accountId
+						+ " with previous activities on router " + router.getId());
+				asyncMgr.syncAsyncJobExecution(job.getId(), "Router", router.getId());
+			}
+			
+			txn.commit();
+		} catch (Exception e) {
+			txn.rollback();
+			s_logger.warn("Unexpected exception " + e.getMessage(), e);
+			asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_FAILED, BaseCmd.INTERNAL_ERROR, 
+				e.getMessage());
+		} 
+	}
+	
+	@DB
+	protected boolean allRouterOperationCeased(AsyncJobVO job) {
+		AsyncJobManager asyncMgr = getAsyncJobMgr();
+		Transaction txn = Transaction.currentTxn();
+		
+		try {
+			txn.start();
+			
+			AsyncJobVO jobUpdate = asyncMgr.getExecutorContext().getJobDao().lock(job.getId(), true);
+			int progress = jobUpdate.getProcessStatus();
+			jobUpdate.setProcessStatus(progress -1);
+			asyncMgr.getExecutorContext().getJobDao().update(job.getId(), jobUpdate);
+			
+			txn.commit();
+			
+			return progress == 1;
+		} catch(Exception e) {
+			s_logger.warn("Unexpected exception " + e.getMessage(), e);
+			
+			txn.rollback();
+		}
+		return false;
 	}
 }

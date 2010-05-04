@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -132,12 +132,12 @@ public interface AgentManager extends Manager {
     void disconnect(long hostId, Status.Event event, boolean investigate);
 	
     /**
-     * Obtains statistics for a list of hosts; vCPU utilisation, memory utilisation, and network utilisation
-     * @param hostIds
-     * @return list of HostStats
+     * Obtains statistics for a host; vCPU utilisation, memory utilisation, and network utilisation
+     * @param hostId
+     * @return HostStats
      * @throws InternalErrorException
      */
-	List<HostStats> listHostStatistics(List<Long> hostIds) throws InternalErrorException;
+	HostStats getHostStatistics(long hostId) throws InternalErrorException;
 	
 	Long getGuestOSCategoryId(long hostId);
 	

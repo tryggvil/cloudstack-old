@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -41,8 +41,8 @@ import java.util.concurrent.TimeUnit;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 
-import org.apache.log4j.Logger;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.log4j.Logger;
 
 import com.google.gson.Gson;
 import com.vmops.agent.AgentManager;
@@ -72,8 +72,10 @@ import com.vmops.async.BaseAsyncJobExecutor;
 import com.vmops.async.dao.AsyncJobDao;
 import com.vmops.async.executor.AssociateIpAddressParam;
 import com.vmops.async.executor.AttachISOParam;
+import com.vmops.async.executor.CopyTemplateParam;
 import com.vmops.async.executor.CreateOrUpdateRuleParam;
 import com.vmops.async.executor.CreatePrivateTemplateParam;
+import com.vmops.async.executor.DeleteDomainParam;
 import com.vmops.async.executor.DeleteRuleParam;
 import com.vmops.async.executor.DeleteTemplateParam;
 import com.vmops.async.executor.DeployVMParam;
@@ -83,11 +85,9 @@ import com.vmops.async.executor.RecurringSnapshotParam;
 import com.vmops.async.executor.ResetVMPasswordParam;
 import com.vmops.async.executor.SecurityGroupParam;
 import com.vmops.async.executor.SnapshotOperationParam;
-import com.vmops.async.executor.ListStatisticsParam;
 import com.vmops.async.executor.UpgradeVMParam;
 import com.vmops.async.executor.VMOperationParam;
 import com.vmops.async.executor.VolumeOperationParam;
-import com.vmops.async.executor.ListStatisticsParam.StatisticsType;
 import com.vmops.async.executor.VolumeOperationParam.VolumeOp;
 import com.vmops.capacity.CapacityVO;
 import com.vmops.capacity.dao.CapacityDao;
@@ -122,7 +122,6 @@ import com.vmops.exception.ResourceInUseException;
 import com.vmops.host.Host;
 import com.vmops.host.HostStats;
 import com.vmops.host.HostVO;
-import com.vmops.host.Status;
 import com.vmops.host.dao.HostDao;
 import com.vmops.info.ConsoleProxyInfo;
 import com.vmops.network.FirewallRuleVO;
@@ -179,6 +178,7 @@ import com.vmops.storage.dao.StoragePoolDao;
 import com.vmops.storage.dao.VMTemplateDao;
 import com.vmops.storage.dao.VMTemplateHostDao;
 import com.vmops.storage.dao.VolumeDao;
+import com.vmops.storage.dao.VMTemplateDao.TemplateFilter;
 import com.vmops.storage.secondary.SecondaryStorageVmManager;
 import com.vmops.storage.snapshot.SnapshotManager;
 import com.vmops.template.TemplateManager;
@@ -224,7 +224,6 @@ import com.vmops.vm.UserVmManager;
 import com.vmops.vm.UserVmVO;
 import com.vmops.vm.VMInstanceVO;
 import com.vmops.vm.VirtualMachine;
-import com.vmops.vm.VmStats;
 import com.vmops.vm.dao.ConsoleProxyDao;
 import com.vmops.vm.dao.DomainRouterDao;
 import com.vmops.vm.dao.UserVmDao;
@@ -474,15 +473,25 @@ public class ManagementServerImpl implements ManagementServer {
             }
 
             if (accountId == null) {
+                if ((userType < Account.ACCOUNT_TYPE_NORMAL) || (userType > Account.ACCOUNT_TYPE_READ_ONLY_ADMIN)) {
+                    throw new VmopsRuntimeException("Invalid account type " + userType + " given; unable to create user");
+                }
+
                 // create a new account for the user
                 AccountVO newAccount = new AccountVO();
                 if (domainId == null) {
                     // root domain is default
                     domainId = DomainVO.ROOT_DOMAIN;
                 }
+
+                if ((domainId != DomainVO.ROOT_DOMAIN) && (userType == Account.ACCOUNT_TYPE_ADMIN)) {
+                    throw new VmopsRuntimeException("Invalid account type " + userType + " given for an account in domain " + domainId + "; unable to create user.");
+                }
+
                 newAccount.setAccountName(accountName);
                 newAccount.setDomainId(domainId);
                 newAccount.setType(userType);
+                newAccount.setState("enabled");
                 accountId = _accountDao.persist(newAccount);
             }
 
@@ -493,6 +502,7 @@ public class ManagementServerImpl implements ManagementServer {
             UserVO user = new UserVO();
             user.setUsername(username);
             user.setPassword(password);
+            user.setState("enabled");
             user.setFirstname(firstName);
             user.setLastname(lastName);
             user.setAccountId(accountId.longValue());
@@ -663,9 +673,9 @@ public class ManagementServerImpl implements ManagementServer {
             return null;
         }
 
-        if ((userAccount.getDisabled() == true) || (userAccount.getAccountDisabled() == true)) {
+        if (!userAccount.getState().equals("enabled") || !userAccount.getAccountState().equals("enabled")) {
             if (s_logger.isInfoEnabled()) {
-                s_logger.info("user " + username + " in domain " + domainId + " is disabled (or account is disabled), returning null");
+                s_logger.info("user " + username + " in domain " + domainId + " is disabled/locked (or account is disabled/locked), returning null");
             }
             return null;
         }
@@ -761,7 +771,7 @@ public class ManagementServerImpl implements ManagementServer {
         job.setCmd("DeleteUser");
         job.setCmdInfo(gson.toJson(param));
         job.setCmdOriginator(DeleteUserCmd.getStaticName());
-        
+
         return _asyncMgr.submitAsyncJob(job);
     }
 
@@ -775,15 +785,7 @@ public class ManagementServerImpl implements ManagementServer {
             }
 
             for (UserVmVO vm : vms) {
-                if (!_vmMgr.destroyVirtualMachine(1L, vm.getId())) { // only
-                    // admins
-                    // can
-                    // delete
-                    // users,
-                    // pass
-                    // in
-                    // userId
-                    // 1
+                if (!_vmMgr.destroyVirtualMachine(1L, vm.getId())) { // only admins can delete users, pass in userId 1
                     s_logger.error("Unable to destroy vm: " + vm.getId());
                     if (!cleanup) {
                         cleanup = true;
@@ -826,16 +828,7 @@ public class ManagementServerImpl implements ManagementServer {
                 }
 
                 for (IPAddressVO ip : nonSourceNatIps) {
-                    if (!_networkMgr.releasePublicIpAddress(1L, ip.getAddress())) { // pass
-                        // userId
-                        // 1
-                        // as
-                        // only
-                        // admins
-                        // can
-                        // delete
-                        // a
-                        // user
+                    if (!_networkMgr.releasePublicIpAddress(1L, ip.getAddress())) { // pass userId 1 as only admins can delete a user
                         s_logger.error("Unable to release non source nat ip: " + ip.getAddress());
                         if (!cleanup) {
                             cleanup = true;
@@ -847,16 +840,7 @@ public class ManagementServerImpl implements ManagementServer {
                     }
                 }
                 for (IPAddressVO ip : sourceNatIps) {
-                    if (!_networkMgr.releasePublicIpAddress(1L, ip.getAddress())) { // pass
-                        // userId
-                        // 1
-                        // as
-                        // only
-                        // admins
-                        // can
-                        // delete
-                        // a
-                        // user
+                    if (!_networkMgr.releasePublicIpAddress(1L, ip.getAddress())) { // pass userId 1 as only admins can delete a user
                         s_logger.error("Unable to release source nat ip: " + ip.getAddress());
                         if (!cleanup) {
                             cleanup = true;
@@ -894,7 +878,6 @@ public class ManagementServerImpl implements ManagementServer {
 
     @Override
     public boolean disableUser(long userId) {
-        boolean success = false;
         if (userId <= 2) {
             if (s_logger.isInfoEnabled()) {
                 s_logger.info("disableUser -- invalid user id: " + userId);
@@ -902,28 +885,7 @@ public class ManagementServerImpl implements ManagementServer {
             return false;
         }
 
-        success = doSetUserStatus(userId, true);
-
-        // if every user on the account is disabled then disable the account
-        // as well
-        UserVO user = _userDao.findById(userId);
-        if (user != null) {
-            boolean disableAccount = true;
-            List<UserVO> allUsersByAccount = _userDao.listByAccount(user.getAccountId());
-            for (UserVO oneUser : allUsersByAccount) {
-                if (!oneUser.getDisabled()) {
-                    disableAccount = false;
-                    break;
-                }
-            }
-
-            if (disableAccount) {
-                success = (success && disableAccount(user.getAccountId()));
-            }
-        } else {
-            s_logger.warn("Unable to find user with id: " + userId);
-        }
-        return success;
+        return doSetUserStatus(userId, Account.ACCOUNT_STATE_DISABLED);
     }
 
     @Override
@@ -943,7 +905,7 @@ public class ManagementServerImpl implements ManagementServer {
     @Override
     public boolean enableUser(long userId) {
         boolean success = false;
-        success = doSetUserStatus(userId, false);
+        success = doSetUserStatus(userId, Account.ACCOUNT_STATE_ENABLED);
 
         // make sure the account is enabled too
         UserVO user = _userDao.findById(userId);
@@ -955,9 +917,46 @@ public class ManagementServerImpl implements ManagementServer {
         return success;
     }
 
-    private boolean doSetUserStatus(long userId, boolean disabled) {
+    @Override
+    public boolean lockUser(long userId) {
+        boolean success = false;
+
+        // make sure the account is enabled too
+        UserVO user = _userDao.findById(userId);
+        if (user != null) {
+            // if the user is either locked already or disabled already, don't change state...only lock currently enabled users
+            if (user.getState().equals(Account.ACCOUNT_STATE_LOCKED)) {
+                // already locked...no-op
+                return true;
+            } else if (user.getState().equals(Account.ACCOUNT_STATE_ENABLED)) {
+                success = doSetUserStatus(userId, Account.ACCOUNT_STATE_LOCKED);
+
+                boolean lockAccount = true;
+                List<UserVO> allUsersByAccount = _userDao.listByAccount(user.getAccountId());
+                for (UserVO oneUser : allUsersByAccount) {
+                    if (oneUser.getState().equals(Account.ACCOUNT_STATE_ENABLED)) {
+                        lockAccount = false;
+                        break;
+                    }
+                }
+
+                if (lockAccount) {
+                    success = (success && lockAccount(user.getAccountId()));
+                }
+            } else {
+                if (s_logger.isInfoEnabled()) {
+                    s_logger.info("Attempting to lock a non-enabled user, current state is " + user.getState() + " (userId: " + userId + "), locking failed.");
+                }
+            }
+        } else {
+            s_logger.warn("Unable to find user with id: " + userId);
+        }
+        return success;
+    }
+
+    private boolean doSetUserStatus(long userId, String state) {
         UserVO userForUpdate = _userDao.createForUpdate();
-        userForUpdate.setDisabled(disabled);
+        userForUpdate.setState(state);
         return _userDao.update(Long.valueOf(userId), userForUpdate);
     }
 
@@ -972,11 +971,11 @@ public class ManagementServerImpl implements ManagementServer {
         }
 
         AccountVO account = _accountDao.findById(accountId);
-        if ((account == null) || (account.getDisabled() == true)) {
+        if ((account == null) || account.getState().equals(Account.ACCOUNT_STATE_DISABLED)) {
             success = true;
         } else {
             AccountVO acctForUpdate = _accountDao.createForUpdate();
-            acctForUpdate.setDisabled(true);
+            acctForUpdate.setState(Account.ACCOUNT_STATE_DISABLED);
             success = _accountDao.update(Long.valueOf(accountId), acctForUpdate);
 
             success = (success && doDisableAccount(accountId));
@@ -1036,8 +1035,30 @@ public class ManagementServerImpl implements ManagementServer {
     public boolean enableAccount(long accountId) {
         boolean success = false;
         AccountVO acctForUpdate = _accountDao.createForUpdate();
-        acctForUpdate.setDisabled(false);
+        acctForUpdate.setState(Account.ACCOUNT_STATE_ENABLED);
         success = _accountDao.update(Long.valueOf(accountId), acctForUpdate);
+        return success;
+    }
+
+    @Override
+    public boolean lockAccount(long accountId) {
+        boolean success = false;
+        Account account = _accountDao.findById(accountId);
+        if (account != null) {
+            if (account.getState().equals(Account.ACCOUNT_STATE_LOCKED)) {
+                return true; // already locked, no-op
+            } else if (account.getState().equals(Account.ACCOUNT_STATE_ENABLED)) {
+                AccountVO acctForUpdate = _accountDao.createForUpdate();
+                acctForUpdate.setState(Account.ACCOUNT_STATE_LOCKED);
+                success = _accountDao.update(Long.valueOf(accountId), acctForUpdate);
+            } else {
+                if (s_logger.isInfoEnabled()) {
+                    s_logger.info("Attempting to lock a non-enabled account, current state is " + account.getState() + " (accountId: " + accountId + "), locking failed.");
+                }
+            }
+        } else {
+            s_logger.warn("Failed to lock account " + accountId + ", account not found.");
+        }
         return success;
     }
 
@@ -3077,9 +3098,13 @@ public class ManagementServerImpl implements ManagementServer {
         NetworkRuleConfigVO netRule = _networkRuleConfigDao.findById(networkRuleId);
         if (netRule != null) {
             SecurityGroupVO sg = _securityGroupDao.findById(netRule.getSecurityGroupId());
-            if ((account != null) && !BaseCmd.isAdmin(account.getType())) {
-                if ((sg.getAccountId() == null) || (sg.getAccountId().longValue() != account.getId().longValue())) {
-                    throw new PermissionDeniedException("Unable to delete network rule " + networkRuleId + "; account: " + account.getAccountName() + " is not the owner");
+            if (account != null) {
+                if (!BaseCmd.isAdmin(account.getType())) {
+                    if ((sg.getAccountId() == null) || (sg.getAccountId().longValue() != account.getId().longValue())) {
+                        throw new PermissionDeniedException("Unable to delete network rule " + networkRuleId + "; account: " + account.getAccountName() + " is not the owner");
+                    }
+                } else if (!isChildDomain(account.getDomainId(), sg.getDomainId())) {
+                    throw new PermissionDeniedException("Unable to delete network rule " + networkRuleId + "; account: " + account.getAccountName() + " is not an admin in the domain hierarchy.");
                 }
             }
         }
@@ -3317,20 +3342,20 @@ public class ManagementServerImpl implements ManagementServer {
         Object type = c.getCriteria(Criteria.TYPE);
         Object domainId = c.getCriteria(Criteria.DOMAINID);
         Object account = c.getCriteria(Criteria.ACCOUNTNAME);
-        Object isDisabled = c.getCriteria(Criteria.ISDISABLED);
+        Object state = c.getCriteria(Criteria.STATE);
         Object keyword = c.getCriteria(Criteria.KEYWORD);
 
         SearchBuilder<UserAccountVO> sb = _userAccountDao.createSearchBuilder();
-        sb.addAnd("username", sb.entity().getUsername(), SearchCriteria.Op.LIKE);
-        sb.addAnd("id", sb.entity().getId(), SearchCriteria.Op.EQ);
-        sb.addAnd("type", sb.entity().getType(), SearchCriteria.Op.EQ);
-        sb.addAnd("domainId", sb.entity().getDomainId(), SearchCriteria.Op.EQ);
-        sb.addAnd("accountName", sb.entity().getAccountName(), SearchCriteria.Op.LIKE);
-        sb.addAnd("disabled", sb.entity().getDisabled(), SearchCriteria.Op.EQ);
+        sb.and("username", sb.entity().getUsername(), SearchCriteria.Op.LIKE);
+        sb.and("id", sb.entity().getId(), SearchCriteria.Op.EQ);
+        sb.and("type", sb.entity().getType(), SearchCriteria.Op.EQ);
+        sb.and("domainId", sb.entity().getDomainId(), SearchCriteria.Op.EQ);
+        sb.and("accountName", sb.entity().getAccountName(), SearchCriteria.Op.LIKE);
+        sb.and("state", sb.entity().getState(), SearchCriteria.Op.EQ);
 
         if ((account == null) && (domainId != null)) {
             SearchBuilder<DomainVO> domainSearch = _domainDao.createSearchBuilder();
-            domainSearch.addAnd("path", domainSearch.entity().getPath(), SearchCriteria.Op.LIKE);
+            domainSearch.and("path", domainSearch.entity().getPath(), SearchCriteria.Op.LIKE);
             sb.join("domainSearch", domainSearch, sb.entity().getDomainId(), domainSearch.entity().getId());
         }
 
@@ -3359,8 +3384,8 @@ public class ManagementServerImpl implements ManagementServer {
             sc.setJoinParameters("domainSearch", "path", domainVO.getPath() + "%");
         }
 
-        if (isDisabled != null) {
-            sc.setParameters("disabled", isDisabled);
+        if (state != null) {
+            sc.setParameters("state", state);
         }
 
         return _userAccountDao.search(sc, searchFilter);
@@ -3575,13 +3600,15 @@ public class ManagementServerImpl implements ManagementServer {
         Object isPublic = c.getCriteria(Criteria.ISPUBLIC);
         Object id = c.getCriteria(Criteria.ID);
         Object keyword = c.getCriteria(Criteria.KEYWORD);
-        
+        Long creator = (Long) c.getCriteria(Criteria.CREATED_BY);
+
         SearchBuilder<VMTemplateVO> sb = _templateDao.createSearchBuilder();
-        sb.addAnd("name", sb.entity().getName(), SearchCriteria.Op.LIKE);
-        sb.addAnd("id", sb.entity().getId(), SearchCriteria.Op.EQ);
-        sb.addAnd("ready", sb.entity().isReady(),  SearchCriteria.Op.EQ);
-        sb.addAnd("publicTemplate", sb.entity().isPublicTemplate(), SearchCriteria.Op.EQ);
-        sb.addAnd("format", sb.entity().getFormat(), SearchCriteria.Op.NEQ);
+        sb.and("name", sb.entity().getName(), SearchCriteria.Op.LIKE);
+        sb.and("id", sb.entity().getId(), SearchCriteria.Op.EQ);
+        sb.and("ready", sb.entity().isReady(),  SearchCriteria.Op.EQ);
+        sb.and("publicTemplate", sb.entity().isPublicTemplate(), SearchCriteria.Op.EQ);
+        sb.and("format", sb.entity().getFormat(), SearchCriteria.Op.NEQ);
+        sb.and("accountId", sb.entity().getAccountId(), SearchCriteria.Op.EQ);
         
         SearchCriteria sc = sb.create();
         
@@ -3601,6 +3628,9 @@ public class ManagementServerImpl implements ManagementServer {
         if (isPublic != null) {
             sc.setParameters("publicTemplate", isPublic);
         }
+        if (creator != null) {
+            sc.setParameters("accountId", creator);
+        }
 
         sc.setParameters("format", ImageFormat.ISO);
 
@@ -3608,8 +3638,13 @@ public class ManagementServerImpl implements ManagementServer {
     }
 
     @Override
-    public List<VMTemplateVO> listTemplates(String name, String keyword, Boolean isReady, Boolean isPublic, boolean isIso, Boolean bootable, Long accountId, Integer pageSize, Long startIndex) {
-        return _templateDao.searchTemplates(name, keyword, isReady, isPublic, isIso, bootable, accountId, pageSize, startIndex);
+    public List<VMTemplateVO> listTemplates(String name, String keyword, TemplateFilter templateFilter, boolean isIso, Boolean bootable, Long accountId, Integer pageSize, Long startIndex) {
+        Account account = null;
+        if (accountId != null) {
+        	account = _accountDao.findById(accountId);
+        }
+        
+    	return _templateDao.searchTemplates(name, keyword, templateFilter, isIso, bootable, account, pageSize, startIndex);
     }
 
     @Override
@@ -3763,21 +3798,21 @@ public class ManagementServerImpl implements ManagementServer {
         Object accountname = c.getCriteria(Criteria.ACCOUNTNAME);
         Object domainId = c.getCriteria(Criteria.DOMAINID);
         Object type = c.getCriteria(Criteria.TYPE);
-        Object isDisabled = c.getCriteria(Criteria.ISDISABLED);
+        Object state = c.getCriteria(Criteria.STATE);
         Object isCleanupRequired = c.getCriteria(Criteria.ISCLEANUPREQUIRED);
         Object keyword = c.getCriteria(Criteria.KEYWORD);
 
         SearchBuilder<AccountVO> sb = _accountDao.createSearchBuilder();
-        sb.addAnd("accountName", sb.entity().getAccountName(), SearchCriteria.Op.LIKE);
-        sb.addAnd("id", sb.entity().getId(), SearchCriteria.Op.EQ);
-        sb.addAnd("type", sb.entity().getType(), SearchCriteria.Op.EQ);
-        sb.addAnd("disabled", sb.entity().getDisabled(), SearchCriteria.Op.EQ);
-        sb.addAnd("needsCleanup", sb.entity().getNeedsCleanup(), SearchCriteria.Op.EQ);
+        sb.and("accountName", sb.entity().getAccountName(), SearchCriteria.Op.LIKE);
+        sb.and("id", sb.entity().getId(), SearchCriteria.Op.EQ);
+        sb.and("type", sb.entity().getType(), SearchCriteria.Op.EQ);
+        sb.and("state", sb.entity().getState(), SearchCriteria.Op.EQ);
+        sb.and("needsCleanup", sb.entity().getNeedsCleanup(), SearchCriteria.Op.EQ);
 
         if ((id == null) && (domainId != null)) {
             // if accountId isn't specified, we can do a domain match for the admin case
             SearchBuilder<DomainVO> domainSearch = _domainDao.createSearchBuilder();
-            domainSearch.addAnd("path", domainSearch.entity().getPath(), SearchCriteria.Op.LIKE);
+            domainSearch.and("path", domainSearch.entity().getPath(), SearchCriteria.Op.LIKE);
             sb.join("domainSearch", domainSearch, sb.entity().getDomainId(), domainSearch.entity().getId());
         }
 
@@ -3801,8 +3836,8 @@ public class ManagementServerImpl implements ManagementServer {
             sc.setParameters("type", type);
         }
 
-        if (isDisabled != null) {
-            sc.setParameters("disabled", isDisabled);
+        if (state != null) {
+            sc.setParameters("state", state);
         }
 
         if (isCleanupRequired != null) {
@@ -3822,13 +3857,8 @@ public class ManagementServerImpl implements ManagementServer {
     }
 
     @Override
-    public ResourceLimitVO createResourceLimit(Long domainId, Long accountId, ResourceType type, Long max) throws InvalidParameterValueException {
-        return _accountMgr.createResourceLimit(domainId, accountId, type, max);
-    }
-
-    @Override
-    public boolean updateResourceLimit(long limitId, Long max) {
-        return _accountMgr.updateResourceLimit(limitId, max);
+    public ResourceLimitVO updateResourceLimit(Long domainId, Long accountId, ResourceType type, Long max) throws InvalidParameterValueException {
+        return _accountMgr.updateResourceLimit(domainId, accountId, type, max);
     }
 
     @Override
@@ -3849,41 +3879,84 @@ public class ManagementServerImpl implements ManagementServer {
     public List<ResourceLimitVO> searchForLimits(Criteria c) {
         Filter searchFilter = new Filter(ResourceLimitVO.class, c.getOrderBy(), c.getAscending(), c.getOffset(), c.getLimit());
 
-        Object domainId = c.getCriteria(Criteria.DOMAINID);
-        Object accountId = c.getCriteria(Criteria.ACCOUNTID);
-        Object type = c.getCriteria(Criteria.TYPE);
-        Object id = c.getCriteria(Criteria.ID);
-        // FIXME:  keyword search??? Object keyword = c.getCriteria(Criteria.KEYWORD);
+        Long domainId = (Long) c.getCriteria(Criteria.DOMAINID);
+        Long accountId = (Long) c.getCriteria(Criteria.ACCOUNTID);
+        ResourceType type = (ResourceType) c.getCriteria(Criteria.TYPE);
 
-        SearchBuilder<ResourceLimitVO> sb = _resourceLimitDao.createSearchBuilder();
-        sb.addAnd("id", sb.entity().getId(), SearchCriteria.Op.EQ);
-        sb.addAnd("accountId", sb.entity().getAccountId(), SearchCriteria.Op.EQ);
-        sb.addAnd("type", sb.entity().getType(), SearchCriteria.Op.EQ);
-
-        if ((accountId == null) && (domainId != null)) {
-            // if accountId isn't specified, we can do a domain match for the admin case
-            SearchBuilder<DomainVO> domainSearch = _domainDao.createSearchBuilder();
-            domainSearch.addAnd("path", domainSearch.entity().getPath(), SearchCriteria.Op.LIKE);
-            sb.join("domainSearch", domainSearch, sb.entity().getDomainId(), domainSearch.entity().getId());
-        }
-
-        SearchCriteria sc = sb.create();
-        if (id != null) {
-            sc.setParameters("id", id);
-        }
-
+        // For 2.0, we are just limiting the scope to having an user retrieve
+        // limits for himself and if limits don't exist, use the ROOT domain's limits.
+        // - Will
+        List<ResourceLimitVO> limits = new ArrayList<ResourceLimitVO>();
         if (accountId != null) {
-            sc.setParameters("accountId", accountId);
+        	SearchBuilder<ResourceLimitVO> sb = _resourceLimitDao.createSearchBuilder();
+        	sb.and("accountId", sb.entity().getAccountId(), SearchCriteria.Op.EQ);
+        	sb.and("type", sb.entity().getType(), SearchCriteria.Op.EQ);
+
+        	SearchCriteria sc = sb.create();
+
+        	if (accountId != null) {
+        		sc.setParameters("accountId", accountId);
+        	} 
+
+        	if (type != null) {
+        		sc.setParameters("type", type);
+        	}
+        	
+        	// Listing all limits for an account
+        	if (type == null) {
+        		List<ResourceLimitVO> userLimits = _resourceLimitDao.search(sc, searchFilter);
+	        	List<ResourceLimitVO> rootLimits = _resourceLimitDao.listByDomainId(DomainVO.ROOT_DOMAIN);
+	        	ResourceType resourceTypes[] = ResourceType.values();
+        	
+	        	for (ResourceType resourceType: resourceTypes) {
+	        		boolean found = false;
+	        		for (ResourceLimitVO userLimit : userLimits) {
+	        			if (userLimit.getType() == resourceType) {
+	        				limits.add(userLimit);
+	        				found = true;
+	        				break;
+	        			}
+	        		}
+	        		if (!found) {
+	        			// Check the ROOT domain
+	        			for (ResourceLimitVO rootLimit : rootLimits) {
+	        				if (rootLimit.getType() == resourceType) {
+	        					limits.add(rootLimit);
+	        					found = true;
+	        					break;
+	        				}
+	        			}
+	        		}
+	        		if (!found) {
+	        			limits.add(new ResourceLimitVO(domainId, accountId, resourceType, -1L));
+	        		}
+	        	}
+        	} else {
+        		AccountVO account = _accountDao.findById(accountId);
+        		limits.add(new ResourceLimitVO(null, accountId, type, _accountMgr.findCorrectResourceLimit(account, type)));
+        	}
         } else if (domainId != null) {
-            DomainVO domain = _domainDao.findById((Long)domainId);
-            sc.setJoinParameters("domainSearch", "path", domain.getPath() + "%");
-        }
-
-        if (type != null) {
-            sc.setParameters("type", type);
-        }
-
-        return _resourceLimitDao.search(sc, searchFilter);
+        	if (type == null) {
+        		ResourceType resourceTypes[] = ResourceType.values();
+        		List<ResourceLimitVO> domainLimits = _resourceLimitDao.listByDomainId(domainId);
+        		for (ResourceType resourceType: resourceTypes) {
+	        		boolean found = false;
+	        		for (ResourceLimitVO domainLimit : domainLimits) {
+	        			if (domainLimit.getType() == resourceType) {
+	        				limits.add(domainLimit);
+	        				found = true;
+	        				break;
+	        			}
+	        		}
+	        		if (!found) {
+	        			limits.add(new ResourceLimitVO(domainId, null, resourceType, -1L));
+	        		}
+        		}
+        	} else {
+        		limits.add(_resourceLimitDao.findByDomainIdAndType(domainId, type));
+        	}
+        } 
+        return limits;
     }
 
     @Override
@@ -3923,7 +3996,7 @@ public class ManagementServerImpl implements ManagementServer {
         }
 
         if (creator != null) {
-            sc.addAnd("createdBy", SearchCriteria.Op.EQ, creator);
+            sc.addAnd("accountId", SearchCriteria.Op.EQ, creator);
         }
         if (ready != null) {
             sc.addAnd("ready", SearchCriteria.Op.EQ, ready);
@@ -3983,10 +4056,10 @@ public class ManagementServerImpl implements ManagementServer {
     }
 
     @Override
-    public Long createTemplate(long userId, String displayText, boolean isPublic, String format, String diskType, String url, String chksum, boolean requiresHvm, int bits, boolean enablePassword, long guestOSId, boolean bootable) throws IllegalArgumentException, ResourceAllocationException {
+    public Long createTemplate(long userId, String displayText, boolean isPublic, boolean featured, String format, String diskType, String url, String chksum, boolean requiresHvm, int bits, boolean enablePassword, long guestOSId, boolean bootable) throws IllegalArgumentException, ResourceAllocationException {
         try {
             
-            ImageFormat imgfmt = ImageFormat.valueOf(format);
+            ImageFormat imgfmt = ImageFormat.valueOf(format.toUpperCase());
             if (imgfmt == null) {
                 throw new IllegalArgumentException("Image format is incorrect " + format + ". Supported formats are " + EnumUtils.listValues(ImageFormat.values()));
             }
@@ -3998,7 +4071,7 @@ public class ManagementServerImpl implements ManagementServer {
             
             URI uri = new URI(url);
             if (!uri.getScheme().equalsIgnoreCase("http") && !uri.getScheme().equalsIgnoreCase("https") && !uri.getScheme().equalsIgnoreCase("file")) {
-               throw new IllegalArgumentException("Unsupported scheme");
+               throw new IllegalArgumentException("Unsupported scheme for url: " + url);
             }
             
             // Check that the resource limit for templates/ISOs won't be exceeded
@@ -4009,7 +4082,7 @@ public class ManagementServerImpl implements ManagementServer {
             	throw rae;
             }
             
-            return _tmpltMgr.create(userId, displayText, isPublic, imgfmt, fileSystem, uri, chksum, requiresHvm, bits, enablePassword, guestOSId, bootable);
+            return _tmpltMgr.create(userId, displayText, isPublic, featured, imgfmt, fileSystem, uri, chksum, requiresHvm, bits, enablePassword, guestOSId, bootable);
         } catch (URISyntaxException e) {
             throw new IllegalArgumentException("Invalid URL " + url);
         }
@@ -4099,11 +4172,11 @@ public class ManagementServerImpl implements ManagementServer {
     }
     
     @Override
-    public boolean copyTemplate(long userId, long templateId, long zoneId) throws InternalErrorException {
-    	DataCenterVO zone = _dcDao.findById(zoneId);
+    public boolean copyTemplate(long userId, long templateId, long sourceZoneId, long destZoneId) throws InternalErrorException {
+    	DataCenterVO destZone = _dcDao.findById(destZoneId);
     	VMTemplateVO template = _templateDao.findById(templateId);
     
-    	boolean success = _tmpltMgr.copy(templateId, zoneId);
+    	boolean success = _tmpltMgr.copy(templateId, sourceZoneId, destZoneId);
     	
     	// Log an event
     	
@@ -4121,16 +4194,16 @@ public class ManagementServerImpl implements ManagementServer {
 		}
 
 		if (success) {
-			saveEvent(userId, account.getId(), account.getDomainId(), EventVO.LEVEL_INFO, eventType, description + template.getName() + " succesfully copied to zone: " + zone.getName() + ".", params);
+			saveEvent(userId, account.getId(), account.getDomainId(), EventVO.LEVEL_INFO, eventType, description + template.getName() + " succesfully copied to zone: " + destZone.getName() + ".", params);
 		} else {
-			saveEvent(userId, account.getId(), account.getDomainId(), EventVO.LEVEL_ERROR, eventType, description + template.getName() + " was not copied to zone: " + zone.getName() + ".", params);
+			saveEvent(userId, account.getId(), account.getDomainId(), EventVO.LEVEL_ERROR, eventType, description + template.getName() + " was not copied to zone: " + destZone.getName() + ".", params);
 		}
 
 		return success;
     }
     
     @Override
-    public long copyTemplateAsync(long userId, long templateId, long zoneId) throws InvalidParameterValueException {
+    public long copyTemplateAsync(long userId, long templateId, long sourceZoneId, long destZoneId) throws InvalidParameterValueException {
     	UserVO user = _userDao.findById(userId);
     	if (user == null) {
     		throw new InvalidParameterValueException("Please specify a valid user.");
@@ -4141,26 +4214,35 @@ public class ManagementServerImpl implements ManagementServer {
     		throw new InvalidParameterValueException("Please specify a valid template.");
     	}
     	
-    	DataCenterVO zone = _dcDao.findById(zoneId);
-    	if (zone == null) {
-    		throw new InvalidParameterValueException("Please specify a valid zone.");
+    	DataCenterVO sourceZone = _dcDao.findById(sourceZoneId);
+    	if (sourceZone == null) {
+    		throw new InvalidParameterValueException("Please specify a valid source zone.");
+    	}
+    	
+    	DataCenterVO destZone = _dcDao.findById(destZoneId);
+    	if (destZone == null) {
+    		throw new InvalidParameterValueException("Please specify a valid destination zone.");
     	}
     	
     	if (template.getCreateStatus() != AsyncInstanceCreateStatus.Created) {
     		throw new InvalidParameterValueException("Please specify a template that is installed.");
     	}
     	
-    	if (_hostDao.findSecondaryStorageHost(zoneId) == null) {
-    		throw new InvalidParameterValueException("Failed to find a secondary storage host in the specified zone.");
+    	if (_hostDao.findSecondaryStorageHost(sourceZoneId) == null) {
+    		throw new InvalidParameterValueException("Failed to find a secondary storage host in the specified source zone.");
     	}
     	
-        DeleteTemplateParam param = new DeleteTemplateParam(userId, templateId, zoneId);
+    	if (_hostDao.findSecondaryStorageHost(destZoneId) == null) {
+    		throw new InvalidParameterValueException("Failed to find a secondary storage host in the specified destination zone.");
+    	}
+    	
+        CopyTemplateParam param = new CopyTemplateParam(userId, templateId, sourceZoneId, destZoneId);
         Gson gson = GsonHelper.getBuilder().create();
 
         AsyncJobVO job = new AsyncJobVO();
     	job.setUserId(UserContext.current().getUserId());
     	job.setAccountId(UserContext.current().getAccountId());
-        job.setCmd("DeleteTemplate");
+        job.setCmd("CopyTemplate");
         job.setCmdInfo(gson.toJson(param));
         job.setCmdOriginator(DeleteTemplateCmd.getStaticName());
         
@@ -4235,23 +4317,23 @@ public class ManagementServerImpl implements ManagementServer {
         Object keyword = c.getCriteria(Criteria.KEYWORD);
         Object isAdmin = c.getCriteria(Criteria.ISADMIN);
 
-        sb.addAnd("displayName", sb.entity().getDisplayName(), SearchCriteria.Op.LIKE);
-        sb.addAnd("id", sb.entity().getId(), SearchCriteria.Op.EQ);
-        sb.addAnd("accountIdEQ", sb.entity().getAccountId(), SearchCriteria.Op.EQ);
-        sb.addAnd("accountIdIN", sb.entity().getAccountId(), SearchCriteria.Op.IN);
-        sb.addAnd("name", sb.entity().getName(), SearchCriteria.Op.LIKE);
-        sb.addAnd("stateEQ", sb.entity().getState(), SearchCriteria.Op.NEQ);
-        sb.addAnd("stateNEQ", sb.entity().getState(), SearchCriteria.Op.EQ);
-        sb.addAnd("stateNIN", sb.entity().getState(), SearchCriteria.Op.NIN);
-        sb.addAnd("dataCenterId", sb.entity().getDataCenterId(), SearchCriteria.Op.EQ);
-        sb.addAnd("podId", sb.entity().getPodId(), SearchCriteria.Op.EQ);
-        sb.addAnd("hostIdEQ", sb.entity().getHostId(), SearchCriteria.Op.EQ);
-        sb.addAnd("hostIdIN", sb.entity().getHostId(), SearchCriteria.Op.IN);
+        sb.and("displayName", sb.entity().getDisplayName(), SearchCriteria.Op.LIKE);
+        sb.and("id", sb.entity().getId(), SearchCriteria.Op.EQ);
+        sb.and("accountIdEQ", sb.entity().getAccountId(), SearchCriteria.Op.EQ);
+        sb.and("accountIdIN", sb.entity().getAccountId(), SearchCriteria.Op.IN);
+        sb.and("name", sb.entity().getName(), SearchCriteria.Op.LIKE);
+        sb.and("stateEQ", sb.entity().getState(), SearchCriteria.Op.NEQ);
+        sb.and("stateNEQ", sb.entity().getState(), SearchCriteria.Op.EQ);
+        sb.and("stateNIN", sb.entity().getState(), SearchCriteria.Op.NIN);
+        sb.and("dataCenterId", sb.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        sb.and("podId", sb.entity().getPodId(), SearchCriteria.Op.EQ);
+        sb.and("hostIdEQ", sb.entity().getHostId(), SearchCriteria.Op.EQ);
+        sb.and("hostIdIN", sb.entity().getHostId(), SearchCriteria.Op.IN);
 
         if ((accountIds == null) && (domainId != null)) {
             // if accountId isn't specified, we can do a domain match for the admin case
             SearchBuilder<DomainVO> domainSearch = _domainDao.createSearchBuilder();
-            domainSearch.addAnd("path", domainSearch.entity().getPath(), SearchCriteria.Op.LIKE);
+            domainSearch.and("path", domainSearch.entity().getPath(), SearchCriteria.Op.LIKE);
             sb.join("domainSearch", domainSearch, sb.entity().getDomainId(), domainSearch.entity().getId());
         }
 
@@ -4338,17 +4420,17 @@ public class ManagementServerImpl implements ManagementServer {
 
         SearchBuilder<NetworkRuleConfigVO> sb = _networkRuleConfigDao.createSearchBuilder();
         if (id != null) {
-            sb.addAnd("id", sb.entity().getId(), SearchCriteria.Op.EQ);
+            sb.and("id", sb.entity().getId(), SearchCriteria.Op.EQ);
         }
 
         if (groupId != null) {
-            sb.addAnd("securityGroupId", sb.entity().getSecurityGroupId(), SearchCriteria.Op.EQ);
+            sb.and("securityGroupId", sb.entity().getSecurityGroupId(), SearchCriteria.Op.EQ);
         }
 
         if (accountId != null) {
             // join with securityGroup table to make sure the account is the owner of the network rule
             SearchBuilder<SecurityGroupVO> securityGroupSearch = _securityGroupDao.createSearchBuilder();
-            securityGroupSearch.addAnd("accountId", securityGroupSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
+            securityGroupSearch.and("accountId", securityGroupSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
             sb.join("groupId", securityGroupSearch, securityGroupSearch.entity().getId(), sb.entity().getSecurityGroupId());
         }
 
@@ -4385,23 +4467,23 @@ public class ManagementServerImpl implements ManagementServer {
         Object keyword = c.getCriteria(Criteria.KEYWORD);
 
         SearchBuilder<EventVO> sb = _eventDao.createSearchBuilder();
-        sb.addAnd("levelL", sb.entity().getLevel(), SearchCriteria.Op.LIKE);
-        sb.addAnd("userIdEQ", sb.entity().getUserId(), SearchCriteria.Op.EQ);
-        sb.addAnd("userIdIN", sb.entity().getUserId(), SearchCriteria.Op.IN);
-        sb.addAnd("accountIdEQ", sb.entity().getAccountId(), SearchCriteria.Op.EQ);
-        sb.addAnd("accountIdIN", sb.entity().getAccountId(), SearchCriteria.Op.IN);
-        sb.addAnd("accountName", sb.entity().getAccountName(), SearchCriteria.Op.LIKE);
-        sb.addAnd("domainIdEQ", sb.entity().getDomainId(), SearchCriteria.Op.EQ);
-        sb.addAnd("type", sb.entity().getType(), SearchCriteria.Op.EQ);
-        sb.addAnd("levelEQ", sb.entity().getLevel(), SearchCriteria.Op.EQ);
-        sb.addAnd("createDateB", sb.entity().getCreateDate(), SearchCriteria.Op.BETWEEN);
-        sb.addAnd("createDateG", sb.entity().getCreateDate(), SearchCriteria.Op.GTEQ);
-        sb.addAnd("createDateL", sb.entity().getCreateDate(), SearchCriteria.Op.LTEQ);
+        sb.and("levelL", sb.entity().getLevel(), SearchCriteria.Op.LIKE);
+        sb.and("userIdEQ", sb.entity().getUserId(), SearchCriteria.Op.EQ);
+        sb.and("userIdIN", sb.entity().getUserId(), SearchCriteria.Op.IN);
+        sb.and("accountIdEQ", sb.entity().getAccountId(), SearchCriteria.Op.EQ);
+        sb.and("accountIdIN", sb.entity().getAccountId(), SearchCriteria.Op.IN);
+        sb.and("accountName", sb.entity().getAccountName(), SearchCriteria.Op.LIKE);
+        sb.and("domainIdEQ", sb.entity().getDomainId(), SearchCriteria.Op.EQ);
+        sb.and("type", sb.entity().getType(), SearchCriteria.Op.EQ);
+        sb.and("levelEQ", sb.entity().getLevel(), SearchCriteria.Op.EQ);
+        sb.and("createDateB", sb.entity().getCreateDate(), SearchCriteria.Op.BETWEEN);
+        sb.and("createDateG", sb.entity().getCreateDate(), SearchCriteria.Op.GTEQ);
+        sb.and("createDateL", sb.entity().getCreateDate(), SearchCriteria.Op.LTEQ);
 
         if ((accountIds == null) && (accountName == null) && (domainId != null)) {
             // if accountId isn't specified, we can do a domain match for the admin case
             SearchBuilder<DomainVO> domainSearch = _domainDao.createSearchBuilder();
-            domainSearch.addAnd("path", domainSearch.entity().getPath(), SearchCriteria.Op.LIKE);
+            domainSearch.and("path", domainSearch.entity().getPath(), SearchCriteria.Op.LIKE);
             sb.join("domainSearch", domainSearch, sb.entity().getDomainId(), domainSearch.entity().getId());
         }
 
@@ -4493,17 +4575,17 @@ public class ManagementServerImpl implements ManagementServer {
         Object keyword = c.getCriteria(Criteria.KEYWORD);
 
         SearchBuilder<DomainRouterVO> sb = _routerDao.createSearchBuilder();
-        sb.addAnd("name", sb.entity().getName(), SearchCriteria.Op.LIKE);
-        sb.addAnd("accountId", sb.entity().getAccountId(), SearchCriteria.Op.IN);
-        sb.addAnd("state", sb.entity().getState(), SearchCriteria.Op.EQ);
-        sb.addAnd("dataCenterId", sb.entity().getDataCenterId(), SearchCriteria.Op.EQ);
-        sb.addAnd("podId", sb.entity().getPodId(), SearchCriteria.Op.EQ);
-        sb.addAnd("hostId", sb.entity().getHostId(), SearchCriteria.Op.EQ);
+        sb.and("name", sb.entity().getName(), SearchCriteria.Op.LIKE);
+        sb.and("accountId", sb.entity().getAccountId(), SearchCriteria.Op.IN);
+        sb.and("state", sb.entity().getState(), SearchCriteria.Op.EQ);
+        sb.and("dataCenterId", sb.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        sb.and("podId", sb.entity().getPodId(), SearchCriteria.Op.EQ);
+        sb.and("hostId", sb.entity().getHostId(), SearchCriteria.Op.EQ);
 
         if ((accountIds == null) && (domainId != null)) {
             // if accountId isn't specified, we can do a domain match for the admin case
             SearchBuilder<DomainVO> domainSearch = _domainDao.createSearchBuilder();
-            domainSearch.addAnd("path", domainSearch.entity().getPath(), SearchCriteria.Op.LIKE);
+            domainSearch.and("path", domainSearch.entity().getPath(), SearchCriteria.Op.LIKE);
             sb.join("domainSearch", domainSearch, sb.entity().getDomainId(), domainSearch.entity().getId());
         }
 
@@ -4606,30 +4688,30 @@ public class ManagementServerImpl implements ManagementServer {
         // hack for now, this should be done better but due to needing a join I opted to
         // do this quickly and worry about making it pretty later
         SearchBuilder<VolumeVO> sb = _volumeDao.createSearchBuilder();
-        sb.addAnd("name", sb.entity().getName(), SearchCriteria.Op.LIKE);
-        sb.addAnd("id", sb.entity().getId(), SearchCriteria.Op.EQ);
-        sb.addAnd("accountIdEQ", sb.entity().getAccountId(), SearchCriteria.Op.EQ);
-        sb.addAnd("accountIdIN", sb.entity().getAccountId(), SearchCriteria.Op.IN);
-        sb.addAnd("volumeType", sb.entity().getVolumeType(), SearchCriteria.Op.LIKE);
-        sb.addAnd("instanceId", sb.entity().getInstanceId(), SearchCriteria.Op.EQ);
-        sb.addAnd("dataCenterId", sb.entity().getDataCenterId(), SearchCriteria.Op.EQ);
-        sb.addAnd("podId", sb.entity().getPodId(), SearchCriteria.Op.EQ);
-        sb.addAnd("hostId", sb.entity().getHostId(), SearchCriteria.Op.EQ);
+        sb.and("name", sb.entity().getName(), SearchCriteria.Op.LIKE);
+        sb.and("id", sb.entity().getId(), SearchCriteria.Op.EQ);
+        sb.and("accountIdEQ", sb.entity().getAccountId(), SearchCriteria.Op.EQ);
+        sb.and("accountIdIN", sb.entity().getAccountId(), SearchCriteria.Op.IN);
+        sb.and("volumeType", sb.entity().getVolumeType(), SearchCriteria.Op.LIKE);
+        sb.and("instanceId", sb.entity().getInstanceId(), SearchCriteria.Op.EQ);
+        sb.and("dataCenterId", sb.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        sb.and("podId", sb.entity().getPodId(), SearchCriteria.Op.EQ);
+        sb.and("hostId", sb.entity().getHostId(), SearchCriteria.Op.EQ);
 
         // Don't return DomR and ConsoleProxy volumes
-        sb.addAnd("domRNameLabel", sb.entity().getNameLabel(), SearchCriteria.Op.NLIKE);
-        sb.addAnd("domPNameLabel", sb.entity().getNameLabel(), SearchCriteria.Op.NLIKE);
+        sb.and("domRNameLabel", sb.entity().getNameLabel(), SearchCriteria.Op.NLIKE);
+        sb.and("domPNameLabel", sb.entity().getNameLabel(), SearchCriteria.Op.NLIKE);
 
         // Only return Volumes that are in the "Created" state
-        sb.addAnd("status", sb.entity().getStatus(), SearchCriteria.Op.EQ);
+        sb.and("status", sb.entity().getStatus(), SearchCriteria.Op.EQ);
 
         // Only return volumes that are not destroyed
-        sb.addAnd("destroyed", sb.entity().getDestroyed(), SearchCriteria.Op.EQ);
+        sb.and("destroyed", sb.entity().getDestroyed(), SearchCriteria.Op.EQ);
 
         if ((accountIds == null) && (domainId != null)) {
             // if accountId isn't specified, we can do a domain match for the admin case
             SearchBuilder<DomainVO> domainSearch = _domainDao.createSearchBuilder();
-            domainSearch.addAnd("path", domainSearch.entity().getPath(), SearchCriteria.Op.LIKE);
+            domainSearch.and("path", domainSearch.entity().getPath(), SearchCriteria.Op.LIKE);
             sb.join("domainSearch", domainSearch, sb.entity().getDomainId(), domainSearch.entity().getId());
         }
 
@@ -4718,21 +4800,21 @@ public class ManagementServerImpl implements ManagementServer {
         Object keyword = c.getCriteria(Criteria.KEYWORD);
 
         SearchBuilder<IPAddressVO> sb = _publicIpAddressDao.createSearchBuilder();
-        sb.addAnd("accountIdEQ", sb.entity().getAccountId(), SearchCriteria.Op.EQ);
-        sb.addAnd("accountIdIN", sb.entity().getAccountId(), SearchCriteria.Op.IN);
-        sb.addAnd("dataCenterId", sb.entity().getDataCenterId(), SearchCriteria.Op.EQ);
-        sb.addAnd("address", sb.entity().getAddress(), SearchCriteria.Op.LIKE);
-        sb.addAnd("vlanDbId", sb.entity().getVlanDbId(), SearchCriteria.Op.EQ);
+        sb.and("accountIdEQ", sb.entity().getAccountId(), SearchCriteria.Op.EQ);
+        sb.and("accountIdIN", sb.entity().getAccountId(), SearchCriteria.Op.IN);
+        sb.and("dataCenterId", sb.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        sb.and("address", sb.entity().getAddress(), SearchCriteria.Op.LIKE);
+        sb.and("vlanDbId", sb.entity().getVlanDbId(), SearchCriteria.Op.EQ);
 
         if ((accountIds == null) && (domainId != null)) {
             // if accountId isn't specified, we can do a domain match for the admin case
             SearchBuilder<DomainVO> domainSearch = _domainDao.createSearchBuilder();
-            domainSearch.addAnd("path", domainSearch.entity().getPath(), SearchCriteria.Op.LIKE);
+            domainSearch.and("path", domainSearch.entity().getPath(), SearchCriteria.Op.LIKE);
             sb.join("domainSearch", domainSearch, sb.entity().getDomainId(), domainSearch.entity().getId());
         }
 
         if ((isAllocated != null) && ((Boolean) isAllocated == true)) {
-            sb.addAnd("allocated", sb.entity().getAllocated(), SearchCriteria.Op.NNULL);
+            sb.and("allocated", sb.entity().getAllocated(), SearchCriteria.Op.NNULL);
         }
 
         SearchCriteria sc = sb.create();
@@ -4797,74 +4879,6 @@ public class ManagementServerImpl implements ManagementServer {
     @Override
     public List<DiskTemplateVO> listAllActiveDiskTemplates() {
         return _diskTemplateDao.listAllActive();
-    }
-
-    @Override
-    public List<VmStats> listVirtualMachineStatistics(List<Long> vmIds) throws InternalErrorException {
-        return _vmMgr.listVirtualMachineStatistics(vmIds);
-    }
-    
-    @Override
-    public long listVirtualMachineStatisticsAsync(List<Long> vmIds) throws InvalidParameterValueException {
-    	// Make sure all the VMs are valid
-    	for (Long vmId : vmIds) {
-    		if (vmId == null) {
-    			throw new InvalidParameterValueException("Please specify valid VM IDs.");
-    		}
-    		
-    		UserVmVO vm = _vmDao.findById(vmId);
-        	if (vm == null || vm.getState() != State.Running || vm.getHostId() == null) {
-            	throw new InvalidParameterValueException("Please specify valid, running VMs.");
-        	}	
-    	}
-
-        ListStatisticsParam param = new ListStatisticsParam();
-        param.setType(StatisticsType.UserVm);
-        param.setVmIds(vmIds);
-
-        Gson gson = GsonHelper.getBuilder().create();
-
-        AsyncJobVO job = new AsyncJobVO();
-        job.setUserId(UserContext.current().getUserId());
-        job.setAccountId(UserContext.current().getAccountId());
-        job.setCmd("ListStatistics");
-        job.setCmdInfo(gson.toJson(param));
-        
-        return _asyncMgr.submitAsyncJob(job);
-    }
-    
-    @Override
-    public List<HostStats> listHostStatistics(List<Long> hostIds) throws InternalErrorException {
-        return _agentMgr.listHostStatistics(hostIds);
-    }
-    
-    @Override
-    public long listHostStatisticsAsync(List<Long> hostIds) throws InvalidParameterValueException {
-    	// Make sure all the hosts are valid
-    	for (Long hostId : hostIds) {
-    		if (hostId == null) {
-    			throw new InvalidParameterValueException("Please specify valid host IDs.");
-    		}
-    		
-    		HostVO host= _hostDao.findById(hostId);
-        	if (host == null || host.getStatus() != Status.Up) {
-            	throw new InvalidParameterValueException("Please specify valid hosts.");
-        	}	
-    	}
-
-        ListStatisticsParam param = new ListStatisticsParam();
-        param.setType(StatisticsType.Host);
-        param.setHostIds(hostIds);
-
-        Gson gson = GsonHelper.getBuilder().create();
-
-        AsyncJobVO job = new AsyncJobVO();
-        job.setUserId(UserContext.current().getUserId());
-        job.setAccountId(UserContext.current().getAccountId());
-        job.setCmd("ListStatistics");
-        job.setCmdInfo(gson.toJson(param));
-        
-        return _asyncMgr.submitAsyncJob(job);
     }
 
     @Override
@@ -5183,28 +5197,34 @@ public class ManagementServerImpl implements ManagementServer {
         Integer level = (Integer) c.getCriteria(Criteria.LEVEL);
         Object keyword = c.getCriteria(Criteria.KEYWORD);
 
-        SearchCriteria sc = _domainDao.createSearchCriteria();
+        SearchBuilder<DomainVO> sb = _domainDao.createSearchBuilder();
+        sb.and("name", sb.entity().getName(), SearchCriteria.Op.LIKE);
+        sb.and("level", sb.entity().getLevel(), SearchCriteria.Op.EQ);
+        sb.and("path", sb.entity().getPath(), SearchCriteria.Op.LIKE);
+
+        SearchCriteria sc = sb.create();
 
         if (keyword != null) {
-            sc.addAnd("name", SearchCriteria.Op.LIKE, "%" + keyword + "%");
-        }
-
-        if (domainId != null) {
-            sc.addAnd("id", SearchCriteria.Op.EQ, domainId);
-        }
-
-        if (domainName != null) {
-            sc.addAnd("name", SearchCriteria.Op.LIKE, "%" + domainName + "%");
+            sc.setParameters("name", "%" + keyword + "%");
+        } else if (domainName != null) {
+            sc.setParameters("name", "%" + domainName + "%");
         }
 
         if (level != null) {
-            sc.addAnd("level", SearchCriteria.Op.EQ, level);
+            sc.setParameters("level", level);
+        }
+
+        if ((domainName == null) && (level == null) && (domainId != null)) {
+            DomainVO domain = _domainDao.findById(domainId);
+            if (domain != null) {
+                sc.setParameters("path", domain.getPath() + "%");
+            }
         }
 
         return _domainDao.search(sc, searchFilter);
     }
-    
-	public List<DomainVO> searchForDomainChildren(Criteria c) {
+
+    public List<DomainVO> searchForDomainChildren(Criteria c) {
         Filter searchFilter = new Filter(DomainVO.class, c.getOrderBy(), c.getAscending(), c.getOffset(), c.getLimit());
         Long domainId = (Long) c.getCriteria(Criteria.ID);
         String domainName = (String) c.getCriteria(Criteria.NAME);
@@ -5245,24 +5265,83 @@ public class ManagementServerImpl implements ManagementServer {
         return null;
     }
 
-    public String deleteDomain(Long domainId, Long ownerId) {
-        try {
-            SearchCriteria sc = _domainDao.createSearchCriteria();
-            sc.addAnd("id", SearchCriteria.Op.EQ, domainId);
-            List<DomainVO> domains = _domainDao.search(sc, null);
+    @Override
+    public long deleteDomainAsync(Long domainId, Long ownerId, Boolean cleanup) {
+        DeleteDomainParam param = new DeleteDomainParam(domainId, ownerId, cleanup);
+        Gson gson = GsonHelper.getBuilder().create();
 
-            if (domains != null) {
-                if (!_domainDao.remove(domainId)) {
-                    saveEvent(new Long(1), ownerId, new Long(0), EventVO.LEVEL_ERROR, EventTypes.EVENT_DOMAIN_DELETE, "Domain with id " + domainId + " was not deleted");
-                    return "delete failed on domain with id " + domainId + "; please make sure all users have been removed from the domain before deleting";
+        AsyncJobVO job = new AsyncJobVO();
+        job.setUserId(UserContext.current().getUserId());
+        job.setAccountId(UserContext.current().getAccountId());
+        job.setCmd("DeleteDomain");
+        job.setCmdInfo(gson.toJson(param));
+        return _asyncMgr.submitAsyncJob(job);
+    }
+
+    // FIXME:  need userId so the event can be saved with proper id
+    @Override
+    public String deleteDomain(Long domainId, Long ownerId, Boolean cleanup) {
+        try {
+            DomainVO domain = _domainDao.findById(domainId);
+            if (domain != null) {
+                if ((cleanup != null) && cleanup.booleanValue()) {
+                    boolean success = cleanupDomain(domainId, ownerId);
+                    if (!success) {
+                        saveEvent(new Long(1), ownerId, new Long(0), EventVO.LEVEL_ERROR, EventTypes.EVENT_DOMAIN_DELETE, "Failed to clean up domain resources and sub domains, domain with id " + domainId + " was not deleted.");
+                        return "Failed to clean up domain resources and sub domains, delete failed on domain with id " + domainId + ".";
+                    }
                 } else {
-                    saveEvent(new Long(1), ownerId, new Long(0), EventVO.LEVEL_INFO, EventTypes.EVENT_DOMAIN_DELETE, "Domain with id " + domainId + " was deleted");
+                    if (!_domainDao.remove(domainId)) {
+                        saveEvent(new Long(1), ownerId, new Long(0), EventVO.LEVEL_ERROR, EventTypes.EVENT_DOMAIN_DELETE, "Domain with id " + domainId + " was not deleted");
+                        return "delete failed on domain with id " + domainId + "; please make sure all users have been removed from the domain before deleting";
+                    } else {
+                        saveEvent(new Long(1), ownerId, new Long(0), EventVO.LEVEL_INFO, EventTypes.EVENT_DOMAIN_DELETE, "Domain with id " + domainId + " was deleted");
+                    }
                 }
             }
             return null;
         } catch (Exception ex) {
             return "delete failed on domain with id " + domainId + "; please make sure all users have been removed from the domain before deleting";
         }
+    }
+
+    private boolean cleanupDomain(Long domainId, Long ownerId) {
+        boolean success = true;
+        {
+            SearchCriteria sc = _domainDao.createSearchCriteria();
+            sc.addAnd("parent", SearchCriteria.Op.EQ, domainId);
+            List<DomainVO> domains = _domainDao.search(sc, null);
+
+            // cleanup sub-domains first
+            for (DomainVO domain : domains) {
+                success = (success && cleanupDomain(domain.getId(), domain.getOwner()));
+            }
+        }
+
+        {
+            // delete users which will also delete accounts and release resources for those accounts
+            SearchCriteria sc = _accountDao.createSearchCriteria();
+            sc.addAnd("domainId", SearchCriteria.Op.EQ, domainId);
+            List<AccountVO> accounts = _accountDao.search(sc, null);
+            for (AccountVO account : accounts) {
+                SearchCriteria userSc = _userDao.createSearchCriteria();
+                userSc.addAnd("accountId", SearchCriteria.Op.EQ, account.getId());
+                List<UserVO> users = _userDao.search(userSc, null);
+                for (UserVO user : users) {
+                    success = (success && deleteUser(user.getId()));
+                }
+            }
+        }
+
+        // delete the domain itself
+        boolean deleteDomainSuccess = _domainDao.remove(domainId);
+        if (!deleteDomainSuccess) {
+            saveEvent(new Long(1), ownerId, new Long(0), EventVO.LEVEL_ERROR, EventTypes.EVENT_DOMAIN_DELETE, "Domain with id " + domainId + " was not deleted");
+        } else {
+            saveEvent(new Long(1), ownerId, new Long(0), EventVO.LEVEL_INFO, EventTypes.EVENT_DOMAIN_DELETE, "Domain with id " + domainId + " was deleted");
+        }
+
+        return success && deleteDomainSuccess;
     }
 
     public void updateDomain(Long domainId, String domainName) {
@@ -5362,20 +5441,25 @@ public class ManagementServerImpl implements ManagementServer {
     public long createSnapshotAsync(long userId, long volumeId) throws InvalidParameterValueException, ResourceAllocationException {
         List<Long> policies = new ArrayList<Long>();
         // Special policy id for manual snapshot.
-        policies.add((long) 0);
+        policies.add(SnapshotManager.MANUAL_POLICY_ID);
         return _snapMgr.createSnapshotAsync(userId, volumeId, policies);
     }
 
     @Override
+    public SnapshotVO createTemplateSnapshot(Long userId, long volumeId) {
+        return _vmMgr.createTemplateSnapshot(userId, volumeId);
+    }
+    
+    @Override
     public boolean destroyTemplateSnapshot(Long userId, long snapshotId) {
-        return _vmMgr.destroySnapshot(userId, snapshotId);
+        return _vmMgr.destroyTemplateSnapshot(userId, snapshotId);
     }
 
     @Override
     public long deleteSnapshotAsync(long userId, long snapshotId) {
         // Precondition: snapshotId is valid
-        // Manual snapshots have a special policy Id 0
-        long policyId = 0L;
+        // Manual snapshots have a special policy Id 1
+        long policyId = SnapshotManager.MANUAL_POLICY_ID;
         return _snapMgr.deleteSnapshot(userId, snapshotId, policyId);
     }
 
@@ -5387,8 +5471,8 @@ public class ManagementServerImpl implements ManagementServer {
 
     @Override
     public long rollbackToSnapshotAsync(Long userId, long volumeId, long snapshotId) {
-        // For manual snapshots, the special policyId is 0
-        long policyId = 0L;
+        // For manual snapshots, the special policyId is 1
+        long policyId = SnapshotManager.MANUAL_POLICY_ID;
         SnapshotOperationParam param = new SnapshotOperationParam(userId, volumeId, snapshotId, policyId);
         Gson gson = GsonHelper.getBuilder().create();
 
@@ -5419,7 +5503,7 @@ public class ManagementServerImpl implements ManagementServer {
         if(volumeId != null){
         	return _snapshotDao.listByVolumeId(searchFilter, volumeId);
         } else {
-        	return _snapshotDao.listAll(searchFilter);
+        	return _snapshotDao.listAllActive(searchFilter);
         }
     }
 
@@ -5465,7 +5549,7 @@ public class ManagementServerImpl implements ManagementServer {
     }
 
     @Override
-    public long createPrivateTemplateAsync(Long userId, long volumeId, String name, String description, long guestOSId, Boolean requiresHvm, Integer bits, Boolean passwordEnabled, boolean isPublic)
+    public long createPrivateTemplateAsync(Long userId, long volumeId, String name, String description, long guestOSId, Boolean requiresHvm, Integer bits, Boolean passwordEnabled, boolean isPublic, boolean featured)
             throws InvalidParameterValueException, ResourceAllocationException {
         if (name.length() > 32 || !name.matches("^[\\p{Alnum} ._-]+")) {
             throw new InvalidParameterValueException("Only alphanumeric, space, dot, dashes and underscore characters allowed");
@@ -5492,17 +5576,9 @@ public class ManagementServerImpl implements ManagementServer {
         GuestOSVO guestOS = _guestOSDao.findById(guestOSId);
         if (guestOS == null) {
             throw new InvalidParameterValueException("Please specify a valid guest OS.");
-        }
-        
-        // Check that the resource limit for templates won't be exceeded
-    	AccountVO account = _accountDao.findById(volume.getAccountId());
-        if (_accountMgr.resourceLimitExceeded(account, ResourceType.template)) {
-        	ResourceAllocationException rae = new ResourceAllocationException("Maximum number of templates for account: " + account.getAccountName() + " has been exceeded.");
-        	rae.setResourceType("template");
-        	throw rae;
-        }
+        }       
 
-        CreatePrivateTemplateParam param = new CreatePrivateTemplateParam(userId, volumeId, guestOSId, name, description, requiresHvm, bits, passwordEnabled, isPublic);
+        CreatePrivateTemplateParam param = new CreatePrivateTemplateParam(userId, volumeId, guestOSId, name, description, requiresHvm, bits, passwordEnabled, isPublic, featured);
         Gson gson = GsonHelper.getBuilder().create();
 
         AsyncJobVO job = new AsyncJobVO();
@@ -5522,7 +5598,7 @@ public class ManagementServerImpl implements ManagementServer {
 
     @Override
     @DB
-    public boolean updateTemplatePermissions(long templateId, String operation, Boolean isPublic, List<String> accountNames) throws InvalidParameterValueException,
+    public boolean updateTemplatePermissions(long templateId, String operation, Boolean isPublic, Boolean isFeatured, List<String> accountNames) throws InvalidParameterValueException,
             PermissionDeniedException, InternalErrorException {
         Transaction txn = Transaction.currentTxn();
         VMTemplateVO template = _templateDao.findById(templateId);
@@ -5543,11 +5619,17 @@ public class ManagementServerImpl implements ManagementServer {
             throw new PermissionDeniedException("Unable to verify owner of template " + template.getName());
         }
 
-        if ((isPublic != null) && (isPublic.booleanValue() != template.isPublicTemplate())) {
-            VMTemplateVO updatedTemplate = _templateDao.createForUpdate();
+        VMTemplateVO updatedTemplate = _templateDao.createForUpdate();
+        
+        if (isPublic != null) {
             updatedTemplate.setPublicTemplate(isPublic.booleanValue());
-            _templateDao.update(template.getId(), updatedTemplate);
         }
+        
+        if (isFeatured != null) {
+        	updatedTemplate.setFeatured(isFeatured.booleanValue());
+        }
+        
+        _templateDao.update(template.getId(), updatedTemplate);
 
         Long domainId = account.getDomainId();
         if ("add".equalsIgnoreCase(operation)) {
@@ -5586,8 +5668,9 @@ public class ManagementServerImpl implements ManagementServer {
         } else if ("reset".equalsIgnoreCase(operation)) {
             // do we care whether the owning account is an admin? if the
             // owner is an admin, will we still set public to false?
-            VMTemplateVO updatedTemplate = _templateDao.createForUpdate();
+            updatedTemplate = _templateDao.createForUpdate();
             updatedTemplate.setPublicTemplate(false);
+            updatedTemplate.setFeatured(false);
             _templateDao.update(template.getId(), updatedTemplate);
             _launchPermissionDao.removeAllPermissions(templateId);
         }
@@ -5629,8 +5712,8 @@ public class ManagementServerImpl implements ManagementServer {
         Object id = c.getCriteria(Criteria.ID);
         Object keyword = c.getCriteria(Criteria.KEYWORD);
 
-        sb.addAnd("name", sb.entity().getName(), SearchCriteria.Op.LIKE);
-        sb.addAnd("id", sb.entity().getId(), SearchCriteria.Op.EQ);
+        sb.and("name", sb.entity().getName(), SearchCriteria.Op.LIKE);
+        sb.and("id", sb.entity().getId(), SearchCriteria.Op.EQ);
 
         // FIXME:  disk offerings should search back up the hierarchy for available disk offerings...
         /*
@@ -5727,9 +5810,6 @@ public class ManagementServerImpl implements ManagementServer {
 
     @Override
     public SecurityGroupVO createSecurityGroup(String name, String description, Long domainId, Long accountId) {
-        if (domainId == null) {
-            domainId = DomainVO.ROOT_DOMAIN;
-        }
         SecurityGroupVO group = new SecurityGroupVO(name, description, domainId, accountId);
         Long id = _securityGroupDao.persist(group);
         return _securityGroupDao.findById(id);
@@ -5778,14 +5858,14 @@ public class ManagementServerImpl implements ManagementServer {
         Object keyword = c.getCriteria(Criteria.KEYWORD);
 
         SearchBuilder<SecurityGroupVO> sb = _securityGroupDao.createSearchBuilder();
-        sb.addAnd("name", sb.entity().getName(), SearchCriteria.Op.LIKE);
-        sb.addAnd("id", sb.entity().getId(), SearchCriteria.Op.EQ);
-        sb.addAnd("accountId", sb.entity().getAccountId(), SearchCriteria.Op.EQ);
+        sb.and("name", sb.entity().getName(), SearchCriteria.Op.LIKE);
+        sb.and("id", sb.entity().getId(), SearchCriteria.Op.EQ);
+        sb.and("accountId", sb.entity().getAccountId(), SearchCriteria.Op.EQ);
 
         if ((accountId == null) && (domainId != null)) {
             // if accountId isn't specified, we can do a domain match for the admin case
             SearchBuilder<DomainVO> domainSearch = _domainDao.createSearchBuilder();
-            domainSearch.addAnd("path", domainSearch.entity().getPath(), SearchCriteria.Op.LIKE);
+            domainSearch.and("path", domainSearch.entity().getPath(), SearchCriteria.Op.LIKE);
             sb.join("domainSearch", domainSearch, sb.entity().getDomainId(), domainSearch.entity().getId());
         }
 
@@ -6383,15 +6463,15 @@ public class ManagementServerImpl implements ManagementServer {
         Object keyword = c.getCriteria(Criteria.KEYWORD);
 
         SearchBuilder<LoadBalancerVO> sb = _loadBalancerDao.createSearchBuilder();
-        sb.addAnd("nameLIKE", sb.entity().getName(), SearchCriteria.Op.LIKE);
-        sb.addAnd("id", sb.entity().getId(), SearchCriteria.Op.EQ);
-        sb.addAnd("nameEQ", sb.entity().getName(), SearchCriteria.Op.EQ);
-        sb.addAnd("accountId", sb.entity().getAccountId(), SearchCriteria.Op.EQ);
+        sb.and("nameLIKE", sb.entity().getName(), SearchCriteria.Op.LIKE);
+        sb.and("id", sb.entity().getId(), SearchCriteria.Op.EQ);
+        sb.and("nameEQ", sb.entity().getName(), SearchCriteria.Op.EQ);
+        sb.and("accountId", sb.entity().getAccountId(), SearchCriteria.Op.EQ);
 
         if ((accountId == null) && (domainId != null)) {
             // if accountId isn't specified, we can do a domain match for the admin case
             SearchBuilder<DomainVO> domainSearch = _domainDao.createSearchBuilder();
-            domainSearch.addAnd("path", domainSearch.entity().getPath(), SearchCriteria.Op.LIKE);
+            domainSearch.and("path", domainSearch.entity().getPath(), SearchCriteria.Op.LIKE);
             sb.join("domainSearch", domainSearch, sb.entity().getDomainId(), domainSearch.entity().getId());
         }
 
@@ -6550,19 +6630,40 @@ public class ManagementServerImpl implements ManagementServer {
     	if(maxSnaps > intervalMaxSnaps){
     		throw new InvalidParameterValueException("maxSnaps exceeds limit: "+ intervalMaxSnaps +" for interval type: " + intervalType);
     	}
+    	if(_snapMgr.getPolicyForVolumeByInterval(volumeId, (short)type.ordinal()) != null){
+    	    throw new InvalidParameterValueException("Policy with interval type: " + intervalType+" already exists for volume: "+volumeId);
+    	}
     	return _snapMgr.createPolicy(volumeId, schedule, (short)type.ordinal() , maxSnaps);
     }    
 
 	@Override
 	public boolean deleteSnapshotPolicies(long userId, List<Long> policyIds) {
 		boolean result = true;
-		for(long policyId : policyIds){
-			if(!_snapMgr.deletePolicy(policyId)){
+		for (long policyId : policyIds) {
+			if (!_snapMgr.deletePolicy(policyId)) {
 				result = false;
-				s_logger.warn("Failed to delete snapshot policy with Id: "+policyId);
+				s_logger.warn("Failed to delete snapshot policy with Id: " + policyId);
 			}
 		}
 		return result;
+	}
+
+	@Override
+	public String getSnapshotIntervalTypes(long snapshotId){
+	    String intervalTypes = "";
+	    List<SnapshotPolicyVO> policies = _snapMgr.listPoliciesforSnapshot(snapshotId);
+	    for (SnapshotPolicyVO policy : policies){
+	        if(!intervalTypes.isEmpty()){
+	            intervalTypes += ",";
+	        }
+	        if(policy.getId() == SnapshotManager.MANUAL_POLICY_ID){
+	            intervalTypes+= "MANUAL";
+	        }
+	        else {
+	            intervalTypes += DateUtil.getIntervalType(policy.getInterval()).toString();
+	        }
+	    }
+	    return intervalTypes;
 	}
 	
 	/**
@@ -6581,11 +6682,6 @@ public class ManagementServerImpl implements ManagementServer {
 		return _snapMgr.listPoliciesforVolume(volumeId);
 	}
     
-    @Override
-    public boolean destroyPreviousSnapshot(long userId, Snapshot snapshot) {
-        return true;
-    }
-
     @Override
     public boolean isChildDomain(Long parentId, Long childId) {
         return _domainDao.isChildDomain(parentId, childId);

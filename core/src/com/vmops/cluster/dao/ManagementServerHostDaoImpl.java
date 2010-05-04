@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -95,8 +95,8 @@ public class ManagementServerHostDaoImpl extends GenericDaoBase<ManagementServer
 	
 	public List<ManagementServerHostVO> getActiveList(Date cutTime) {
 	    SearchBuilder<ManagementServerHostVO> activeSearch = createSearchBuilder();
-	    activeSearch.addAnd("lastUpdateTime", activeSearch.entity().getLastUpdateTime(),  SearchCriteria.Op.GT);
-	    activeSearch.addAnd("removed", activeSearch.entity().getRemoved(), SearchCriteria.Op.NULL);
+	    activeSearch.and("lastUpdateTime", activeSearch.entity().getLastUpdateTime(),  SearchCriteria.Op.GT);
+	    activeSearch.and("removed", activeSearch.entity().getRemoved(), SearchCriteria.Op.NULL);
 	    
 	    SearchCriteria sc = activeSearch.create();
 	    sc.setParameters("lastUpdateTime", cutTime);
@@ -123,7 +123,7 @@ public class ManagementServerHostDaoImpl extends GenericDaoBase<ManagementServer
 	
 	protected ManagementServerHostDaoImpl() {
 		MsIdSearch = createSearchBuilder();
-		MsIdSearch.addAnd("msid",  MsIdSearch.entity().getMsid(), SearchCriteria.Op.EQ);
+		MsIdSearch.and("msid",  MsIdSearch.entity().getMsid(), SearchCriteria.Op.EQ);
 		MsIdSearch.done();
 	}
 }

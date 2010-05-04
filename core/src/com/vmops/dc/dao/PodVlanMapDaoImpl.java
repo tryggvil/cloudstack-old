@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -50,12 +50,12 @@ public class PodVlanMapDaoImpl extends GenericDaoBase<PodVlanMapVO, Long> implem
 	
     public PodVlanMapDaoImpl() {
     	PodSearch = createSearchBuilder();
-    	PodSearch.addAnd("podId", PodSearch.entity().getPodId(), SearchCriteria.Op.EQ);
+    	PodSearch.and("podId", PodSearch.entity().getPodId(), SearchCriteria.Op.EQ);
         PodSearch.done();
         
         PodVlanSearch = createSearchBuilder();
-        PodVlanSearch.addAnd("podId", PodVlanSearch.entity().getPodId(), SearchCriteria.Op.EQ);
-        PodVlanSearch.addAnd("vlanDbId", PodVlanSearch.entity().getVlanDbId(), SearchCriteria.Op.EQ);
+        PodVlanSearch.and("podId", PodVlanSearch.entity().getPodId(), SearchCriteria.Op.EQ);
+        PodVlanSearch.and("vlanDbId", PodVlanSearch.entity().getVlanDbId(), SearchCriteria.Op.EQ);
         PodVlanSearch.done();
     }
     

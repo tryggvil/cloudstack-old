@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -64,6 +64,13 @@ public class SecondaryStorageVmVO extends VMInstanceVO implements SecondaryStora
     @Column(name="domain", nullable=false)
     private String domain;
     
+    @Column(name="guid", nullable=false)
+    private String guid;
+    
+    @Column(name="nfs_share", nullable=false)
+    private String nfsShare;
+    
+    
     @Column(name="ram_size", updatable=false, nullable=false)
     private int ramSize;
     
@@ -93,7 +100,9 @@ public class SecondaryStorageVmVO extends VMInstanceVO implements SecondaryStora
             String dns1,
             String dns2,
             String domain,
-            int ramSize) {
+            int ramSize,
+            String guid,
+            String nfsShare) {
     	super(id, name, name, state, Type.SecondaryStorageVm, templateId, guestOSId,
     			privateMacAddress, privateIpAddress, privateNetmask, dataCenterId, podId, true, hostId, null, null);
     	this.gateway = gateway;
@@ -106,6 +115,8 @@ public class SecondaryStorageVmVO extends VMInstanceVO implements SecondaryStora
     	this.dns2 = dns2;
     	this.domain = domain;
     	this.ramSize = ramSize;
+    	this.setGuid(guid);
+    	this.nfsShare = nfsShare;
     }
     
     protected SecondaryStorageVmVO() {
@@ -203,6 +214,22 @@ public class SecondaryStorageVmVO extends VMInstanceVO implements SecondaryStora
     public Date getLastUpdateTime() {
     	return this.lastUpdateTime;
     }
+
+	public void setGuid(String guid) {
+		this.guid = guid;
+	}
+
+	public String getGuid() {
+		return guid;
+	}
+
+	public void setNfsShare(String nfsShare) {
+		this.nfsShare = nfsShare;
+	}
+
+	public String getNfsShare() {
+		return nfsShare;
+	}
     
   
 

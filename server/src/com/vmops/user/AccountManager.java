@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -81,7 +81,15 @@ public interface AccountManager extends Manager {
 	 */
 	public long getResourceCount(AccountVO account, ResourceType type);
 	
-	public ResourceLimitVO createResourceLimit(Long domainId, Long accountId, ResourceType type, Long max) throws InvalidParameterValueException;
-
-	public boolean updateResourceLimit(long limitId, Long max);
+	/**
+	 * Updates an existing resource limit with the specified details. If a limit doesn't exist, will create one.
+	 * @param domainId
+	 * @param accountId
+	 * @param type
+	 * @param max
+	 * @return
+	 * @throws InvalidParameterValueException
+	 */
+	public ResourceLimitVO updateResourceLimit(Long domainId, Long accountId, ResourceType type, Long max) throws InvalidParameterValueException;
+	
 }

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -26,6 +26,7 @@ import org.apache.log4j.Logger;
 
 import com.vmops.api.BaseCmd;
 import com.vmops.api.ServerApiException;
+import com.vmops.user.Account;
 import com.vmops.user.User;
 import com.vmops.user.UserAccount;
 import com.vmops.user.UserVO;
@@ -38,6 +39,7 @@ public class RegisterCmd extends BaseCmd {
     private static final List<Pair<Enum, Boolean>> s_properties = new ArrayList<Pair<Enum, Boolean>>();
 
     static {
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT_OBJ, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.USER_ID, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.USERNAME, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.DOMAIN_ID, Boolean.FALSE));
@@ -52,25 +54,31 @@ public class RegisterCmd extends BaseCmd {
 
     @Override
     public List<Pair<String, Object>> execute(Map<String, Object> params) {
+        Account account = (Account)params.get(BaseCmd.Properties.ACCOUNT_OBJ.getName());
         Long userId = (Long)params.get(BaseCmd.Properties.USER_ID.getName());
         String username = (String)params.get(BaseCmd.Properties.USERNAME.getName());
         Long domainId = (Long)params.get(BaseCmd.Properties.DOMAIN_ID.getName());
 
         User user = null;
-        if (userId == null) {
-            if (username == null) {
-                throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "No username or userId given, unable to register user");
-            } else {
-                if (domainId == null) {
-                    throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Username given without domainId, unable to find user to register.");
+        if ((account == null) || isAdmin(account.getType())) {
+            if (domainId != null) {
+                if ((account != null) && !getManagementServer().isChildDomain(account.getDomainId(), domainId)) {
+                    throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Invalid domain id (" + domainId + ") given, unable to register user.");
                 }
-                UserAccount useracct = getManagementServer().getUserAccount(username, domainId);
-                if (useracct != null) {
-                    user = new UserVO(useracct.getId());
-                    user.setAccountId(useracct.getAccountId());
+                if (username != null) {
+                    UserAccount useracct = getManagementServer().getUserAccount(username, domainId);
+                    if (useracct != null) {
+                        user = new UserVO(useracct.getId());
+                        user.setAccountId(useracct.getAccountId());
+                    } else {
+                        throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to find user " + username + " in domain " + domainId);
+                    }
                 }
             }
-        } else {
+        }
+
+        // if not admin or admin is registering for key, find the user by id
+        if ((user == null) && (userId != null)) {
             user = getManagementServer().findUserById(userId);
         }
 

@@ -1,9 +1,13 @@
 #/bin/bash
 
-set -x
+#set -x
 
 mntpath() {
   local vmname=$1
+  if [ ! -d /mnt/$vmname ]
+  then
+    mkdir -p /mnt/$vmname
+  fi
   echo "/mnt/$vmname"
 }
 
@@ -70,6 +74,62 @@ umount_local() {
     return $ret
 }
 
+mount_raw_disk() {
+    local vmname=$1
+    local datadisk=$2
+    local path=$(mntpath $vmname)
+    if [ ! -f $datadisk ]
+    then
+        printf "$datadisk doesn't exist" >&2
+        return 2
+    fi
+    
+    losetup -f $datadisk &>/dev/null
+
+    if [ $? -gt 0 ]
+    then
+        printf "Failed to losetup $datadisk" 
+        return 2
+    fi
+
+    local loopdev=$(losetup -j $datadisk 2>/dev/null|cut -d: -f 1)
+    
+    mount $loopdev $path  &>/dev/null
+    if [ $? -gt 0 ]
+    then
+        printf "Failed to mount $datadisk to $path" >&2
+        losetup -d $loopdev &>/dev/null
+        exit 2
+    fi 
+    return 0
+}
+
+umount_raw_disk() {
+    local vmname=$1
+    local datadisk=$2
+    local path=$(mntpath $vmname)
+    local loopdev=$(losetup -j $datadisk 2>/dev/null|cut -d: -f 1 2> /dev/null)
+    if [ "$loopdev" = "" ]
+    then
+       return 2 
+    fi
+    
+    umount $loopdev &>/dev/null
+    retry=10
+    while [ $retry -gt 0 ]
+    do
+        losetup -d $loopdev &>/dev/null
+        if [  $? -gt 0 ]
+        then
+            sleep 5
+        else
+            break;
+        fi
+        retry=$(($retry-1))
+    done
+    return $?
+}
+
 get_kernel() {
     local vmname=$1
     local rootdisk=$2
@@ -132,6 +192,22 @@ patch_console_proxy() {
    return 0
 }
 
+patch_all() {
+    local vmname=$1
+    local domrpatch=$2
+    local domppatch=$3
+    local cmdline=$4
+    local datadisk=$5
+    local path=$(mntpath $vmname)
+    alias cp='cp'
+
+    cp -f $domrpatch $path/
+    cp -f $domppatch $path/ 
+    echo $cmdline > $path/cmdline 
+    sed -i "s/,/\ /g" $path/cmdline
+    return 0
+}
+
 consoleproxy_svcs() {
    local vmname=$1
    local path=$(mntpath $vmname)
@@ -175,6 +251,9 @@ do
   d)    dflag=1
         rootdisk="$OPTARG"
         ;;
+  p)    pflag=1
+        cmdline="$OPTARG"
+        ;;
   *)    ;;
   esac
 done
@@ -185,6 +264,18 @@ then
   exit 1
 fi
 
+if [ "$vmtype" = "all" ]
+then
+    mount_raw_disk $vmname $rootdisk
+    if [ $? -gt 0 ]
+    then
+        printf "Failed to mount $rootdisk"
+        exit $?
+    fi
+    patch_all $vmname $(dirname $0)/patch.tgz $(dirname $0)/console-proxy.zip $cmdline $rootdisk
+    umount_raw_disk $vmname $rootdisk    
+    exit $?
+fi
 
 mount_local $vmname $rootdisk
 

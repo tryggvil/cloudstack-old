@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -105,17 +105,17 @@ public class VlanDaoImpl extends GenericDaoBase<VlanVO, Long> implements VlanDao
 	
     public VlanDaoImpl() {
     	ZoneVlanIdSearch = createSearchBuilder();
-    	ZoneVlanIdSearch.addAnd("zoneId", ZoneVlanIdSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
-        ZoneVlanIdSearch.addAnd("vlanId", ZoneVlanIdSearch.entity().getVlanId(), SearchCriteria.Op.EQ);
+    	ZoneVlanIdSearch.and("zoneId", ZoneVlanIdSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        ZoneVlanIdSearch.and("vlanId", ZoneVlanIdSearch.entity().getVlanId(), SearchCriteria.Op.EQ);
         ZoneVlanIdSearch.done();
         
         ZoneSearch = createSearchBuilder();
-        ZoneSearch.addAnd("zoneId", ZoneSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        ZoneSearch.and("zoneId", ZoneSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
         ZoneSearch.done();
         
         ZoneTypeSearch = createSearchBuilder();
-        ZoneTypeSearch.addAnd("zoneId", ZoneTypeSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
-        ZoneTypeSearch.addAnd("vlanType", ZoneTypeSearch.entity().getVlanType(), SearchCriteria.Op.EQ);
+        ZoneTypeSearch.and("zoneId", ZoneTypeSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        ZoneTypeSearch.and("vlanType", ZoneTypeSearch.entity().getVlanType(), SearchCriteria.Op.EQ);
         ZoneTypeSearch.done();
     }
 

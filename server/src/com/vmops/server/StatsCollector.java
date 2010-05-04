@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -35,9 +35,11 @@ import com.vmops.agent.api.Answer;
 import com.vmops.agent.api.Command;
 import com.vmops.agent.api.GetFileStatsCommand;
 import com.vmops.agent.api.GetStorageStatsCommand;
+import com.vmops.agent.api.VmStatsEntry;
 import com.vmops.capacity.CapacityVO;
 import com.vmops.capacity.dao.CapacityDao;
 import com.vmops.exception.AgentUnavailableException;
+import com.vmops.exception.InternalErrorException;
 import com.vmops.host.Host;
 import com.vmops.host.HostStats;
 import com.vmops.host.HostVO;
@@ -56,6 +58,10 @@ import com.vmops.utils.component.ComponentLocator;
 import com.vmops.utils.concurrency.NamedThreadFactory;
 import com.vmops.utils.db.GlobalLock;
 import com.vmops.utils.db.SearchCriteria;
+import com.vmops.vm.UserVmManager;
+import com.vmops.vm.UserVmVO;
+import com.vmops.vm.VmStats;
+import com.vmops.vm.dao.UserVmDao;
 
 /**
  * Provides real time stats for various agent resources up to x seconds
@@ -69,19 +75,23 @@ public class StatsCollector {
 	private static StatsCollector s_instance = null;
 
 	private ScheduledExecutorService _executor = null;
-	private final AgentManager _mgr;
+	private final AgentManager _agentMgr;
+	private final UserVmManager _userVmMgr;
 	private final HostDao _hostDao;
+	private final UserVmDao _userVmDao;
 	private final VolumeDao _volsDao;
 	private final CapacityDao _capacityDao;
 	private final StoragePoolDao _storagePoolDao;
 	private final StorageManager _storageManager;
 
 	private ConcurrentHashMap<Long, HostStats> _hostStats = new ConcurrentHashMap<Long, HostStats>();
+	private ConcurrentHashMap<Long, VmStats> _vmStats = new ConcurrentHashMap<Long, VmStats>();
+	private ConcurrentHashMap<Long, VolumeStats> _volumeStats = new ConcurrentHashMap<Long, VolumeStats>();
 	private ConcurrentHashMap<Long, StorageStats> _storageStats = new ConcurrentHashMap<Long, StorageStats>();
 	private ConcurrentHashMap<Long, StorageStats> _storagePoolStats = new ConcurrentHashMap<Long, StorageStats>();
-	private ConcurrentHashMap<Long, VolumeStats> _volumeStats = new ConcurrentHashMap<Long, VolumeStats>();
 	
 	long hostStatsInterval = -1L;
+	long vmStatsInterval = -1L;
 	long storageStatsInterval = -1L;
 	long volumeStatsInterval = -1L;
 
@@ -99,8 +109,10 @@ public class StatsCollector {
 
 	private StatsCollector(Map<String, String> configs) {
 		ComponentLocator locator = ComponentLocator.getLocator(ManagementServer.Name);
-		_mgr = locator.getManager(AgentManager.class);
+		_agentMgr = locator.getManager(AgentManager.class);
+		_userVmMgr = locator.getManager(UserVmManager.class);
 		_hostDao = locator.getDao(HostDao.class);
+		_userVmDao = locator.getDao(UserVmDao.class);
 		_volsDao = locator.getDao(VolumeDao.class);
 		_capacityDao = locator.getDao(CapacityDao.class);
 		_storagePoolDao = locator.getDao(StoragePoolDao.class);
@@ -109,10 +121,12 @@ public class StatsCollector {
 		_executor = Executors.newScheduledThreadPool(3, new NamedThreadFactory("StatsCollector"));
 
 		 hostStatsInterval = NumbersUtil.parseLong(configs.get("host.stats.interval"), 60000L);
+		 vmStatsInterval = NumbersUtil.parseLong(configs.get("vm.stats.interval"), 60000L);
 		 storageStatsInterval = NumbersUtil.parseLong(configs.get("storage.stats.interval"), 60000L);
 		 volumeStatsInterval = NumbersUtil.parseLong(configs.get("volume.stats.interval"), -1L);
 
 		_executor.scheduleWithFixedDelay(new HostCollector(), 15000L, hostStatsInterval, TimeUnit.MILLISECONDS);
+		// _executor.scheduleWithFixedDelay(new VmCollector(), 15000L, vmStatsInterval, TimeUnit.MILLISECONDS);
 		_executor.scheduleWithFixedDelay(new StorageCollector(), 15000L, storageStatsInterval, TimeUnit.MILLISECONDS);
 		
 		// -1 means we don't even start this thread to pick up any data.
@@ -126,6 +140,8 @@ public class StatsCollector {
 	class HostCollector implements Runnable {
 		public void run() {
 			try {
+				s_logger.debug("HostStatsCollector is running...");
+				
 				SearchCriteria sc = _hostDao.createSearchCriteria();
 				sc.addAnd("status", SearchCriteria.Op.EQ, Status.Up.toString());
 				sc.addAnd("type", SearchCriteria.Op.NEQ, Host.Type.Storage.toString());
@@ -135,11 +151,9 @@ public class StatsCollector {
 				List<HostVO> hosts = _hostDao.search(sc, null);
 				for (HostVO host : hosts) {
 					if (host.getId() != null) {
-						List<Long> hostIds = new ArrayList<Long>();
-						hostIds.add(host.getId());
-					    List<HostStats> stats = _mgr.listHostStatistics(hostIds);
-					    if (stats != null && (stats.size() == 1)) {
-	                        hostStats.put(host.getId(), stats.get(0));
+					    HostStats stats = _agentMgr.getHostStatistics(host.getId());
+					    if (stats != null) {
+	                        hostStats.put(host.getId(), stats);
 					    } else {
 					        s_logger.warn("Received invalid host stats for host: " + host.getId());
 					    }
@@ -150,6 +164,41 @@ public class StatsCollector {
 				_hostStats = hostStats;
 			} catch (Throwable t) {
 				s_logger.error("Error trying to retrieve host stats", t);
+			}
+		}
+	}
+	
+	class VmCollector implements Runnable {
+		public void run() {
+			try {	
+				s_logger.debug("VmStatsCollector is running...");
+				
+				SearchCriteria sc = _hostDao.createSearchCriteria();
+				sc.addAnd("status", SearchCriteria.Op.EQ, Status.Up.toString());
+				sc.addAnd("type", SearchCriteria.Op.NEQ, Host.Type.Storage.toString());
+				sc.addAnd("type", SearchCriteria.Op.NEQ, Host.Type.ConsoleProxy.toString());
+				sc.addAnd("type", SearchCriteria.Op.NEQ, Host.Type.SecondaryStorage.toString());
+				List<HostVO> hosts = _hostDao.search(sc, null);
+				
+				for (HostVO host : hosts) {
+					List<UserVmVO> vms = _userVmDao.listRunningByHostId(host.getId());
+					List<Long> vmIds = new ArrayList<Long>();
+					
+					for (UserVmVO vm : vms) {
+						vmIds.add(vm.getId());
+					}
+					
+					try {
+						HashMap<Long, VmStatsEntry> vmStatsById = _userVmMgr.getVirtualMachineStatistics(host.getId(), vmIds);
+						_vmStats.putAll(vmStatsById);
+					} catch (InternalErrorException e) {
+						s_logger.debug("Failed to get VM stats for host with ID: " + host.getId());
+						continue;
+					}
+				}
+				
+			} catch (Throwable t) {
+				s_logger.error("Error trying to retrieve VM stats", t);
 			}
 		}
 	}
@@ -169,7 +218,7 @@ public class StatsCollector {
 				List<HostVO> hosts = _hostDao.search(sc, null);
 				for (HostVO host : hosts) {
 					GetStorageStatsCommand command = new GetStorageStatsCommand(host.getGuid());
-		            Answer answer = _mgr.easySend(host.getId(), command);
+		            Answer answer = _agentMgr.easySend(host.getId(), command);
 		            if (answer != null && answer.getResult()) {
 		            	storageStats.put(host.getId(), (StorageStats)answer);
 		            }
@@ -182,7 +231,7 @@ public class StatsCollector {
                 hosts = _hostDao.search(sc, null);
                 for (HostVO host : hosts) {
                     GetStorageStatsCommand command = new GetStorageStatsCommand(host.getGuid());
-                    Answer answer = _mgr.easySend(host.getId(), command);
+                    Answer answer = _agentMgr.easySend(host.getId(), command);
                     if (answer != null && answer.getResult()) {
                         storageStats.put(host.getId(), (StorageStats)answer);
                     }
@@ -196,7 +245,7 @@ public class StatsCollector {
 					StoragePoolHostVO sphvo = _storageManager.chooseHostForStoragePool(pool, new ArrayList<Long>());
 					if (sphvo != null) {
 						GetStorageStatsCommand command = new GetStorageStatsCommand(pool.getUuid(), sphvo.getLocalPath()); 
-						Answer answer = _mgr.easySend(sphvo.getHostId(), command);
+						Answer answer = _agentMgr.easySend(sphvo.getHostId(), command);
 						if (answer != null && answer.getResult()) {
 							storagePoolStats.put(pool.getId(), (StorageStats)answer);
 						}
@@ -236,7 +285,7 @@ public class StatsCollector {
 		                    StorageStats stats = _storagePoolStats.get(poolId);
 		                    StoragePoolVO pool = _storagePoolDao.findById(poolId);
 
-		                    CapacityVO capacity = new CapacityVO(poolId, pool.getDataCenterId(), null, stats.getByteUsed(), stats.getCapacityBytes(), CapacityVO.CAPACITY_TYPE_STORAGE);
+		                    CapacityVO capacity = new CapacityVO(poolId, pool.getDataCenterId(), pool.getPodId(), stats.getByteUsed(), stats.getCapacityBytes(), CapacityVO.CAPACITY_TYPE_STORAGE);
 		                    _capacityDao.persist(capacity);
 		                }
 		            } finally {
@@ -293,7 +342,7 @@ public class StatsCollector {
 						volumeIdArray[i] = vCommand.volumeId;
 						commandsArray[i] = vCommand.command;
 					}
-					Answer[] answers = _mgr.send(hostId, commandsArray, false);
+					Answer[] answers = _agentMgr.send(hostId, commandsArray, false);
 					if (answers != null) {
 					    long totalBytes = 0L;
 						for (int i = 0; i < answers.length; i++) {

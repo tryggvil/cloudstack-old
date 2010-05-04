@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -69,14 +69,18 @@ public class CreateSnapshotCmd extends BaseCmd {
         if (volume == null) {
             throw new ServerApiException (BaseCmd.PARAM_ERROR, "Unable to find a volume with id " + volumeId);
         }
-        
+
         // If an account was passed in, make sure that it matches the account of the volume
-        if ((account != null) && !isAdmin(account.getType())) {
-            if (account.getId().longValue() != volume.getAccountId()) {
-                throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to find a volume with id " + volumeId + " for this account");
+        if (account != null) {
+            if (!isAdmin(account.getType())) {
+                if (account.getId().longValue() != volume.getAccountId()) {
+                    throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to find a volume with id " + volumeId + " for this account");
+                }
+            } else if (!getManagementServer().isChildDomain(account.getDomainId(), volume.getDomainId())) {
+                throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to create a snapshot for volume with id " + volumeId + ", permission denied.");
             }
         }
-        
+
         // If command is executed via 8096 port, set userId to the id of System account (1)
         if (userId == null) {
             userId = Long.valueOf(1);
@@ -84,10 +88,10 @@ public class CreateSnapshotCmd extends BaseCmd {
 
         try {
             long jobId = getManagementServer().createSnapshotAsync(userId, volumeId.longValue());
-            if(jobId == 0) {
+            if (jobId == 0) {
             	s_logger.warn("Unable to schedule async-job for CreateSnapshot comamnd");
             } else {
-    	        if(s_logger.isDebugEnabled())
+    	        if (s_logger.isDebugEnabled())
     	        	s_logger.debug("CreateSnapshot command has been accepted, job id: " + jobId);
             }
             

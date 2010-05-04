@@ -23,6 +23,10 @@
 				<name>account</name>
 				<value>admin</value>
 			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
+			</item>
 		</parameters>
 		<returnvalue>
 			<item setparam="true">

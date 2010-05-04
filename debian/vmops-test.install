@@ -1,6 +1,0 @@
-/usr/bin/vmops-run-test
-/usr/share/java/vmops-test.jar
-/var/lib/vmops/test/*
-/usr/lib/vmops/test/*
-/etc/vmops/test/*
-

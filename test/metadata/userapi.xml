@@ -824,7 +824,6 @@
 	
 	<command>
 		<name>deployVirtualMachine</name>
-		
 		<parameters>
 			<item getparam="true">
 			    <name>zoneid</name>
@@ -846,12 +845,15 @@
 				<name>account</name>
 				<param>account601</param>
 			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
+			</item>
 		</parameters>
 	</command>
 	
 	<command>
 		<name>deleteUser</name>
-		
 		<parameters>
 			<item getparam="true">
 			    <name>id</name>

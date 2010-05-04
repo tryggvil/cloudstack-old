@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -97,9 +97,14 @@ public class AssignSecurityGroupCmd extends BaseCmd {
         if (validatedAccountId == null) {
             throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to apply security groups " + StringUtils.join(sgIdList, ",") + " to instance " + vmId + ".  Invalid list of groups for the given instance.");
         }
-        if ((account != null) && !isAdmin(account.getType())) {
-            if (account.getId().longValue() != validatedAccountId.longValue()) {
+        if (account != null) {
+            if (!isAdmin(account.getType()) && (account.getId().longValue() != validatedAccountId.longValue())) {
                 throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Permission denied applying security groups " + StringUtils.join(sgIdList, ",") + " to instance " + vmId + ".");
+            } else {
+                Account validatedAccount = getManagementServer().findAccountById(validatedAccountId);
+                if (!getManagementServer().isChildDomain(account.getDomainId(), validatedAccount.getDomainId())) {
+                    throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Permission denied applying security groups " + StringUtils.join(sgIdList, ",") + " to instance " + vmId + ".");
+                }
             }
         }
 

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -96,20 +96,24 @@ public class AssignToLoadBalancerCmd extends BaseCmd {
         LoadBalancerVO loadBalancer = getManagementServer().findLoadBalancerById(loadBalancerId.longValue());
         if (loadBalancer == null) {
             throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to find load balancer, with id " + loadBalancerId);
-        } else if ((account != null) && !isAdmin(account.getType()) && (loadBalancer.getAccountId() != account.getId().longValue())) {
-            throw new ServerApiException(BaseCmd.PARAM_ERROR, "Account " + account.getAccountName() + " does not own load balancer " + loadBalancer.getName() +
-                    " (id:" + loadBalancer.getId() + ")");
+        } else if (account != null) {
+            if (!isAdmin(account.getType()) && (loadBalancer.getAccountId() != account.getId().longValue())) {
+                throw new ServerApiException(BaseCmd.PARAM_ERROR, "Account " + account.getAccountName() + " does not own load balancer " + loadBalancer.getName() +
+                        " (id:" + loadBalancer.getId() + ")");
+            } else if (!getManagementServer().isChildDomain(account.getDomainId(), loadBalancer.getDomainId())) {
+                throw new ServerApiException(BaseCmd.PARAM_ERROR, "Invalid load balancer id (" + loadBalancer.getId() + ") given, unable to assign instances to load balancer.");
+            }
         }
 
         long jobId = getManagementServer().assignToLoadBalancerAsync(userId.longValue(), loadBalancerId.longValue(), instanceIdList);
-        
-        if(jobId == 0) {
+
+        if (jobId == 0) {
         	s_logger.warn("Unable to schedule async-job for AssignToLoadBalancer comamnd");
         } else {
 	        if(s_logger.isDebugEnabled())
 	        	s_logger.debug("AssignToLoadBalancer command has been accepted, job id: " + jobId);
         }
-        
+
         List<Pair<String, Object>> returnValues = new ArrayList<Pair<String, Object>>();
         returnValues.add(new Pair<String, Object>(BaseCmd.Properties.JOB_ID.getName(), Long.valueOf(jobId))); 
         return returnValues;

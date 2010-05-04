@@ -1,7 +1,7 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
- * This software is licensed under the GNU General Public License v3 or later.  
+ * This software is licensed under the GNU General Public License v3 or later.
  * 
  * It is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@ public class XenServerConnectionPool {
         _interval = 3;
     }
 
-    public synchronized void disconnect(String uuid, String masterUrl) {
+    public synchronized void disconnect(String uuid, String poolUuid) {
         Connection conn = _conns.remove(uuid);
         if (conn == null) {
             return;
@@ -57,34 +57,22 @@ public class XenServerConnectionPool {
         
         conn.dispose();
         
-        ConnectionInfo info = _infos.get(masterUrl);
+        ConnectionInfo info = _infos.get(poolUuid);
         if (info == null) {
             return;
         }
         
         info.refs.remove(uuid);
         if (info.refs.size() == 0) {
+            _infos.remove(poolUuid);
             try {
-                Session.logout(conn);
+                Session.logout(info.conn);
+                info.conn.dispose();
             } catch (Exception e) {
+                s_logger.debug("Logout has a problem " + e.getMessage());
             }
             info.conn = null;
         }
-    }
-    
-    protected void cleanupSession(ConnectionInfo info) {
-        for (String uuid : info.refs.keySet()) {
-            Connection conn = _conns.remove(uuid);
-            try {
-                Session.logout(conn);
-            } catch (XenAPIException e) {
-                s_logger.debug("Unable to logout of a session");
-            } catch (XmlRpcException e) {
-                s_logger.debug("Unable to logout of a session");
-            }
-            conn.dispose();
-        }
-        info.conn = null;
     }
     
     public Connection connect(String urlString, String username, String password, int wait) {

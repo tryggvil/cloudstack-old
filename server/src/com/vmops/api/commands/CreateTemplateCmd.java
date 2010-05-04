@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -51,6 +51,7 @@ public class CreateTemplateCmd extends BaseCmd {
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT_OBJ, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.USER_ID, Boolean.FALSE)); 
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.IS_PUBLIC, Boolean.FALSE)); 
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.IS_FEATURED, Boolean.FALSE));
     }
 
     public String getName() {
@@ -77,6 +78,7 @@ public class CreateTemplateCmd extends BaseCmd {
         Integer bits = (Integer)params.get(BaseCmd.Properties.BITS.getName());
         Boolean passwordEnabled = (Boolean)params.get(BaseCmd.Properties.PASSWORD_ENABLED.getName());
         Boolean isPublic = (Boolean)params.get(BaseCmd.Properties.IS_PUBLIC.getName());
+        Boolean featured = (Boolean)params.get(BaseCmd.Properties.IS_FEATURED.getName());
 
         // Verify input parameters
         VolumeVO volume = getManagementServer().findVolumeById(volumeId.longValue());
@@ -87,13 +89,19 @@ public class CreateTemplateCmd extends BaseCmd {
         boolean isAdmin = ((account == null) || isAdmin(account.getType()));
         if (!isAdmin) {
             if (account.getId().longValue() != volume.getAccountId()) {
-            	throw new ServerApiException(BaseCmd.PARAM_ERROR, "unable to find a volume with id " + volumeId + " for this account");
+            	throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "unable to find a volume with id " + volumeId + " for this account");
             }
+        } else if ((account != null) && !getManagementServer().isChildDomain(account.getDomainId(), volume.getDomainId())) {
+            throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to create a template from volume with id " + volumeId + ", permission denied.");
         }
-        
+
         if (!isAdmin || isPublic == null) {
         	isPublic = Boolean.FALSE;
         }   
+        
+        if (!isAdmin || featured == null) {
+        	featured = Boolean.FALSE;
+        }
 
         Criteria c = new Criteria();
         c.addCriteria(Criteria.NAME, name);
@@ -114,20 +122,20 @@ public class CreateTemplateCmd extends BaseCmd {
         }
 
         try {
-            long jobId = getManagementServer().createPrivateTemplateAsync(userId, volumeId, name, description, guestOSId, requiresHvm, bits, passwordEnabled, isPublic);
-            
-            if(jobId == 0) {
+            long jobId = getManagementServer().createPrivateTemplateAsync(userId, volumeId, name, description, guestOSId, requiresHvm, bits, passwordEnabled, isPublic, featured);
+
+            if (jobId == 0) {
             	s_logger.warn("Unable to schedule async-job for CreateTemplate command");
             } else {
-    	        if(s_logger.isDebugEnabled())
+    	        if (s_logger.isDebugEnabled())
     	        	s_logger.debug("CreateTemplate command has been accepted, job id: " + jobId);
             }
-            
+
             long templateId = waitInstanceCreation(jobId);
             List<Pair<String, Object>> returnValues = new ArrayList<Pair<String, Object>>();
             returnValues.add(new Pair<String, Object>(BaseCmd.Properties.JOB_ID.getName(), Long.valueOf(jobId))); 
             returnValues.add(new Pair<String, Object>(BaseCmd.Properties.TEMPLATE_ID.getName(), Long.valueOf(templateId))); 
-            
+
             return returnValues;
         } catch (ServerApiException sEx) {
             throw sEx;
@@ -135,13 +143,13 @@ public class CreateTemplateCmd extends BaseCmd {
             throw new ServerApiException(BaseCmd.CREATE_PRIVATE_TEMPLATE_ERROR, ex.getMessage());
         }
     }
-    
+
 	protected long getInstanceIdFromJobSuccessResult(String result) {
 		CreatePrivateTemplateResultObject resultObject = (CreatePrivateTemplateResultObject)AsyncJobResult.fromResultString(result);
-		if(resultObject != null) {
+		if (resultObject != null) {
 			return resultObject.getId();
 		}
-		
+
 		return 0;
 	}
 }

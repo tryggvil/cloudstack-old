@@ -7,7 +7,7 @@ usage() {
   printf "Usage: %s: -v <vnet-id>\n" $(basename $0) >&2
 }
 
-VNETD=vmops-vnetd
+VNETD=cloud-vnetd
 
 check_vnetd_running() {
  /sbin/lsmod | grep vnet_module > /dev/null
@@ -110,7 +110,7 @@ then
  exit 2
 fi
 
-VN=vmops-vn
+VN=cloud-vn
 
 #make sure vnetd is running
 check_vnetd_running

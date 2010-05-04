@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -18,7 +18,6 @@
 
 package com.vmops.user;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -27,11 +26,6 @@ import javax.naming.ConfigurationException;
 
 import org.apache.log4j.Logger;
 
-import com.vmops.server.ManagementServerImpl;
-import com.vmops.storage.VMTemplateVO;
-import com.vmops.storage.dao.VMTemplateDao;
-import com.vmops.user.AccountVO;
-import com.vmops.configuration.ResourceCount;
 import com.vmops.configuration.ResourceLimitVO;
 import com.vmops.configuration.ResourceCount.ResourceType;
 import com.vmops.configuration.dao.ResourceCountDao;
@@ -39,6 +33,7 @@ import com.vmops.configuration.dao.ResourceLimitDao;
 import com.vmops.domain.DomainVO;
 import com.vmops.domain.dao.DomainDao;
 import com.vmops.exception.InvalidParameterValueException;
+import com.vmops.storage.dao.VMTemplateDao;
 import com.vmops.user.dao.AccountDao;
 import com.vmops.user.dao.UserDao;
 import com.vmops.utils.component.ComponentLocator;
@@ -194,24 +189,16 @@ public class AccountManagerImpl implements AccountManager {
 		
 		if (limit != null) {
 			max = limit.getMax().longValue();
-		}
-
-		// If the account has an infinite limit, check the account's parent domain, and then the ROOT domain
-		Long[] domainIds = {account.getDomainId(), DomainVO.ROOT_DOMAIN};
-		for (Long domainId : domainIds) {
-			if (domainId != null) {
-				limit = _resourceLimitDao.findByDomainIdAndType(domainId, type);
-				
-				if (limit != null) {
-					max = limit.getMax().longValue();
-				}
-				
-				if (max >= 0) {
-					break;
-				}
+		} else {
+			// If the account has an infinite limit, check the account's parent domain, and then the ROOT domain
+			Long domainId = DomainVO.ROOT_DOMAIN;
+			limit = _resourceLimitDao.findByDomainIdAndType(domainId, type);
+	
+			if (limit != null) {
+				max = limit.getMax().longValue();
 			}
 		}
-		
+
 		return max;
     }
     
@@ -237,26 +224,21 @@ public class AccountManagerImpl implements AccountManager {
     	return _resourceCountDao.getCount(account.getId(), type);
     }
     
-    public ResourceLimitVO createResourceLimit(Long domainId, Long accountId, ResourceType type, Long max) throws InvalidParameterValueException  {
+    public ResourceLimitVO updateResourceLimit(Long domainId, Long accountId, ResourceType type, Long max) throws InvalidParameterValueException  {
     	// Either a domainId or an accountId must be passed in, but not both.
-        if ((domainId == null && accountId == null) || (domainId != null && accountId != null))
-            throw new InvalidParameterValueException("Either a domain ID or an account ID must be passed in, but not both.");
-        
+        if ((domainId == null) && (accountId == null)) {
+            throw new InvalidParameterValueException("Either a domainId or domainId/accountId must be passed in.");
+        }
+
         // Check if the domain or account exists
-        DomainVO domain = null;
-        if (domainId != null) {
-            if ((domain = _domainDao.findById(domainId)) == null) {
-                throw new InvalidParameterValueException("Please specify a valid domain ID.");
-            }
-        } else if (accountId != null) {
+        if (accountId != null) {
             if (_accountDao.findById(accountId) == null) {
                 throw new InvalidParameterValueException("Please specify a valid account ID.");
             }
-        }
-        
-        // If a domain was passed in, make sure it is the ROOT domain
-        if (domainId != null && !domainId.equals(DomainVO.ROOT_DOMAIN)) {
-        	throw new InvalidParameterValueException("Please specify either an account, or the ROOT domain.");
+        } else if (domainId != null) {
+            if (_domainDao.findById(domainId) == null) {
+                throw new InvalidParameterValueException("Please specify a valid domain ID.");
+            }
         }
 
         // A valid limit type must be passed in
@@ -281,17 +263,17 @@ public class AccountManagerImpl implements AccountManager {
         }
 
         List<ResourceLimitVO> limits = _resourceLimitDao.search(sc, searchFilter);
-        if (limits.size() > 0) {
-            throw new InvalidParameterValueException("A limit with the specified domain/account ID and type already exists.");
+        if (limits.size() == 1) {
+        	// Update the existing limit
+            ResourceLimitVO limit = limits.get(0);
+            _resourceLimitDao.update(limit.getId(), max);
+            return limit;
+        } else {
+        	// Persist the new Limit
+            Long id = _resourceLimitDao.persist(new ResourceLimitVO(domainId, accountId, type, max));
+            return _resourceLimitDao.findById(id);
         }
-
-        // Persist the new Limit
-        Long id = _resourceLimitDao.persist(new ResourceLimitVO(domainId, accountId, type, max));
-        return _resourceLimitDao.findById(id);
-    }
-    
-    public boolean updateResourceLimit(long limitId, Long max) {
-    	return _resourceLimitDao.update(limitId, max);
+        
     }
 
 }

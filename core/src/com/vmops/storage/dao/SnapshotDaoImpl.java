@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -57,17 +57,17 @@ public class SnapshotDaoImpl extends GenericDaoBase<SnapshotVO, Long> implements
 
     protected SnapshotDaoImpl() {
         VolumeIdSearch = createSearchBuilder();
-        VolumeIdSearch.addAnd("volumeId", VolumeIdSearch.entity().getVolumeId(), SearchCriteria.Op.EQ);
+        VolumeIdSearch.and("volumeId", VolumeIdSearch.entity().getVolumeId(), SearchCriteria.Op.EQ);
         VolumeIdSearch.done();
         
         ParentIdSearch = createSearchBuilder();
-        ParentIdSearch.addAnd("prevSnapshotId", ParentIdSearch.entity().getPrevSnapshotId(), SearchCriteria.Op.EQ);
+        ParentIdSearch.and("prevSnapshotId", ParentIdSearch.entity().getPrevSnapshotId(), SearchCriteria.Op.EQ);
         ParentIdSearch.done();
         
         lastSnapSearch = createSearchBuilder();
         lastSnapSearch.select(SearchCriteria.Func.MAX, lastSnapSearch.entity().getId());
-        lastSnapSearch.addAnd("volumeId", lastSnapSearch.entity().getVolumeId(), SearchCriteria.Op.EQ);
-        lastSnapSearch.addAnd("snapId", lastSnapSearch.entity().getId(), SearchCriteria.Op.NEQ);
+        lastSnapSearch.and("volumeId", lastSnapSearch.entity().getVolumeId(), SearchCriteria.Op.EQ);
+        lastSnapSearch.and("snapId", lastSnapSearch.entity().getId(), SearchCriteria.Op.NEQ);
         lastSnapSearch.done();
     }
 
@@ -81,9 +81,11 @@ public class SnapshotDaoImpl extends GenericDaoBase<SnapshotVO, Long> implements
 		SearchCriteria sc = lastSnapSearch.create();
 		sc.setParameters("volumeId", volumeId);
 		sc.setParameters("snapId", snapId);
-		List<Object[]> abc = searchAll(sc, null);
-		if( abc != null && abc.size() > 0 && abc.get(0).length > 0){
-			return ((BigInteger)abc.get(0)[0]).longValue();
+		// Only return active snapshots.
+		sc.addAnd("removed", SearchCriteria.Op.NULL);
+		List<Object[]> prevSnapshots = searchAll(sc, null);
+		if(prevSnapshots != null && prevSnapshots.size() > 0 && prevSnapshots.get(0).length > 0 && prevSnapshots.get(0)[0] != null){
+			return ((BigInteger)prevSnapshots.get(0)[0]).longValue();
 		}
 		return 0;
 	}

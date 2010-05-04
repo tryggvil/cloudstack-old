@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -82,7 +82,7 @@ public class SyncQueueManagerImpl implements SyncQueueManager {
     		SyncQueueVO queueVO = _syncQueueDao.lock(queueId, true);
     		if(queueVO == null) {
     			s_logger.error("Sync queue(id: " + queueId + ") does not exist");
-    			txt.rollback();
+    			txt.commit();
     			return null;
     		}
     		
@@ -115,7 +115,7 @@ public class SyncQueueManagerImpl implements SyncQueueManager {
     			if(s_logger.isDebugEnabled())
     				s_logger.debug("There is a pending process in sync queue(id: " + queueId + ")");
     		}
-    		txt.rollback();
+    		txt.commit();
     	} catch(Exception e) {
     		s_logger.error("Unexpected exception: ", e);
     		txt.rollback();

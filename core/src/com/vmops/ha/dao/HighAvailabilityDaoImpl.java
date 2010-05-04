@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -51,38 +51,38 @@ public class HighAvailabilityDaoImpl extends GenericDaoBase<WorkVO, Long> implem
         super();
         
         CleanupSearch = createSearchBuilder();
-        CleanupSearch.addAnd("time", CleanupSearch.entity().getTimeToTry(), SearchCriteria.Op.LTEQ);
-        CleanupSearch.addAnd("step", CleanupSearch.entity().getStep(), SearchCriteria.Op.IN);
+        CleanupSearch.and("time", CleanupSearch.entity().getTimeToTry(), SearchCriteria.Op.LTEQ);
+        CleanupSearch.and("step", CleanupSearch.entity().getStep(), SearchCriteria.Op.IN);
         CleanupSearch.done();
         
         TBASearch = createSearchBuilder();
-        TBASearch.addAnd("server", TBASearch.entity().getServerId(), SearchCriteria.Op.NULL);
-        TBASearch.addAnd("taken", TBASearch.entity().getDateTaken(), SearchCriteria.Op.NULL);
-        TBASearch.addAnd("time", TBASearch.entity().getTimeToTry(), SearchCriteria.Op.LTEQ);
+        TBASearch.and("server", TBASearch.entity().getServerId(), SearchCriteria.Op.NULL);
+        TBASearch.and("taken", TBASearch.entity().getDateTaken(), SearchCriteria.Op.NULL);
+        TBASearch.and("time", TBASearch.entity().getTimeToTry(), SearchCriteria.Op.LTEQ);
         TBASearch.done();
         
         PreviousInstanceSearch = createSearchBuilder();
-        PreviousInstanceSearch.addAnd("instance", PreviousInstanceSearch.entity().getInstanceId(), SearchCriteria.Op.EQ);
+        PreviousInstanceSearch.and("instance", PreviousInstanceSearch.entity().getInstanceId(), SearchCriteria.Op.EQ);
         PreviousInstanceSearch.done();
         
         UntakenMigrationSearch = createSearchBuilder();
-        UntakenMigrationSearch.addAnd("host", UntakenMigrationSearch.entity().getHostId(), SearchCriteria.Op.EQ);
-        UntakenMigrationSearch.addAnd("type", UntakenMigrationSearch.entity().getWorkType(), SearchCriteria.Op.EQ);
-        UntakenMigrationSearch.addAnd("server", UntakenMigrationSearch.entity().getServerId(), SearchCriteria.Op.NULL);
-        UntakenMigrationSearch.addAnd("taken", UntakenMigrationSearch.entity().getDateTaken(), SearchCriteria.Op.NULL);
+        UntakenMigrationSearch.and("host", UntakenMigrationSearch.entity().getHostId(), SearchCriteria.Op.EQ);
+        UntakenMigrationSearch.and("type", UntakenMigrationSearch.entity().getWorkType(), SearchCriteria.Op.EQ);
+        UntakenMigrationSearch.and("server", UntakenMigrationSearch.entity().getServerId(), SearchCriteria.Op.NULL);
+        UntakenMigrationSearch.and("taken", UntakenMigrationSearch.entity().getDateTaken(), SearchCriteria.Op.NULL);
         UntakenMigrationSearch.done();
         
         TakenWorkSearch = createSearchBuilder();
-        TakenWorkSearch.addAnd("type", TakenWorkSearch.entity().getWorkType(), SearchCriteria.Op.EQ);
-        TakenWorkSearch.addAnd("server", TakenWorkSearch.entity().getServerId(), SearchCriteria.Op.NNULL);
-        TakenWorkSearch.addAnd("taken", TakenWorkSearch.entity().getDateTaken(), SearchCriteria.Op.NNULL);
-        TakenWorkSearch.addAnd("step", TakenWorkSearch.entity().getStep(), SearchCriteria.Op.NIN);
+        TakenWorkSearch.and("type", TakenWorkSearch.entity().getWorkType(), SearchCriteria.Op.EQ);
+        TakenWorkSearch.and("server", TakenWorkSearch.entity().getServerId(), SearchCriteria.Op.NNULL);
+        TakenWorkSearch.and("taken", TakenWorkSearch.entity().getDateTaken(), SearchCriteria.Op.NNULL);
+        TakenWorkSearch.and("step", TakenWorkSearch.entity().getStep(), SearchCriteria.Op.NIN);
         TakenWorkSearch.done();
         
         PreviousWorkSearch = createSearchBuilder();
-        PreviousWorkSearch.addAnd("instance", PreviousWorkSearch.entity().getInstanceId(), SearchCriteria.Op.EQ);
-        PreviousWorkSearch.addAnd("type", PreviousWorkSearch.entity().getWorkType(), SearchCriteria.Op.EQ);
-        PreviousWorkSearch.addAnd("taken", PreviousWorkSearch.entity().getDateTaken(), SearchCriteria.Op.NULL);
+        PreviousWorkSearch.and("instance", PreviousWorkSearch.entity().getInstanceId(), SearchCriteria.Op.EQ);
+        PreviousWorkSearch.and("type", PreviousWorkSearch.entity().getWorkType(), SearchCriteria.Op.EQ);
+        PreviousWorkSearch.and("taken", PreviousWorkSearch.entity().getDateTaken(), SearchCriteria.Op.NULL);
         PreviousWorkSearch.done();
     }
 

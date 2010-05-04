@@ -4,6 +4,7 @@ qemu-dm-wrapper=/opt/xensource/libexec
 scsiutil.py=/opt/xensource/sm
 SR.py=/opt/xensource/sm
 VDI.py=/opt/xensource/sm
+hostvmstats.py=/opt/xensource/sm
 vncterm-wrapper=/opt/xensource/libexec
 make_migratable.sh=/opt/xensource/bin
 network_info.sh=/opt/xensource/bin
@@ -21,4 +22,5 @@ ipassoc.sh=/opt/xensource/bin
 save_password_to_domr.sh=/opt/xensource/bin
 firewall.sh=/opt/xensource/bin
 id_rsa=/opt/xensource/bin
+networkUsage.sh=/opt/xensource/bin
 

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -72,9 +72,16 @@ public class DeleteTemplateCmd extends BaseCmd {
             throw new ServerApiException(BaseCmd.PARAM_ERROR, "unable to find template with id " + templateId);
         }
 
-        if ((account != null) && !isAdmin(account.getType())) {
-            if (template.getAccountId() != account.getId()) {
-                throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "unable to delete template with id " + templateId);
+        if (account != null) {
+            if (!isAdmin(account.getType())) {
+                if (template.getAccountId() != account.getId()) {
+                    throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "unable to delete template with id " + templateId);
+                }
+            } else {
+                Account templateOwner = getManagementServer().findAccountById(template.getAccountId());
+                if ((templateOwner == null) || !getManagementServer().isChildDomain(account.getDomainId(), templateOwner.getDomainId())) {
+                    throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to delete template with id " + templateId + ", permission denied.");
+                }
             }
         }
         

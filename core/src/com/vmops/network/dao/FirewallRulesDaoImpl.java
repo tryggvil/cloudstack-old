@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -74,51 +74,51 @@ public class FirewallRulesDaoImpl extends GenericDaoBase<FirewallRuleVO, Long> i
         }
 
         FWByIPSearch = createSearchBuilder();
-        FWByIPSearch.addAnd("publicIpAddress", FWByIPSearch.entity().getPublicIpAddress(), SearchCriteria.Op.EQ);
+        FWByIPSearch.and("publicIpAddress", FWByIPSearch.entity().getPublicIpAddress(), SearchCriteria.Op.EQ);
         FWByIPSearch.done();
         
         FWByIPAndForwardingSearch = createSearchBuilder();
-        FWByIPAndForwardingSearch.addAnd("publicIpAddress", FWByIPAndForwardingSearch.entity().getPublicIpAddress(), SearchCriteria.Op.EQ);
-        FWByIPAndForwardingSearch.addAnd("forwarding", FWByIPAndForwardingSearch.entity().isForwarding(), SearchCriteria.Op.EQ);
+        FWByIPAndForwardingSearch.and("publicIpAddress", FWByIPAndForwardingSearch.entity().getPublicIpAddress(), SearchCriteria.Op.EQ);
+        FWByIPAndForwardingSearch.and("forwarding", FWByIPAndForwardingSearch.entity().isForwarding(), SearchCriteria.Op.EQ);
         FWByIPAndForwardingSearch.done();
         
         FWByIPPortAndForwardingSearch = createSearchBuilder();
-        FWByIPPortAndForwardingSearch.addAnd("publicIpAddress", FWByIPPortAndForwardingSearch.entity().getPublicIpAddress(), SearchCriteria.Op.EQ);
-        FWByIPPortAndForwardingSearch.addAnd("publicPort", FWByIPPortAndForwardingSearch.entity().getPublicPort(), SearchCriteria.Op.EQ);
-        FWByIPPortAndForwardingSearch.addAnd("forwarding", FWByIPPortAndForwardingSearch.entity().isForwarding(), SearchCriteria.Op.EQ);
+        FWByIPPortAndForwardingSearch.and("publicIpAddress", FWByIPPortAndForwardingSearch.entity().getPublicIpAddress(), SearchCriteria.Op.EQ);
+        FWByIPPortAndForwardingSearch.and("publicPort", FWByIPPortAndForwardingSearch.entity().getPublicPort(), SearchCriteria.Op.EQ);
+        FWByIPPortAndForwardingSearch.and("forwarding", FWByIPPortAndForwardingSearch.entity().isForwarding(), SearchCriteria.Op.EQ);
         FWByIPPortAndForwardingSearch.done();
         
         FWByIPPortProtoSearch = createSearchBuilder();
-        FWByIPPortProtoSearch.addAnd("publicIpAddress", FWByIPPortProtoSearch.entity().getPublicIpAddress(), SearchCriteria.Op.EQ);
-        FWByIPPortProtoSearch.addAnd("publicPort", FWByIPPortProtoSearch.entity().getPublicPort(), SearchCriteria.Op.EQ);
-        FWByIPPortProtoSearch.addAnd("protocol", FWByIPPortProtoSearch.entity().getProtocol(), SearchCriteria.Op.EQ);
+        FWByIPPortProtoSearch.and("publicIpAddress", FWByIPPortProtoSearch.entity().getPublicIpAddress(), SearchCriteria.Op.EQ);
+        FWByIPPortProtoSearch.and("publicPort", FWByIPPortProtoSearch.entity().getPublicPort(), SearchCriteria.Op.EQ);
+        FWByIPPortProtoSearch.and("protocol", FWByIPPortProtoSearch.entity().getProtocol(), SearchCriteria.Op.EQ);
         FWByIPPortProtoSearch.done();
         
         FWByIPPortAlgoSearch = createSearchBuilder();
-        FWByIPPortAlgoSearch.addAnd("publicIpAddress", FWByIPPortAlgoSearch.entity().getPublicIpAddress(), SearchCriteria.Op.EQ);
-        FWByIPPortAlgoSearch.addAnd("publicPort", FWByIPPortAlgoSearch.entity().getPublicPort(), SearchCriteria.Op.EQ);
-        FWByIPPortAlgoSearch.addAnd("algorithm", FWByIPPortAlgoSearch.entity().getAlgorithm(), SearchCriteria.Op.EQ);
+        FWByIPPortAlgoSearch.and("publicIpAddress", FWByIPPortAlgoSearch.entity().getPublicIpAddress(), SearchCriteria.Op.EQ);
+        FWByIPPortAlgoSearch.and("publicPort", FWByIPPortAlgoSearch.entity().getPublicPort(), SearchCriteria.Op.EQ);
+        FWByIPPortAlgoSearch.and("algorithm", FWByIPPortAlgoSearch.entity().getAlgorithm(), SearchCriteria.Op.EQ);
         FWByIPPortAlgoSearch.done();
 
         FWByPrivateIPSearch = createSearchBuilder();
-        FWByPrivateIPSearch.addAnd("privateIpAddress", FWByPrivateIPSearch.entity().getPrivateIpAddress(), SearchCriteria.Op.EQ);
+        FWByPrivateIPSearch.and("privateIpAddress", FWByPrivateIPSearch.entity().getPrivateIpAddress(), SearchCriteria.Op.EQ);
         FWByPrivateIPSearch.done();
 
         RulesExcludingPubIpPort = createSearchBuilder();
-        RulesExcludingPubIpPort.addAnd("publicIpAddress", RulesExcludingPubIpPort.entity().getPrivateIpAddress(), SearchCriteria.Op.EQ);
-        RulesExcludingPubIpPort.addAnd("groupId", RulesExcludingPubIpPort.entity().getGroupId(), SearchCriteria.Op.NEQ);
-        RulesExcludingPubIpPort.addAnd("forwarding", RulesExcludingPubIpPort.entity().isForwarding(), SearchCriteria.Op.EQ);
+        RulesExcludingPubIpPort.and("publicIpAddress", RulesExcludingPubIpPort.entity().getPrivateIpAddress(), SearchCriteria.Op.EQ);
+        RulesExcludingPubIpPort.and("groupId", RulesExcludingPubIpPort.entity().getGroupId(), SearchCriteria.Op.NEQ);
+        RulesExcludingPubIpPort.and("forwarding", RulesExcludingPubIpPort.entity().isForwarding(), SearchCriteria.Op.EQ);
         RulesExcludingPubIpPort.done();
 
         FWByGroupId = createSearchBuilder();
-        FWByGroupId.addAnd("groupId", FWByGroupId.entity().getGroupId(), SearchCriteria.Op.EQ);
-        FWByGroupId.addAnd("forwarding", FWByGroupId.entity().isForwarding(), SearchCriteria.Op.EQ);
+        FWByGroupId.and("groupId", FWByGroupId.entity().getGroupId(), SearchCriteria.Op.EQ);
+        FWByGroupId.and("forwarding", FWByGroupId.entity().isForwarding(), SearchCriteria.Op.EQ);
         FWByGroupId.done();
 
         FWByGroupAndPrivateIp = createSearchBuilder();
-        FWByGroupAndPrivateIp.addAnd("groupId", FWByGroupAndPrivateIp.entity().getGroupId(), SearchCriteria.Op.EQ);
-        FWByGroupAndPrivateIp.addAnd("privateIpAddress", FWByGroupAndPrivateIp.entity().getPrivateIpAddress(), SearchCriteria.Op.EQ);
-        FWByGroupAndPrivateIp.addAnd("forwarding", FWByGroupAndPrivateIp.entity().isForwarding(), SearchCriteria.Op.EQ);
+        FWByGroupAndPrivateIp.and("groupId", FWByGroupAndPrivateIp.entity().getGroupId(), SearchCriteria.Op.EQ);
+        FWByGroupAndPrivateIp.and("privateIpAddress", FWByGroupAndPrivateIp.entity().getPrivateIpAddress(), SearchCriteria.Op.EQ);
+        FWByGroupAndPrivateIp.and("forwarding", FWByGroupAndPrivateIp.entity().isForwarding(), SearchCriteria.Op.EQ);
         FWByGroupAndPrivateIp.done();
 
         return true;

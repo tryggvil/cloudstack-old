@@ -457,127 +457,43 @@
 <!-- END Console Overlay -->
 <!-- Add New VM Wizard -->
 <div class="vmpopup_container" id="vmpopup" style="display: none;">
-    <div class="vmpopup_left">
-    </div>
-    <div class="vmpopup_mid">
-        <div class="vmpopup_maincontent">
-            <div class="wizard_step1" style="display: block;">
-                <div class="allsteps_container">
-                    <div class="dragme">
-                        <div id="vm_wizard_header_step1" class="steps_box_selected">
-                            <div class="stepbox_left">
-                                <div class="stepsno_icons">
-                                    <img src="images/step1.png" alt="Step 1" />
-                                </div>
-                            </div>
-                            <div class="stepbox_right">
-                                <h3>
-                                    Select a Template</h3>
-                                <p>
-                                    To create a new instance, please select a template for your new instance.</p>
-                            </div>
-                        </div>
-                        <div id="vm_wizard_header_step2" class="steps_box">
-                            <div class="stepbox_left">
-                                <div class="stepsno_icons">
-                                    <img src="images/step2.png" alt="Step 2" />
-                                </div>
-                            </div>
-                            <div class="stepbox_right">
-                                <h3>
-                                    Select your Offering</h3>
-                                <p>
-                                    Please select the offerings that best suit your needs.</p>
-                            </div>
-                        </div>
-                        <div id="vm_wizard_header_step3" class="steps_box">
-                            <div class="stepbox_left">
-                                <div class="stepsno_icons">
-                                    <img src="images/step3.png" alt="Step 3" />
-                                </div>
-                            </div>
-                            <div class="stepbox_right">
-                                <h3>
-                                    Add Additional Info</h3>
-                                <p>
-                                    Please add any additional information.</p>
-                            </div>
-                        </div>
-                        <div id="vm_wizard_header_step4" class="steps_box">
-                            <div class="stepbox_left">
-                                <div class="stepsno_icons">
-                                    <img src="images/step4.png" alt="Step 4" />
-                                </div>
-                            </div>
-                            <div class="stepbox_right">
-                                <h3>
-                                    Get Running!!</h3>
-                                <p>
-                                    Please review your selections and click 'Next' to create your new instance.</p>
-                            </div>
-                        </div>
-                    </div>
+	<div class="revwiz_closebutton" id="vm_wizard_close"></div>
+	<div id="step1" style="display:block;">
+        <div class="rev_wiztop">
+            <div class="rev_wizardbox">
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_selectednumber">1</div>
+                    <h3>Select a Zone</h3>
                 </div>
-                <!-- Step 1 -->
-                <div id="vm_wizard_step1" class="wizcontent_panel" style="display: block;">
-                    <div class="wizard_stepscontent">
-                        <h2>
-                            1: Select a Template</h2>
-                        <span>To create a new instance, please select either a public template or a template
-                            you've previously created. You can also choose to select a blank template from which
-                            an ISO image can be installed into. </span>
-                        <div class="wizard_formcontent">
-                            <form name="step1" method="post" action="#">
-                            <div class="wizard_formcontent_title">
-                                Public Templates</div>
-                            <ol id="wizard_public_template">
-                            </ol>
-                            <div class="wizard_formcontent_title">
-                                My Templates</div>
-                            <ol id="wizard_private_template">
-                            </ol>
-                            </form>
-                        </div>
-                    </div>
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_nonselectednumber">2</div>
+                    <h3>Select a Template</h3>
                 </div>
-                <!-- Step 2 -->
-                <div id="vm_wizard_step2" class="wizcontent_panel" style="display: none;">
-                    <div class="wizard_stepscontent">
-                        <h2>
-                            2: Select an Offering</h2>
-                        <span>Please select the CPU, Memory, and Storage requirements you need for your new
-                            Virtual Instance.</span>
-                        <div class="wizard_formcontent">
-                            <form name="step2" method="post" action="#">
-                            <div class="wizard_formcontent_title">
-                                Service Offerings</div>
-                            <ol id="wizard_service_offering">
-                            </ol>
-                            <div class="wizard_formcontent_title" id="wizard_root_disk_offering_title" style="display: none">
-                                Root Disk Offerings</div>
-                            <ol id="wizard_root_disk_offering">
-                            </ol>
-                            <div class="wizard_formcontent_title" id="wizard_data_disk_offering_title" style="display: none">
-                                Data Disk Offerings</div>
-                            <ol id="wizard_data_disk_offering">
-                            </ol>
-                            </form>
-                        </div>
-                    </div>
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_nonselectednumber">3</div>
+                    <h3>Select Offerings</h3>
                 </div>
-                <!-- Step 3 -->
-                <div id="vm_wizard_step3" class="wizcontent_panel" style="display: none;">
-                    <div class="wizard_stepscontent">
-                        <h2>
-                            3: Add Additional Info</h2>
-                        <span>Please add any additional info about your instance.</span>
-                        <div class="wizard_formcontent3">
-                            <form name="step3" method="post" action="#">
-                            <ol>
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_nonselectednumber">4</div>
+                    <h3>Select Review</h3>
+                </div>
+            </div>	
+        </div>
+        <div class="rev_wizmid">
+        	<div class="rev_wizmid_maincontent">
+            	<div class="rev_wizmid_titlebox">
+                	<h2><strong>Step 1:</strong> Select a Zone</h2>
+                    <p> To create a new instance, please first select a zone you wish to have your virtual instance hosted on.</p>
+                </div>
+                <div class="rev_wizmid_contentbox">
+                	<div class="rev_tempsearchpanel"></div>
+                    <div class="rev_wizformarea">
+                    	<form name="step1" method="post" action="#">
+                        	<ol>
                                 <li>
                                     <label for="zone">
                                         Availability Zone:</label>
-                                    <select id="wizard_zone" name="zone">
+                                    <select class="select" style="width:60px;" id="wizard_zone" name="zone">
                                     </select>
                                 </li>
                                 <li>
@@ -591,65 +507,230 @@
                                     <input class="text" type="text" name="group" id="wizard_vm_group" />
                                 </li>
                             </ol>
-                            </form>
-                        </div>
+                        </form>
                     </div>
                 </div>
-                <!-- Step 4 -->
-                <div id="vm_wizard_step4" class="wizcontent_panel" style="display: none;">
-                    <div class="wizard_stepscontent">
-                        <h2>
-                            4: Get Running</h2>
-                        <span>Please review you selections and hit 'Next' to create your new instance. Click
-                            'Prev' to make any changes to your new VM Instance.</span>
-                        <div class="wizard_formcontent">
-                            <p>
-                                <strong>Service Offering</strong>: <span id="wizard_review_service_offering">Test line,
-                                    sakdsjhdjshsj</span></p>
-                            <p id="wizard_review_root_disk_offering_p">
-                                <strong>Root Disk Offering</strong>: <span id="wizard_review_root_disk_offering">
-                                </span>
-                            </p>
-                            <p id="wizard_review_data_disk_offering_p">
-                                <strong>Data Disk Offering</strong>: <span id="wizard_review_data_disk_offering">
-                                </span>
-                            </p>
-                            <p>
-                                <strong>Template</strong>: <span id="wizard_review_template"></span>
-                            </p>
-                            <p id="wizard_review_iso_p">
-                                <strong>ISO Image</strong>: <span id="wizard_review_iso"></span>
-                            </p>
-                            <p>
-                                <strong>Zone</strong>: <span id="wizard_review_zone"></span>
-                            </p>
-                            <p>
-                                <strong>Name</strong>: <span id="wizard_review_name"></span>
-                            </p>
-                            <p>
-                                <strong>Group</strong>: <span id="wizard_review_group"></span>
-                            </p>
-                            <form name="step3" method="post" action="#">
-                            <ol>
-                                <li>
-                                    <label for="terms">
-                                        By clicking 'Next', you hereby accept the following <a href="#" id="t_and_c">Terms &amp; Conditions</a>.
-                                    </label>
-                                </li>
-                            </ol>
-                            </form>
-                        </div>
-                    </div>
+                <div class="rev_wizmid_actionbox">
+                	<div class="rev_wizmid_actionnext"> Go to Step 2</div>
                 </div>
-            </div>
-            <div class="wizard_controlbox">
-                <a id="wizardprev_button" class="wizardprev_button" href="#" style="display: none;"></a><a id="wizardnext_button" class="wizardnext_button"
-                    href="#" style="display: block;"></a>
             </div>
         </div>
+        <div class="rev_wizbot"></div>
     </div>
-    <div class="vmpopup_right">
-        <a class="vm_create_close" href="#" /></a>
+    
+    <div id="step2" style="display:none;">
+        <div class="rev_wiztop">
+            <div class="rev_wizardbox">
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_nonselectednumber">1</div>
+                    <h3>Select a Zone</h3>
+                </div>
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_selectednumber">2</div>
+                    <h3>Select a Template</h3>
+                </div>
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_nonselectednumber">3</div>
+                    <h3>Select Offerings</h3>
+                </div>
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_nonselectednumber">4</div>
+                    <h3>Select Review</h3>
+                </div>
+            </div>	
+        </div>
+        <div class="rev_wizmid">
+        	<div class="rev_wizmid_maincontent">
+            	<div class="rev_wizmid_titlebox">
+                	<h2><strong>Step 2:</strong> Select a Template</h2>
+                    <p> Please select select a template for your new virtual instance. You can also choose to select a blank template from which an ISO image can be installed onto. </p>
+                </div>
+                <div class="rev_wizmid_contentbox">
+                	<div class="rev_tempsearchpanel">
+                    	<div class="rev_tempsearchbox">
+                        	<form method="post" action="#">
+                            	<ol>
+                                	<li><input id="search_input" class="text" type="text" name="search_input" />
+                                </ol>
+                            </form>
+                            <div id="search_button" class="rev_searchbutton">Search</div>
+                        </div>
+                    </div>
+                    <div class="rev_wizformarea">
+						<div class="revwiz_message_container" style="display: none;" id="wiz_message">
+							<div class="revwiz_message_top">
+								<p id="wiz_message_text">Please select a template or ISO to continue</p>
+							</div>
+							<div class="revwiz_message_bottom">
+								 <div class="revwizcontinue_button" id="wiz_message_continue" ></div>
+							</div>
+       			 		</div>
+                    	<div class="rev_wizmid_tempbox">
+							<div class="revwiz_loadingbox" id="wiz_template_loading" style="display:none">
+								<div class="loading_gridanimation"></div>
+								<p> Loading...</p>
+							</div>
+                        	<div class="rev_wizmid_tempbox_left" id="wiz_template_filter">
+                            	<div class="rev_wizmid_selectedtempbut" id="wiz_featured">Featured Template</div>
+                                <div class="rev_wizmid_nonselectedtempbut" id="wiz_my">My Template</div>
+                                <div class="rev_wizmid_nonselectedtempbut" id="wiz_community">Community Template</div>
+                                <div class="rev_wizmid_nonselectedtempbut" id="wiz_blank">Blank Template</div>
+                            </div>
+                            <div class="rev_wizmid_tempbox_right">
+								<div class="rev_wiztemplistpanel" id="template_container">
+								</div>
+                                <div class="rev_wiztemplistactions">
+									<div class="rev_wiztemplist_actionsbox">
+                                  		<a href="#" id="prevPage">Prev</a> | <a href="#" id="nextPage">Next</a>
+									</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="rev_wizmid_actionbox">
+                	<div class="rev_wizmid_actionnext"> Go to Step 3</div>
+                    <div class="rev_wizmid_actionback"> Back</div>
+                </div>
+            </div>
+        </div>
+        <div class="rev_wizbot"></div>
+    </div>
+    
+    <div id="step3" style="display:none;">
+        <div class="rev_wiztop">
+            <div class="rev_wizardbox">
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_nonselectednumber">1</div>
+                    <h3>Select a Zone</h3>
+                </div>
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_nonselectednumber">2</div>
+                    <h3>Select a Template</h3>
+                </div>
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_selectednumber">3</div>
+                    <h3>Select Offerings</h3>
+                </div>
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_nonselectednumber">4</div>
+                    <h3>Select Review</h3>
+                </div>
+            </div>	
+        </div>
+        <div class="rev_wizmid">
+        	<div class="rev_wizmid_maincontent">
+            	<div class="rev_wizmid_titlebox">
+                	<h2><strong>Step 3:</strong> Select Offerings</h2>
+                    <p> Please select the CPU, Memory, and Storage requirements you need for your new Virtual Instance.</p>
+                </div>
+                <div class="rev_wizmid_contentbox">
+                	<div class="rev_tempsearchpanel"></div>
+                    <div class="rev_wizformarea">
+                       <form name="step2" method="post" action="#">
+                            <div class="revwiz_formcontent_title">
+                                Service Offerings :</div>
+                            <ol id="wizard_service_offering">
+                            	
+                            </ol>
+                            <div class="revwiz_formcontent_title" id="wizard_root_disk_offering_title" style="display: none;">
+                                Root Disk Offerings :</div>
+                            <ol id="wizard_root_disk_offering">
+                            </ol>
+                            <div class="revwiz_formcontent_title" id="wizard_data_disk_offering_title" style="display: none;">
+                                Data Disk Offerings :</div>
+                            <ol id="wizard_data_disk_offering">
+                            </ol>
+                            </form>
+
+                    </div>
+                </div>
+                <div class="rev_wizmid_actionbox">
+                	<div class="rev_wizmid_actionnext"> Go to Step 4</div>
+                    <div class="rev_wizmid_actionback"> Back</div>
+                </div>
+            </div>
+        </div>
+        <div class="rev_wizbot"></div>
+    </div>
+    
+    <div id="step4" style="display:none;">
+        <div class="rev_wiztop">
+            <div class="rev_wizardbox">
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_nonselectednumber">1</div>
+                    <h3>Select a Zone</h3>
+                </div>
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_nonselectednumber">2</div>
+                    <h3>Select a Template</h3>
+                </div>
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_nonselectednumber">3</div>
+                    <h3>Select Offerings</h3>
+                </div>
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_selectednumber">4</div>
+                    <h3>Select Review</h3>
+                </div>
+            </div>	
+        </div>
+        <div class="rev_wizmid">
+        	<div class="rev_wizmid_maincontent">
+            	<div class="rev_wizmid_titlebox">
+                	<h2><strong>Step 4:</strong> Review</h2>
+                    <p>Please review you selections and hit 'Submit' to create your new instance. Click 'Prev' to make any changes to your new VM Instance.</p>
+                </div>
+                <div class="rev_wizmid_contentbox">
+                	<div class="rev_tempsearchpanel"></div>
+                    <div class="rev_wiz_reviewbox">
+                    	<div class="rev_wiz_reviewlist">
+                        	<div class="rev_wiz_reviewlabel">Zone:</div>
+                            <div class="rev_wiz_reviewanswers" id="wizard_review_zone"></div>
+                        </div>
+                        
+                        <div class="rev_wiz_reviewlist">
+                        	<div class="rev_wiz_reviewlabel">Name:</div>
+                            <div class="rev_wiz_reviewanswers" id="wizard_review_name"></div>
+                        </div>
+                        
+                        <div class="rev_wiz_reviewlist">
+                        	<div class="rev_wiz_reviewlabel">Group:</div>
+                            <div class="rev_wiz_reviewanswers" id="wizard_review_group"></div>
+                        </div>
+                        
+                        <div class="rev_wiz_reviewlist">
+                        	<div class="rev_wiz_reviewlabel">Template:</div>
+                            <div class="rev_wiz_reviewanswers" id="wizard_review_template"></div>
+                        </div>
+						<div class="rev_wiz_reviewlist" id="wizard_review_iso_p">
+                        	<div class="rev_wiz_reviewlabel">ISO:</div>
+                            <div class="rev_wiz_reviewanswers" id="wizard_review_iso"></div>
+                        </div>
+                        
+                        <div class="rev_wiz_reviewlist">
+                        	<div class="rev_wiz_reviewlabel">Service Offering:</div>
+                            <div class="rev_wiz_reviewanswers" id="wizard_review_service_offering"></div>
+                        </div>
+                        
+                        <div class="rev_wiz_reviewlist" id="wizard_review_data_disk_offering_p">
+                        	<div class="rev_wiz_reviewlabel">Data Disk Offering:</div>
+                            <div class="rev_wiz_reviewanswers" id="wizard_review_data_disk_offering"></div>
+                        </div>
+						<div class="rev_wiz_reviewlist" id="wizard_review_root_disk_offering_p">
+                        	<div class="rev_wiz_reviewlabel">Root Disk Offering:</div>
+                            <div class="rev_wiz_reviewanswers" id="wizard_review_root_disk_offering"></div>
+                        </div>
+                    </div>
+                    
+                </div>
+                <div class="rev_wizmid_actionbox">
+                	<div class="rev_wizmid_actionnext"> Submit</div>
+                    <div class="rev_wizmid_actionback"> Back</div>
+                </div>
+            </div>
+        </div>
+        <div class="rev_wizbot"></div>
     </div>
 </div>
 <!-- END Add New VM Wizard -->

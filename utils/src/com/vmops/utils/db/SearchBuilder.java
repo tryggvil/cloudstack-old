@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -123,18 +123,27 @@ public class SearchBuilder<T> implements MethodInterceptor {
      * @param op operation to apply to the field.
      * @return this
      */
-    public SearchBuilder<T> addAnd(String name, Object useless, Op op) {
-    	assert _entity != null : "SearchBuilder cannot be modified once it has been setup";
-    	assert _specifiedAttrs.size() == 1 : "You didn't select the attribute.  Did you use a different SearchBuilder to get the entity?";
-
-    	Condition condition = constructCondition(name, " AND ", _specifiedAttrs.get(0), op);
-        _conditions.add(condition);
-        _specifiedAttrs.clear();
+    public SearchBuilder<T> and(String name, Object useless, Op op) {
+        constructCondition(name, " AND ", _specifiedAttrs.get(0), op);
+        return this;
+    }
+    
+    public SearchBuilder<T> left(Op logic, String name, Object useless, Op op) {
+        assert (logic == null || logic == Op.OR || logic == Op.AND) : "You can only use logic operators for open paren";
+        constructCondition(name, (logic == null ? "" : logic.toString()) + " ( ", _specifiedAttrs.get(0), op);
         return this;
     }
     
     public SearchBuilder<T> select(Object useless) {
         return select(Func.NATIVE, useless);
+    }
+    
+    public SearchBuilder<T> op(Op logic, String name, Object useless, Op op) {
+        return left(logic, name, useless, op);
+    }
+    
+    public SearchBuilder<T> openParen(Op logic, String name, Object useless, Op op) {
+        return left(logic, name, useless, op);
     }
     
     public SearchBuilder<T> select(Func func, Object... useless) {
@@ -160,18 +169,12 @@ public class SearchBuilder<T> implements MethodInterceptor {
      * @param op operation to apply to the field.
      * @return this
      */
-    public SearchBuilder<T> addOr(String name, Object useless, Op op) {
-    	assert _entity != null : "SearchBuilder cannot be modified once it has been setup";
-    	assert _specifiedAttrs.size() == 1 : "You didn't selectt the attribute.";
-    	assert op != Op.SC : "Call join";
-    	
-        Condition condition = constructCondition(name, " OR ", _specifiedAttrs.get(0), op);
-        _conditions.add(condition);
-        _specifiedAttrs.clear();
+    public SearchBuilder<T> or(String name, Object useless, Op op) {
+    	constructCondition(name, " OR ", _specifiedAttrs.get(0), op);
         return this;
     }
     
-    public void join(String name, SearchBuilder<?> builder, Object useless, Object useless2) {
+    public SearchBuilder<T> join(String name, SearchBuilder<?> builder, Object useless, Object useless2) {
         assert _entity != null : "SearchBuilder cannot be modified once it has been setup";
         assert _specifiedAttrs.size() == 1 : "You didn't select the attribute.";
         assert builder._entity != null : "SearchBuilder cannot be modified once it has been setup";
@@ -186,10 +189,17 @@ public class SearchBuilder<T> implements MethodInterceptor {
         
         builder._specifiedAttrs.clear();
         _specifiedAttrs.clear();
+        return this;
     }
     
-    protected Condition constructCondition(String conditionName, String cond, Attribute attr, Op op) {
-        return new Condition(conditionName, /*_conditions.size() == 0 ? "" : */cond, attr, op);
+    protected void constructCondition(String conditionName, String cond, Attribute attr, Op op) {
+        assert _entity != null : "SearchBuilder cannot be modified once it has been setup";
+        assert _specifiedAttrs.size() == 1 : "You didn't selectt the attribute.";
+        assert op != Op.SC : "Call join";
+        
+        Condition condition = new Condition(conditionName, cond, attr, op);
+        _conditions.add(condition);
+        _specifiedAttrs.clear();
     }
 
     /**
@@ -208,6 +218,21 @@ public class SearchBuilder<T> implements MethodInterceptor {
         SearchCriteria sc = create();
         sc.setParameters(name, values);
         return sc;
+    }
+    
+    public SearchBuilder<T> right() {
+        Condition condition = new Condition("rp", " ) ", null, Op.RP);
+        _conditions.add(condition);
+        return this;
+    }
+    
+    
+    public SearchBuilder<T> cp() {
+        return right();
+    }
+    
+    public SearchBuilder<T> closeParen() {
+        return right();
     }
     
     /**
@@ -232,8 +257,8 @@ public class SearchBuilder<T> implements MethodInterceptor {
         protected final Op op;
         protected final Attribute attr;
         
-        public Condition(String name) {
-        	this(name, null, null, null);
+        protected Condition(String name) {
+            this(name, null, null, null);
         }
         
         public Condition(String name, String cond, Attribute attr, Op op) {
@@ -250,6 +275,10 @@ public class SearchBuilder<T> implements MethodInterceptor {
             
             if (op == Op.SC) {
                 sql.append(" (").append(((SearchCriteria)params[0]).getWhereClause()).append(") ");
+                return;
+            }
+            
+            if (attr == null) {
                 return;
             }
             

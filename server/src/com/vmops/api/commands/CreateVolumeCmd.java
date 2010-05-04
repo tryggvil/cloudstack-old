@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -67,10 +67,10 @@ public class CreateVolumeCmd extends BaseCmd {
     	String name = (String) params.get(BaseCmd.Properties.NAME.getName());
     	Long zoneId = (Long) params.get(BaseCmd.Properties.ZONE_ID.getName());
     	Long diskOfferingId = (Long) params.get(BaseCmd.Properties.DISK_OFFERING_ID.getName());
-    	
+
     	if (account == null) {
     		// Admin API call
-    		
+
     		// Check if accountName was passed in
     		if (accountName == null)
     			throw new ServerApiException(BaseCmd.PARAM_ERROR, "Account must be passed in.");
@@ -78,22 +78,29 @@ public class CreateVolumeCmd extends BaseCmd {
     		if (domainId == null) {
     			domainId = Long.valueOf(1);
     		}
-    		
+
     		// Look up the account by name and domain ID
     		account = getManagementServer().findActiveAccount(accountName, domainId);    		
-    		
+
     		// If the account is null, this means that the accountName and domainId passed in were invalid
     		if (account == null)
     			throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to find account with name: " + accountName + " and domain ID: " + domainId);
     	} else {
     		// User API call
-    		
-    		// If the account is an admin, and accountName/domainId were passed in, use the account specified by these parameters
-    		if (isAdmin(account.getType()) && accountName != null && domainId != null) {
-    			account = getManagementServer().findActiveAccount(accountName, domainId);
-    			
-    			if (account == null)
-    				throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to find account with name: " + accountName + " and domain ID: " + domainId);
+
+    	    // If the account is an admin, and accountName/domainId were passed in, use the account specified by these parameters
+    		if (isAdmin(account.getType())) {
+    		    if (domainId != null) {
+    		        if (!getManagementServer().isChildDomain(account.getDomainId(), domainId)) {
+    	                throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to create volume in domain " + domainId + ", permission denied.");
+    		        }
+    		        if (accountName != null) {
+    	                account = getManagementServer().findActiveAccount(accountName, domainId);
+
+    	                if (account == null)
+    	                    throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to find account with name: " + accountName + " and domain ID: " + domainId);
+    		        }
+    		    }
     		}
     	}
     	

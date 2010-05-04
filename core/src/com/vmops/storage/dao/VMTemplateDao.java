@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -21,12 +21,22 @@ package com.vmops.storage.dao;
 import java.util.List;
 
 import com.vmops.storage.VMTemplateVO;
+import com.vmops.user.Account;
 import com.vmops.utils.db.GenericDao;
 
 /*
  * Data Access Object for vm_templates table
  */
 public interface VMTemplateDao extends GenericDao<VMTemplateVO, Long> {
+	
+	public enum TemplateFilter {
+		featured,
+		self,
+		selfexecutable,
+		community,
+		all
+	}
+	
 	public List<VMTemplateVO> listByPublic();
 	public VMTemplateVO findByName(String templateName);
 	//public void update(VMTemplateVO template);
@@ -36,5 +46,5 @@ public interface VMTemplateDao extends GenericDao<VMTemplateVO, Long> {
 	public List<VMTemplateVO> findIsosByIdAndPath(Long domainId, Long accountId, String path);
 	public List<VMTemplateVO> listReadyTemplates();
 	public List<VMTemplateVO> listByAccountId(long accountId);
-	public List<VMTemplateVO> searchTemplates(String name, String keyword, Boolean isReady, Boolean isPublic, boolean isIso, Boolean bootable, Long accountId, Integer pageSize, Long startIndex);
+	public List<VMTemplateVO> searchTemplates(String name, String keyword, TemplateFilter templateFilter, boolean isIso, Boolean bootable, Account account, Integer pageSize, Long startIndex);
 }

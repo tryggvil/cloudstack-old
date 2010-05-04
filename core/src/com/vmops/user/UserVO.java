@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -61,8 +61,8 @@ public class UserVO implements User {
     @Column(name="email")
     private String email = null;
 
-    @Column(name="disabled")
-    private boolean disabled;
+    @Column(name="state")
+    private String state;
 
 	@Column(name="api_key")
 	private String apiKey = null;
@@ -128,11 +128,11 @@ public class UserVO implements User {
     public void setEmail(String email) {
         this.email = email;
     }
-    public boolean getDisabled() {
-        return disabled;
+    public String getState() {
+        return state;
     }
-    public void setDisabled(boolean disabled) {
-        this.disabled = disabled;
+    public void setState(String state) {
+        this.state = state;
     }
 	public String getApiKey() {
 	    return apiKey;

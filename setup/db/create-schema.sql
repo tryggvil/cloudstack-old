@@ -189,7 +189,6 @@ CREATE TABLE `vmops`.`volumes` (
   `created` datetime COMMENT 'Date Created',
   `removed` datetime COMMENT 'Date removed.  not null if removed',
   `status` varchar(32) COMMENT 'Async API volume creation status',
-  `last_snap_id` bigint unsigned COMMENT 'Id of the most recent snapshot. foreign key to snapshot table',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -400,7 +399,7 @@ CREATE TABLE  `vmops`.`user` (
   `firstname` varchar(255) default NULL,
   `lastname` varchar(255) default NULL,
   `email` varchar(255) default NULL,
-  `disabled` int(1) unsigned NOT NULL default '0',
+  `state` varchar(10) NOT NULL default 'enabled',
   `api_key` varchar(255) default NULL,
   `secret_key` varchar(255) default NULL,
   `created` datetime NOT NULL COMMENT 'date created',
@@ -447,6 +446,7 @@ CREATE TABLE  `vmops`.`vm_template` (
   `unique_name` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
   `public` int(1) unsigned NOT NULL,
+  `featured` int(1) unsigned NOT NULL,
   `type` varchar(32) NULL,
   `hvm`  int(1) unsigned NOT NULL COMMENT 'requires HVM',
   `bits` int(6) unsigned NOT NULL COMMENT '32 bit or 64 bit',
@@ -589,7 +589,7 @@ CREATE TABLE  `vmops_usage`.`vmops_usage` (
   `raw_usage` FLOAT UNSIGNED NOT NULL,
   `vm_instance_id` bigint unsigned,
   `vm_name` varchar(255),
-  `service_offering_id` bigint unsigned,
+  `offering_id` bigint unsigned,
   `template_id` bigint unsigned,
   `size` bigint unsigned,
   `start_date` DATETIME NOT NULL,
@@ -652,7 +652,7 @@ CREATE TABLE  `vmops_usage`.`account` (
   `account_name` varchar(100) COMMENT 'an account name set by the creator of the account, defaults to username for single accounts',
   `type` int(1) unsigned NOT NULL,
   `domain_id` bigint unsigned,
-  `disabled` int(1) unsigned NOT NULL default '0',
+  `state` varchar(10) NOT NULL default 'enabled',
   `removed` datetime COMMENT 'date removed',
   `cleanup_needed` tinyint(1) NOT NULL default '0',
   PRIMARY KEY  (`id`)
@@ -674,7 +674,8 @@ CREATE TABLE  `vmops_usage`.`usage_volume` (
   `zone_id` bigint unsigned NOT NULL,
   `account_id` bigint unsigned NOT NULL,
   `domain_id` bigint unsigned NOT NULL,
-  `disk_offering_id` bigint unsigned NOT NULL,
+  `disk_offering_id` bigint unsigned,
+  `template_id` bigint unsigned,
   `created` DATETIME NOT NULL,
   `deleted` DATETIME NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -740,6 +741,8 @@ CREATE TABLE  `vmops`.`secondary_storage_vm` (
   `vlan_db_id` bigint unsigned COMMENT 'Foreign key into vlan id table',
   `vlan_id` varchar(255) COMMENT 'optional VLAN ID for sec storage vm that can be used',
   `ram_size` int(10) unsigned NOT NULL DEFAULT 512 COMMENT 'memory to use in mb',
+  `guid` varchar(255) NOT NULL COMMENT 'copied from guid of secondary storage host',
+  `nfs_share` varchar(255) NOT NULL COMMENT 'server and path exported by the nfs server ',
   `last_update` DATETIME NULL COMMENT 'Last session update time',
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
@@ -755,7 +758,7 @@ CREATE TABLE  `vmops`.`domain` (
   `next_child_seq` bigint unsigned NOT NULL DEFAULT 1,
   `removed` datetime COMMENT 'date removed',
   PRIMARY KEY  (`id`),
-  UNIQUE (parent, name)
+  UNIQUE (parent, name, removed)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE  `vmops`.`account` (
@@ -763,7 +766,7 @@ CREATE TABLE  `vmops`.`account` (
   `account_name` varchar(100) COMMENT 'an account name set by the creator of the account, defaults to username for single accounts',
   `type` int(1) unsigned NOT NULL,
   `domain_id` bigint unsigned,
-  `disabled` int(1) unsigned NOT NULL default '0',
+  `state` varchar(10) NOT NULL default 'enabled',
   `removed` datetime COMMENT 'date removed',
   `cleanup_needed` tinyint(1) NOT NULL default '0',
   PRIMARY KEY  (`id`)

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -37,8 +37,6 @@ import com.vmops.agent.api.Answer;
 import com.vmops.agent.api.CheckVirtualMachineAnswer;
 import com.vmops.agent.api.CheckVirtualMachineCommand;
 import com.vmops.agent.api.Command;
-import com.vmops.agent.api.GetVmStatsAnswer;
-import com.vmops.agent.api.GetVmStatsCommand;
 import com.vmops.agent.api.MigrateCommand;
 import com.vmops.agent.api.ModifyVlanCommand;
 import com.vmops.agent.api.PrepareForMigrationCommand;
@@ -698,7 +696,7 @@ public class NetworkManagerImpl implements NetworkManager, VirtualMachineManager
             s_logger.debug("Attempting to destroy router " + routerId);
         }
 
-        final DomainRouterVO router = _routerDao.acquire(routerId);
+        DomainRouterVO router = _routerDao.acquire(routerId);
 
         if (router == null) {
             s_logger.debug("Unable to acquire lock on router " + routerId);
@@ -717,6 +715,7 @@ public class NetworkManagerImpl implements NetworkManager, VirtualMachineManager
                 s_logger.debug("Unable to stop the router: " + routerId);
                 return false;
             }
+            router = _routerDao.findById(routerId);
             if (!_routerDao.updateIf(router, Event.DestroyRequested, router.getHostId())) {
                 s_logger.debug("VM " + router.toString() + " is not in a state to be destroyed.");
                 return false;
@@ -786,6 +785,7 @@ public class NetworkManagerImpl implements NetworkManager, VirtualMachineManager
                 txn.start();
                 if (vols != null) {
                     for (final VolumeVO vol : vols) {
+                    	_volsDao.destroyVolume(vol.getId());
                         _volsDao.remove(vol.getId());
                     }
                 }
@@ -1200,7 +1200,7 @@ public class NetworkManagerImpl implements NetworkManager, VirtualMachineManager
     	for (UserVmVO vm: vms) {
     		if (vm.getGuestIpAddress() == null || vm.getGuestMacAddress() == null || vm.getName() == null)
     			continue;
-    		if (vm.getUserData() == null) 
+    		if (vm.getUserData() == null)
     			continue;
     		UserDataCommand userDataCmd = new UserDataCommand(vm.getUserData(), vm.getGuestIpAddress(), router.getPrivateIpAddress(), vm.getName());
     		cmdList.add(userDataCmd);
@@ -1245,18 +1245,7 @@ public class NetworkManagerImpl implements NetworkManager, VirtualMachineManager
             s_logger.debug("Stopping router " + routerId);
         }
         
-        final DomainRouterVO router = _routerDao.acquire(routerId);
-        if (router == null) {
-            s_logger.debug("Unable to acquire lock on router " + routerId);
-            return false;
-        }
-        try {
-            return stop(router);
-        }finally {
-            if(s_logger.isDebugEnabled())
-                s_logger.debug("Release lock on router " + routerId + " for stop");
-            _routerDao.release(routerId);
-        }
+        return stop(_routerDao.findById(routerId));
     }
 
     @DB
@@ -1353,7 +1342,7 @@ public class NetworkManagerImpl implements NetworkManager, VirtualMachineManager
 
         if (router.getState() == State.Running && router.getHostId() != null) {
             final RebootRouterCommand cmd = new RebootRouterCommand(router.getInstanceName(), router.getPrivateIpAddress());
-            final Answer answer = _agentMgr.easySend(router.getHostId(), cmd);
+            final RebootAnswer answer = (RebootAnswer)_agentMgr.easySend(router.getHostId(), cmd);
 
             if (answer != null &&  resendRouterState(router)) {
             	processStopOrRebootAnswer(router, answer);
@@ -2191,77 +2180,85 @@ public class NetworkManagerImpl implements NetworkManager, VirtualMachineManager
     public boolean stop(DomainRouterVO router) {
     	long routerId = router.getId();
     	
-  	
-    	if(s_logger.isDebugEnabled())
-    		s_logger.debug("Lock on router " + routerId + " for stop is acquired");
-    	
-    	Transaction txn = null;
-        if (router.getRemoved() != null) {
-            s_logger.debug("router " + routerId + " is removed");
+        router = _routerDao.acquire(routerId);
+        if (router == null) {
+            s_logger.debug("Unable to acquire lock on router " + routerId);
             return false;
         }
-        txn = Transaction.currentTxn();
-
-        final Long hostId = router.getHostId();
-        final State state = router.getState();
-        if (state == State.Stopped || state == State.Destroyed || state == State.Expunging || router.getRemoved() != null) {
-            s_logger.debug("Router was either not found or the host id is null");
-            return true;
-        }
-
-        final EventVO event = new EventVO();
-        event.setUserId(1L);
-        event.setAccountId(router.getAccountId());
-        event.setType(EventTypes.EVENT_ROUTER_STOP);
-
-        if (!_routerDao.updateIf(router, Event.StopRequested, hostId)) {
-            s_logger.debug("VM " + router.toString() + " is not in a state to be stopped.");
-            return false;
-        }
-
-        if (hostId == null) {
-            s_logger.debug("VM " + router.toString() + " doesn't have a host id");
-            return false;
-        }
-
-        final StopCommand stop = new StopCommand(router, router.getInstanceName(), router.getVnet());
-
-        Answer answer = null;
-        boolean stopped = false;
         try {
-            answer = _agentMgr.send(hostId, stop);
-            if (!answer.getResult()) {
+            
+        	if(s_logger.isDebugEnabled())
+        		s_logger.debug("Lock on router " + routerId + " for stop is acquired");
+        	
+            if (router.getRemoved() != null) {
+                s_logger.debug("router " + routerId + " is removed");
+                return false;
+            }
+    
+            final Long hostId = router.getHostId();
+            final State state = router.getState();
+            if (state == State.Stopped || state == State.Destroyed || state == State.Expunging || router.getRemoved() != null) {
+                s_logger.debug("Router was either not found or the host id is null");
+                return true;
+            }
+    
+            final EventVO event = new EventVO();
+            event.setUserId(1L);
+            event.setAccountId(router.getAccountId());
+            event.setType(EventTypes.EVENT_ROUTER_STOP);
+    
+            if (!_routerDao.updateIf(router, Event.StopRequested, hostId)) {
+                s_logger.debug("VM " + router.toString() + " is not in a state to be stopped.");
+                return false;
+            }
+    
+            if (hostId == null) {
+                s_logger.debug("VM " + router.toString() + " doesn't have a host id");
+                return false;
+            }
+    
+            final StopCommand stop = new StopCommand(router, router.getInstanceName(), router.getVnet());
+    
+            Answer answer = null;
+            boolean stopped = false;
+            try {
+                answer = _agentMgr.send(hostId, stop);
+                if (!answer.getResult()) {
+                    s_logger.error("Unable to stop router");
+                    event.setDescription("failed to stop Domain Router : " + router.getName());
+                    event.setLevel(EventVO.LEVEL_ERROR);
+                    _eventDao.persist(event);
+                } else {
+                    stopped = true;
+                }
+            } catch (AgentUnavailableException e) {
+                s_logger.warn("Unable to reach agent to stop vm: " + router.getId());
+            } catch (OperationTimedoutException e) {
+                s_logger.warn("Unable to reach agent to stop vm: " + router.getId());
                 s_logger.error("Unable to stop router");
+            }
+    
+            if (!stopped) {
                 event.setDescription("failed to stop Domain Router : " + router.getName());
                 event.setLevel(EventVO.LEVEL_ERROR);
                 _eventDao.persist(event);
-            } else {
-                stopped = true;
+                _routerDao.updateIf(router, Event.OperationFailed, router.getHostId());
+                return false;
             }
-        } catch (AgentUnavailableException e) {
-            s_logger.warn("Unable to reach agent to stop vm: " + router.getId());
-        } catch (OperationTimedoutException e) {
-            s_logger.warn("Unable to reach agent to stop vm: " + router.getId());
-            s_logger.error("Unable to stop router");
-        }
-
-        if (!stopped) {
-            event.setDescription("failed to stop Domain Router : " + router.getName());
-            event.setLevel(EventVO.LEVEL_ERROR);
+    
+            completeStopCommand(router, Event.OperationSucceeded);
+            event.setDescription("successfully stopped Domain Router : " + router.getName());
             _eventDao.persist(event);
-            _routerDao.updateIf(router, Event.OperationFailed, router.getHostId());
-            return false;
+            if (s_logger.isDebugEnabled()) {
+                s_logger.debug("Router " + router.toString() + " is stopped");
+            }
+    
+            processStopOrRebootAnswer(router, answer);
+        } finally {
+            if(s_logger.isDebugEnabled())
+                s_logger.debug("Release lock on router " + routerId + " for stop");
+            _routerDao.release(routerId);
         }
-
-        completeStopCommand(router, Event.OperationSucceeded);
-        event.setDescription("successfully stopped Domain Router : " + router.getName());
-        _eventDao.persist(event);
-        if (s_logger.isDebugEnabled()) {
-            s_logger.debug("Router " + router.toString() + " is stopped");
-        }
-
-        processStopOrRebootAnswer(router, answer);
-
         return true;
     }
 

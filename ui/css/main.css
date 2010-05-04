@@ -1540,6 +1540,16 @@ a:hover.search_button {
 	overflow:hidden;
 }
 
+.db_domain_top{
+	width:562px;
+	height:32px;
+	background:url(../images/db_domain_top.gif) no-repeat top left;
+	float:left;
+	margin:0;
+	padding:0;
+	overflow:hidden;
+}
+
 .db_capacitypanel_titlebox {
 	width:522px;
 	height:35px;
@@ -3079,6 +3089,7 @@ a:hover.add_publicipbutton {
 	display:inline;
 	padding:0;
 }
+
 
 
 .db_vmcontainerleft {
@@ -6256,4 +6267,766 @@ a.add_domainbutton {
 	font-weight:normal;
 	text-decoration:underline;
 	margin:0 5px 0 5px;
+}
+
+.rev_wiztop {
+	width:929px;
+	height:111px;
+	float:left;
+	background:url(../images/rev_wiztop.jpg) no-repeat top left;
+	margin:0;
+	padding:0;
+	overflow:hidden;
+}
+.rev_wizardbox {
+	width:888px;
+	height:44px;
+	float:left;
+	margin:19px 0 0 20px;
+	padding:0;
+}
+
+.rev_wizardsteps{
+	width:222px;
+	height:44px;
+	float:left;
+	margin:0;
+	padding:0;
+}
+
+.rev_wizardsteps h3{
+	width:auto;
+	height:auto;
+	float:left;
+	font-size:19px;
+	text-align:left;
+	font-weight:normal;
+	color:#FFF;
+	margin:10px 0 0 10px;
+	padding:0;
+}
+
+
+.revwiz_selectednumber {
+	width:30px;
+	height:33px;
+	float:left;
+	background:url(../images/revwiz_selectednumber.gif) no-repeat top left;
+	color:#FFF;
+	font-size:24px;
+	text-align:left;
+	font-weight:bold;
+	margin:0;
+	padding:9px 0 0 12px;
+}
+
+.revwiz_nonselectednumber {
+	width:30px;
+	height:33px;
+	float:left;
+	background:url(../images/revwiz_nonselectednumber.gif) no-repeat top left;
+	color:#FFF;
+	font-size:24px;
+	text-align:left;
+	font-weight:bold;
+	margin:0;
+	padding:9px 0 0 12px;
+}
+
+.rev_wizmid {
+	width:929px;
+	height:458px;
+	float:left;
+	background:url(../images/rev_wizmid.gif) repeat-y top left;
+	margin:0;
+	padding:0;
+}
+
+.rev_wizmid_maincontent {
+	width:902px;
+	height:430px;
+	float:left;
+	margin:0 0 0 15px;
+	padding:0;
+	display:inline;
+}
+
+.rev_wizmid_maincontent p{
+	width:100%;
+	height:auto;
+	float:left;
+	color:#333;
+	text-align:left;
+	font-size:11px;
+	font-weight:normal;
+	
+}
+
+.rev_wizmid_maincontent a:link{
+	width:auto;
+	height:auto;
+	text-align:left;
+	font-size:11px;
+	font-weight:normal;
+	color:#2c8bbc;
+	text-decoration:underline;
+}
+
+.rev_wizmid_maincontent a:visited{
+	width:auto;
+	height:auto;
+	text-align:left;
+	font-size:11px;
+	font-weight:normal;
+	color:#2c8bbc;
+	text-decoration:underline;
+}
+
+.rev_wizmid_maincontent a:hover{
+	width:auto;
+	height:auto;
+	text-align:left;
+	font-size:11px;
+	font-weight:normal;
+	color:#2c8bbc;
+	text-decoration:underline;
+}
+
+.rev_wizmid_titlebox {
+	width:902px;
+	height:auto;
+	float:left;
+	margin:0;
+	padding:0;
+}
+
+.rev_wizmid_titlebox h2{
+	width:902px;
+	height:auto;
+	text-align:left;
+	color:#214152;
+	font-size:24px;
+	font-weight:normal;
+	float:left;
+	margin:0;
+	padding:0;
+}
+
+.rev_wizmid_contentbox {
+	width:902px;
+	height:325px;
+	float:left;
+	margin:10px 0 0 0;
+	padding:0;
+	display:inline;
+	overflow-y:scroll;
+	overflow-y:auto;
+	overflow-x:hidden;
+}
+
+.rev_wizmid_tempbox {
+	width:893px;
+	height:284px;
+	float:left;
+	margin:0;
+	padding:0;
+	border:1px solid #666;
+}
+
+.rev_wizmid_tempbox_left {
+	width:182px;
+	height:284px;
+	float:left;
+	margin:0;
+	padding:0;
+}
+
+.rev_wizmid_tempbox_right {
+	width:709px;
+	height:284px;
+	float:left;
+	margin:0;
+	padding:0;
+}
+
+.rev_wiztemplistpanel {
+	width:709px;
+	height:254px;
+	float:left;
+	margin:0;
+	padding:0;
+	background:#FFF repeat top left;
+	cursor:pointer;
+	cursor:hand;
+}
+
+.rev_wiztemplistactions {
+	width:709px;
+	height:28px;
+	float:left;
+	margin:0;
+	padding:0;
+	background:#f2f2f2 repeat top left;
+}
+
+.rev_wiztemplist_actionsbox {
+	width:auto;
+	height:auto;
+	float:right;
+	margin:8px 10px 0 0;
+	padding:0;
+}
+
+.rev_wiztemplist_actionsbox a:link {
+	width:auto;
+	height:auto;
+	float:left;
+	color:#2c8bbc;
+	font-size:12px;
+	text-align:left;
+	font-weight:normal;
+	text-decoration:none;
+	margin:0 15px 0 0;
+	padding:0;
+}
+
+.rev_wiztemplist_actionsbox a:visted {
+	width:auto;
+	height:auto;
+	float:left;
+	color:#2c8bbc;
+	font-size:12px;
+	text-align:left;
+	font-weight:normal;
+	text-decoration:none;
+	margin:0 15px 0 0;
+	padding:0;
+}
+.rev_wiz_reviewbox {
+	width:902px;
+	height:auto;
+	float:left;
+	margin:0;
+	padding:0;
+}
+
+.rev_wiz_reviewlist {
+	width:902px;
+	height:auto;
+	float:left;
+	margin:0 0 15px 0;
+	padding:0;
+}
+
+.rev_wiz_reviewlabel {
+	width:150px;
+	height:auto;
+	float:left;
+	color:#214152;
+	font-size:12px;
+	text-align:left;
+	font-weight:bold;
+	margin:0;
+	padding:0;
+}
+
+.rev_wiz_reviewanswers {
+	width:650px;
+	height:auto;
+	float:left;
+	color:#333;
+	font-size:12px;
+	text-align:left;
+	font-weight:normal;
+	margin:0;
+	padding:0;
+}
+
+.rev_wiztemplist_actionsbox a:hover {
+	width:auto;
+	height:auto;
+	float:left;
+	color:#2c8bbc;
+	font-size:12px;
+	text-align:left;
+	font-weight:normal;
+	text-decoration:underline;
+	margin:0 15px 0 0;
+	padding:0;
+}
+
+
+.rev_wiztemplistbox {
+	width:709px;
+	height:22px;
+	float:left;
+	border-bottom:1px solid #666;
+	margin:0;
+	padding:0;
+	background:#FFF repeat top left;
+	cursor:pointer;
+	cursor:hand;
+}
+.rev_wiztemp_listtext {
+	width:670px;
+	height:auto;
+	float:left;
+	color:#021a28;
+	font-size:11px;
+	font-weight:normal;
+	text-align:left;
+	margin:5px 0 0 0;
+	padding:0;
+}
+
+.rev_wiztemplistbox:hover {
+	background:#e4e4e4 repeat top left;
+}
+
+.rev_wiztemplistbox_selected {
+	width:709px;
+	height:22px;
+	float:left;
+	border-bottom:1px solid #666;
+	margin:0;
+	padding:0;
+	background:#def6ff repeat top left;
+	cursor:pointer;
+	cursor:hand;
+}
+
+.rev_wiztemo_centosicons {
+	width:17px;
+	height:16px;
+	float:left;
+	margin:2px 10px 0 5px;
+	background:url(../images/temp_centosicon.gif) no-repeat top left;
+	padding:0;
+}
+
+.rev_wiztemo_windowsicons {
+	width:17px;
+	height:16px;
+	float:left;
+	margin:2px 10px 0 5px;
+	background:url(../images/temp_windowsicon.gif) no-repeat top left;
+	padding:0;
+}
+
+.rev_wiztemo_linuxicons {
+	width:17px;
+	height:16px;
+	float:left;
+	margin:2px 10px 0 5px;
+	background:url(../images/temp_linuxicon.gif) no-repeat top left;
+	padding:0;
+}
+
+
+.rev_wizmid_selectedtempbut {
+	width:167px;
+	height:43px;
+	float:left;
+	margin:0;
+	background:url(../images/revwiz_selcted_tempbut.gif) no-repeat top left;
+	color:#FFF;
+	text-align:left;
+	font-size:14px;
+	font-weight:normal;
+	padding:28px 0 0 15px;
+}
+
+.rev_wizmid_nonselectedtempbut {
+	width:167px;
+	height:43px;
+	float:left;
+	margin:0;
+	background:url(../images/revwiz_nonselcted_tempbut.gif) no-repeat top left;
+	color:#333;
+	text-align:left;
+	font-size:14px;
+	font-weight:normal;
+	padding:28px 0 0 15px;
+	cursor:pointer;
+	cursor:hand;
+}
+
+.rev_wizmid_nonselectedtempbut:hover {
+	background:url(../images/revwiz_nonselcted_tempbut_hover.gif) no-repeat top left;
+	color:#FFF;
+}
+
+.rev_tempsearchpanel {
+	width:902px;
+	height:21px;
+	float:left;
+	margin:0 0 10px 0;
+	padding:0;
+}
+
+.rev_tempsearchbox {
+	width:215px;
+	height:21px;
+	float:right;
+	margin:0;
+	padding:0;
+}
+
+.rev_tempsearchbox ol {
+	width:168px;
+	height:21px;
+	float:left;
+	margin:0;
+	padding:0;
+	list-style:none;
+}
+
+.rev_tempsearchbox li {
+	width:168px;
+	height:21px;
+	float:left;
+	margin:0;
+	padding:0;
+}
+
+.rev_tempsearchbox .text {
+	width:160px;
+	height:19px;
+	float:left;
+	background:#eaeaea repeat top left;
+	border:1px solid #999;
+	font-size:12px;
+	color:#333;
+	margin:0;
+	padding:0;
+}
+
+.rev_searchbutton {
+	width:auto;
+	padding:auto;
+	float:left;
+	text-decoration:none;
+	font-size:11px;
+	color:#0074bb;
+	text-align:left;
+	margin:5px 0 0 5px;
+	padding:0;
+	cursor:pointer;
+	cursor:hand;
+}
+
+.rev_searchbutton:hover {
+	
+	text-decoration:underline;
+	
+}
+.rev_wizformarea {
+	width:902px;
+	height:auto;
+	float:left;
+	margin:0;
+	padding:0;
+}
+
+
+.rev_wizformarea ol {
+	width:780px;
+	height:auto;
+	color:#333;
+	float:left;
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:12px;
+	list-style:none;
+}
+
+.rev_wizformarea li {
+	width:750px; 
+	float:left;
+	padding-bottom: 10px;
+	color:#FFF;
+	font-size:12px;
+	font-weight:normal;
+	text-align:left;
+	margin-top:5px;
+}
+
+.rev_wizformarea label {
+	width:150px; 
+	float:left;
+	text-align:left;
+	font-weight:bold;
+	margin-top:2px;
+	color:#333;
+	font-size:13px;
+}
+
+.rev_wizformarea  .radio {
+	width:15px;
+	height:15px;
+	float:left;
+	margin:0;
+	padding:0;
+}
+
+.rev_wizformarea  .checkbox {
+	width:15px;
+	height:15px;
+	float:left;
+	margin:0;
+	padding:0;
+}
+.revwiz_formcontent_title {
+	width:700px;
+	height:auto;
+	float:left;
+	color:#04263a;
+	font-size:12px;
+	font-weight:bold;
+	margin-top:5px;
+	padding:0;
+}
+
+.rev_wizformarea .text {
+	background-color: #e9f6ff;
+	font: normal 12px Arial, Helvetica, sans-serif;
+	font-weight:normal;
+	float:left;
+	border: 1px solid #61869b;
+	padding:2px 2px 0 2px;
+	height: 16px;
+	width: 196px;
+	margin:0;
+	padding:0;
+	color:#333;
+}
+
+.rev_wizformarea  .select {
+	background-color: #e9f6ff;
+	font: normal 12px Arial, Helvetica, sans-serif;
+	font-weight:normal;
+	float:left;
+	border: 1px solid #61869b;
+	padding:2px 2px 0 2px;
+	height: 16px;
+	width: 196px;
+	margin:0;
+	padding:0;
+	color:#333;
+}
+
+.rev_wizbot{
+	width:929px;
+	height:19px;
+	float:left;
+	background:url(../images/rev_wizbot.gif) no-repeat top left;
+	margin:0;
+	padding:0;
+}
+
+.rev_wizmid_actionbox {
+	width:902px;
+	height:35px;
+	float:left;
+	margin:10px 0 0 0;
+	padding:0;
+}
+
+.rev_wizmid_actionnext {
+	width:103px;
+	height:26px;
+	float:right;
+	background:url(../images/revwiz_nextbutton.gif) no-repeat top left;
+	font-size:14px;
+	color:#FFF;
+	text-align:center;
+	text-decoration:none;
+	font-weight:normal;
+	margin:0 10px 0 0;
+	padding:10px 0 0 0;
+	cursor:pointer;
+	cursor:hand;
+}
+
+.rev_wizmid_actionnext:hover {
+	color:#37a6db;
+}
+
+.rev_wizmid_actionback {
+	width:103px;
+	height:26px;
+	float:left;
+	background:url(../images/revwiz_backbutton.gif) no-repeat top left;
+	font-size:14px;
+	color:#FFF;
+	text-align:center;
+	text-decoration:none;
+	font-weight:normal;
+	margin:0 0 0 10px;
+	padding:10px 0 0 0;
+	cursor:pointer;
+	cursor:hand;
+}
+
+.rev_wizmid_actionback:hover {
+	color:#37a6db;
+}
+
+.db_domainbg {
+	width:529px;
+	height:80px;
+	float:left;
+	background:url(../images/db_domainbg.gif) no-repeat top left;
+	margin:0 0 15px 10px;
+	padding:0;
+}
+
+.db_domainbg_left {
+	width:183px;
+	height:80px;
+	float:left;
+	margin:0;
+	padding:0;
+}
+
+.db_domainbg_right {
+	width:340px;
+	height:80px;
+	float:left;
+	margin:0;
+	padding:0;
+}
+
+.db_domainbg_right p {
+	width:300px;
+	height:40px;
+	float:left;
+	text-align:left;
+	font-size:14px;
+	font-weight:bold;
+	margin:30px 0 0 0;
+	padding:0;
+}
+
+.db_domainbg_right span {
+	width:auto;
+	height:auto;
+	text-align:left;
+	font-size:14px;
+	font-weight:bold;
+	color:#003b53;
+	margin:0;
+	padding:0;
+}
+
+.db_domainicons {
+	width:111px;
+	height:49px;
+	float:left;
+	margin:10px 0 0 20px;
+	display:inline;
+	padding:0;
+}
+
+
+.revwiz_loadingbox {
+	width:180px;
+	height:50px;
+	position:absolute;
+	background:#FFF repeat top left;
+	border:1px solid #999;
+	z-index:1100;
+	top:47%;
+	left:45%;
+}
+
+.revwiz_loadingbox p{
+	width:auto;
+	height:auto;
+	float:left;
+	text-align:left;
+	color:#666;
+	font-weight:normal;
+	font-size:25px;
+	margin:10px 0 0 20px;
+	display:inline;
+}
+
+
+.revwiz_message_container {
+	width:300px;
+	height:auto;
+	position:absolute;
+	background:url(../images/loading_messagebg.gif) #d3d3d3 repeat-x top left;
+	border:1px solid #CCC;
+	z-index:1100;
+	top:47%;
+	left:45%;
+	display:inline;
+	margin:0;
+	padding:0;
+}
+
+
+.revwiz_message_top {
+	width:99%;
+	height:auto;
+	float:left;
+	margin:0;
+	padding:2px 5px 0 5px;
+	overflow:hidden;
+}
+
+.revwiz_message_top p {
+	width:auto;
+	height:25px;
+	margin:0;
+	padding:0;
+	color:#333;
+	text-align:left;
+	font-weight:normal;
+	font-size:11px;
+	display:inline;
+}
+
+.revwiz_message_bottom {
+	width:100%;
+	height:20px;
+	float:left;
+	margin:0;
+	padding:0;
+	
+}
+
+
+.revwizcontinue_button {
+	width:60px;
+	height:17px;
+	float:right;
+	margin-right:5px;
+	padding:0;
+	background:url(../images/vm_continuebutton.gif) no-repeat top left;
+	text-decoration:none;
+}
+
+.revwizcontinue_button:hover {
+	background:url(../images/vm_continuebutton_hover.gif) no-repeat top left;
+}
+
+
+.revwiz_closebutton {
+	width:24px;
+	height:25px;
+	position:absolute;
+	background:url(../images/revwiz_closebutton.gif) no-repeat top left;
+	margin:0;
+	padding:0;
+	cursor:pointer;
+	cursor:hand;
+	z-index:1005;
+	right:5px;
+	top:4px;
+}
+
+.revwiz_closebutton:hover {
+	background:url(../images/revwiz_closebutton_hover.gif) no-repeat top left;
 }

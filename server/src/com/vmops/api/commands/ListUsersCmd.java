@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -45,7 +45,7 @@ public class ListUsersCmd extends BaseCmd {
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT_OBJ, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.DOMAIN_ID, Boolean.FALSE));
     	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT_TYPE, Boolean.FALSE));
-    	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.IS_DISABLED, Boolean.FALSE));
+    	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.STATE, Boolean.FALSE));
     	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.KEYWORD, Boolean.FALSE));
     	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.PAGE, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.PAGESIZE, Boolean.FALSE));
@@ -66,7 +66,7 @@ public class ListUsersCmd extends BaseCmd {
         String accountName = (String)params.get(BaseCmd.Properties.ACCOUNT.getName());
         Long domainId = (Long)params.get(BaseCmd.Properties.DOMAIN_ID.getName());
         Long type = (Long)params.get(BaseCmd.Properties.ACCOUNT_TYPE.getName());
-        Boolean isDisabled = (Boolean)params.get(BaseCmd.Properties.IS_DISABLED.getName());
+        String state = (String)params.get(BaseCmd.Properties.STATE.getName());
         String keyword = (String)params.get(BaseCmd.Properties.KEYWORD.getName());
         Integer page = (Integer)params.get(BaseCmd.Properties.PAGE.getName());
         Integer pageSize = (Integer)params.get(BaseCmd.Properties.PAGESIZE.getName());
@@ -101,7 +101,7 @@ public class ListUsersCmd extends BaseCmd {
             c.addCriteria(Criteria.DOMAINID, domainId);
             c.addCriteria(Criteria.USERNAME, userName);
             c.addCriteria(Criteria.TYPE, type);
-            c.addCriteria(Criteria.ISDISABLED, isDisabled);
+            c.addCriteria(Criteria.STATE, state);
         }
         List<UserAccountVO> users = getManagementServer().searchForUsers(c);
         
@@ -117,7 +117,7 @@ public class ListUsersCmd extends BaseCmd {
                 userData.add(new Pair<String, Object>(BaseCmd.Properties.LASTNAME.getName(), user.getLastname()));
                 userData.add(new Pair<String, Object>(BaseCmd.Properties.EMAIL.getName(), user.getEmail())); 
                 userData.add(new Pair<String, Object>(BaseCmd.Properties.CREATED.getName(), getDateString(user.getCreated())));
-                userData.add(new Pair<String, Object>(BaseCmd.Properties.IS_DISABLED.getName(), Boolean.valueOf(user.getDisabled()).toString()));
+                userData.add(new Pair<String, Object>(BaseCmd.Properties.STATE.getName(), user.getState()));
                 userData.add(new Pair<String, Object>(BaseCmd.Properties.ACCOUNT.getName(), getManagementServer().findAccountById(user.getAccountId()).getAccountName()));
                 userData.add(new Pair<String, Object>(BaseCmd.Properties.ACCOUNT_TYPE.getName(), getManagementServer().findAccountById(user.getAccountId()).getType()));
                 userData.add(new Pair<String, Object>(BaseCmd.Properties.DOMAIN_ID.getName(), user.getDomainId().toString()));

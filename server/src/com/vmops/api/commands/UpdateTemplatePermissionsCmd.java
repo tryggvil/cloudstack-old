@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -43,6 +43,7 @@ public class UpdateTemplatePermissionsCmd extends BaseCmd {
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.USER_ID, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ID, Boolean.TRUE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.IS_PUBLIC, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.IS_FEATURED, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT_NAMES, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.OP, Boolean.FALSE));
     }
@@ -61,6 +62,7 @@ public class UpdateTemplatePermissionsCmd extends BaseCmd {
         Long templateId = (Long)params.get(BaseCmd.Properties.ID.getName());
         Account account = (Account)params.get(BaseCmd.Properties.ACCOUNT_OBJ.getName());
         Boolean isPublic = (Boolean)params.get(BaseCmd.Properties.IS_PUBLIC.getName());
+        Boolean isFeatured = (Boolean)params.get(BaseCmd.Properties.IS_FEATURED.getName());
         String accoutNames = (String)params.get(BaseCmd.Properties.ACCOUNT_NAMES.getName());
         String operation = (String)params.get(BaseCmd.Properties.OP.getName());
 
@@ -100,7 +102,7 @@ public class UpdateTemplatePermissionsCmd extends BaseCmd {
         }
 
         try {
-            getManagementServer().updateTemplatePermissions(templateId, operation, isPublic, accountNameList);
+            getManagementServer().updateTemplatePermissions(templateId, operation, isPublic, isFeatured, accountNameList);
             publishTemplateResult = Boolean.TRUE;
         } catch (InvalidParameterValueException ex) {
             throw new ServerApiException(BaseCmd.PARAM_ERROR, "Failed to update template permissions for template " + template.getName() + ":  internal error.");

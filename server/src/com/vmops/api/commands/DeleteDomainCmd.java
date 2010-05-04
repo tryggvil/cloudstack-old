@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -38,6 +38,7 @@ public class DeleteDomainCmd extends BaseCmd{
     static {
     	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT_OBJ, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ID, Boolean.TRUE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.CLEANUP, Boolean.FALSE));
     }
 
     @Override
@@ -53,33 +54,33 @@ public class DeleteDomainCmd extends BaseCmd{
     public List<Pair<String, Object>> execute(Map<String, Object> params) {
         Long domainId = (Long)params.get(BaseCmd.Properties.ID.getName());
         Account account = (Account)params.get(BaseCmd.Properties.ACCOUNT_OBJ.getName());
-        String removeDomainResult;
-        
-        //If account is null, consider System as an owner for this action
+        Boolean cleanup = (Boolean)params.get(BaseCmd.Properties.CLEANUP.getName());
+
+        // If account is null, consider System as an owner for this action
         if (account == null) {
             account = getManagementServer().findAccountById(Long.valueOf(1L));
         }
-        
+
+        if ((domainId.longValue() == DomainVO.ROOT_DOMAIN.longValue()) || !getManagementServer().isChildDomain(account.getDomainId(), domainId)) {
+            throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to delete domain " + domainId + ", permission denied.");
+        }
+
         // check if domain exists in the system
         DomainVO domain = getManagementServer().findDomainIdById(domainId);
     	if (domain == null) {
     		throw new ServerApiException(BaseCmd.PARAM_ERROR, "unable to find domain " + domainId);
     	}
-        
-        try {     
-            removeDomainResult = getManagementServer().deleteDomain(domainId, account.getId()); // default owner is 'system'
-        } catch (Exception ex) {
-            s_logger.error("Exception deleting domain", ex);
-            throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Failed to delete domain " + domainId + ":  internal error.");
-        }
 
-        List<Pair<String, Object>> returnValues = new ArrayList<Pair<String, Object>>();
-        if (removeDomainResult == null) {
-        	returnValues.add(new Pair<String, Object>(BaseCmd.Properties.SUCCESS.getName(), Boolean.TRUE.toString()));
-        } else {
-        	throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Failed to delete domain " + domainId);
-        }
-        return returnValues;
+    	long jobId = getManagementServer().deleteDomainAsync(domainId, account.getId(), cleanup); // default owner is 'system'
+    	if (jobId == 0) {
+    	    s_logger.warn("Unable to schedule async-job for DeleteDomain comamnd");
+    	} else {
+    	    if (s_logger.isDebugEnabled())
+    	        s_logger.debug("DeleteDomain command has been accepted, job id: " + jobId);
+    	}
+
+    	List<Pair<String, Object>> returnValues = new ArrayList<Pair<String, Object>>();
+    	returnValues.add(new Pair<String, Object>(BaseCmd.Properties.JOB_ID.getName(), Long.valueOf(jobId))); 
+    	return returnValues;
     }
-
 }

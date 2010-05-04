@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -36,6 +36,7 @@ public class DisableUserCmd extends BaseCmd {
     private static final List<Pair<Enum, Boolean>> s_properties = new ArrayList<Pair<Enum, Boolean>>();
 
     static {
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT_OBJ, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ID, Boolean.TRUE));
     }
 
@@ -51,32 +52,35 @@ public class DisableUserCmd extends BaseCmd {
     
     @Override
     public List<Pair<String, Object>> execute(Map<String, Object> params) {
+        Account adminAccount = (Account)params.get(BaseCmd.Properties.ACCOUNT_OBJ.getName());
         Long id = (Long)params.get(BaseCmd.Properties.ID.getName());
-        
+
        //Check if user with id exists in the system
         User user = getManagementServer().findUserById(id);
         if (user == null) {
         	throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to find user by id");
-        }
-        else if (user.getRemoved() != null) {
+        } else if (user.getRemoved() != null) {
         	throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to find user by id");
         }
-        
+
         // If the user is a System user, return an error.  We do not allow this
         Account account = getManagementServer().findAccountById(user.getAccountId());
-        if ((account != null) && (account.getId() == Account.ACCOUNT_ID_SYSTEM)) {
+        if ((account != null) && (account.getId().longValue() == Account.ACCOUNT_ID_SYSTEM)) {
         	throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "user id : " + id + " is a system user, disabling is not allowed");
         }
-        
-        
-        long jobId = getManagementServer().disableUserAsync(id.longValue());
-        if(jobId == 0) {
-        	s_logger.warn("Unable to schedule async-job for DisableUser comamnd");
-        } else {
-	        if(s_logger.isDebugEnabled())
-	        	s_logger.debug("DisableUser command has been accepted, job id: " + jobId);
+
+        if ((adminAccount != null) && !getManagementServer().isChildDomain(adminAccount.getDomainId(), account.getDomainId())) {
+            throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to disable user " + id + ", permission denied.");
         }
-                
+
+        long jobId = getManagementServer().disableUserAsync(id.longValue());
+        if (jobId == 0) {
+            s_logger.warn("Unable to schedule async-job for DisableUser comamnd");
+        } else {
+            if (s_logger.isDebugEnabled())
+                s_logger.debug("DisableUser command has been accepted, job id: " + jobId);
+        }
+
         List<Pair<String, Object>> returnValues = new ArrayList<Pair<String, Object>>();
         returnValues.add(new Pair<String, Object>(BaseCmd.Properties.JOB_ID.getName(), Long.valueOf(jobId))); 
         return returnValues;

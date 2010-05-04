@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -27,16 +27,24 @@ import org.apache.log4j.Logger;
 import com.vmops.api.BaseCmd;
 import com.vmops.api.ServerApiException;
 import com.vmops.configuration.ResourceLimitVO;
+import com.vmops.configuration.ResourceCount.ResourceType;
+import com.vmops.domain.DomainVO;
+import com.vmops.exception.InvalidParameterValueException;
+import com.vmops.user.Account;
 import com.vmops.utils.Pair;
 
-public class UpdateResourceLimitCmd extends BaseCmd{
+public class UpdateResourceLimitCmd extends BaseCmd {
     public static final Logger s_logger = Logger.getLogger(UpdateResourceLimitCmd.class.getName());
+
     private static final String s_name = "updateresourcelimitresponse";
     private static final List<Pair<Enum, Boolean>> s_properties = new ArrayList<Pair<Enum, Boolean>>();
 
     static {
-    	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ID, Boolean.TRUE));
-        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.MAX, Boolean.TRUE));
+    	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT_OBJ, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT, Boolean.FALSE));
+    	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.DOMAIN_ID, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.RESOURCE_TYPE, Boolean.TRUE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.MAX, Boolean.FALSE));
     }
 
     @Override
@@ -50,30 +58,78 @@ public class UpdateResourceLimitCmd extends BaseCmd{
 
     @Override
     public List<Pair<String, Object>> execute(Map<String, Object> params) {
-    	Long limitId = (Long) params.get(BaseCmd.Properties.ID.getName());
+    	Account account = (Account)params.get(BaseCmd.Properties.ACCOUNT_OBJ.getName());
+        Long domainId = (Long) params.get(BaseCmd.Properties.DOMAIN_ID.getName());
+        String accountName = (String) params.get(BaseCmd.Properties.ACCOUNT.getName());
+        Integer type = (Integer) params.get(BaseCmd.Properties.RESOURCE_TYPE.getName());
         Long max = (Long) params.get(BaseCmd.Properties.MAX.getName());
-        
-        //Verify input parameters
-    	ResourceLimitVO limit = getManagementServer().findLimitById(limitId);
-    	if (limit == null) {
-    		throw new ServerApiException(BaseCmd.PARAM_ERROR, "unable to find limit by id  " + limitId);
-    	}
-        
-		boolean success = false;
-		try {
-			success = getManagementServer().updateResourceLimit(limitId, max);
-		} catch (Exception ex) {
-			s_logger.error("Exception updating resource limit", ex);
-			throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Failed to update resource limit due to exception: " + ex.getMessage());
-		}
+        Long accountId = null;
 
+        if (account != null) {
+            if (domainId != null) {
+                if (!getManagementServer().isChildDomain(account.getDomainId(), domainId)) {
+                    throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to update resource limit for " + ((accountName == null) ? "" : "account " + accountName + " in ") + "domain " + domainId + ", permission denied");
+                }
+            } else if (account.getType() == Account.ACCOUNT_TYPE_ADMIN) {
+                domainId = DomainVO.ROOT_DOMAIN; // for root admin, default to root domain if domain is not specified
+            }
+        } else if (domainId == null) {
+            domainId = DomainVO.ROOT_DOMAIN; // for system commands, default to root domain if domain is not specified
+        }
+
+        if (domainId == null) {
+            throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to update resource limit, unable to determine domain in which to update limit.");
+        } else if (accountName != null) {
+            Account userAccount = getManagementServer().findActiveAccount(accountName, domainId);
+            if (userAccount == null) {
+                throw new ServerApiException(BaseCmd.PARAM_ERROR, "unable to find account by name " + accountName + " in domain with id " + domainId);
+            }
+            accountId = userAccount.getId();
+            domainId = userAccount.getDomainId();
+        }
+
+        // Map resource type
+        ResourceType resourceType;
+        try {
+        	resourceType = ResourceType.values()[type];
+        } catch (ArrayIndexOutOfBoundsException e) {
+        	throw new ServerApiException(BaseCmd.PARAM_ERROR, "Please specify a valid resource type.");
+        }
+        
+        ResourceLimitVO limit = null;
+        try {
+        	if (accountId != null) domainId = null;
+            limit = getManagementServer().updateResourceLimit(domainId, accountId, resourceType, max);
+        } catch (InvalidParameterValueException paramException) {
+            throw new ServerApiException(BaseCmd.PARAM_ERROR, paramException.getMessage());
+        } catch (Exception ex) {
+            s_logger.error("Exception updating resource limit", ex);
+            throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Failed to update limit due to exception: " + ex.getMessage());
+        }
+        List<Pair<String, Object>> embeddedObject = new ArrayList<Pair<String, Object>>();
         List<Pair<String, Object>> returnValues = new ArrayList<Pair<String, Object>>();
         
-        if (success)
-        	returnValues.add(new Pair<String, Object>(BaseCmd.Properties.SUCCESS.getName(), new Boolean(true)));
-        else
-        	throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Failed to update resource limit. Please verify that a limit with the specified id exists.");
-        
-        return returnValues;
+        if (limit == null)
+            throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Failed to update resource limit. Please contact VMOps Support.");
+        else {
+        	
+        	if (limit.getDomainId() != null) {
+        		returnValues.add(new Pair<String, Object>(BaseCmd.Properties.DOMAIN_ID.getName(), limit.getDomainId()));
+            	returnValues.add(new Pair<String, Object>(BaseCmd.Properties.DOMAIN.getName(), getManagementServer().findDomainIdById(limit.getDomainId()).getName()));
+        	}
+        	
+        	if (limit.getAccountId() != null) {
+        		Account accountTemp = getManagementServer().findAccountById(limit.getAccountId());
+                if (accountTemp != null) {
+                	returnValues.add(new Pair<String, Object>(BaseCmd.Properties.ACCOUNT.getName(), accountTemp.getAccountName()));
+                	returnValues.add(new Pair<String, Object>(BaseCmd.Properties.DOMAIN_ID.getName(), accountTemp.getDomainId()));
+                	returnValues.add(new Pair<String, Object>(BaseCmd.Properties.DOMAIN.getName(), getManagementServer().findDomainIdById(accountTemp.getDomainId()).getName()));
+                }
+        	}
+        	returnValues.add(new Pair<String, Object>(BaseCmd.Properties.RESOURCE_TYPE.getName(), limit.getType()));
+        	returnValues.add(new Pair<String, Object>(BaseCmd.Properties.MAX.getName(), limit.getMax()));
+        	embeddedObject.add(new Pair<String, Object>("resourcelimit", new Object[] { returnValues } ));
+        }
+        return embeddedObject;
     }
 }

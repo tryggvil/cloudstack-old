@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -41,7 +41,7 @@ public class LaunchPermissionDaoImpl extends GenericDaoBase<LaunchPermissionVO, 
     private static final String REMOVE_LAUNCH_PERMISSION = "DELETE FROM `vmops`.`launch_permission`" +
                                                            "  WHERE template_id = ? AND account_id = ?";
 
-    private static final String LIST_PERMITTED_TEMPLATES = "SELECT t.id, t.unique_name, t.name, t.public, t.format, t.type, t.hvm, t.bits, t.url, t.created, t.account_id, t.checksum, t.ready, t.display_text, t.enable_password, t.guest_os_id" +
+    private static final String LIST_PERMITTED_TEMPLATES = "SELECT t.id, t.unique_name, t.name, t.public, t.format, t.type, t.hvm, t.bits, t.url, t.created, t.account_id, t.checksum, t.ready, t.display_text, t.enable_password, t.guest_os_id, t.featured" +
                                                            "  FROM `vmops`.`vm_template` t INNER JOIN (SELECT lp.template_id as lptid" +
                                                                                                       " FROM `vmops`.`launch_permission` lp" +
                                                                                                       " WHERE lp.account_id = ?) joinlp" +
@@ -53,12 +53,12 @@ public class LaunchPermissionDaoImpl extends GenericDaoBase<LaunchPermissionVO, 
 
     protected LaunchPermissionDaoImpl() {
         TemplateAndAccountSearch = createSearchBuilder();
-        TemplateAndAccountSearch.addAnd("templateId", TemplateAndAccountSearch.entity().getTemplateId(), SearchCriteria.Op.EQ);
-        TemplateAndAccountSearch.addAnd("accountId", TemplateAndAccountSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
+        TemplateAndAccountSearch.and("templateId", TemplateAndAccountSearch.entity().getTemplateId(), SearchCriteria.Op.EQ);
+        TemplateAndAccountSearch.and("accountId", TemplateAndAccountSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
         TemplateAndAccountSearch.done();
 
         TemplateIdSearch = createSearchBuilder();
-        TemplateIdSearch.addAnd("templateId", TemplateIdSearch.entity().getTemplateId(), SearchCriteria.Op.EQ);
+        TemplateIdSearch.and("templateId", TemplateIdSearch.entity().getTemplateId(), SearchCriteria.Op.EQ);
         TemplateIdSearch.done();
     }
 
@@ -127,6 +127,7 @@ public class LaunchPermissionDaoImpl extends GenericDaoBase<LaunchPermissionVO, 
                 String displayText = rs.getString(14);
                 boolean enablePassword = rs.getBoolean(15);
                 long guestOSId = rs.getLong(16);
+                boolean featured = rs.getBoolean(17);
                 Date createdDate = null;
 
                 if (createdTS != null) {
@@ -136,7 +137,7 @@ public class LaunchPermissionDaoImpl extends GenericDaoBase<LaunchPermissionVO, 
                 if (isPublic) {
                     continue; // if it's public already, skip adding it to permitted templates as this for private templates only
                 }
-                VMTemplateVO template = new VMTemplateVO(id, uniqueName, name, format, isPublic, type, url, createdDate, requiresHVM, bits, templateAccountId, checksum, displayText, enablePassword, guestOSId, true);
+                VMTemplateVO template = new VMTemplateVO(id, uniqueName, name, format, isPublic, featured, type, url, createdDate, requiresHVM, bits, templateAccountId, checksum, displayText, enablePassword, guestOSId, true);
                 template.setReady(isReady);
                 permittedTemplates.add(template);
             }

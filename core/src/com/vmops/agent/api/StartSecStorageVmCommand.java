@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -17,10 +17,13 @@
  */
 package com.vmops.agent.api;
 
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
 
 import com.vmops.storage.VolumeVO;
+import com.vmops.utils.exception.VmopsRuntimeException;
+import com.vmops.utils.net.NfsUtils;
 import com.vmops.vm.SecondaryStorageVmVO;
 
 public class StartSecStorageVmCommand extends AbstractStartCommand {
@@ -75,6 +78,15 @@ public class StartSecStorageVmCommand extends AbstractStartCommand {
 			basic = basic + " dns2=" + secStorageVm.getDns2();
 		}
 		basic = basic + " host=" + mgmt_host + " port=" + mgmt_port;
+		String mountStr = null;
+		try {
+			mountStr = NfsUtils.url2Mount(secStorageVm.getNfsShare());
+		} catch (URISyntaxException e1) {
+			throw new VmopsRuntimeException("NFS url malformed in database? url=" + secStorageVm.getNfsShare());
+		}
+		basic = basic + " mount.path=" + mountStr + " guid=" + secStorageVm.getGuid();
+		basic = basic + " resource=com.vmops.storage.resource.NfsSecondaryStorageResource";
+		basic = basic + " instance=SecStorage";
 		return basic;
 	}
 }

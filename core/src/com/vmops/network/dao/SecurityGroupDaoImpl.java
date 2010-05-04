@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -39,7 +39,7 @@ public class SecurityGroupDaoImpl extends GenericDaoBase<SecurityGroupVO, Long> 
 
     protected SecurityGroupDaoImpl() {
         AccountIdSearch = createSearchBuilder();
-        AccountIdSearch.addAnd("accountId", AccountIdSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
+        AccountIdSearch.and("accountId", AccountIdSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
         AccountIdSearch.done();
 
         _domainDao = ComponentLocator.getLocator(ManagementServer.Name).getDao(DomainDao.class);

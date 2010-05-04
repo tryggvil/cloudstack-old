@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -28,6 +28,9 @@ import java.util.TimeZone;
 import com.vmops.utils.exception.VmopsRuntimeException;
 
 public class DateUtil {
+    public static final TimeZone GMT_TIMEZONE = TimeZone.getTimeZone("GMT");
+    public static final String YYYYMMDD_FORMAT = "yyyyMMddHHmmss";
+    
 	public static Date currentGMTTime() {
 		// Date object always stores miliseconds offset based on GMT internally
 		return new Date();
@@ -80,18 +83,12 @@ public class DateUtil {
     }
 
     public static IntervalType getIntervalType(short type){
-    	switch(type){
-    		case 0:
-    			return IntervalType.HOURLY;
-    		case 1:
-    			return IntervalType.DAILY;  
-    		case 2:
-    			return IntervalType.WEEKLY;   
-    		case 3:
-    			return IntervalType.MONTHLY;   
+    	if (type < 0 || type >= IntervalType.values().length) {
+    	    return null;
     	}
-    	return null;
+    	return IntervalType.values()[type];
     }
+    
 	
 	
 	/**

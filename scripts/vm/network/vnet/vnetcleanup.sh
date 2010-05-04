@@ -47,7 +47,7 @@ then
  exit 2
 fi
 
-VN=vmops-vn
+VN=cloud-vn
 
 if [ "$aflag" == "1" ]
 then

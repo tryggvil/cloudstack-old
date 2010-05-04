@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -62,12 +62,16 @@ public class DeleteSecurityGroupCmd extends BaseCmd {
         	throw new ServerApiException(BaseCmd.PARAM_ERROR, "unable to find secuirty group with id " + id);
         }
         
-        if ((account != null) && !isAdmin(account.getType())) {
-            if (account.getId().longValue() != sg.getAccountId()) {
-                throw new ServerApiException(BaseCmd.PARAM_ERROR, "unable to find a security group with id " + id + " for this account");
+        if (account != null) {
+            if (!isAdmin(account.getType())) {
+                if (account.getId().longValue() != sg.getAccountId()) {
+                    throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "unable to find a security group with id " + id + " for this account");
+                }
+            } else if (!getManagementServer().isChildDomain(account.getDomainId(), sg.getDomainId())) {
+                throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to delete security group " + id + ", permission denied.");
             }
         }
-        
+
         boolean success = true;
         if (sg != null) {
             try {

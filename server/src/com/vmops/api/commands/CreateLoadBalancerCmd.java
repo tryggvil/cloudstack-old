@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -77,24 +77,28 @@ public class CreateLoadBalancerCmd extends BaseCmd {
 
         Long accountId = null;
         if ((account == null) || isAdmin(account.getType())) {
-            if ((accountName != null) && (domainId != null)) {
-                Account userAccount = getManagementServer().findActiveAccount(accountName, domainId);
-                if (userAccount != null) {
-                    accountId = userAccount.getId();
+            if (domainId != null) {
+                if ((account != null) && !getManagementServer().isChildDomain(account.getDomainId(), domainId)) {
+                    throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Invalid domain id (" + domainId + ") given, unable to create load balancer.");
+                }
+                if (accountName != null) {
+                    Account userAccount = getManagementServer().findActiveAccount(accountName, domainId);
+                    if (userAccount != null) {
+                        accountId = userAccount.getId();
+                    } else {
+                        throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to create load balancer for account " + accountName + " in domain " + domainId + "; account not found...");
+                    }
                 } else {
-                    throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to create load balancer for account " + accountName + " in domain " + domainId + "; account not found...");
+                    throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to create load balancer, no account specified.");
                 }
             } else {
-                Account userAccount = getManagementServer().findAccountByIpAddress(ipAddress);
-                if (userAccount != null) {
-                    accountId = userAccount.getId();
-                }
+                // the admin must be creating the load balancer here
+                accountId = ((account == null) ? null : account.getId());
             }
+        } else {
+            accountId = account.getId();
         }
 
-        if (accountId == null) {
-            accountId = ((account == null) ? null : account.getId());
-        }
         if (accountId == null) {
             throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to find account for creating load balancer");
         }

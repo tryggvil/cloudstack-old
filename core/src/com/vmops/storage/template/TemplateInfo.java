@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -24,6 +24,11 @@ public class TemplateInfo {
     long id;
 
     boolean isPublic;
+    
+    public static TemplateInfo getDefaultSystemVmTemplateInfo() {
+        TemplateInfo routingInfo = new TemplateInfo(TemplateConstants.DEFAULT_SYSTEM_VM_TMPLT_NAME, TemplateConstants.DEFAULT_SYSTEM_VM_TEMPLATE_PATH, false);
+        return routingInfo;
+    }
 
     protected TemplateInfo() {
         

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -215,9 +215,6 @@ public class LibvirtComputingResource extends ServerResourceBase implements Serv
 		"  <vcpu>1</vcpu>" +
 		"  <os>" +
 		"    <type arch=''{3}''>hvm</type>" +
-		"    <kernel>{13}</kernel>"+
-		"    <ramdisk>{14}</ramdisk>"+
-		"    <cmdline>ro root=/dev/sda1 acpi=force console=ttyS0 selinux=0 eth0ip={15} eth0mask={16} eth2ip={17} eth2mask={18} gateway={19} dns1={20} dns2={21} domain={22}</cmdline>"+
 		"  </os>" +
 		"  <features>" +
 		"    <acpi/>" +
@@ -231,6 +228,10 @@ public class LibvirtComputingResource extends ServerResourceBase implements Serv
 		"    <disk type=''file'' device=''disk''>" +
 		"      <source file=''{4}''/>" +
 		"      <target dev=''hda'' bus=''ide''/>" +
+		"    </disk>" +
+		"    <disk type=''file'' device=''disk''>" +
+		"      <source file=''{25}''/>" +
+		"      <target dev=''hdb'' bus=''ide''/>" +
 		"    </disk>" +
 		"    <interface type=''bridge''>" +
 		"      <mac address=''{5}'' />" +
@@ -251,6 +252,7 @@ public class LibvirtComputingResource extends ServerResourceBase implements Serv
 		"    </interface>" +
 		"    <console type=''pty''/>" +
 		"    <input type=''mouse'' bus=''ps2''/>" +
+		"    <graphics type=''vnc'' autoport=''yes'' listen=''''/>" +
 		"  </devices>" +
 		"</domain>");
 	
@@ -261,9 +263,6 @@ public class LibvirtComputingResource extends ServerResourceBase implements Serv
 			"  <vcpu>1</vcpu>" +
 			"  <os>" +
 			"    <type arch=''{4}''>hvm</type>" +
-			"    <kernel>{5}</kernel>"+
-			"    <ramdisk>{6}</ramdisk>"+
-			"    <cmdline>ro root=/dev/sda1 acpi=force console=ttyS0 selinux=0  eth0ip=0.0.0.0 eth0mask=255.255.255.0  eth2ip={7} eth2mask={8} gateway={9} dns1={10} dns2={11} domain={12} template=domP host={19} port={20} zone={21} pod={22} guid=Proxy.{23} proxy_vm={23}</cmdline>"+
 			"  </os>" +
 			"  <features>" +
 			"    <acpi/>" +
@@ -277,6 +276,10 @@ public class LibvirtComputingResource extends ServerResourceBase implements Serv
 			"    <disk type=''file'' device=''disk''>" +
 			"      <source file=''{14}''/>" +
 			"      <target dev=''hda'' bus=''ide''/>" +
+			"    </disk>" +
+			"    <disk type=''file'' device=''disk''>" +
+			"      <source file=''{24}''/>" +
+			"      <target dev=''hdb'' bus=''ide''/>" +
 			"    </disk>" +
 			"    <interface type=''network''>" +
 			"      <source network=''default''/>" +
@@ -294,6 +297,7 @@ public class LibvirtComputingResource extends ServerResourceBase implements Serv
 			"    </interface>" +
 			"    <console type=''pty''/>" +
 			"    <input type=''mouse'' bus=''ps2''/>" +
+			"    <graphics type=''vnc'' autoport=''yes'' listen=''''/>" +
 			"  </devices>" +
 			"</domain>");
 	
@@ -597,23 +601,23 @@ public class LibvirtComputingResource extends ServerResourceBase implements Serv
         _privBridgeName = (String)params.get("private.bridge.name");
         if (_privBridgeName == null) {
         	if (isDeveloper) {
-        		_privBridgeName = "vmops-" + instance + "-0";
+        		_privBridgeName = "cloud-" + instance + "-0";
         	} else {
-        		_privBridgeName = "vmops0";
+        		_privBridgeName = "cloud0";
         	}
         }
         
         _publicBridgeName = (String)params.get("public.network.device");
         if (_publicBridgeName == null) {
-        	_publicBridgeName = "vmops-br0";
+        	_publicBridgeName = "cloud-br0";
         }
         
         _privNwName = (String)params.get("private.network.name");
         if (_privNwName == null) {
         	if (isDeveloper) {
-        		_privNwName = "vmops-" + instance + "-private";
+        		_privNwName = "cloud-" + instance + "-private";
         	} else {
-        		_privNwName = "vmops-private";
+        		_privNwName = "cloud-private";
         	}
         }
         
@@ -635,11 +639,11 @@ public class LibvirtComputingResource extends ServerResourceBase implements Serv
         if (_domrKernel == null ) {
         	_domrKernel = new File("/var/lib/libvirt/images/vmops-domr-kernel").getAbsolutePath();
         }
+        
         _domrRamdisk = (String)params.get("domr.ramdisk");
         if (_domrRamdisk == null ) {
         	_domrRamdisk = new File("/var/lib/libvirt/images/vmops-domr-initramfs").getAbsolutePath();
         }
-        
         
         
         value = (String)params.get("host.reserved.mem.mb");
@@ -737,7 +741,7 @@ public class LibvirtComputingResource extends ServerResourceBase implements Serv
 	
 	protected synchronized String startDomainRouter(String domrName, String fileName, int ramMB, String vnetId, String guestMac, String privateMac, String publicMac, 
 													String eth0ip, String eth0mask, String eth2ip, String eth2mask, String gw, String dns1, String dns2, String domain,
-													String domrKernel, String domrRamdisk) {
+													String domrKernel, String domrRamdisk, String dataDisk) {
 		String memSize = Integer.toString(ramMB*1024);
 		String vnetBridge= "vnbr" + vnetId;
 		String vnetDev = "vtap" + vnetId;
@@ -748,7 +752,7 @@ public class LibvirtComputingResource extends ServerResourceBase implements Serv
 				vnetBridge, vnetDev, _privNwName,
 				privateMac, publicMac, _publicBridgeName,
 				pubDev, domrKernel, domrRamdisk,
-				eth0ip, eth0mask, eth2ip, eth2mask, gw, dns1, dns2, domain, _hypervisorPath, uuid});
+				eth0ip, eth0mask, eth2ip, eth2mask, gw, dns1, dns2, domain, _hypervisorPath, uuid, dataDisk});
 		s_logger.debug(domXML);
 		
 		
@@ -766,14 +770,14 @@ public class LibvirtComputingResource extends ServerResourceBase implements Serv
 	protected synchronized String startConsoleProxy(String domrName, String fileName, int ramMB, String privateMac, 
 														String publicMac, String eth2ip, String eth2mask, String gw,
 														String dns1, String dns2, String domain, 
-														String domrKernel, String domrRamdisk, String proxyVmId, String host, int port) {
+														String domrKernel, String domrRamdisk, String proxyVmId, String host, int port, String dataDisk) {
 		String memSize = Integer.toString(ramMB*1024);
 		String uuid = UUID.nameUUIDFromBytes(domrName.getBytes()).toString();
 		String domXML = consoleProxyXMLformat.format(new Object[]{_hypervisorType, domrName, uuid, memSize, _domrArch,
 				domrKernel, domrRamdisk, 
 				eth2ip, eth2mask, gw, dns1, dns2, domain,
 				_hypervisorPath, fileName, _privNwName, privateMac,
-				 publicMac, _publicBridgeName, host, port, _dcId, _pod, proxyVmId});
+				 publicMac, _publicBridgeName, host, port, _dcId, _pod, proxyVmId, dataDisk});
 		s_logger.debug(domXML);
 		
 		
@@ -1037,20 +1041,29 @@ public class LibvirtComputingResource extends ServerResourceBase implements Serv
 			}
 
 			VolumeVO rootVolume = rootVolumes.get(0);
-
-			/*final Script command = new Script(_patchdomrPath, _timeout, s_logger);
+			String rootkPath = rootVolume.getPath();
+            String datadiskPath = rootkPath.substring(0, rootkPath.lastIndexOf("/")) + "/datadisk";
+            
+			String cmdline = "eth0ip=0.0.0.0,eth0mask=255.255.255.0" + ",eth2ip=" + router.getPublicIpAddress() +
+							 ",eth2mask=" + router.getPublicNetmask() + ",gateway=" + router.getGateway() + ",dns1=" + router.getDns1() + 
+							 ",dns2=" + router.getDns2()+ ",domain=" +router.getDomain() + 
+							 ",template=domP" + ",host=" + cmd.getManagementHost() + ",port=" + cmd.getManagementPort() + ",zone=" + _dcId + 
+							 ",pod=" + _pod + ",guid=Proxy." + String.valueOf(cmd.getProxy().getId()) + ",proxy_vm=" + String.valueOf(cmd.getProxy().getId());
+			
+			final Script command = new Script(_patchdomrPath, _timeout, s_logger);
 			command.add("-l", vmName);
-			command.add("-t", "domp");
-			command.add("-d", rootVolume.getPath());
+			command.add("-t", "all");
+			command.add("-d", datadiskPath);
+			command.add("-p", cmdline);
 			result = command.execute();
 			if (result != null) {
 				throw new ExecutionException(result, null);
-			}*/
+			}
 			
 			result = startConsoleProxy(vmName, rootVolume.getPath(), router.getRamSize(), privateMac, router.getPublicMacAddress(), router.getPublicIpAddress(), 
 										router.getPublicNetmask(), router.getGateway(), router.getDns1(), router.getDns2(), router.getDomain(), 
 										_domrKernel, _domrRamdisk,
-										String.valueOf(cmd.getProxy().getId()), cmd.getManagementHost(), cmd.getManagementPort());
+										String.valueOf(cmd.getProxy().getId()), cmd.getManagementHost(), cmd.getManagementPort(), datadiskPath);
 			if (result != null) {
 				throw new ExecutionException(result, null);
 			}
@@ -1157,20 +1170,24 @@ public class LibvirtComputingResource extends ServerResourceBase implements Serv
 	            }
 	            
 	            VolumeVO rootVolume = rootVolumes.get(0);
-	            
-	            /*final Script command = new Script(_patchdomrPath, _timeout, s_logger);
+	            String rootkPath = rootVolume.getPath();
+	            String datadiskPath = rootkPath.substring(0, rootkPath.lastIndexOf("/")) + "/datadisk";
+	            String cmdline = "eth0ip=" + router.getGuestIpAddress() + ",eth0mask=" + router.getGuestNetmask() + ",eth2ip=" + router.getPublicIpAddress() +
+	            				",eth2mask=" + router.getPublicNetmask() + ",gateway=" + router.getGateway() + ",dns1=" + router.getDns1() + ",dns2=" + router.getDns2()+ ",domain=" +router.getDomain();
+	            final Script command = new Script(_patchdomrPath, _timeout, s_logger);
 	            command.add("-l", vmName);
-	            command.add("-t", "domr");
-	            command.add("-d", rootVolume.getPath());
+	            command.add("-t", "all");
+	            command.add("-d", datadiskPath);
+	            command.add("-p", cmdline);
 	            result = command.execute();
 	            if (result != null) {
 	            	throw new ExecutionException(result, null);
-	            }*/
+	            }
 	            
 	            result = startDomainRouter(vmName, rootVolume.getPath(), router.getRamSize(), vnet, router.getGuestMacAddress(), privateMac, 
 	            							router.getPublicMacAddress(), router.getGuestIpAddress(), router.getGuestNetmask(), router.getPublicIpAddress(), router.getPublicNetmask(), 
 	            							router.getGateway(), router.getDns1(), router.getDns2(), router.getDomain(),
-	            							_domrKernel, _domrRamdisk);
+	            							_domrKernel, _domrRamdisk, datadiskPath);
 	            if (result != null) {
 	                throw new ExecutionException(result, null);
 	            }
@@ -2077,22 +2094,23 @@ public class LibvirtComputingResource extends ServerResourceBase implements Serv
 
 	protected String rebootVM(String vmName) {
 		String msg = stopVM(vmName, defineOps.DEFINE_VM);
-	
+		String realVMName = vmName;
 		int domrIndex = -1;
 		if (_domrNames.get(vmName) != null) {
-			vmName = _domrNames.get(vmName);
-			 domrIndex = getDomrIndex(vmName);
-            
+			realVMName = _domrNames.get(vmName);
+			 domrIndex = getDomrIndex(realVMName);         
 		}
 		if (msg == null) {
 			Domain dm = null;
 			try {
-				dm = _conn.domainLookupByUUID(UUID.nameUUIDFromBytes(vmName.getBytes()));
+				dm = _conn.domainLookupByUUID(UUID.nameUUIDFromBytes(realVMName.getBytes()));
 				dm.create();
 				if (domrIndex >= 0) {
-					String result = _virtRouterResource.connect(_domrPrivConfig.get(domrIndex).ipAddress);
-					if (result != null) {
-						return result;
+					if (VirtualMachineName.isValidRouterName(vmName)) {
+						String result = _virtRouterResource.connect(_domrPrivConfig.get(domrIndex).ipAddress);
+						if (result != null) {
+							return result;
+						}
 					}
 				}
 

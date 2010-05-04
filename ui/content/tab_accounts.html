@@ -52,19 +52,19 @@
         	<div class="grid_genheader_cell" style="width:8%;">
 				<div class="grid_headertitles">Role</div>
 			</div>
-			<div class="grid_genheader_cell" style="width:8%;">
+			<div class="grid_genheader_cell" style="width:5%;">
 				<div class="grid_headertitles">Account ID</div>
 			</div>
-        	<div class="grid_genheader_cell" style="width:20%;">
+        	<div class="grid_genheader_cell" style="width:15%;">
 				<div class="grid_headertitles">Account</div>
 			</div>
-			<div class="grid_genheader_cell" style="width:20%;">
+			<div class="grid_genheader_cell" style="width:15%;">
 				<div class="grid_headertitles">Domain</div>
 			</div>
-			<div class="grid_genheader_cell" style="width:8%;">
+			<div class="grid_genheader_cell" style="width:5%;">
 				<div class="grid_headertitles">VMs</div>
 			</div>
-			<div class="grid_genheader_cell" style="width:8%;">
+			<div class="grid_genheader_cell" style="width:5%;">
 				<div class="grid_headertitles">IPs</div>
 			</div>
             <div class="grid_genheader_cell" style="width:10%;">
@@ -74,7 +74,10 @@
 				<div class="grid_headertitles">Bytes Sent</div>
 			</div>
             <div class="grid_genheader_cell" style="width:7%;">
-				<div class="grid_headertitles">Disabled</div>
+				<div class="grid_headertitles">State</div>
+			</div>
+			<div class="grid_genheader_cell" style="width:10%;">
+				<div class="grid_headertitles"></div>
 			</div>
 		</div>
 		<div id="grid_content">
@@ -102,33 +105,99 @@
 
 <!-- Accounts Template -->
 <div id="account_template" style="height:24px;display:none">
-    <div class="grid_smallgenrow_cell" style="width:8%;">
-		<div class="netgrid_celltitles" id="account_role"></div>
-	</div>
-	<div class="grid_smallgenrow_cell" style="width:8%;">
-		<div class="netgrid_celltitles" id="account_accountid"></div>
-	</div>
-	<div class="grid_smallgenrow_cell" style="width:20%;">
-		<div class="netgrid_celltitles" id="account_accountname"></div>
-	</div>
-    <div class="grid_smallgenrow_cell" style="width:20%;">
-		<div class="netgrid_celltitles" id="account_domain"></div>
-	</div>
-    <div class="grid_smallgenrow_cell" style="width:8%;">
-		<div class="netgrid_celltitles" id="account_vms"></div>
-	</div>
-    <div class="grid_smallgenrow_cell" style="width:8%;">
-		<div class="netgrid_celltitles" id="account_ips"></div>
-	</div>
-    <div class="grid_smallgenrow_cell" style="width:10%;">
-		<div class="netgrid_celltitles" id="account_received"></div>
-	</div>
-    <div class="grid_smallgenrow_cell" style="width:10%;">
-		<div class="netgrid_celltitles" id="account_sent"></div>
-	</div>
-    <div class="grid_smallgenrow_cell" style="width:7%;">
-		<div class="netgrid_celltitles" id="account_disabled"></div>
+    <div class="adding_loading" style="height: 24px; display: none;" id="loading_container">
+        <div class="adding_animation">
+        </div>
+        <div class="adding_text">
+            Waiting &hellip;
+        </div>
+    </div>
+    <div id="account_body" style="height: 45px;">
+        <div class="grid_smallgenrow_cell" style="width:8%;">
+		    <div class="netgrid_celltitles" id="account_role"></div>
+	    </div>
+	    <div class="grid_smallgenrow_cell" style="width:5%;">
+		    <div class="netgrid_celltitles" id="account_accountid"></div>
+	    </div>
+	    <div class="grid_smallgenrow_cell" style="width:15%;">
+		    <div class="netgrid_celltitles" id="account_accountname"></div>
+	    </div>
+        <div class="grid_smallgenrow_cell" style="width:15%;">
+		    <div class="netgrid_celltitles" id="account_domain"></div>
+	    </div>
+        <div class="grid_smallgenrow_cell" style="width:5%;">
+		    <div class="netgrid_celltitles" id="account_vms"></div>
+	    </div>
+        <div class="grid_smallgenrow_cell" style="width:5%;">
+		    <div class="netgrid_celltitles" id="account_ips"></div>
+	    </div>
+        <div class="grid_smallgenrow_cell" style="width:10%;">
+		    <div class="netgrid_celltitles" id="account_received"></div>
+	    </div>
+        <div class="grid_smallgenrow_cell" style="width:10%;">
+		    <div class="netgrid_celltitles" id="account_sent"></div>
+	    </div>
+        <div class="grid_smallgenrow_cell" style="width:7%;">
+		    <div class="netgrid_celltitles" id="account_state"></div>
+	    </div>
+	    <div class="grid_smallgenrow_cell" style="width:10%;" id="action_links">
+		    <div class="netgrid_celltitles"><a href="#" id="account_resource_limits">resource limits</a> | <a href="#" id="account_change_state">change state</a> </div> 
+	    </div>
 	</div>
 </div>
 
+<div id="dialog_resource_limits" title="Resource Limits" style="display:none">
+	<p>Please specify limits to the various resources.  A "-1" means the resource has no limits.</p>
+	<div class="dialog_formcontent">
+		<form action="#" method="post" id="form_acquire">
+			<ol>
+				<li>
+					<label for="user_name">Instance Limit:</label>
+					<input class="text" type="text" name="limits_vm" id="limits_vm" value="-1" />
+					<div id="limits_vm_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div> 
+				</li>
+				<li>
+					<label for="user_name">Public IP Limit:</label>
+					<input class="text" type="text" name="limits_ip" id="limits_ip" value="-1" />
+					<div id="limits_ip_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div> 
+				</li>
+				<li>
+					<label for="user_name">Disk Volume Limit:</label>
+					<input class="text" type="text" name="limits_volume" id="limits_volume" value="-1" />
+					<div id="limits_volume_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div> 
+				</li>
+				<li>
+					<label for="user_name">Snapshot Limit:</label>
+					<input class="text" type="text" name="limits_snapshot" id="limits_snapshot" value="-1" />
+					<div id="limits_snapshot_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div> 
+				</li>
+				<li>
+					<label for="user_name">Template Limit:</label>
+					<input class="text" type="text" name="limits_template" id="limits_template" value="-1" />
+					<div id="limits_template_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div> 
+				</li>
+			</ol>
+		</form>
+	</div>
+</div>
 
+<!-- disable or lock an account (begin) -->
+<div id="dialog_disable_account" title="Disable Account" style="display:none">	
+    <p>Select "Disable" to prevent account access to the cloud and to shut down all existing virtual instances.</br> 
+       Select "Lock" to ONLY prevent account access to the cloud. 
+    </p>
+	<div class="dialog_formcontent">
+		<form action="#" method="post" id="form1">
+			<ol>		
+				<li>
+					<label>Action: </label>
+					<select class="select" id="change_state_type">
+						<option value="disable">Disable</option>
+						<option value="lock">Lock</option>
+					</select>
+				</li>
+			</ol>
+		</form>
+	</div>
+</div>
+<!-- disable or lock an account (end) -->

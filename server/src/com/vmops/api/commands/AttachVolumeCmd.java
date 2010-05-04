@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -57,48 +57,54 @@ public class AttachVolumeCmd extends BaseCmd {
         //Long userId = (Long) params.get(BaseCmd.Properties.USER_ID.getName());
     	Long volumeId = (Long) params.get(BaseCmd.Properties.ID.getName());
     	Long vmId = (Long) params.get(BaseCmd.Properties.VIRTUAL_MACHINE_ID.getName());
-    	    	
+
     	// Check that the volume ID is valid
     	VolumeVO volume = getManagementServer().findVolumeById(volumeId);
     	if (volume == null)
     		throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to find volume with ID: " + volumeId);
-    	
+
     	// Check that the virtual machine ID is valid
     	UserVmVO vm = getManagementServer().findUserVMInstanceById(vmId.longValue());
         if (vm == null) {
         	throw new ServerApiException (BaseCmd.VM_INVALID_PARAM_ERROR, "unable to find a virtual machine with id " + vmId);
         }
-    	
+
         if (volume.getAccountId() != vm.getAccountId()) {
         	throw new ServerApiException (BaseCmd.VM_INVALID_PARAM_ERROR, "virtual machine and volume belong to different accounts, can not attach");
         }
-        
+
     	// If the account is not an admin, check that the volume and the virtual machine are owned by the account that was passed in
-    	if (account != null && !isAdmin(account.getType())) {
-    		if (account.getId().longValue() != volume.getAccountId())
-    			throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to find volume with ID: " + volumeId + " for account: " + account.getAccountName());
-    		
-    		if (account.getId().longValue() != vm.getAccountId())
-    			throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to find VM with ID: " + vmId + " for account: " + account.getAccountName());
+    	if (account != null) {
+    	    if (!isAdmin(account.getType())) {
+                if (account.getId().longValue() != volume.getAccountId())
+                    throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to find volume with ID: " + volumeId + " for account: " + account.getAccountName());
+
+                if (account.getId().longValue() != vm.getAccountId())
+                    throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to find VM with ID: " + vmId + " for account: " + account.getAccountName());
+    	    } else {
+    	        if (!getManagementServer().isChildDomain(account.getDomainId(), volume.getDomainId()) ||
+    	            !getManagementServer().isChildDomain(account.getDomainId(), vm.getDomainId())) {
+                    throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to attach volume " + volumeId + " to virtual machine instance " + vmId + ", permission denied.");
+    	        }
+    	    }
     	}
-    	
+
     	try {
     		long jobId = getManagementServer().attachVolumeToVMAsync(vmId, volumeId);
-    		
+
     		if (jobId == 0) {
             	s_logger.warn("Unable to schedule async-job for AttachVolume comamnd");
             } else {
     	        if(s_logger.isDebugEnabled())
     	        	s_logger.debug("AttachVolume command has been accepted, job id: " + jobId);
             }
-    		
+
     		List<Pair<String, Object>> returnValues = new ArrayList<Pair<String, Object>>();
             returnValues.add(new Pair<String, Object>(BaseCmd.Properties.JOB_ID.getName(), Long.valueOf(jobId))); 
-            
+
             return returnValues;
     	} catch (Exception ex) {
     		throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Failed to attach volume: " + ex.getMessage());
     	}
-    	
     }
 }

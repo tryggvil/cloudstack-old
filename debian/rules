@@ -25,7 +25,7 @@ configure: configure-stamp
 configure-stamp:
 	dh_testdir
 	# Add here commands to configure the package.
-	./waf configure --prefix=/usr --libdir=/usr/lib --bindir=/usr/bin --javadir=/usr/share/java --sharedstatedir=/var/lib --localstatedir=/var --sysconfdir=/etc --mandir=/usr/share/man --libexecdir=/usr/bin --with-tomcat=/usr/share/tomcat6 --tomcat-user=vmops --build-number=$(BUILDNUMBER) showconfig
+	./waf configure --prefix=/usr --libdir=/usr/lib --bindir=/usr/bin --javadir=/usr/share/java --sharedstatedir=/var/lib --localstatedir=/var --sysconfdir=/etc --mandir=/usr/share/man --libexecdir=/usr/bin --with-tomcat=/usr/share/tomcat6 --tomcat-user=cloud --build-number=$(BUILDNUMBER) showconfig
 	touch configure-stamp
 
 
@@ -87,7 +87,7 @@ binary-common:
 	dh_testdir
 	dh_testroot
 	dh_installchangelogs 
-	dh_installdocs
+	dh_installdocs -A README
 	dh_installexamples
 #	dh_installmenu
 #	dh_installdebconf

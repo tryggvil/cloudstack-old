@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -759,7 +759,7 @@ public class DownloadManagerImpl implements DownloadManager {
 
         String value = (String) params.get("public.templates.root.dir");
         if (value == null) {
-            value = "template";
+            value = TemplateConstants.DEFAULT_TMPLT_ROOT_DIR;
         }
         
         if (value.startsWith(File.separator)) {
@@ -772,7 +772,7 @@ public class DownloadManagerImpl implements DownloadManager {
             publicTemplateRepo += File.separator;
         }
         
-        publicTemplateRepo += "tmpl/";
+        publicTemplateRepo += TemplateConstants.DEFAULT_TMPLT_FIRST_LEVEL_DIR;
         
         if (!_storage.mkdirs(publicTemplateRepo)) {
             throw new ConfigurationException("Unable to create public templates directory");

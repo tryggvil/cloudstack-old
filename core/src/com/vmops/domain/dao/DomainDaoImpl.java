@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -26,7 +26,6 @@ import java.util.List;
 import javax.ejb.Local;
 
 import com.vmops.domain.DomainVO;
-import com.vmops.utils.db.DB;
 import com.vmops.utils.db.GenericDaoBase;
 import com.vmops.utils.db.GlobalLock;
 import com.vmops.utils.db.SearchBuilder;
@@ -41,16 +40,16 @@ public class DomainDaoImpl extends GenericDaoBase<DomainVO, Long> implements Dom
 	
 	public DomainDaoImpl () {
 		DomainNameLikeSearch = createSearchBuilder();
-		DomainNameLikeSearch.addAnd("name", DomainNameLikeSearch.entity().getName(), SearchCriteria.Op.LIKE);
+		DomainNameLikeSearch.and("name", DomainNameLikeSearch.entity().getName(), SearchCriteria.Op.LIKE);
 		DomainNameLikeSearch.done();
 		
 		ParentDomainNameLikeSearch = createSearchBuilder();
-		ParentDomainNameLikeSearch.addAnd("name", ParentDomainNameLikeSearch.entity().getName(), SearchCriteria.Op.LIKE);
-		ParentDomainNameLikeSearch.addAnd("parent", ParentDomainNameLikeSearch.entity().getName(), SearchCriteria.Op.EQ);
+		ParentDomainNameLikeSearch.and("name", ParentDomainNameLikeSearch.entity().getName(), SearchCriteria.Op.LIKE);
+		ParentDomainNameLikeSearch.and("parent", ParentDomainNameLikeSearch.entity().getName(), SearchCriteria.Op.EQ);
 		ParentDomainNameLikeSearch.done();
 
 		DomainPairSearch = createSearchBuilder();
-		DomainPairSearch.addAnd("id", DomainPairSearch.entity().getId(), SearchCriteria.Op.IN);
+		DomainPairSearch.and("id", DomainPairSearch.entity().getId(), SearchCriteria.Op.IN);
 		DomainPairSearch.done();
 	}
 	
@@ -101,7 +100,8 @@ public class DomainDaoImpl extends GenericDaoBase<DomainVO, Long> implements Dom
     	}
     	
         GlobalLock lock = GlobalLock.getInternLock("lock.domain." + parent);
-        if(!lock.lock(Integer.MAX_VALUE)) {
+        if(!lock.lock(3600)) {		
+        	// wait up to 1 hour, if it comes up to here, something is wrong
             s_logger.error("Unable to lock parent domain: " + parent);
     		return null;
         }
@@ -132,7 +132,7 @@ public class DomainDaoImpl extends GenericDaoBase<DomainVO, Long> implements Dom
     @Override
     public boolean remove(Long id) {
         // check for any active users / domains assigned to the given domain id and don't remove the domain if there are any
-    	if(id != null && id.longValue() == DomainVO.ROOT_DOMAIN.longValue()) {
+    	if (id != null && id.longValue() == DomainVO.ROOT_DOMAIN.longValue()) {
     		s_logger.error("Can not remove domain " + id + " as it is ROOT domain");
     		return false;
     	}
@@ -162,7 +162,8 @@ public class DomainDaoImpl extends GenericDaoBase<DomainVO, Long> implements Dom
         
         String sql = "SELECT * from account where domain_id = " + id + " and removed is null";
         String sql1 = "SELECT * from domain where parent = " + id + " and removed is null";
-        
+
+        boolean success = false;
         Transaction txn = Transaction.currentTxn();
         try {
             PreparedStatement stmt = txn.prepareAutoCloseStatement(sql);
@@ -179,15 +180,16 @@ public class DomainDaoImpl extends GenericDaoBase<DomainVO, Long> implements Dom
         	txn.start();
         	parentDomain.setChildCount(parentDomain.getChildCount() - 1);
         	update(parentDomain.getId(), parentDomain);
-            super.remove(id);
+            success = super.remove(id);
             txn.commit();
         } catch (SQLException ex) {
+            success = false;
             s_logger.error("error removing domain: " + id, ex);
             txn.rollback();
         } finally {
         	lock.unlock();
         }
-        return false;
+        return success;
     }
 
     @Override

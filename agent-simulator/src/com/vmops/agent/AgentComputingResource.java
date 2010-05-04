@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -43,6 +43,7 @@ import com.vmops.agent.api.Command;
 import com.vmops.agent.api.GetHostStatsAnswer;
 import com.vmops.agent.api.GetHostStatsCommand;
 import com.vmops.agent.api.GetVmStatsAnswer;
+import com.vmops.agent.api.VmStatsEntry;
 import com.vmops.agent.api.GetVmStatsCommand;
 import com.vmops.agent.api.GetVncPortCommand;
 import com.vmops.agent.api.MigrateAnswer;
@@ -282,40 +283,8 @@ public class AgentComputingResource extends AgentStorageResource {
         return new RebootAnswer(cmd, "success", 0L, 0L);
     }
     
-    /*
     protected GetVmStatsAnswer execute(GetVmStatsCommand cmd) {
-        Map<String, MockVmMetrics> map = _collector.getMetricsMap();
-        MockVmMetrics metrics = map.get(cmd.getVmName());
-        if (metrics == null) {
-            return new GetVmStatsAnswer(cmd, new HashMap<String, long[]>(), new HashMap<String, long[]>());
-        }
-        
-        Map<String, long[]> networkStats = new HashMap<String, long[]>();
-        Map<String, Long> netRxStats = metrics.getNetRxTotalBytes();
-        Set<Map.Entry<String, Long>> set = netRxStats.entrySet();
-        for (Map.Entry<String, Long> entry : set) {
-            long[] values = new long[2];
-            values[0] = entry.getValue();
-            values[1] = metrics.getNetTxTotalBytes(entry.getKey());
-            networkStats.put(entry.getKey(), values);
-        }
-        
-        Map<String, long[]> diskStats = new HashMap<String, long[]>();
-        Map<String, Long> diskRxStats = metrics.getDiskReadTotalBytes();
-        Set<Map.Entry<String, Long>> read = diskRxStats.entrySet();
-        for (Map.Entry<String, Long> entry : read) {
-            long[] values = new long[2];
-            values[0] = entry.getValue();
-            values[1] = metrics.getDiskWriteTotalBytes(entry.getKey());
-            diskStats.put(entry.getKey(), values);
-        }
-        
-        return new GetVmStatsAnswer(cmd, networkStats, diskStats);
-    }
-    */
-    
-    protected GetVmStatsAnswer execute(GetVmStatsCommand cmd) {
-    	return new GetVmStatsAnswer(cmd, 0, 0, 0, 0, 0);
+    	return null;
     }
     
     protected Answer execute(GetHostStatsCommand cmd) {

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -71,7 +71,7 @@ public class CreateVolumeFromSnapshotExecutor extends VolumeOperationExecutor {
 	    	}
 	    	// In all cases, ensure that we call completeAsyncJob to the asyncMgr.
             asyncMgr.completeAsyncJob(jobId, result, errorCode, resultObject);
-			return (volume != null);
+			return true;
 		}
 	}
 }

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -37,11 +37,12 @@ import com.vmops.utils.db.Filter;
 */
 public interface SnapshotManager extends Manager {
  
-	//ToDo: Fix the defaults and mke them configurable
-	public static final int HOURLYMAX = 24;
-	public static final int DAILYMAX = 10;
-	public static final int WEEKLYMAX = 7;
-	public static final int MONTHLYMAX = 6;
+	//ToDo: Fix the defaults and make them configurable
+	public static final int HOURLYMAX = 8;
+	public static final int DAILYMAX = 8;
+	public static final int WEEKLYMAX = 8;
+	public static final int MONTHLYMAX = 8;
+	public static final Long MANUAL_POLICY_ID = 1L;
 	
     /**
      * This is the synchronous version of the below command. 
@@ -72,8 +73,9 @@ public interface SnapshotManager extends Manager {
      * @param volumeId   The volume for which the snapshot is being taken
      * @param snapshotId The snapshot which has just completed
      * @param policyIds  The list of policyIds to which this snapshot belongs to
+     * @param backedUp   If true, the snapshot has been successfully created.
      */
-    void postCreateSnapshot(long userId, long volumeId, long snapshotId, List<Long> policyIds);
+    void postCreateSnapshot(long userId, long volumeId, long snapshotId, List<Long> policyIds, boolean backedUp);
     
     /**
      * Creates a volume from the specified snapshot. A new volume is returned which is not attached to any VM Instance
@@ -120,7 +122,7 @@ public interface SnapshotManager extends Manager {
      * List all policies to which a specified snapshot belongs. For ex: A snapshot 
      * may belong to a hourly snapshot and a daily snapshot run at the same time
      */
-    List<SnapshotPolicyVO> listPoliciesforSnapshot(long volumeId);
+    List<SnapshotPolicyVO> listPoliciesforSnapshot(long snapshotId);
     
     /**
      * List all snapshots for a specified volume irrespective of the policy which

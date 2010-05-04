@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -182,7 +182,7 @@ public class DataCenterDaoImpl extends GenericDaoBase<DataCenterVO, Long> implem
     
     protected DataCenterDaoImpl() {
         NameSearch = createSearchBuilder();
-        NameSearch.addAnd("name", NameSearch.entity().getName(), SearchCriteria.Op.EQ);
+        NameSearch.and("name", NameSearch.entity().getName(), SearchCriteria.Op.EQ);
         NameSearch.done();
     }
 }

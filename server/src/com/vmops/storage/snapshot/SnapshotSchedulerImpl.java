@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -53,7 +53,7 @@ import com.vmops.utils.exception.VmopsRuntimeException;
 @Local(value={SnapshotScheduler.class})
 public class SnapshotSchedulerImpl implements SnapshotScheduler {
     private static final Logger s_logger = Logger.getLogger(SnapshotSchedulerImpl.class);
-    private static final TimeZone GMT_TIMEZONE = TimeZone.getTimeZone("GMT");
+    
     
     private String _name = null;
     private SnapshotScheduleDao     _snapshotScheduleDao;
@@ -82,7 +82,10 @@ public class SnapshotSchedulerImpl implements SnapshotScheduler {
         List<SnapshotPolicyVO> policies = _snapshotPolicyDao.listAll();
         _currentTimestamp = new Date();
         for (SnapshotPolicyVO policy : policies) {
-            long policyId = policy.getId();
+            Long policyId = policy.getId();
+            if(policyId == SnapshotManager.MANUAL_POLICY_ID){
+                continue;
+            }
             Date nextSnapshotTimestamp =  getNextScheduledTime(policyId, _currentTimestamp);
             SnapshotScheduleVO snapshotScheduleVO = new SnapshotScheduleVO(policy.getVolumeId(), policyId, nextSnapshotTimestamp);
             Transaction txn = Transaction.currentTxn();
@@ -103,8 +106,8 @@ public class SnapshotSchedulerImpl implements SnapshotScheduler {
             IntervalType type = DateUtil.getIntervalType(intervalType);
             String schedule = policy.getSchedule();
             nextTimestamp = DateUtil.getNextRunTime(type, schedule, currentTimestamp);
-            String currentTime = DateUtil.getDateDisplayString(GMT_TIMEZONE, currentTimestamp);
-            String nextScheduledTime = DateUtil.getDateDisplayString(GMT_TIMEZONE, nextTimestamp);
+            String currentTime = DateUtil.getDateDisplayString(DateUtil.GMT_TIMEZONE, currentTimestamp);
+            String nextScheduledTime = DateUtil.getDateDisplayString(DateUtil.GMT_TIMEZONE, nextTimestamp);
             s_logger.debug("Current time is " + currentTime + ". NextScheduledTime of policyId " + policyId + " is " + nextScheduledTime);
         }
         return nextTimestamp;
@@ -118,7 +121,7 @@ public class SnapshotSchedulerImpl implements SnapshotScheduler {
     public void poll(Date currentTimestamp) {
         // We don't maintain the time. The test clock does. Use it's time.
         _currentTimestamp = currentTimestamp;
-        String displayTime = DateUtil.getDateDisplayString(GMT_TIMEZONE, currentTimestamp);
+        String displayTime = DateUtil.getDateDisplayString(DateUtil.GMT_TIMEZONE, currentTimestamp);
         s_logger.debug("Snapshot scheduler.poll is being called at " + displayTime);
         
         List<SnapshotScheduleVO> snapshotsToBeExecuted = _snapshotScheduleDao.getSchedulesToExecute(currentTimestamp);
@@ -169,7 +172,7 @@ public class SnapshotSchedulerImpl implements SnapshotScheduler {
 
                 if (s_logger.isDebugEnabled()) {
                     Date scheduledTimestamp = snapshotToBeExecuted.getScheduledTimestamp();
-                    displayTime = DateUtil.getDateDisplayString(GMT_TIMEZONE, scheduledTimestamp);
+                    displayTime = DateUtil.getDateDisplayString(DateUtil.GMT_TIMEZONE, scheduledTimestamp);
                     
                 }
                 Transaction txn = Transaction.currentTxn();

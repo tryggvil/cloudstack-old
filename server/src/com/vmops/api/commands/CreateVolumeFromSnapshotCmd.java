@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -67,31 +67,37 @@ public class CreateVolumeFromSnapshotCmd extends BaseCmd {
             throw new ServerApiException (BaseCmd.SNAPSHOT_INVALID_PARAM_ERROR, "unable to find a snapshot with id " + snapshotId);
         }
         
-        if ((account != null) && (account.getType() != Account.ACCOUNT_TYPE_ADMIN)) {
-            if (account.getId() != snapshotCheck.getAccountId()) {
+        if (account != null) {
+            if (isAdmin(account.getType())) {
+                Account snapshotOwner = getManagementServer().findAccountById(snapshotCheck.getAccountId());
+                if (!getManagementServer().isChildDomain(account.getDomainId(), snapshotOwner.getDomainId())) {
+                    throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to create volume from snapshot with id " + snapshotId + ", permission denied.");
+                }
+            } else if (account.getId().longValue() != snapshotCheck.getAccountId()) {
                 throw new ServerApiException(BaseCmd.SNAPSHOT_INVALID_PARAM_ERROR, "unable to find a snapshot with id " + snapshotId + " for this account");
             }
         }
+
         long accountId = snapshotCheck.getAccountId();
 
-        //If command is executed via 8096 port, set userId to the id of System account (1)
+        // If command is executed via 8096 port, set userId to the id of System account (1)
         if (userId == null) {
             userId = Long.valueOf(1);
         }
 
         try {
             long jobId = getManagementServer().createVolumeFromSnapshotAsync(accountId, userId, snapshotId);
-            if(jobId == 0) {
+            if (jobId == 0) {
             	s_logger.warn("Unable to schedule async-job for RollbackToSnapshot comamnd");
             } else {
-    	        if(s_logger.isDebugEnabled())
+    	        if (s_logger.isDebugEnabled())
     	        	s_logger.debug("RollbackToSnapshot command has been accepted, job id: " + jobId);
             }
-            
+
             List<Pair<String, Object>> returnValues = new ArrayList<Pair<String, Object>>();
             returnValues.add(new Pair<String, Object>(BaseCmd.Properties.JOB_ID.getName(), Long.valueOf(jobId))); 
             return returnValues;
-            
+
         } catch (Exception ex) {
             throw new ServerApiException(BaseCmd.SNAPSHOT_ROLLBACK_ERROR, "unable to rollback a snapshot with id " + snapshotId + " for this account");
         }
@@ -102,7 +108,7 @@ public class CreateVolumeFromSnapshotCmd extends BaseCmd {
         if(resultObject != null) {
             return resultObject.getId();
         }
-        
+
         return 0;
     }
 }

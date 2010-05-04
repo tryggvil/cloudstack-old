@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -25,6 +25,6 @@ import java.lang.annotation.RetentionPolicy;
 public @interface ComponentSetup {
 	String managerName();
 	String setupXml();
-	String log4j() default "log4j-vmops";
+	String log4j() default "log4j-cloud";
 }
 

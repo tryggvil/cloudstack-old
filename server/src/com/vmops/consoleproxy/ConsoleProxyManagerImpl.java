@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -218,6 +218,7 @@ public class ConsoleProxyManagerImpl implements ConsoleProxyManager, VirtualMach
 	private int _find_host_retry = DEFAULT_FIND_HOST_RETRY_COUNT;
 	private int _ssh_retry;
 	private int _ssh_sleep;
+	private boolean _use_lvm;
 	private String _domain;
 	private String _instance;
 	
@@ -869,6 +870,7 @@ public class ConsoleProxyManagerImpl implements ConsoleProxyManager, VirtualMach
 					ConsoleProxyAlertEventArgs.PROXY_CREATE_FAILURE,
 					dataCenterId, proxyVmId, null, "Unable to allocate storage")
 			);
+			
 			destroyProxyDBOnly(proxyVmId);
 		}
 		return null;
@@ -1128,6 +1130,13 @@ public class ConsoleProxyManagerImpl implements ConsoleProxyManager, VirtualMach
 	
 	public AgentControlAnswer onConsoleAccessAuthentication(ConsoleAccessAuthenticationCommand cmd) {
 		long vmId = 0;
+		
+		if(cmd.getVmId() != null && cmd.getVmId().isEmpty()) {
+			if(s_logger.isTraceEnabled())
+				s_logger.trace("Invalid vm id sent from proxy(happens when proxy session has terminated)");
+			return new ConsoleAccessAuthenticationAnswer(cmd, false);
+		}
+		
 		try {
 			vmId = Long.parseLong(cmd.getVmId());
 		} catch(NumberFormatException e) {
@@ -1402,7 +1411,7 @@ public class ConsoleProxyManagerImpl implements ConsoleProxyManager, VirtualMach
 	        VMTemplateVO template = _templateDao.findConsoleProxyTemplate();
 	        if(template != null && template.isReady()) {
 	        	
-	        	List<Pair<Long, Integer>> l = _consoleProxyDao.getDatacenterStoragePoolHostInfo(dataCenterId);
+	        	List<Pair<Long, Integer>> l = _consoleProxyDao.getDatacenterStoragePoolHostInfo(dataCenterId, _use_lvm);
 	        	if(l != null && l.size() > 0 && l.get(0).second().intValue() > 0) {
 	        		return true;
 	        	} else {
@@ -1503,6 +1512,10 @@ public class ConsoleProxyManagerImpl implements ConsoleProxyManager, VirtualMach
 		value = configs.get("consoleproxy.url.port");
 		if (value != null)
 			_consoleProxyUrlPort = NumbersUtil.parseInt(value, ConsoleProxyManager.DEFAULT_PROXY_URL_PORT);
+		
+		value = configs.get("system.vm.use.local.storage");
+		if(value != null && value.equalsIgnoreCase("true"))
+			_use_lvm = true;
 
 		if (s_logger.isInfoEnabled()) {
 			s_logger.info("Console proxy max session soft limit : " + _capacityPerProxy);
@@ -1526,12 +1539,12 @@ public class ConsoleProxyManagerImpl implements ConsoleProxyManager, VirtualMach
 		_ssh_retry = NumbersUtil.parseInt(value, 3);
 		
 		Map<String, String> agentMgrConfigs = configDao.getConfiguration("AgentManager", params);
-		_mgmt_host = (String) agentMgrConfigs.get("host");
+		_mgmt_host = agentMgrConfigs.get("host");
 		if(_mgmt_host == null) {
 			s_logger.warn("Critical warning! Please configure your management server host address right after you have started your management server and then restart it, otherwise you won't be able to do console access");
 		}
 		
-		value = (String) agentMgrConfigs.get("port");
+		value = agentMgrConfigs.get("port");
 		_mgmt_port = NumbersUtil.parseInt(value, 8250);
 
 		_consoleProxyDao = locator.getDao(ConsoleProxyDao.class);
@@ -1969,7 +1982,16 @@ public class ConsoleProxyManagerImpl implements ConsoleProxyManager, VirtualMach
 					freePublicIpAddress(proxy.getPublicIpAddress());
 
 				_consoleProxyDao.remove(vmId);
+				
+	            final EventVO event = new EventVO();
+	            event.setUserId(User.UID_SYSTEM);
+	            event.setAccountId(Account.ACCOUNT_ID_SYSTEM);
+	            event.setType(EventTypes.EVENT_PROXY_DESTROY);
+	            event.setLevel(EventVO.LEVEL_INFO);
+	            event.setDescription("Console proxy destroyed - " + proxy.getName());
+	            _eventDao.persist(event);
 			}
+			
 			txn.commit();
 			return true;
 		} catch (Exception e) {

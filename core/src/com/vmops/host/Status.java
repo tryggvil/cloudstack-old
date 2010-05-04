@@ -1,7 +1,7 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
- * This software is licensed under the GNU General Public License v3 or later.  
+ * This software is licensed under the GNU General Public License v3 or later.
  * 
  * It is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@ import java.util.List;
 import com.vmops.utils.fsm.StateMachine;
 
 public enum Status {
+    Connecting(true, false),
     Up(true, false),
     Down(true, true),
     Disconnected(true, true),
@@ -62,7 +63,8 @@ public enum Status {
         MaintenanceRequested(true, "PrepareForMaintenance requested by user"),
         ManagementServerDown(false, "Management Server that the agent is connected is going down"),
         WaitedTooLong(false, "Waited too long from the agent to reconnect on its own.  Time to do HA"),
-        Remove(true, "Host is removed");
+        Remove(true, "Host is removed"),
+        Ready(false, "Host is ready for commands");
 
         private final boolean isUserRequest;
         private final String comment;
@@ -99,20 +101,28 @@ public enum Status {
 
     protected static final StateMachine<Status, Event> s_fsm = new StateMachine<Status, Event>();
     static {
-        s_fsm.addTransition(null, Event.AgentConnected, Status.Up);
-        s_fsm.addTransition(null, Event.UpdateNeeded, Status.Updating);
+        s_fsm.addTransition(null, Event.AgentConnected, Status.Connecting);
+        s_fsm.addTransition(Status.Connecting, Event.AgentConnected, Status.Connecting);
+        s_fsm.addTransition(Status.Connecting, Event.Ready, Status.Up);
+        s_fsm.addTransition(Status.Connecting, Event.PingTimeout, Status.Alert);
+        s_fsm.addTransition(Status.Connecting, Event.UpdateNeeded, Status.Updating);
+        s_fsm.addTransition(Status.Connecting, Event.MaintenanceRequested, Status.PrepareForMaintenance);
+        s_fsm.addTransition(Status.Connecting, Event.ShutdownRequested, Status.Disconnected);
+        s_fsm.addTransition(Status.Connecting, Event.HostDown, Status.Alert);
+        s_fsm.addTransition(Status.Connecting, Event.Ping, Status.Connecting);
+        s_fsm.addTransition(Status.Connecting, Event.ManagementServerDown, Status.Disconnected);
+        s_fsm.addTransition(Status.Connecting, Event.AgentDisconnected, Status.Alert);
         s_fsm.addTransition(Status.Up, Event.PingTimeout, Status.Alert);
-        s_fsm.addTransition(Status.Up, Event.UpdateNeeded, Status.Updating);
         s_fsm.addTransition(Status.Up, Event.MaintenanceRequested, Status.PrepareForMaintenance);
         s_fsm.addTransition(Status.Up, Event.AgentDisconnected, Status.Alert);
         s_fsm.addTransition(Status.Up, Event.ShutdownRequested, Status.Disconnected);
         s_fsm.addTransition(Status.Up, Event.HostDown, Status.Down);
         s_fsm.addTransition(Status.Up, Event.Ping, Status.Up);
-        s_fsm.addTransition(Status.Up, Event.AgentConnected, Status.Up);
+        s_fsm.addTransition(Status.Up, Event.AgentConnected, Status.Connecting);
         s_fsm.addTransition(Status.Up, Event.ManagementServerDown, Status.Disconnected);
         s_fsm.addTransition(Status.Updating, Event.PingTimeout, Status.Alert);
         s_fsm.addTransition(Status.Updating, Event.Ping, Status.Updating);
-        s_fsm.addTransition(Status.Updating, Event.AgentConnected, Status.Up);
+        s_fsm.addTransition(Status.Updating, Event.AgentConnected, Status.Connecting);
         s_fsm.addTransition(Status.Updating, Event.ManagementServerDown, Status.Disconnected);
         s_fsm.addTransition(Status.Updating, Event.WaitedTooLong, Status.Alert);
         s_fsm.addTransition(Status.PrepareForMaintenance, Event.ResetRequested, Status.Disconnected);
@@ -142,16 +152,16 @@ public enum Status {
         s_fsm.addTransition(Status.Maintenance, Event.Ping, Status.Maintenance);
         s_fsm.addTransition(Status.Maintenance, Event.ManagementServerDown, Status.Maintenance);
         s_fsm.addTransition(Status.Disconnected, Event.PingTimeout, Status.Alert);
-        s_fsm.addTransition(Status.Disconnected, Event.AgentConnected, Status.Up);
+        s_fsm.addTransition(Status.Disconnected, Event.AgentConnected, Status.Connecting);
         s_fsm.addTransition(Status.Disconnected, Event.Ping, Status.Up);
         s_fsm.addTransition(Status.Disconnected, Event.ManagementServerDown, Status.Disconnected);
         s_fsm.addTransition(Status.Disconnected, Event.WaitedTooLong, Status.Alert);
         s_fsm.addTransition(Status.Down, Event.MaintenanceRequested, Status.PrepareForMaintenance);
-        s_fsm.addTransition(Status.Down, Event.AgentConnected, Status.Up);
+        s_fsm.addTransition(Status.Down, Event.AgentConnected, Status.Connecting);
         s_fsm.addTransition(Status.Down, Event.Remove, Status.Removed);
         s_fsm.addTransition(Status.Down, Event.ManagementServerDown, Status.Down);
         s_fsm.addTransition(Status.Alert, Event.MaintenanceRequested, Status.PrepareForMaintenance);
-        s_fsm.addTransition(Status.Alert, Event.AgentConnected, Status.Up);
+        s_fsm.addTransition(Status.Alert, Event.AgentConnected, Status.Connecting);
         s_fsm.addTransition(Status.Alert, Event.Ping, Status.Up);
         s_fsm.addTransition(Status.Alert, Event.Remove, Status.Removed);
         s_fsm.addTransition(Status.Alert, Event.ManagementServerDown, Status.Alert);

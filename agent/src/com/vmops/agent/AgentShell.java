@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -263,6 +263,7 @@ public class AgentShell implements IAgentShell {
         String zone = null;
         String pod = null;
         String guid = null;
+        String resource = null;
         for (int i = 0; i < args.length; i++) {
             final String[] tokens = args[i].split("=");
             if (tokens.length != 2) {
@@ -285,7 +286,7 @@ public class AgentShell implements IAgentShell {
             	pod = tokens[1];
             } else if(tokens[0].equalsIgnoreCase("guid")) {
             	guid = tokens[1];
-        	}
+        	} 
         }
 
         if (port == null) {
@@ -371,6 +372,12 @@ public class AgentShell implements IAgentShell {
             _storage.configure("Storage", new HashMap<String, Object>());
         }
 
+        
+        // merge with properties from command line to let resource access command line parameters
+        for(Map.Entry<String, Object> cmdLineProp : getCmdLineProperties().entrySet()) {
+        	_properties.put(cmdLineProp.getKey(), cmdLineProp.getValue());
+        }
+        
         final Adapters adapters = locator.getAdapters(BackoffAlgorithm.class);
         final Enumeration en = adapters.enumeration();
         while (en.hasMoreElements()) {
@@ -390,6 +397,7 @@ public class AgentShell implements IAgentShell {
     
     private void launchAgent() throws ConfigurationException {
         String resourceClassNames = getProperty(null, "resource");
+        s_logger.trace("resource=" + resourceClassNames);
         if(resourceClassNames != null) {
         	launchAgentFromClassInfo(resourceClassNames);
         	return;
@@ -495,6 +503,7 @@ public class AgentShell implements IAgentShell {
             s_logger.error("Unable to retrieve the type");
             throw new ConfigurationException("Unable to retrieve the type of this agent.");
         }
+        s_logger.trace("Launching agent based on type=" + typeInfo);
         
         String[] types = typeInfo.split("\\|");
         for(String type: types) {

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -52,7 +52,11 @@ public class SearchCriteria {
         NULL(" IS NULL ", 0),
         NNULL(" IS NOT NULL ", 0),
         SC(" () ", 1),
-        TEXT("  () ", 1);
+        TEXT("  () ", 1),
+        RP("", 0),
+        AND(" AND ", 0),
+        OR(" OR ", 0),
+        NOT(" NOT ", 0);
         
         private final String op;
         int params;

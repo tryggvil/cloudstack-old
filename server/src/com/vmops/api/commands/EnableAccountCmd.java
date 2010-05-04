@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -36,6 +36,7 @@ public class EnableAccountCmd extends BaseCmd {
     private static final List<Pair<Enum, Boolean>> s_properties = new ArrayList<Pair<Enum, Boolean>>();
 
     static {
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT_OBJ, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ID, Boolean.TRUE));
     }
 
@@ -51,28 +52,32 @@ public class EnableAccountCmd extends BaseCmd {
 
     @Override
     public List<Pair<String, Object>> execute(Map<String, Object> params) {
+        Account adminAccount = (Account)params.get(BaseCmd.Properties.ACCOUNT_OBJ.getName());
         Long id = (Long)params.get(BaseCmd.Properties.ID.getName());
-        
-        //check if account specified by id exists in the system
+
+        // don't allow modify system account
+        if (id == Long.valueOf(Account.ACCOUNT_ID_SYSTEM)) {
+            throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "can not enable system account");
+        }
+
+        // check if account specified by id exists in the system
         Account account = getManagementServer().findAccountById(id);
         if (account == null) {
         	throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to find account by id");
-        }
-        else if (getManagementServer().findActiveAccount(account.getAccountName(), account.getDomainId()) == null) {
+        } else if (getManagementServer().findActiveAccount(account.getAccountName(), account.getDomainId()) == null) {
         	throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to find account by id");
         }
-        
-        //don't allow modify system account
-    	if (id == Long.valueOf(Account.ACCOUNT_ID_SYSTEM)) {
-    		throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "can not enable system account");
-    	}
-        
+
+        if ((adminAccount != null) && !getManagementServer().isChildDomain(adminAccount.getDomainId(), account.getDomainId())) {
+            throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Failed to enable account " + id + ", permission denied.");
+        }
+
         boolean success = true;
         try {
             success = getManagementServer().enableAccount(id.longValue());
         } catch (Exception ex) {
             s_logger.error("error enabling account with id: " + id, ex);
-            success = false;
+            throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Internal error enabling account with id: " + id);
         }
 
         List<Pair<String, Object>> returnValues = new ArrayList<Pair<String, Object>>();

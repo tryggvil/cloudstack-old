@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 
 # the following two variables are used by the target "waf dist"
-VERSION = '1.9.10'
-APPNAME = 'vmops'
-# if you change it here, you need to change it also in vmops.spec, add a %changelog entry there, and add an entry in debian/changelog
+# if you change 'em here, you need to change it also in cloud.spec, add a %changelog entry there, and add an entry in debian/changelog
+VERSION = '1.9.12'
+APPNAME = 'cloud'
 
 import shutil,os
 import email,time
@@ -32,7 +32,7 @@ blddir = 'artifacts'
 # "j" generally means /usr/share/java
 # when adding a new system JAR file:
 # 1. check the hard_deps variable at the bottom and add the appropriate packaging information,
-# 2. add the RPM package that contains the jarfile into the vmops.spec file
+# 2. add the RPM package that contains the jarfile into the cloud.spec file
 # 3. (the jars specified here will be looked up at runtime with build-classpath, on linux installs)
 systemjars = {
 	'common':
@@ -81,8 +81,8 @@ systemjars = {
 
 #- in Tomcat lib/
 #- as a Linux system package
-#- in the vmops-deps package
-#- in the vmops-premium package
+#- in the cloud-deps package
+#- in the cloud-premium package
 
 # servlet-api:
 
@@ -494,7 +494,7 @@ def configure(conf):
 			conf.env.MSUSER = 'root'
 			conf.check_message_2("%s (not used on Windows or Mac)"%conf.env.MSUSER,"GREEN")
 		else:
-			conf.env.MSUSER = 'vmops'
+			conf.env.MSUSER = APPNAME
 			conf.check_message_2("%s (Linux default)"%conf.env.MSUSER,"GREEN")
 
         conf.check_message_1('Detecting Tomcat')
@@ -552,12 +552,12 @@ def configure(conf):
 		conf.env.PREMIUMJAVADIR = conf.env.JAVADIR
 		conf.env.SYSTEMJAVADIR = conf.env.JAVADIR
 	else: 
-		conf.env.PREMIUMJAVADIR = _join(conf.env.JAVADIR,"vmops-premium")
+		conf.env.PREMIUMJAVADIR = _join(conf.env.JAVADIR,"%s-premium"%APPNAME)
 		conf.env.SYSTEMJAVADIR = "/usr/share/java"
 	
 	in_javadir = lambda name: _join(conf.env.JAVADIR,_basename(name)) # $PREFIX/share/java
 	in_system_javadir = lambda name: _join(conf.env.SYSTEMJAVADIR,name) # /usr/share/java
-	in_premiumjavadir = lambda name: _join(conf.env.PREMIUMJAVADIR,name) # $PREFIX/share/java/vmops-premium
+	in_premiumjavadir = lambda name: _join(conf.env.PREMIUMJAVADIR,name) # $PREFIX/share/java/cloud-premium
 
 	conf.check_message_1('Building classpaths')
 	
@@ -570,24 +570,24 @@ def configure(conf):
 	conf.env.SYSTEMJARS = " ".join(sysjars) # used by build-classpath in the initscripts
 	conf.env.SYSTEMCLASSPATH = pathsep.join([ in_system_javadir(x) for x in sysjars ]) # used for compile, waf run and simulate_agent
 	
-	# the deps classpath points to JARs that are installed in the vmops-deps package
+	# the deps classpath points to JARs that are installed in the cloud-deps package
 	# these will install on Tomcat6's lib/ directory on Windows and Mac
 	depsclasspath = [ in_javadir(_basename(x)) for x in _glob(_join(conf.srcdir,"deps","*.jar")) ]
 	conf.env.DEPSCLASSPATH = pathsep.join(depsclasspath)
 
 	# the MS classpath points to JARs required to run the management server
-	msclasspath = [ in_javadir("vmops-%s.jar"%x) for x in "utils core server premium".split() ]
+	msclasspath = [ in_javadir("%s-%s.jar"%(APPNAME,x)) for x in "utils core server premium".split() ]
 	conf.env.MSCLASSPATH = pathsep.join(msclasspath)
 
 	# the agent and simulator classpaths point to JARs required to run these two applications
-	agentclasspath = [ in_javadir("vmops-%s.jar"%x) for x in "utils core server premium agent console console-proxy".split() ]
+	agentclasspath = [ in_javadir("%s-%s.jar"%(APPNAME,x)) for x in "utils core server premium agent console console-proxy".split() ]
 	conf.env.AGENTCLASSPATH = pathsep.join(agentclasspath)
-	conf.env.AGENTSIMULATORCLASSPATH = pathsep.join(agentclasspath+[in_javadir("vmops-agent-simulator.jar")])
+	conf.env.AGENTSIMULATORCLASSPATH = pathsep.join(agentclasspath+[in_javadir("%s-agent-simulator.jar"%APPNAME)])
 
-	usageclasspath = [ in_javadir("vmops-%s.jar"%x) for x in "utils core server premium usage".split() ]
+	usageclasspath = [ in_javadir("%s-%s.jar"%(APPNAME,x)) for x in "utils core server premium usage".split() ]
 	conf.env.USAGECLASSPATH = pathsep.join(usageclasspath)
 
-	# the premium classpath points to JARs that are installed in the vmops-premium-deps package
+	# the premium classpath points to JARs that are installed in the cloud-premium-deps package
 	# these will install on Tomcat6's lib/ directory on Windows and Mac
 	premiumclasspath = [ in_premiumjavadir(_basename(x)) for x in _glob(_join(conf.srcdir,"thirdparty","*.jar")) ]
 	conf.env.PREMIUMCLASSPATH = pathsep.join(premiumclasspath)
@@ -650,7 +650,7 @@ def configure(conf):
 def build(bld):
 	"""builds the entire stack"""
 	#For every matching build change here, that produces new installable
-	#files, the vmops.spec file and the Debian control files must be
+	#files, the cloud.spec file and the Debian control files must be
 	#revised and tested.
 
 	required_env = [
@@ -681,7 +681,7 @@ def build(bld):
 			name='daemonize',
 			features='cc cprogram',
 			source='daemonize/daemonize.c',
-			target='daemonize/vmops-daemonize')
+			target='daemonize/cloud-daemonize')
 
 	# build / install declarations of premium-deps and deps projects
 
@@ -709,9 +709,9 @@ def build(bld):
 		bld(features='jar', name='%s_jar'%proj,
 		    basedir='%s/src'%proj, jarcreate = 'cfm',
 		    jaropts = ['%s/META-INF/MANIFEST.MF'%_join(builddir,proj)],
-		    destfile='vmops-%s.jar'%proj,
+		    destfile='%s-%s.jar'%(APPNAME,proj),
 		    after="%s_javac %s_manifest"%(proj,proj))
-		bld.install_files('${JAVADIR}','vmops-%s.jar'%proj)
+		bld.install_files('${JAVADIR}','%s-%s.jar'%(APPNAME,proj))
 
 	# build / install declarations of utils project
 	proj = 'utils' ;	buildjar(proj)
@@ -727,13 +727,13 @@ def build(bld):
 	# build / install declarations of test project
 	proj = 'test' ;		buildjar(proj,after='utils_javac')
 	start_path = bld.path.find_dir("test/scripts")
-	bld.install_files(_join('${LIBDIR}','vmops','test'),
+	bld.install_files(_join('${LIBDIR}',APPNAME,'test'),
 		start_path.ant_glob("**",src=True,bld=False,dir=False,flat=True),
 		postpone=False,cwd=start_path,relative_trick=True)
-	bld.install_files(_join('${SHAREDSTATEDIR}','vmops','test'),'%s/metadata/*'%proj) # install metadata
-	bld(features='subst', name='testprogram', source='%s/vmops-run-test.in'%proj, target='%s/vmops-run-test'%proj)
-	bld.install_files('${BINDIR}','%s/vmops-run-test'%proj,chmod=0755) # install binary
-	bld.install_files('${SYSCONFDIR}/vmops/%s'%proj,'%s/conf/*'%proj) # install config
+	bld.install_files(_join('${SHAREDSTATEDIR}',APPNAME,'test'),'%s/metadata/*'%proj) # install metadata
+	bld(features='subst', name='testprogram', source='%s/%s-run-test.in'%(proj,APPNAME), target='%s/%s-run-test'%(proj,APPNAME))
+	bld.install_files('${BINDIR}','%s/%s-run-test'%(proj,APPNAME),chmod=0755) # install binary
+	bld.install_files('${SYSCONFDIR}/%s/%s'%(APPNAME,proj),'%s/conf/*'%proj) # install config
 
 	# build / install declarations of console project
 	proj = 'console' ;	buildjar(proj)
@@ -776,11 +776,6 @@ def build(bld):
 	bld(features='subst', source='%s/libexec/%s-runner.in'%(proj,proj),
 		target='%s/libexec/%s-runner'%(proj,proj))
 	bld.install_files("${LIBEXECDIR}",'%s/libexec/%s-runner'%(proj,proj),chmod=0755)
-	bld(features='subst', source='%s/libexec/vmops-setup-%s.in'%(proj,proj),
-                target='%s/libexec/vmops-setup-%s'%(proj,proj))
-        bld.install_files("${LIBEXECDIR}",'%s/libexec/vmops-setup-%s'%(proj,proj),chmod=0755)
-
-
 	for infile in _glob(_join(proj,"bin","*.in")):
 		source = infile ; target = infile[:-3]
 		bld(features='subst', source=source, target=target)
@@ -805,7 +800,7 @@ def build(bld):
 			source= files,
 			includes="vnet/src/libxutil vnet/src/vnet-module vnet/src/vnetd",
 			lib='dl pthread'.split(),
-			target='vnet/vmops-vnetd',
+			target='vnet/%s-vnetd'%APPNAME,
 			install_path="${SBINDIR}"
 			)
 		bld.install_as("${SBINDIR}/%s-vn"%APPNAME,   "%s/vn"%proj,   chmod=0755)
@@ -866,7 +861,7 @@ def build(bld):
 	cglib-nodep-2.2.jar
 	""".split() ]
 	sources += " " + " ".join( "thirdparty/%s"%s for s in thirdparties )
-	artifacts = "vmops-console-proxy.jar vmops-console.jar vmops-agent.jar vmops-utils.jar vmops-core.jar"
+	artifacts = "%s-console-proxy.jar %s-console.jar %s-agent.jar %s-utils.jar %s-core.jar"%(APPNAME,APPNAME,APPNAME,APPNAME,APPNAME)
 
 	def tar_up(task):
 		tgt = task.outputs[0].bldpath(task.env)
@@ -913,7 +908,7 @@ def build(bld):
 			if not Options.options.PRESERVECONFIG:
 				bld.install_files("${BINDIR}",'%s'%(target),chmod=0755)
 
-	bld.install_files(tomcatconf,'client/tomcatconf/db.properties',chmod=0640) # special case permissions FIXME should also be group vmops
+	bld.install_files(tomcatconf,'client/tomcatconf/db.properties',chmod=0640)
 
 	# build / install declarations of usage
 	proj = 'usage' ;	buildjar(proj,after='utils_javac core_javac server_javac premium_javac')
@@ -927,13 +922,13 @@ def build(bld):
 			source = f ; target = f
 		if not Options.options.PRESERVECONFIG:
 			bld.install_files(usageconf,target)
-	bld.install_files(usageconf,'client/tomcatconf/db.properties',chmod=0640) # special case permissions FIXME should also be group vmops
+	bld.install_files(usageconf,'client/tomcatconf/db.properties',chmod=0640)
 	bld(features='subst', source='%s/libexec/%s-runner.in'%(proj,proj), target='%s/libexec/%s-runner'%(proj,proj))
 	bld.install_files("${LIBEXECDIR}",'%s/libexec/%s-runner'%(proj,proj),chmod=0755)
 
 	for proj in ['client','premium','agent','vnet','usage']:
 
-		# apply distro-specific config on top of the 'all' generic vmopsmanagement config
+		# apply distro-specific config on top of the 'all' generic cloud-management config
 		distrospecificdirs=_glob(_join(proj,"distro",distro,"*"))
 		for dsdir in distrospecificdirs:
 			start_path = bld.srcnode.find_dir(dsdir)
@@ -975,7 +970,7 @@ def build(bld):
 
 	# 4. fedora is just a symlink, ubuntu is actually an initscript.  we do the symlinking here.
 	if distro in "fedora centos":
-		symlinks = [ ('${SYSCONFDIR}/rc.d/init.d/vmops-management','${SYSCONFDIR}/rc.d/init.d/tomcat6'), ]
+		symlinks = [ ('${SYSCONFDIR}/rc.d/init.d/%s-management'%APPNAME,'${SYSCONFDIR}/rc.d/init.d/tomcat6'), ]
 		for lnk,dst in symlinks: bld.symlink_as(lnk,Utils.subst_vars(dst,bld.env))
 
 	# 6. install context.xml file
@@ -1067,7 +1062,7 @@ def deb(context):
 
   * Automatic prerelease build
 
- -- Automated build system <noreply@vmops.com>  %s"""%(
+ -- Automated build system <noreply@cloud.com>  %s"""%(
 			APPNAME,
 			VERSION,
 			_getbuildnumber(),
@@ -1105,16 +1100,16 @@ def deb(context):
 	shutil.rmtree(srcdir)
 
 def uninstallrpms(context):
-	"""uninstalls any VMOps Cloud Stack RPMs on this system"""
+	"""uninstalls any Cloud Stack RPMs on this system"""
 	Utils.pprint("GREEN","Uninstalling any installed RPMs")
-	cmd = "rpm -qa | grep vmops- | xargs -r sudo rpm -e"
+	cmd = "rpm -qa | grep %s- | xargs -r sudo rpm -e"%APPNAME
 	Utils.pprint("BLUE",cmd)
 	system(cmd)
 
 def uninstalldebs(context):
-	"""uninstalls any VMOps Cloud Stack DEBs on this system"""
+	"""uninstalls any Cloud Stack DEBs on this system"""
 	Utils.pprint("GREEN","Uninstalling any installed DEBs")
-	cmd = "dpkg -l 'vmops-*' | grep ^i | awk '{ print $2 } ' | xargs aptitude purge -y"
+	cmd = "dpkg -l '%s-*' | grep ^i | awk '{ print $2 } ' | xargs aptitude purge -y"%APPNAME
 	Utils.pprint("BLUE",cmd)
 	system(cmd)
 

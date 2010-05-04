@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -27,6 +27,7 @@ import org.apache.log4j.Logger;
 
 import com.vmops.api.BaseCmd;
 import com.vmops.api.ServerApiException;
+import com.vmops.user.Account;
 import com.vmops.utils.Pair;
 
 public class DeleteSnapshotPoliciesCmd extends BaseCmd {
@@ -36,6 +37,7 @@ public class DeleteSnapshotPoliciesCmd extends BaseCmd {
     private static final List<Pair<Enum, Boolean>> s_properties = new ArrayList<Pair<Enum, Boolean>>();
 
     static {
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT_OBJ, Boolean.FALSE));
     	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.SNAPSHOT_POLICY_ID, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.SNAPSHOT_POLICY_IDS, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.USER_ID, Boolean.FALSE));
@@ -50,22 +52,23 @@ public class DeleteSnapshotPoliciesCmd extends BaseCmd {
 
     @Override
     public List<Pair<String, Object>> execute(Map<String, Object> params) {
-    	Long policyId = (Long)params.get(BaseCmd.Properties.SNAPSHOT_POLICY_ID.getName());
+    	Account account = (Account)params.get(BaseCmd.Properties.ACCOUNT_OBJ.getName());
+        Long policyId = (Long)params.get(BaseCmd.Properties.SNAPSHOT_POLICY_ID.getName());
         String policyIds = (String)params.get(BaseCmd.Properties.SNAPSHOT_POLICY_IDS.getName());
         Long userId = (Long)params.get(BaseCmd.Properties.USER_ID.getName());
-        
-        //If command is executed via 8096 port, set userId to the id of System account (1)
+
+        // If command is executed via 8096 port, set userId to the id of System account (1)
         if (userId == null) {
             userId = Long.valueOf(1);
         }
-        
+
         if ((policyId == null) && (policyIds == null)) {
             throw new ServerApiException(BaseCmd.PARAM_ERROR, "No policy id (or list off ids) specified.");
         }
 
-        List<Long> policyIdList = new ArrayList<Long>();;
+        List<Long> policyIdList = new ArrayList<Long>();
 
-        if(policyId != null){
+        if (policyId != null) {
         	policyIdList.add(policyId);
         } else if (policyIds != null) {
         	StringTokenizer st = new StringTokenizer(policyIds, ",");
@@ -82,7 +85,7 @@ public class DeleteSnapshotPoliciesCmd extends BaseCmd {
 
         boolean success = true;
         if (policyIdList.size() > 0) {
-                success = getManagementServer().deleteSnapshotPolicies(userId, policyIdList);
+            success = getManagementServer().deleteSnapshotPolicies(userId, policyIdList);
         }
 
         List<Pair<String, Object>> returnValues = new ArrayList<Pair<String, Object>>();

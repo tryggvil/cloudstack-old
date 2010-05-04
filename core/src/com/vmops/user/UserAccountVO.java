@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -59,8 +59,8 @@ public class UserAccountVO implements UserAccount {
     @Column(name="email")
     private String email = null;
 
-    @Column(name="disabled")
-    private boolean disabled = false;
+    @Column(name="state")
+    private String state;
 
     @Column(name="api_key")
     private String apiKey = null;
@@ -83,8 +83,8 @@ public class UserAccountVO implements UserAccount {
     @Column(name="domain_id", table="account", insertable=false, updatable=false)
     private Long domainId = null;
 
-    @Column(name="disabled", table="account", insertable=false, updatable=false)
-    private boolean accountDisabled = false;
+    @Column(name="state", table="account", insertable=false, updatable=false)
+    private String accountState;
 
     public UserAccountVO() {}
 
@@ -152,12 +152,12 @@ public class UserAccountVO implements UserAccount {
     }
 
     @Override
-    public boolean getDisabled() {
-        return disabled;
+    public String getState() {
+        return state;
     }
 
-    public void setDisabled(boolean disabled) {
-        this.disabled = disabled;
+    public void setState(String state) {
+        this.state = state;
     }
 
     @Override
@@ -224,12 +224,12 @@ public class UserAccountVO implements UserAccount {
     }
 
     @Override
-    public boolean getAccountDisabled() {
-        return accountDisabled;
+    public String getAccountState() {
+        return accountState;
     }
 
-    public void setAccountDisabled(boolean accountDisabled) {
-        this.accountDisabled = accountDisabled;
+    public void setAccountDisabled(String accountState) {
+        this.accountState = accountState;
     }
     
 }

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -54,6 +54,7 @@ import com.vmops.storage.template.TemplateInfo;
 import com.vmops.utils.NumbersUtil;
 import com.vmops.utils.component.ComponentLocator;
 import com.vmops.utils.exception.VmopsRuntimeException;
+import com.vmops.utils.net.NfsUtils;
 import com.vmops.utils.script.OutputInterpreter;
 import com.vmops.utils.script.Script;
 
@@ -71,6 +72,7 @@ public class NfsSecondaryStorageResource extends ServerResourceBase implements S
     String _mountParent;
     Map<String, Object> _params;
     StorageLayer _storage;
+    boolean _inSystemVM = false;
     
     Random _rand = new Random(System.currentTimeMillis());
     
@@ -78,8 +80,8 @@ public class NfsSecondaryStorageResource extends ServerResourceBase implements S
     
     @Override
     public void disconnected() {
-        if (_parent != null) {
-            Script script = new Script(true, "umount", _timeout, s_logger);
+        if (_parent != null && !_inSystemVM) {
+            Script script = new Script(!_inSystemVM, "umount", _timeout, s_logger);
             script.add(_parent);
             script.execute();
             
@@ -197,6 +199,11 @@ public class NfsSecondaryStorageResource extends ServerResourceBase implements S
     
     @Override
     public boolean configure(String name, Map<String, Object> params) throws ConfigurationException {
+    	String  eth1ip = (String)params.get("eth1ip");
+        if (eth1ip != null) { //can only happen inside service vm
+        	params.put("private.network.device", "eth1"); 
+        }
+    	
         super.configure(name, params);
         
         _params = params;
@@ -219,6 +226,7 @@ public class NfsSecondaryStorageResource extends ServerResourceBase implements S
             }
         }
         
+
         _guid = (String)params.get("guid");
         if (_guid == null) {
             throw new ConfigurationException("Unable to find the guid");
@@ -246,17 +254,65 @@ public class NfsSecondaryStorageResource extends ServerResourceBase implements S
             throw new ConfigurationException("Unable to find mount.path");
         }
         
+
+        
+        String inSystemVM = (String)params.get("secondary.storage.vm");
+        if (inSystemVM == null || "true".equalsIgnoreCase(inSystemVM)) {
+        	_inSystemVM = true;
+            String  localgw = (String)params.get("localgw");
+            if (localgw != null) { //can only happen inside service vm
+            	addRouteToStorageHost(localgw, _nfsPath);
+            }
+        	startAdditionalServices();
+        }
         _parent = mount(_nfsPath, _mountParent);
         if (_parent == null) {
             throw new ConfigurationException("Unable to create mount point");
         }
+        
         
         s_logger.info("Mount point established at " + _parent);
         
         return true;
     }
     
-    protected String mount(String path, String parent) {
+    private void startAdditionalServices() {
+    	Script command = new Script("/bin/bash", s_logger);
+		command.add("-c");
+    	command.add("service sshd restart ");
+    	String result = command.execute();
+    	if (result != null) {
+    		s_logger.warn("Error in starting sshd service err=" + result );
+    	}
+		command = new Script("/bin/bash", s_logger);
+		command.add("-c");
+    	command.add("iptables -I INPUT -i eth1 -p tcp -m state --state NEW -m tcp --dport 3922 -j ACCEPT");
+    	result = command.execute();
+    	if (result != null) {
+    		s_logger.warn("Error in opening up ssh port err=" + result );
+    	}
+		
+	}
+
+	private void addRouteToStorageHost(String localgw, String nfsPath) {
+    	String host = NfsUtils.getHostPart(nfsPath);
+    	if (host == null) {
+    		throw new VmopsRuntimeException("Unable to determine host part of nfs path");
+    	}
+    	Script command = new Script("/bin/bash", s_logger);
+		command.add("-c");
+    	command.add("ip route delete " + host);
+    	command.execute();
+		command = new Script("/bin/bash", s_logger);
+		command.add("-c");
+    	command.add("ip route add " + host + " via " + localgw);
+    	String result = command.execute();
+    	if (result != null) {
+    		s_logger.warn("Error in configuring route to sec storage host err=" + result );
+    	}
+	}
+
+	protected String mount(String path, String parent) {
         String mountPoint = null;
         for (int i = 0; i < 10; i++) {
             String mntPt = parent + File.separator + Integer.toHexString(_rand.nextInt(Integer.MAX_VALUE));
@@ -277,7 +333,7 @@ public class NfsSecondaryStorageResource extends ServerResourceBase implements S
        
         Script script = null;
         String result = null;
-        script = new Script(true, "umount", _timeout, s_logger);
+        script = new Script(!_inSystemVM, "umount", _timeout, s_logger);
         script.add(path);
         result = script.execute();
         
@@ -287,9 +343,12 @@ public class NfsSecondaryStorageResource extends ServerResourceBase implements S
             result = script.execute();
         }
  
-        script = new Script(true, "mount", _timeout, s_logger);
-        script.add(path, mountPoint);
-        result = script.execute();
+        Script command = new Script(!_inSystemVM, "mount", _timeout, s_logger);
+        command.add("-t", "nfs");
+        command.add("-o", "soft,timeo=133,retrans=2147483647,tcp,noac");
+        command.add(path);
+        command.add(mountPoint);
+        result = command.execute();
         if (result != null) {
             s_logger.warn("Unable to mount " + path + " due to " + result);
             File file = new File(mountPoint);
@@ -299,7 +358,7 @@ public class NfsSecondaryStorageResource extends ServerResourceBase implements S
         }
         
         // Change permissions for the mountpoint
-        script = new Script(true, "chmod", _timeout, s_logger);
+        script = new Script(!_inSystemVM, "chmod", _timeout, s_logger);
         script.add("777", mountPoint);
         result = script.execute();
         if (result != null) {
@@ -307,6 +366,8 @@ public class NfsSecondaryStorageResource extends ServerResourceBase implements S
             return null;
         }
         
+        // XXX: Adding the check for creation of snapshots dir here. Might have to move it somewhere more logical later.
+        checkForSnapshotsDir(mountPoint);
         return mountPoint;
     }
     
@@ -376,6 +437,34 @@ public class NfsSecondaryStorageResource extends ServerResourceBase implements S
         return new StartupCommand [] {cmd};
     }
 
+    protected void checkForSnapshotsDir(String mountPoint) {
+        boolean snapshotsDirExists = false;
+        String snapshotsDirLocation = mountPoint + File.separator + "snapshots";
+        File snapshotsDir = new File(snapshotsDirLocation);
+        if (snapshotsDir.exists()) {
+            if (snapshotsDir.isDirectory()) {
+                s_logger.debug("Snapshots directory already exists on secondary storage mounted at " + mountPoint);
+                snapshotsDirExists = true;
+            }
+            else {
+                // Whatever it is, delete it
+                boolean deleted = snapshotsDir.delete();
+                if (deleted) {
+                    if (_storage.mkdir(snapshotsDirLocation)) {
+                        snapshotsDirExists = true;
+                    }
+                }
+            }
+        }
+        else if (_storage.mkdir(snapshotsDirLocation)) {
+            snapshotsDirExists = true;
+        }
+
+        if (snapshotsDirExists) {
+            s_logger.info("Snapshots directory created/exists on Secondary storage.");
+        }
+    }
+    
     @Override
     protected String getDefaultScriptsDir() {
         return "scripts/storage/secondary";

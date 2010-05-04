@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -41,8 +41,8 @@ public class DiskTemplateDaoImpl extends GenericDaoBase<DiskTemplateVO, Long> im
     	super();
     	
     	TypeSizeSearch = createSearchBuilder();
-    	TypeSizeSearch.addAnd("type", TypeSizeSearch.entity().getType(), SearchCriteria.Op.EQ);
-    	TypeSizeSearch.addAnd("size", TypeSizeSearch.entity().getSize(), SearchCriteria.Op.EQ);
+    	TypeSizeSearch.and("type", TypeSizeSearch.entity().getType(), SearchCriteria.Op.EQ);
+    	TypeSizeSearch.and("size", TypeSizeSearch.entity().getSize(), SearchCriteria.Op.EQ);
     }
     
     public DiskTemplateVO findByTypeAndSize(String type, long size) {

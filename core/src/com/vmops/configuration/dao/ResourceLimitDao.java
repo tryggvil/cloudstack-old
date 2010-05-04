@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -29,6 +29,8 @@ public interface ResourceLimitDao extends GenericDao<ResourceLimitVO, Long> {
 	
 	public ResourceLimitVO findByDomainIdAndType(Long domainId, ResourceCount.ResourceType type);
 	public ResourceLimitVO findByAccountIdAndType(Long accountId, ResourceCount.ResourceType type);
+	public List<ResourceLimitVO> listByAccountId(Long accountId);
+	public List<ResourceLimitVO> listByDomainId(Long domainId);
 	public boolean update(Long id, Long max);
 	public ResourceCount.ResourceType getLimitType(String type);
 	

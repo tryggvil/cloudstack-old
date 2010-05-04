@@ -1,7 +1,7 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
- * This software is licensed under the GNU General Public License v3 or later.  
+ * This software is licensed under the GNU General Public License v3 or later.
  * 
  * It is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -276,16 +276,16 @@ public class DownloadListener implements Listener {
 	@Override
 	public boolean processConnect(long agentId, StartupCommand cmd) {
 	    if (!(cmd instanceof StartupStorageCommand)) {
-	        return false;
+	        return true;
 	    }
 	    
 	    if (cmd.getGuid().startsWith("iso:")) {
-	        //FIXME: do not download template for ISO secondary 
-	        return false;
+	        //FIXME: do not download template for ISO secondary
+	        return true;
 	    }
 	    
 	    StartupStorageCommand storage = (StartupStorageCommand)cmd;
-	    if (storage.getResourceType() == Volume.StorageResourceType.STORAGE_HOST || 
+	    if (storage.getResourceType() == Volume.StorageResourceType.STORAGE_HOST ||
 	    storage.getResourceType() == Volume.StorageResourceType.SECONDARY_STORAGE )
 	    {
 	    	downloadMonitor.handleTemplateSync(agentId, storage.getTemplateInfo());

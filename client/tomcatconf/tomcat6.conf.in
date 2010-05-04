@@ -45,7 +45,7 @@ SHUTDOWN_WAIT="30"
 SHUTDOWN_VERBOSE="false"
 
 # Set the TOMCAT_PID location
-CATALINA_PID="@PIDDIR@/vmops-management.pid"
+CATALINA_PID="@PIDDIR@/@PACKAGE@-management.pid"
 
 # Connector port is 8080 for this tomcat6 instance
 #CONNECTOR_PORT="8080"

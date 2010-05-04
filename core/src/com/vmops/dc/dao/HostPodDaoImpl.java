@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -36,7 +36,6 @@ import com.vmops.utils.db.GenericDaoBase;
 import com.vmops.utils.db.SearchBuilder;
 import com.vmops.utils.db.SearchCriteria;
 import com.vmops.utils.db.Transaction;
-import com.vmops.utils.db.SearchCriteria.Func;
 import com.vmops.utils.net.NetUtils;
 
 @Local(value={HostPodDao.class})
@@ -48,12 +47,12 @@ public class HostPodDaoImpl extends GenericDaoBase<HostPodVO, Long> implements H
 	
 	protected HostPodDaoImpl() {
 	    DataCenterAndNameSearch = createSearchBuilder();
-	    DataCenterAndNameSearch.addAnd("dc", DataCenterAndNameSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
-	    DataCenterAndNameSearch.addAnd("name", DataCenterAndNameSearch.entity().getName(), SearchCriteria.Op.EQ);
+	    DataCenterAndNameSearch.and("dc", DataCenterAndNameSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+	    DataCenterAndNameSearch.and("name", DataCenterAndNameSearch.entity().getName(), SearchCriteria.Op.EQ);
 	    DataCenterAndNameSearch.done();
 	    
 	    DataCenterIdSearch = createSearchBuilder();
-	    DataCenterIdSearch.addAnd("dcId", DataCenterIdSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+	    DataCenterIdSearch.and("dcId", DataCenterIdSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
 	    DataCenterIdSearch.done();
 	}
 	
@@ -102,14 +101,21 @@ public class HostPodDaoImpl extends GenericDaoBase<HostPodVO, Long> implements H
 	@Override
 	public boolean configure(String name, Map<String, Object> params) throws ConfigurationException {
 		super.configure(name, params);
-
+/*
 		SearchBuilder<HostPodVO> builder = createSearchBuilder();
-		builder.addAnd("abc", builder.entity().getId(), SearchCriteria.Op.EQ);
-		builder.select(Func.MAX, builder.entity().getId());
+		builder.and("abc", builder.entity().getId(), SearchCriteria.Op.EQ);
+		builder.op(Op.AND, "def", builder.entity().getId(), SearchCriteria.Op.GT);
+		builder.or("fee", builder.entity().getId(), SearchCriteria.Op.LT);
+		builder.cp();
+		builder.and("jjj", builder.entity().getId(), SearchCriteria.Op.EQ);
 		builder.done();
 		SearchCriteria sc = builder.create();
 		sc.setParameters("abc", 1);
-		searchAll(sc, null);
+		sc.setParameters("def", 1);
+		sc.setParameters("fee", 1);
+		sc.setParameters("jjj", 1);
+		searchAll(sc, null, null, false);
+	*/
 		Transaction txn = Transaction.currentTxn();
 		try {
 			txn.start();

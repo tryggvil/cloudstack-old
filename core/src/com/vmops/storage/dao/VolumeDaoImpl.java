@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -235,75 +235,64 @@ public class VolumeDaoImpl extends GenericDaoBase<VolumeVO, Long> implements Vol
     	update(volumeId, volume);
     }
     
-    @Override
-    public void removeVolume(long volumeId) {
-    	Transaction txn = Transaction.currentTxn();
-        try {
-        	remove(volumeId);
-        	txn.commit();
-        } catch(Exception e) {
-        	s_logger.error("Unable to remove volume.", e);
-        }
-    }
-    
 	protected VolumeDaoImpl() {
         PathAndHostIdSearch = createSearchBuilder();
-        PathAndHostIdSearch.addAnd("path", PathAndHostIdSearch.entity().getPath(), SearchCriteria.Op.EQ);
-        PathAndHostIdSearch.addAnd("hostId", PathAndHostIdSearch.entity().getHostId(), SearchCriteria.Op.EQ);
+        PathAndHostIdSearch.and("path", PathAndHostIdSearch.entity().getPath(), SearchCriteria.Op.EQ);
+        PathAndHostIdSearch.and("hostId", PathAndHostIdSearch.entity().getHostId(), SearchCriteria.Op.EQ);
         PathAndHostIdSearch.done();
         
         AccountIdSearch = createSearchBuilder();
-        AccountIdSearch.addAnd("accountId", AccountIdSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
+        AccountIdSearch.and("accountId", AccountIdSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
         AccountIdSearch.done();
         
         AccountDataCenterSearch = createSearchBuilder();
-        AccountDataCenterSearch.addAnd("account", AccountDataCenterSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
-        AccountDataCenterSearch.addAnd("dc", AccountDataCenterSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
-        AccountDataCenterSearch.addAnd("destroyed", AccountDataCenterSearch.entity().getDestroyed(), SearchCriteria.Op.EQ);
-        AccountDataCenterSearch.addAnd("status", AccountDataCenterSearch.entity().getStatus(), SearchCriteria.Op.EQ);
+        AccountDataCenterSearch.and("account", AccountDataCenterSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
+        AccountDataCenterSearch.and("dc", AccountDataCenterSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        AccountDataCenterSearch.and("destroyed", AccountDataCenterSearch.entity().getDestroyed(), SearchCriteria.Op.EQ);
+        AccountDataCenterSearch.and("status", AccountDataCenterSearch.entity().getStatus(), SearchCriteria.Op.EQ);
         AccountDataCenterSearch.done();
         
         HostIdSearch = createSearchBuilder();
-        HostIdSearch.addAnd("hostId", HostIdSearch.entity().getHostId(), SearchCriteria.Op.EQ);
+        HostIdSearch.and("hostId", HostIdSearch.entity().getHostId(), SearchCriteria.Op.EQ);
         HostIdSearch.done();
         
         PoolIdSearch = createSearchBuilder();
-        PoolIdSearch.addAnd("poolId", PoolIdSearch.entity().getPoolId(), SearchCriteria.Op.EQ);
+        PoolIdSearch.and("poolId", PoolIdSearch.entity().getPoolId(), SearchCriteria.Op.EQ);
         PoolIdSearch.done();
         
         HostIdAndMirrStateSearch = createSearchBuilder();
-        HostIdAndMirrStateSearch.addAnd("hostId", HostIdAndMirrStateSearch.entity().getHostId(), SearchCriteria.Op.EQ);
-        HostIdAndMirrStateSearch.addAnd("mirrorState", HostIdAndMirrStateSearch.entity().getMirrorState(), SearchCriteria.Op.EQ);
+        HostIdAndMirrStateSearch.and("hostId", HostIdAndMirrStateSearch.entity().getHostId(), SearchCriteria.Op.EQ);
+        HostIdAndMirrStateSearch.and("mirrorState", HostIdAndMirrStateSearch.entity().getMirrorState(), SearchCriteria.Op.EQ);
         HostIdAndMirrStateSearch.done();
         
         InstanceIdSearch = createSearchBuilder();
-        InstanceIdSearch.addAnd("instanceId", InstanceIdSearch.entity().getInstanceId(), SearchCriteria.Op.EQ);
+        InstanceIdSearch.and("instanceId", InstanceIdSearch.entity().getInstanceId(), SearchCriteria.Op.EQ);
         InstanceIdSearch.done();
         
         InstanceAndTypeSearch= createSearchBuilder();
-        InstanceAndTypeSearch.addAnd("instanceId", InstanceAndTypeSearch.entity().getInstanceId(), SearchCriteria.Op.EQ);
-        InstanceAndTypeSearch.addAnd("vType", InstanceAndTypeSearch.entity().getVolumeType(), SearchCriteria.Op.EQ);
+        InstanceAndTypeSearch.and("instanceId", InstanceAndTypeSearch.entity().getInstanceId(), SearchCriteria.Op.EQ);
+        InstanceAndTypeSearch.and("vType", InstanceAndTypeSearch.entity().getVolumeType(), SearchCriteria.Op.EQ);
         InstanceAndTypeSearch.done();
         
         InstanceIdDestroyedSearch = createSearchBuilder();
-        InstanceIdDestroyedSearch.addAnd("instanceId", InstanceIdDestroyedSearch.entity().getInstanceId(), SearchCriteria.Op.EQ);
-        InstanceIdDestroyedSearch.addAnd("destroyed", InstanceIdDestroyedSearch.entity().getDestroyed(), SearchCriteria.Op.EQ);
+        InstanceIdDestroyedSearch.and("instanceId", InstanceIdDestroyedSearch.entity().getInstanceId(), SearchCriteria.Op.EQ);
+        InstanceIdDestroyedSearch.and("destroyed", InstanceIdDestroyedSearch.entity().getDestroyed(), SearchCriteria.Op.EQ);
         InstanceIdDestroyedSearch.done();
         
         HostIdVmIdVolTypeSearch= createSearchBuilder();
-        HostIdVmIdVolTypeSearch.addAnd("hostId", HostIdVmIdVolTypeSearch.entity().getHostId(), Op.EQ);
-        HostIdVmIdVolTypeSearch.addAnd("instanceId", HostIdVmIdVolTypeSearch.entity().getInstanceId(), Op.EQ);
-        HostIdVmIdVolTypeSearch.addAnd("vType", HostIdVmIdVolTypeSearch.entity().getVolumeType(), Op.EQ);
+        HostIdVmIdVolTypeSearch.and("hostId", HostIdVmIdVolTypeSearch.entity().getHostId(), Op.EQ);
+        HostIdVmIdVolTypeSearch.and("instanceId", HostIdVmIdVolTypeSearch.entity().getInstanceId(), Op.EQ);
+        HostIdVmIdVolTypeSearch.and("vType", HostIdVmIdVolTypeSearch.entity().getVolumeType(), Op.EQ);
         HostIdVmIdVolTypeSearch.done();
         
         HostIdVmIdSearch= createSearchBuilder();
-        HostIdVmIdSearch.addAnd("hostId", HostIdVmIdSearch.entity().getHostId(), Op.EQ);
-        HostIdVmIdSearch.addAnd("instanceId", HostIdVmIdSearch.entity().getInstanceId(), Op.EQ);
+        HostIdVmIdSearch.and("hostId", HostIdVmIdSearch.entity().getHostId(), Op.EQ);
+        HostIdVmIdSearch.and("instanceId", HostIdVmIdSearch.entity().getInstanceId(), Op.EQ);
         HostIdVmIdSearch.done();
         
         MirrorSearch = createSearchBuilder();
-        MirrorSearch.addAnd("mirrorVolume", MirrorSearch.entity().getMirrorVolume(), Op.NULL);
-        MirrorSearch.addAnd("mirrorState", MirrorSearch.entity().getMirrorState(), Op.EQ);
+        MirrorSearch.and("mirrorVolume", MirrorSearch.entity().getMirrorVolume(), Op.NULL);
+        MirrorSearch.and("mirrorState", MirrorSearch.entity().getMirrorState(), Op.EQ);
         MirrorSearch.done();
        
 	}

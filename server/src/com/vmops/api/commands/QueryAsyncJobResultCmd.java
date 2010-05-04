@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -70,16 +70,10 @@ public class QueryAsyncJobResultCmd extends BaseCmd {
         Object resultObject = result.getResultObject();
         if(resultObject != null) {
 
-        	// TODO: this is to keep backwards compatibility for now, once UI changes have been completed. will remove it
-            SerializerHelper.appendPairList(returnValues, resultObject, 
-    	        	BaseCmd.Properties.JOB_RESULT.getName());
-	        
             Class<?> clz = resultObject.getClass();
             if(clz.isPrimitive() || clz.getSuperclass() == Number.class || clz == String.class || clz == Date.class) {
                 returnValues.add(new Pair<String, Object>(BaseCmd.Properties.JOB_RESULT_TYPE.getName(), "text"));
-                
-                // TODO, after UI migration, open it
-                // SerializerHelper.appendPairList(returnValues, resultObject, BaseCmd.Properties.JOB_RESULT.getName());
+                SerializerHelper.appendPairList(returnValues, resultObject, BaseCmd.Properties.JOB_RESULT.getName());
             } else {
                 returnValues.add(new Pair<String, Object>(BaseCmd.Properties.JOB_RESULT_TYPE.getName(), "object"));
 

@@ -66,6 +66,7 @@ patch_console_proxy() {
    then
      echo "All" | unzip $patchfile -d ${path}/usr/local/vmops/consoleproxy >/dev/null 2>&1
      chmod 555 ${path}/usr/local/vmops/consoleproxy/run.sh
+     find ${path}/usr/local/vmops/consoleproxy/ -name \*.sh | xargs chmod 555
      echo ${newmd5} > ${md5file}
    fi
 

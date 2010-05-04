@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -56,12 +56,12 @@ public class SnapshotPolicyDaoImpl extends GenericDaoBase<SnapshotPolicyVO, Long
 	
     protected SnapshotPolicyDaoImpl() {
         VolumeIdSearch = createSearchBuilder();
-        VolumeIdSearch.addAnd("volumeId", VolumeIdSearch.entity().getVolumeId(), SearchCriteria.Op.EQ);
+        VolumeIdSearch.and("volumeId", VolumeIdSearch.entity().getVolumeId(), SearchCriteria.Op.EQ);
         VolumeIdSearch.done();
         
         VolumeIdIntervalSearch = createSearchBuilder();
-        VolumeIdIntervalSearch.addAnd("volumeId", VolumeIdIntervalSearch.entity().getVolumeId(), SearchCriteria.Op.EQ);
-        VolumeIdIntervalSearch.addAnd("interval", VolumeIdIntervalSearch.entity().getInterval(), SearchCriteria.Op.EQ);
+        VolumeIdIntervalSearch.and("volumeId", VolumeIdIntervalSearch.entity().getVolumeId(), SearchCriteria.Op.EQ);
+        VolumeIdIntervalSearch.and("interval", VolumeIdIntervalSearch.entity().getInterval(), SearchCriteria.Op.EQ);
         VolumeIdIntervalSearch.done();
     }	
 }

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -72,23 +72,17 @@ public class RouterStatsListener implements Listener {
             WatchNetworkAnswer watch = (WatchNetworkAnswer)answer;
             Collection<String> map = watch.getAllVms();
             for (String vmName : map) {
-            	// Console proxy domU and routing domU share the same host
-            	if(!VirtualMachineName.isValidRouterName(vmName)) {
-            		if(s_logger.isTraceEnabled())
-            			s_logger.trace("ignore user statistic update for console proxy : " + vmName);
-            		continue;
-            	}
             		
                 long id = VirtualMachineName.getRouterId(vmName);
                 DomainRouterVO router = _routerDao.findById(id);
                 if (router == null || router.isRemoved()) {
-                    s_logger.warn("Router is removed or non existent: " + vmName);
+                    s_logger.debug("Router is removed or non existent: " + vmName);
                     continue;
                 }
 
                 long[] bytes = watch.getStats(vmName);
                 if (router.getState() != State.Running) {
-                    s_logger.info("Not logging anything for a router that's not running: Rx " + bytes[1] + " and Tx " + bytes[0]);
+                    s_logger.debug("Not logging anything for a router that's not running: Rx " + bytes[1] + " and Tx " + bytes[0]);
                     continue;
                 }
                 if (s_logger.isTraceEnabled()) {

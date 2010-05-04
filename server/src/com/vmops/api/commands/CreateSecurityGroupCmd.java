@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -63,24 +63,39 @@ public class CreateSecurityGroupCmd extends BaseCmd {
         Long accountId = null;
 
         if (account != null) {
-            accountId = account.getId();
-        } else {
-        	if (accountName != null) {
-        		if (domainId == null) {
-        			domainId = Long.valueOf(1);
-        		}
-                account = getManagementServer().findActiveAccount(accountName, domainId);
-                if (account != null) {
-                    accountId = account.getId();
+            if (isAdmin(account.getType())) {
+                if (domainId != null) {
+                    if (!getManagementServer().isChildDomain(account.getDomainId(), domainId)) {
+                        throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to create security group in domain " + domainId + ", permission denied.");
+                    }
+                } else {
+                    // the admin must be creating the security group
+                    if (account != null) {
+                        accountId = account.getId();
+                        domainId = account.getDomainId();
+                    }
                 }
-                else {
-                	throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "could not find account " + accountName + " in domain " + domainId);
-                }
-	        } else {
-	        	throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "no account is specified");
-	        }
+            } else {
+                accountId = account.getId();
+                domainId = account.getDomainId();
+            }
         }
-        
+
+        if (accountId == null) {
+            if ((accountName != null) && (domainId != null)) {
+                Account userAccount = getManagementServer().findActiveAccount(accountName, domainId);
+                if (userAccount != null) {
+                    accountId = userAccount.getId();
+                } else {
+                    throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "could not find account " + accountName + " in domain " + domainId);
+                }
+            }
+        }
+
+        if (accountId == null) {
+            throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to create security group, no account specified.");
+        }
+
         boolean isNameInUse = getManagementServer().isSecurityGroupNameInUse(domainId, accountId, name);
 
         if (isNameInUse) {

@@ -24,6 +24,10 @@
 				<name>account</name>
 				<value>admin</value>
 			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
+			</item>
 		</parameters>
 		<returnvalue>
 			<item setparam="true">
@@ -196,6 +200,10 @@
 				<name>account</name>
 				<value>admin</value>
 			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
+			</item>
 		</parameters>
 		<returnvalue>
 			<item setparam="true">
@@ -294,6 +302,10 @@
 			<item>
 				<name>account</name>
 				<value>admin</value>
+			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
 			</item>
 		</parameters>
 		<returnvalue>
@@ -669,6 +681,10 @@
 				<name>account</name>
 				<value>admin</value>
 			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
+			</item>
 		</parameters>
 		<returnvalue>
 			<item setparam="true">
@@ -766,6 +782,10 @@
 			<item>
 				<name>account</name>
 				<value>admin</value>
+			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
 			</item>
 		</parameters>
 		<returnvalue>
@@ -899,6 +919,10 @@
 				<name>account</name>
 				<value>admin</value>
 			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
+			</item>
 		</parameters>
 		<returnvalue>
 			<item setparam="true">
@@ -930,6 +954,10 @@
 			<item>
 				<name>account</name>
 				<value>admin</value>
+			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
 			</item>
 		</parameters>
 		<returnvalue>

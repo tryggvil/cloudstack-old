@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -52,11 +52,11 @@ public class AssociateIPAddrCmd extends BaseCmd {
     public String getName() {
         return s_name;
     }
-    
+
     public static String getResultObjectName() {
     	return "addressinfo";
     }
-    
+
     public List<Pair<Enum, Boolean>> getProperties() {
         return s_properties;
     }
@@ -73,33 +73,36 @@ public class AssociateIPAddrCmd extends BaseCmd {
         Long accountId = null;
         boolean isAdmin = false;
 
-    	if (account != null) {
+        if ((account == null) || isAdmin(account.getType())) {
+            isAdmin = true;
+            if (domainId != null) {
+                if ((account != null) && !getManagementServer().isChildDomain(account.getDomainId(), domainId)) {
+                    throw new ServerApiException(BaseCmd.PARAM_ERROR, "Invalid domain id (" + domainId + ") given, unable to associate IP address.");
+                }
+                if (accountName != null) {
+                    Account userAccount = getManagementServer().findAccountByName(accountName, domainId);
+                    if (userAccount != null) {
+                        accountId = userAccount.getId();
+                    } else {
+                        throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to find account " + accountName + " in domain " + domainId);
+                    }
+                }
+            } else if (account != null) {
+                // the admin is acquiring an IP address
+                accountId = account.getId();
+                domainId = account.getDomainId();
+            } else {
+                throw new ServerApiException(BaseCmd.PARAM_ERROR, "Account information is not specified.");
+            }
+        } else {
             accountId = account.getId();
             domainId = account.getDomainId();
-            if (isAdmin(account.getType()))
-            	isAdmin = true;  
-        } else {
-        	isAdmin = true;
-        	if (accountName != null) {
-        		if (domainId == null) {
-        			domainId = Long.valueOf(1);
-        		}
-                account = getManagementServer().findActiveAccount(accountName, domainId);
-                if (account != null) {
-                    accountId = account.getId();
-                }
-                else {
-                	throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "could not find account " + accountName + " in domain " + domainId);
-                }
-	        }else {
-	        	throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "no account is specified");
-	        }
         }
 
         if (userId == null) {
             userId = Long.valueOf(1);
         }
-        
+
         try {
             newIpAddr = getManagementServer().associateIpAddress(userId.longValue(), accountId.longValue(), domainId.longValue(), zoneId.longValue());
         } catch (ResourceAllocationException rae) {
@@ -115,15 +118,14 @@ public class AssociateIPAddrCmd extends BaseCmd {
         } catch (Exception ex4) {
         	throw new ServerApiException (BaseCmd.NET_IP_ASSOC_ERROR, "Unable to associate IP address");
         }
-        
-        
+
         if (newIpAddr == null) {
             s_logger.warn("unable to associate IP address for user " + ((errorDesc != null) ? (", reason: " + errorDesc) : null));
             throw new ServerApiException(BaseCmd.NET_IP_ASSOC_ERROR, "unable to associate IP address for user " + ((errorDesc != null) ? (", reason: " + errorDesc) : null));
         }
         List<Pair<String, Object>> embeddedObject = new ArrayList<Pair<String, Object>>();
         List<Pair<String, Object>> returnValues = new ArrayList<Pair<String, Object>>();
-        
+
         try {
         	returnValues.add(new Pair<String, Object>(BaseCmd.Properties.IP_ADDRESS.getName(), newIpAddr));
         	List<IPAddressVO> ipAddresses = getManagementServer().listPublicIpAddressesBy(accountId.longValue(), true, null, null);
@@ -157,6 +159,7 @@ public class AssociateIPAddrCmd extends BaseCmd {
             embeddedObject.add(new Pair<String, Object>("publicipaddress", new Object[] { returnValues } ));
         } catch (Exception ex) {
             s_logger.error("error!", ex);
+            throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Internal Error encountered while assigning IP address " + newIpAddr + " to account " + accountId);
         }
         return embeddedObject;
     }

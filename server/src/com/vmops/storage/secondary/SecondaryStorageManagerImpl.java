@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -17,9 +17,6 @@
  */
 package com.vmops.storage.secondary;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Enumeration;
@@ -76,7 +73,6 @@ import com.vmops.host.HostVO;
 import com.vmops.host.dao.HostDao;
 import com.vmops.info.RunningHostCountInfo;
 import com.vmops.info.RunningHostInfoAgregator;
-import com.vmops.info.SecStorageVmLoadInfo;
 import com.vmops.info.RunningHostInfoAgregator.ZoneHostInfo;
 import com.vmops.network.IPAddressVO;
 import com.vmops.network.NetworkManager;
@@ -153,7 +149,7 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 	
 	private String _mgmt_host;
 	private int _mgmt_port = 8250;
-	private int _secStorageVmCmdPort = 8001;
+	private int _secStorageVmCmdPort = 3;
 
 	private String _name;
 	private Adapters<SecondaryStorageVmAllocator> _ssVmAllocators;
@@ -610,11 +606,17 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 			txn.start();
 			SecondaryStorageVmVO secStorageVm;
 			String name = VirtualMachineName.getSystemVmName(id, _instance, "s").intern();
+	        HostVO secHost = _hostDao.findSecondaryStorageHost(dataCenterId);
+	        if (secHost == null) {
+				String msg = "No secondary storage available in zone " + dataCenterId + ", cannot create secondary storage vm";
+				s_logger.warn(msg);
+	        	throw new VmopsRuntimeException(msg);
+	        }
 			secStorageVm = new SecondaryStorageVmVO(id, name, State.Creating,
 					privateMacAddress, null, cidrNetmask, _template.getId(), _template.getGuestOSId(),
 					publicMacAddress, publicIpAddress, vlanNetmask, vlan.getId(), vlan.getVlanId(),
 					pod.getId(), dataCenterId, vlanGateway, null,
-					dc.getDns1(), dc.getDns2(), _domain, _secStorageVmRamSize);
+					dc.getDns1(), dc.getDns2(), _domain, _secStorageVmRamSize, secHost.getGuid(), secHost.getStorageUrl());
 
 			long secStorageVmId = _secStorageVmDao.persist(secStorageVm);
 			txn.commit();
@@ -696,40 +698,7 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 	}
 
 	protected String connect(String ipAddress, int port) {
-		for (int i = 0; i <= _ssh_retry; i++) {
-			SocketChannel sch = null;
-			try {
-				if (s_logger.isDebugEnabled()) {
-					s_logger.debug("Trying to connect to " + ipAddress);
-				}
-				sch = SocketChannel.open();
-				sch.configureBlocking(true);
-				sch.socket().setSoTimeout(5000);
-
-				InetSocketAddress addr = new InetSocketAddress(ipAddress, port);
-				sch.connect(addr);
-				return null;
-			} catch (IOException e) {
-				if (s_logger.isDebugEnabled()) {
-					s_logger.debug("Could not connect to " + ipAddress);
-				}
-			} finally {
-				if (sch != null) {
-					try {
-						sch.close();
-					} catch (IOException e) {
-					}
-				}
-			}
-			try {
-				Thread.sleep(_ssh_sleep);
-			} catch (InterruptedException ex) {
-			}
-		}
-
-		s_logger.debug("Unable to logon to " + ipAddress);
-
-		return "Unable to connect";
+		return null; 
 	}
 
 	
@@ -953,7 +922,7 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 
 	public boolean isServiceReady(Map<Long, ZoneHostInfo> zoneHostInfoMap) {
 		for (ZoneHostInfo zoneHostInfo : zoneHostInfoMap.values()) {
-			if (zoneHostInfo.getFlags() == RunningHostInfoAgregator.ZoneHostInfo.ALL_HOST_MASK) {
+			if ((zoneHostInfo.getFlags() & RunningHostInfoAgregator.ZoneHostInfo.ALL_HOST_MASK) != 0){
 				if (s_logger.isInfoEnabled())
 					s_logger.info("Zone " + zoneHostInfo.getDcId() + " is ready to launch");
 				return true;
@@ -965,8 +934,14 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 	
 	public boolean isZoneReady(Map<Long, ZoneHostInfo> zoneHostInfoMap, long dataCenterId) {
 		ZoneHostInfo zoneHostInfo = zoneHostInfoMap.get(dataCenterId);
-		if(zoneHostInfo != null && zoneHostInfo.getFlags() == RunningHostInfoAgregator.ZoneHostInfo.ALL_HOST_MASK) {
+		if(zoneHostInfo != null && (zoneHostInfo.getFlags() & RunningHostInfoAgregator.ZoneHostInfo.COMPUTING_HOST_MASK) != 0) {
 	        VMTemplateVO template = _templateDao.findConsoleProxyTemplate();
+	        HostVO secHost = _hostDao.findSecondaryStorageHost(dataCenterId);
+	        if (secHost == null) {
+	        	if (s_logger.isDebugEnabled())
+					s_logger.debug("No secondary storage available in zone " + dataCenterId + ", wait until it is ready to launch secondary storage vm");
+	        	return false;
+	        }
 	        if(template != null && template.isReady()) {
 	        	
 	        	List<Pair<Long, Integer>> l = _storagePoolHostDao.getDatacenterStoragePoolHostInfo(dataCenterId);
@@ -1042,12 +1017,17 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 		Map<String, String> configs = configDao.getConfiguration("management-server", params);
 
 		_secStorageVmRamSize = NumbersUtil.parseInt(configs.get("secstorage.vm.ram.size"), DEFAULT_SS_VM_RAMSIZE);
+		String useServiceVM = configDao.getValue("secondary.storage.vm");
+		boolean _useServiceVM = false;
+        if ("true".equalsIgnoreCase(useServiceVM)){
+        	_useServiceVM = true;
+        }
 
 		String value = configs.get("start.retry");
 		_find_host_retry = NumbersUtil.parseInt(value, DEFAULT_FIND_HOST_RETRY_COUNT);
 
 		value = configs.get("secstorage.vm.cmd.port");
-		_secStorageVmCmdPort = NumbersUtil.parseInt(value, 8001);
+		_secStorageVmCmdPort = NumbersUtil.parseInt(value, 3922);
 		
 		
 		value = configs.get("secstorage.capacityscan.interval");
@@ -1202,9 +1182,11 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
             throw new ConfigurationException("Unable to find the template for secondary storage vm VMs");
         }
  
-//		_capacityScanScheduler.scheduleAtFixedRate(getCapacityScanTask(), STARTUP_DELAY,
-//				_capacityScanInterval, TimeUnit.MILLISECONDS);
-//		
+        if (_useServiceVM) {
+        	_capacityScanScheduler.scheduleAtFixedRate(getCapacityScanTask(), STARTUP_DELAY,
+				_capacityScanInterval, TimeUnit.MILLISECONDS);
+        }
+		
 		if (s_logger.isInfoEnabled())
 			s_logger.info("Secondary storage vm Manager is configured.");
 		return true;

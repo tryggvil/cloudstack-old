@@ -1,7 +1,7 @@
-INSERT INTO `vmops`.`vm_template` (id, unique_name, name, public, created, type, hvm, bits, account_id, url, checksum, ready, display_text, enable_password, format, guest_os_id, create_status)
-    VALUES (1, 'routing', 'DomR Template', 0, now(), 'ext3', 0, 64, 1, 'http://download.vmops.com/templates/builtin/a88232bf-6a18-38e7-aeee-c1702725079f.qcow2.bz2', '39dc9d0dac7a62d7198da960e9f587fb', 0, 'DomR Template', 0, 'QCOW2', 10, 'Creating');
-INSERT INTO `vmops`.`vm_template` (id, unique_name, name, public, created, type, hvm, bits, account_id, url, checksum, ready, display_text, enable_password, format, guest_os_id, create_status)
-    VALUES (2, 'centos53-x86_64', 'CentOS 5.3(x86_64) no GUI', 1, now(), 'ext3', 0, 64, 1, 'http://download.vmops.com/templates/builtin/eec2209b-9875-3c8d-92be-c001bd8a0faf.qcow2.bz2', '364e75c481c1fe4206320714b78c5558', 0, 'CentOS 5.3(x86_64) no GUI', 0, 'QCOW2', 10, 'Creating');
+INSERT INTO `vmops`.`vm_template` (id, unique_name, name, public, created, type, hvm, bits, account_id, url, checksum, ready, display_text, enable_password, format, guest_os_id, create_status, featured)
+    VALUES (1, 'routing', 'DomR Template', 0, now(), 'ext3', 0, 64, 1, 'http://download.vmops.com/templates/builtin/a88232bf-6a18-38e7-aeee-c1702725079f.qcow2.bz2', 'bb382958fabdb1a5fc522b5109d9013b', 0, 'DomR Template', 0, 'QCOW2', 10, 'Creating', 0);
+INSERT INTO `vmops`.`vm_template` (id, unique_name, name, public, created, type, hvm, bits, account_id, url, checksum, ready, display_text, enable_password, format, guest_os_id, create_status, featured)
+    VALUES (2, 'centos53-x86_64', 'CentOS 5.3(x86_64) no GUI', 1, now(), 'ext3', 0, 64, 1, 'http://download.vmops.com/templates/builtin/eec2209b-9875-3c8d-92be-c001bd8a0faf.qcow2.bz2', '364e75c481c1fe4206320714b78c5558', 0, 'CentOS 5.3(x86_64) no GUI', 0, 'QCOW2', 10, 'Creating', 1);
 
 INSERT INTO `vmops`.`guest_os_category` (id, name) VALUES (1, 'CentOS');
 INSERT INTO `vmops`.`guest_os_category` (id, name) VALUES (2, 'Citrix');

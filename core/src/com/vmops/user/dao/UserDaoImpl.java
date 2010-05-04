@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -45,28 +45,28 @@ public class UserDaoImpl extends GenericDaoBase<UserVO, Long> implements UserDao
     
     protected UserDaoImpl () {
     	UsernameSearch = createSearchBuilder();
-    	UsernameSearch.addAnd("username", UsernameSearch.entity().getUsername(), SearchCriteria.Op.EQ);
+    	UsernameSearch.and("username", UsernameSearch.entity().getUsername(), SearchCriteria.Op.EQ);
     	UsernameSearch.done();
     	
         UsernameLikeSearch = createSearchBuilder();
-        UsernameLikeSearch.addAnd("username", UsernameLikeSearch.entity().getUsername(), SearchCriteria.Op.LIKE);
+        UsernameLikeSearch.and("username", UsernameLikeSearch.entity().getUsername(), SearchCriteria.Op.LIKE);
         UsernameLikeSearch.done();
         
         AccountIdSearch = createSearchBuilder();
-        AccountIdSearch.addAnd("account", AccountIdSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
+        AccountIdSearch.and("account", AccountIdSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
         AccountIdSearch.done();
         
         UsernamePasswordSearch = createSearchBuilder();
-        UsernamePasswordSearch.addAnd("username", UsernamePasswordSearch.entity().getUsername(), SearchCriteria.Op.EQ);
-        UsernamePasswordSearch.addAnd("password", UsernamePasswordSearch.entity().getPassword(), SearchCriteria.Op.EQ);
+        UsernamePasswordSearch.and("username", UsernamePasswordSearch.entity().getUsername(), SearchCriteria.Op.EQ);
+        UsernamePasswordSearch.and("password", UsernamePasswordSearch.entity().getPassword(), SearchCriteria.Op.EQ);
         UsernamePasswordSearch.done();
 
         UserIdSearch = createSearchBuilder();
-        UserIdSearch.addAnd("id", UserIdSearch.entity().getId(), SearchCriteria.Op.EQ);
+        UserIdSearch.and("id", UserIdSearch.entity().getId(), SearchCriteria.Op.EQ);
         UserIdSearch.done();
 
         SecretKeySearch = createSearchBuilder();
-        SecretKeySearch.addAnd("secretKey", SecretKeySearch.entity().getSecretKey(), SearchCriteria.Op.EQ);
+        SecretKeySearch.and("secretKey", SecretKeySearch.entity().getSecretKey(), SearchCriteria.Op.EQ);
         SecretKeySearch.done();
     }
 

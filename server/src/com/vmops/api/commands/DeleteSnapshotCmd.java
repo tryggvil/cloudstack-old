@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -60,13 +60,20 @@ public class DeleteSnapshotCmd extends BaseCmd {
         if (snapshotCheck == null) {
             throw new ServerApiException (BaseCmd.SNAPSHOT_INVALID_PARAM_ERROR, "unable to find a snapshot with id " + snapshotId);
         }
-        
-        if ((account != null) && !isAdmin(account.getType())) {
-            if (account.getId() != snapshotCheck.getAccountId()) {
-                throw new ServerApiException(BaseCmd.SNAPSHOT_INVALID_PARAM_ERROR, "unable to find a snapshot with id " + snapshotId + " for this account");
+
+        if (account != null) {
+            if (!isAdmin(account.getType())) {
+                if (account.getId() != snapshotCheck.getAccountId()) {
+                    throw new ServerApiException(BaseCmd.SNAPSHOT_INVALID_PARAM_ERROR, "unable to find a snapshot with id " + snapshotId + " for this account");
+                }
+            } else {
+                Account snapshotOwner = getManagementServer().findAccountById(snapshotCheck.getAccountId());
+                if ((snapshotOwner == null) || !getManagementServer().isChildDomain(account.getDomainId(), snapshotOwner.getDomainId())) {
+                    throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to delete snapshot " + snapshotId + ", permission denied.");
+                }
             }
         }
-        
+
         //If command is executed via 8096 port, set userId to the id of System account (1)
         if (userId == null) {
             userId = Long.valueOf(1);

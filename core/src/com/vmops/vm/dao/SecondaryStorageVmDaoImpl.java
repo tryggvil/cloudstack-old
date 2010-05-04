@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -51,23 +51,23 @@ public class SecondaryStorageVmDaoImpl extends GenericDaoBase<SecondaryStorageVm
     
     public SecondaryStorageVmDaoImpl() {
         DataCenterStatusSearch = createSearchBuilder();
-        DataCenterStatusSearch.addAnd("dc", DataCenterStatusSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
-        DataCenterStatusSearch.addAnd("states", DataCenterStatusSearch.entity().getState(), SearchCriteria.Op.IN);
+        DataCenterStatusSearch.and("dc", DataCenterStatusSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        DataCenterStatusSearch.and("states", DataCenterStatusSearch.entity().getState(), SearchCriteria.Op.IN);
         DataCenterStatusSearch.done();
         
         StateSearch = createSearchBuilder();
-        StateSearch.addAnd("states", StateSearch.entity().getState(), SearchCriteria.Op.IN);
+        StateSearch.and("states", StateSearch.entity().getState(), SearchCriteria.Op.IN);
         StateSearch.done();
         
         HostSearch = createSearchBuilder();
-        HostSearch.addAnd("host", HostSearch.entity().getHostId(), SearchCriteria.Op.EQ);
+        HostSearch.and("host", HostSearch.entity().getHostId(), SearchCriteria.Op.EQ);
         HostSearch.done();
         
         StateChangeSearch = createSearchBuilder();
-        StateChangeSearch.addAnd("id", StateChangeSearch.entity().getId(), SearchCriteria.Op.EQ);
-        StateChangeSearch.addAnd("states", StateChangeSearch.entity().getState(), SearchCriteria.Op.EQ);
-        StateChangeSearch.addAnd("host", StateChangeSearch.entity().getHostId(), SearchCriteria.Op.EQ);
-        StateChangeSearch.addAnd("update", StateChangeSearch.entity().getUpdated(), SearchCriteria.Op.EQ);
+        StateChangeSearch.and("id", StateChangeSearch.entity().getId(), SearchCriteria.Op.EQ);
+        StateChangeSearch.and("states", StateChangeSearch.entity().getState(), SearchCriteria.Op.EQ);
+        StateChangeSearch.and("host", StateChangeSearch.entity().getHostId(), SearchCriteria.Op.EQ);
+        StateChangeSearch.and("update", StateChangeSearch.entity().getUpdated(), SearchCriteria.Op.EQ);
         StateChangeSearch.done();
         
         _updateTimeAttr = _allAttributes.get("updateTime");

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -67,32 +67,32 @@ public class VMTemplatePoolDaoImpl extends GenericDaoBase<VMTemplateStoragePoolV
 	
 	public VMTemplatePoolDaoImpl () {
 		PoolSearch = createSearchBuilder();
-		PoolSearch.addAnd("pool_id", PoolSearch.entity().getPoolId(), SearchCriteria.Op.EQ);
+		PoolSearch.and("pool_id", PoolSearch.entity().getPoolId(), SearchCriteria.Op.EQ);
 		PoolSearch.done();
 		
 		TemplateSearch = createSearchBuilder();
-		TemplateSearch.addAnd("template_id", TemplateSearch.entity().getTemplateId(), SearchCriteria.Op.EQ);
+		TemplateSearch.and("template_id", TemplateSearch.entity().getTemplateId(), SearchCriteria.Op.EQ);
 		TemplateSearch.done();
 		
 		PoolTemplateSearch = createSearchBuilder();
-		PoolTemplateSearch.addAnd("pool_id", PoolTemplateSearch.entity().getPoolId(), SearchCriteria.Op.EQ);
-		PoolTemplateSearch.addAnd("template_id", PoolTemplateSearch.entity().getTemplateId(), SearchCriteria.Op.EQ);
+		PoolTemplateSearch.and("pool_id", PoolTemplateSearch.entity().getPoolId(), SearchCriteria.Op.EQ);
+		PoolTemplateSearch.and("template_id", PoolTemplateSearch.entity().getTemplateId(), SearchCriteria.Op.EQ);
 		PoolTemplateSearch.done();
 		
 		TemplateStatusSearch = createSearchBuilder();
-		TemplateStatusSearch.addAnd("template_id", TemplateStatusSearch.entity().getTemplateId(), SearchCriteria.Op.EQ);
-		TemplateStatusSearch.addAnd("download_state", TemplateStatusSearch.entity().getDownloadState(), SearchCriteria.Op.EQ);
+		TemplateStatusSearch.and("template_id", TemplateStatusSearch.entity().getTemplateId(), SearchCriteria.Op.EQ);
+		TemplateStatusSearch.and("download_state", TemplateStatusSearch.entity().getDownloadState(), SearchCriteria.Op.EQ);
 		TemplateStatusSearch.done();
 
 		TemplatePoolStatusSearch = createSearchBuilder();
-		TemplatePoolStatusSearch.addAnd("pool_id", TemplatePoolStatusSearch.entity().getPoolId(), SearchCriteria.Op.EQ);
-		TemplatePoolStatusSearch.addAnd("template_id", TemplatePoolStatusSearch.entity().getTemplateId(), SearchCriteria.Op.EQ);
-		TemplatePoolStatusSearch.addAnd("download_state", TemplatePoolStatusSearch.entity().getDownloadState(), SearchCriteria.Op.EQ);
+		TemplatePoolStatusSearch.and("pool_id", TemplatePoolStatusSearch.entity().getPoolId(), SearchCriteria.Op.EQ);
+		TemplatePoolStatusSearch.and("template_id", TemplatePoolStatusSearch.entity().getTemplateId(), SearchCriteria.Op.EQ);
+		TemplatePoolStatusSearch.and("download_state", TemplatePoolStatusSearch.entity().getDownloadState(), SearchCriteria.Op.EQ);
 		TemplatePoolStatusSearch.done();
 
         TemplateStatesSearch = createSearchBuilder();
-		TemplateStatesSearch.addAnd("template_id", TemplateStatesSearch.entity().getTemplateId(), SearchCriteria.Op.EQ);
-		TemplateStatesSearch.addAnd("states", TemplateStatesSearch.entity().getDownloadState(), SearchCriteria.Op.IN);
+		TemplateStatesSearch.and("template_id", TemplateStatesSearch.entity().getTemplateId(), SearchCriteria.Op.EQ);
+		TemplateStatesSearch.and("states", TemplateStatesSearch.entity().getDownloadState(), SearchCriteria.Op.IN);
 		TemplateStatesSearch.done();
 	}
 

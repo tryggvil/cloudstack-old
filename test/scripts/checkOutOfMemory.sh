@@ -3,7 +3,7 @@
 while true
 do
 sleep 600
-pid=`ps -ef | grep 'management.jmxremote' | grep -v 'vmops-management' | grep -v grep | awk '{print \$2}'`
+pid=`ps -ef | grep 'management.jmxremote' | grep -v 'cloud-management' | grep -v grep | awk '{print \$2}'`
 if grep -q java.lang.OutOfMemoryError /var/log/vmops/vmops.log
 then
 while true

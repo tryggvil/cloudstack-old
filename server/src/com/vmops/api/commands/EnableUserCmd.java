@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -37,6 +37,7 @@ public class EnableUserCmd extends BaseCmd {
     private static final List<Pair<Enum, Boolean>> s_properties = new ArrayList<Pair<Enum, Boolean>>();
 
     static {
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT_OBJ, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ID, Boolean.TRUE));
     }
 
@@ -52,21 +53,25 @@ public class EnableUserCmd extends BaseCmd {
 
     @Override
     public List<Pair<String, Object>> execute(Map<String, Object> params) {
+        Account adminAccount = (Account)params.get(BaseCmd.Properties.ACCOUNT_OBJ.getName());
         Long id = (Long)params.get(BaseCmd.Properties.ID.getName());
-        
-       //Check if user with id exists in the system
+
+        // Check if user with id exists in the system
         User user = getManagementServer().findUserById(id);
         if (user == null) {
         	throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to find user by id");
-        }
-        else if (user.getRemoved() != null) {
+        } else if (user.getRemoved() != null) {
         	throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to find user by id");
         }
-        
+
         // If the user is a System user, return an error.  We do not allow this
         Account account = getManagementServer().findAccountById(user.getAccountId());
         if ((account != null) && (account.getId() == Account.ACCOUNT_ID_SYSTEM)) {
         	throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "user id : " + id + " is a system user, enabling is not allowed");
+        }
+
+        if ((adminAccount != null) && !getManagementServer().isChildDomain(adminAccount.getDomainId(), account.getDomainId())) {
+            throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Failed to enable user " + id + ", permission denied.");
         }
 
         boolean success = true;

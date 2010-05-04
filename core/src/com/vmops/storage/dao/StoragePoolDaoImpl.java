@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -42,37 +42,37 @@ public class StoragePoolDaoImpl extends GenericDaoBase<StoragePoolVO, Long>  imp
 
     protected StoragePoolDaoImpl() {
     	NameSearch = createSearchBuilder();
-        NameSearch.addAnd("name", NameSearch.entity().getName(), SearchCriteria.Op.EQ);
+        NameSearch.and("name", NameSearch.entity().getName(), SearchCriteria.Op.EQ);
         NameSearch.done();
         
     	UUIDSearch = createSearchBuilder();
-        UUIDSearch.addAnd("uuid", UUIDSearch.entity().getUuid(), SearchCriteria.Op.EQ);
+        UUIDSearch.and("uuid", UUIDSearch.entity().getUuid(), SearchCriteria.Op.EQ);
         UUIDSearch.done();
         
     	DatacenterSearch = createSearchBuilder();
-        DatacenterSearch.addAnd("datacenterId", DatacenterSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        DatacenterSearch.and("datacenterId", DatacenterSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
         DatacenterSearch.done();
         
     	DcPodSearch = createSearchBuilder();
-    	DcPodSearch.addAnd("datacenterId", DcPodSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
-    	DcPodSearch.addAnd("podId", DcPodSearch.entity().getPodId(), SearchCriteria.Op.EQ);
+    	DcPodSearch.and("datacenterId", DcPodSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+    	DcPodSearch.and("podId", DcPodSearch.entity().getPodId(), SearchCriteria.Op.EQ);
     	DcPodSearch.done();
         
         HostSearch = createSearchBuilder();
-        HostSearch.addAnd("host", HostSearch.entity().getHostAddress(), SearchCriteria.Op.EQ);
+        HostSearch.and("host", HostSearch.entity().getHostAddress(), SearchCriteria.Op.EQ);
         HostSearch.done();
         
         HostPathDcPodSearch = createSearchBuilder();
-        HostPathDcPodSearch.addAnd("hostAddress", HostPathDcPodSearch.entity().getHostAddress(), SearchCriteria.Op.EQ);
-        HostPathDcPodSearch.addAnd("path", HostPathDcPodSearch.entity().getPath(), SearchCriteria.Op.EQ);
-        HostPathDcPodSearch.addAnd("datacenterId", HostPathDcPodSearch.entity().getDataCenterId(), Op.EQ);
-        HostPathDcPodSearch.addAnd("podId", HostPathDcPodSearch.entity().getPodId(), Op.EQ);
+        HostPathDcPodSearch.and("hostAddress", HostPathDcPodSearch.entity().getHostAddress(), SearchCriteria.Op.EQ);
+        HostPathDcPodSearch.and("path", HostPathDcPodSearch.entity().getPath(), SearchCriteria.Op.EQ);
+        HostPathDcPodSearch.and("datacenterId", HostPathDcPodSearch.entity().getDataCenterId(), Op.EQ);
+        HostPathDcPodSearch.and("podId", HostPathDcPodSearch.entity().getPodId(), Op.EQ);
         HostPathDcPodSearch.done();
         
         HostPathDcSearch = createSearchBuilder();
-        HostPathDcSearch.addAnd("hostAddress", HostPathDcSearch.entity().getHostAddress(), SearchCriteria.Op.EQ);
-        HostPathDcSearch.addAnd("path", HostPathDcSearch.entity().getPath(), SearchCriteria.Op.EQ);
-        HostPathDcSearch.addAnd("datacenterId", HostPathDcSearch.entity().getDataCenterId(), Op.EQ);
+        HostPathDcSearch.and("hostAddress", HostPathDcSearch.entity().getHostAddress(), SearchCriteria.Op.EQ);
+        HostPathDcSearch.and("path", HostPathDcSearch.entity().getPath(), SearchCriteria.Op.EQ);
+        HostPathDcSearch.and("datacenterId", HostPathDcSearch.entity().getDataCenterId(), Op.EQ);
         HostPathDcSearch.done();
 
     }

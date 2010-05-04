@@ -1,0 +1,331 @@
+<!-- Content Panel -->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>Untitled Document</title>
+<link rel= "stylesheet" href="../css/main.css" type="text/css" />
+</head>
+
+<body>
+<!-- Add New VM Wizard -->
+<div class="vmpopup_container" id="vmpopup" style="display: block;">
+	<div class="revwiz_closebutton"></div>
+	<div id="step1" style="display:none;">
+        <div class="rev_wiztop">
+            <div class="rev_wizardbox">
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_selectednumber">1</div>
+                    <h3>Select a Zone</h3>
+                </div>
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_nonselectednumber">2</div>
+                    <h3>Select a Template</h3>
+                </div>
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_nonselectednumber">3</div>
+                    <h3>Select Offerings</h3>
+                </div>
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_nonselectednumber">4</div>
+                    <h3>Select Review</h3>
+                </div>
+            </div>	
+        </div>
+        <div class="rev_wizmid">
+        	<div class="rev_wizmid_maincontent">
+            	<div class="rev_wizmid_titlebox">
+                	<h2><strong>Step 1:</strong> Select a Zone</h2>
+                    <p> To create a new instance, please select a Zone and other info about your instance.</p>
+                </div>
+                <div class="rev_wizmid_contentbox">
+					<div class="rev_tempsearchpanel"></div>
+					<div class="rev_wizformarea">
+                    	<form name="step1" method="post" action="#">
+                        	<ol>
+                                <li>
+                                    <label for="zone">
+                                        Availability Zone:</label>
+                                    <select class="select" style="width:60px;" id="wizard_zone" name="zone">
+                                    </select>
+                                </li>
+                                <li>
+                                    <label for="name">
+                                        Name (optional):</label>
+                                    <input class="text" type="text" name="name" id="wizard_vm_name" />
+                                </li>
+                                <li>
+                                    <label for="group">
+                                        Group (optional):</label>
+                                    <input class="text" type="text" name="group" id="wizard_vm_group" />
+                                </li>
+                            </ol>
+                        </form>
+                    </div>
+                </div>
+                <div class="rev_wizmid_actionbox">
+                	<div class="rev_wizmid_actionnext"> Go to Step 2</div>
+                </div>
+            </div>
+        </div>
+        <div class="rev_wizbot"></div>
+    </div>
+    
+    <div id="step2" style="display:block;">
+        <div class="rev_wiztop">
+            <div class="rev_wizardbox">
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_nonselectednumber">1</div>
+                    <h3>Select a Zone</h3>
+                </div>
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_selectednumber">2</div>
+                    <h3>Select a Template</h3>
+                </div>
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_nonselectednumber">3</div>
+                    <h3>Select Offerings</h3>
+                </div>
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_nonselectednumber">4</div>
+                    <h3>Select Review</h3>
+                </div>
+            </div>	
+        </div>
+        <div class="rev_wizmid">
+        	<div class="rev_wizmid_maincontent">
+            	<div class="rev_wizmid_titlebox">
+                	<h2><strong>Step 2:</strong> Select a Template</h2>
+                    <p> Please select either a public, private or a featured template you've previously created. You can also choose to select a blank template from which an ISO image can be installed into. </p>
+                </div>
+                <div class="rev_wizmid_contentbox">
+                	<div class="rev_tempsearchpanel">
+                    	<div class="rev_tempsearchbox">
+                        	<form method="post" action="#">
+                            	<ol>
+                                	<li><input id="search_input" class="text" type="text" name="search_input" />
+                                </ol>
+                            </form>
+                            <div class="rev_searchbutton">Search</div>
+                        </div>
+                    </div>
+                    <div class="rev_wizformarea">
+                    
+                    <div class="revwiz_message_container" style="display: block;">
+                        <div class="revwiz_message_top">
+                        	<p></p>
+                   		 </div>
+                    	<div class="revwiz_message_bottom">
+                       		 <a class="revwizcontinue_button" href="#"></a>
+                    	</div>
+       			 		</div>
+                    	<div class="rev_wizmid_tempbox">
+                        	<div class="rev_wizmid_tempbox_left">
+                            	<div class="rev_wizmid_selectedtempbut">Featured Template</div>
+                                <div class="rev_wizmid_nonselectedtempbut">My Template</div>
+                                <div class="rev_wizmid_nonselectedtempbut">Community Template</div>
+                                <div class="rev_wizmid_nonselectedtempbut">Blank Template</div>
+                            </div>
+                            <div class="rev_wizmid_tempbox_right">
+                            	<div class="revwiz_loadingbox">
+                                	<div class="loading_gridanimation"></div>
+                                    <p> Loading</p>
+                                </div>
+                           	  <div class="rev_wiztemplistpanel">
+                                    <div class="rev_wiztemplistbox">
+                                        <div class="rev_wiztemo_centosicons"></div>
+                                        <div class="rev_wiztemp_listtext">Centos 5.3(x86_64) no GUI</div>
+                                    </div>
+                                    <div class="rev_wiztemplistbox">
+                                        <div class="rev_wiztemo_centosicons"></div>
+                                        <div class="rev_wiztemp_listtext">Centos 5.3(x86_64) no GUI</div>
+                                    </div>
+                                    <div class="rev_wiztemplistbox">
+                                      <div class="rev_wiztemo_windowsicons"></div>
+                                        <div class="rev_wiztemp_listtext">Windows 5.3(x86_64) no GUI</div>
+                                    </div>
+                                    <div class="rev_wiztemplistbox">
+                                        <div class="rev_wiztemo_centosicons"></div>
+                                        <div class="rev_wiztemp_listtext">Centos 5.3(x86_64) no GUI</div>
+                                    </div>
+                                    <div class="rev_wiztemplistbox">
+                                      <div class="rev_wiztemo_linuxicons"></div>
+                                        <div class="rev_wiztemp_listtext">Linux 5.3(x86_64) no GUI</div>
+                                    </div>
+                                    <div class="rev_wiztemplistbox">
+                                        <div class="rev_wiztemo_centosicons"></div>
+                                        <div class="rev_wiztemp_listtext">Centos 5.3(x86_64) no GUI</div>
+                                    </div>
+              <div class="rev_wiztemplistbox_selected">
+                                        <div class="rev_wiztemo_windowsicons"></div>
+                                        <div class="rev_wiztemp_listtext">Windows 5.3(x86_64) no GUI</div>
+                                    </div>
+                                    <div class="rev_wiztemplistbox">
+                                        <div class="rev_wiztemo_centosicons"></div>
+                                        <div class="rev_wiztemp_listtext">Centos 5.3(x86_64) no GUI</div>
+                                    </div>
+                                    <div class="rev_wiztemplistbox">
+                                      <div class="rev_wiztemo_linuxicons"></div>
+                                        <div class="rev_wiztemp_listtext">Linux 5.3(x86_64) no GUI</div>
+                                    </div>
+                                    <div class="rev_wiztemplistbox">
+                                      <div class="rev_wiztemo_windowsicons"></div>
+                                        <div class="rev_wiztemp_listtext">Windows 5.3(x86_64) no GUI</div>
+                                    </div>
+                                    <div class="rev_wiztemplistbox">
+                                        <div class="rev_wiztemo_centosicons"></div>
+                                        <div class="rev_wiztemp_listtext">Centos 5.3(x86_64) no GUI</div>
+                                    </div>
+                              </div>
+                                <div class="rev_wiztemplistactions">
+                                  <div class="rev_wiztemplist_actionsbox">
+                                  		<a href="#">Prev </a> <a href="#"> Next</a>
+                                  </div>
+                                
+                                </div>
+                               
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="rev_wizmid_actionbox">
+                	<div class="rev_wizmid_actionnext"> Go to Step 3</div>
+                    <div class="rev_wizmid_actionback"> Back</div>
+                </div>
+            </div>
+        </div>
+        <div class="rev_wizbot"></div>
+    </div>
+    
+    <div id="step3" style="display:none;">
+        <div class="rev_wiztop">
+            <div class="rev_wizardbox">
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_nonselectednumber">1</div>
+                    <h3>Select a Zone</h3>
+                </div>
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_nonselectednumber">2</div>
+                    <h3>Select a Template</h3>
+                </div>
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_selectednumber">3</div>
+                    <h3>Select Offerings</h3>
+                </div>
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_nonselectednumber">4</div>
+                    <h3>Select Review</h3>
+                </div>
+            </div>	
+        </div>
+        <div class="rev_wizmid">
+        	<div class="rev_wizmid_maincontent">
+            	<div class="rev_wizmid_titlebox">
+                	<h2><strong>Step 3:</strong> Select Offerings</h2>
+                    <p> Please select the CPU, Memory, and Storage requirements you need for your new Virtual Instance.</p>
+                </div>
+                <div class="rev_wizmid_contentbox">
+                	<div class="rev_tempsearchpanel"></div>
+                    <div class="rev_wizformarea">
+                       <form name="step2" method="post" action="#">
+                            <div class="revwiz_formcontent_title">
+                                Service Offerings</div>
+                            <ol id="wizard_service_offering">
+                            	
+                            </ol>
+                            <div class="revwiz_formcontent_title" id="wizard_root_disk_offering_title" style="display: none;">
+                                Root Disk Offerings</div>
+                            <ol id="wizard_root_disk_offering">
+                            </ol>
+                            <div class="revwiz_formcontent_title" id="wizard_data_disk_offering_title" style="display: none;">
+                                Data Disk Offerings</div>
+                            <ol id="wizard_data_disk_offering">
+                            </ol>
+                            </form>
+
+                    </div>
+                </div>
+                <div class="rev_wizmid_actionbox">
+                	<div class="rev_wizmid_actionnext"> Go to Step 4</div>
+                    <div class="rev_wizmid_actionback"> Back</div>
+                </div>
+            </div>
+        </div>
+        <div class="rev_wizbot"></div>
+    </div>
+    
+    <div id="step4" style="display:none;">
+        <div class="rev_wiztop">
+            <div class="rev_wizardbox">
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_nonselectednumber">1</div>
+                    <h3>Select a Zone</h3>
+                </div>
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_nonselectednumber">2</div>
+                    <h3>Select a Template</h3>
+                </div>
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_nonselectednumber">3</div>
+                    <h3>Select Offerings</h3>
+                </div>
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_selectednumber">4</div>
+                    <h3>Select Review</h3>
+                </div>
+            </div>	
+        </div>
+        <div class="rev_wizmid">
+        	<div class="rev_wizmid_maincontent">
+            	<div class="rev_wizmid_titlebox">
+                	<h2><strong>Step 4:</strong> Review</h2>
+                    <p>Please review you selections and hit 'Submit' to create your new instance. Click 'Prev' to make any changes to your new VM Instance.</p>
+                </div>
+                <div class="rev_wizmid_contentbox">
+                	<div class="rev_tempsearchpanel"></div>
+                    <div class="rev_wiz_reviewbox">
+                    	<div class="rev_wiz_reviewlist">
+                        	<div class="rev_wiz_reviewlabel">Zone:</div>
+                            <div class="rev_wiz_reviewanswers">AH</div>
+                        </div>
+                        
+                        <div class="rev_wiz_reviewlist">
+                        	<div class="rev_wiz_reviewlabel">Name:</div>
+                            <div class="rev_wiz_reviewanswers">sjhfjsfh</div>
+                        </div>
+                        
+                        <div class="rev_wiz_reviewlist">
+                        	<div class="rev_wiz_reviewlabel">Group:</div>
+                            <div class="rev_wiz_reviewanswers">sjhfjsfh</div>
+                        </div>
+                        
+                        <div class="rev_wiz_reviewlist">
+                        	<div class="rev_wiz_reviewlabel">Template:</div>
+                            <div class="rev_wiz_reviewanswers">CentosOS 5.3(x86_64) no GUI</div>
+                        </div>
+                        
+                        <div class="rev_wiz_reviewlist">
+                        	<div class="rev_wiz_reviewlabel">Service Offerings:</div>
+                            <div class="rev_wiz_reviewanswers" id="wizard_review_service_offering">Small Instance [500MHZ CPU, 512MB MEM, 16GB Disk] - $0.10 per hour</div>
+                        </div>
+                        
+                        <div class="rev_wiz_reviewlist">
+                        	<div class="rev_wiz_reviewlabel">Data Disk Offerings:</div>
+                            <div class="rev_wiz_reviewanswers" id="wizard_review_root_disk_offering">Small Disk [16GB] </div>
+                        </div>
+                    
+                    </div>
+                    
+                </div>
+                <div class="rev_wizmid_actionbox">
+                	<div class="rev_wizmid_actionnext"> Submit</div>
+                    <div class="rev_wizmid_actionback"> Back</div>
+                </div>
+            </div>
+        </div>
+        <div class="rev_wizbot"></div>
+    </div>
+</div>
+<!-- END Add New VM Wizard -->
+</body>
+</html>

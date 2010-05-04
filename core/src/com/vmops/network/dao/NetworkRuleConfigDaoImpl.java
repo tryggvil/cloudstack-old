@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -33,7 +33,7 @@ public class NetworkRuleConfigDaoImpl extends GenericDaoBase<NetworkRuleConfigVO
 
     protected NetworkRuleConfigDaoImpl() {
         SecurityGroupIdSearch  = createSearchBuilder();
-        SecurityGroupIdSearch.addAnd("securityGroupId", SecurityGroupIdSearch.entity().getSecurityGroupId(), SearchCriteria.Op.EQ);
+        SecurityGroupIdSearch.and("securityGroupId", SecurityGroupIdSearch.entity().getSecurityGroupId(), SearchCriteria.Op.EQ);
         SecurityGroupIdSearch.done();
     }
 

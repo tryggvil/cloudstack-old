@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -20,7 +20,6 @@ package com.vmops.server;
 import java.net.URISyntaxException;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
 import com.vmops.alert.AlertVO;
 import com.vmops.async.AsyncJobResult;
@@ -69,6 +68,7 @@ import com.vmops.storage.VMTemplateHostVO;
 import com.vmops.storage.VMTemplateVO;
 import com.vmops.storage.VolumeStats;
 import com.vmops.storage.VolumeVO;
+import com.vmops.storage.dao.VMTemplateDao.TemplateFilter;
 import com.vmops.user.Account;
 import com.vmops.user.AccountVO;
 import com.vmops.user.ScheduledVolumeBackup;
@@ -85,7 +85,6 @@ import com.vmops.vm.UserVm;
 import com.vmops.vm.UserVmVO;
 import com.vmops.vm.VMInstanceVO;
 import com.vmops.vm.VirtualMachine;
-import com.vmops.vm.VmStats;
 
 /**
  * ManagementServer is the public interface to talk to the Managment Server.
@@ -193,13 +192,6 @@ public interface ManagementServer {
     public long disableAccountAsync(long accountId);
 
     /**
-     * Enables a user by userId
-     * @param userId
-     * @return true if enable was successful, false otherwise
-     */
-    public boolean enableUser(long userId);
-
-    /**
      * Enables an account by accountId
      * @param accountId
      * @return true if enable was successful, false otherwise
@@ -207,14 +199,12 @@ public interface ManagementServer {
     public boolean enableAccount(long accountId);
 
     /**
-     * Updates an admin's password
-     * 
-     * @param userId
-     * @param password
-     * @return the updated password if successful
+     * Locks an account by accountId.  A locked account cannot access the API, but will still have running VMs/IP addresses allocated/etc.
+     * @param accountId
+     * @return true if enable was successful, false otherwise
      */
-    
-   
+    public boolean lockAccount(long accountId);
+
     /**
      * Updates an account name by accountId
      * @param accountId
@@ -223,7 +213,21 @@ public interface ManagementServer {
      */
     
     public boolean updateAccount(long accountId, String accountName);
-    
+
+    /**
+     * Enables a user by userId
+     * @param userId
+     * @return true if enable was successful, false otherwise
+     */
+    public boolean enableUser(long userId);
+
+    /**
+     * Locks a user by userId.  A locked user cannot access the API, but will still have running VMs/IP addresses allocated/etc.
+     * @param userId
+     * @return true if enable was successful, false otherwise
+     */
+    public boolean lockUser(long userId);
+
     /**
      * Discovers new hosts given an url to locate the resource.
      * @param dcId id of the data center
@@ -234,8 +238,6 @@ public interface ManagementServer {
      */
     public List<? extends Host> discoverHosts(long dcId, Long podId, String url, String username, String password);
 
-
-    
     public String updateAdminPassword(long userId, String oldPassword, String newPassword);
 
     /**
@@ -1092,7 +1094,7 @@ public interface ManagementServer {
      */
     public void updateTemplate(Long id, String name, String displayText);
     
-    public Long createTemplate(long createdBy, String name, boolean isPublic, String format, String diskType, String url, String chksum, boolean requiresHvm, int bits, boolean enablePassword, long guestOSId, boolean bootable) throws IllegalArgumentException, ResourceAllocationException;
+    public Long createTemplate(long createdBy, String name, boolean isPublic, boolean featured, String format, String diskType, String url, String chksum, boolean requiresHvm, int bits, boolean enablePassword, long guestOSId, boolean bootable) throws IllegalArgumentException, ResourceAllocationException;
     
     /**
      * Deletes a template from all secondary storage servers
@@ -1108,12 +1110,13 @@ public interface ManagementServer {
      * Copies a template from one secondary storage server to another
      * @param userId
      * @param templateId
-     * @param zoneId - the destination zone
+     * @param sourceZoneId - the source zone
+     * @param destZoneId - the destination zone
      * @return true if success
      * @throws InternalErrorException
      */
-    public boolean copyTemplate(long userId, long templateId, long zoneId) throws InternalErrorException;
-    public long copyTemplateAsync(long userId, long templateId, long zoneId) throws InvalidParameterValueException;
+    public boolean copyTemplate(long userId, long templateId, long sourceZoneId, long destZoneId) throws InternalErrorException;
+    public long copyTemplateAsync(long userId, long templateId, long sourceZoneId, long destZoneId) throws InvalidParameterValueException;
     
     /**
      * Deletes an ISO from all secondary storage servers
@@ -1285,25 +1288,7 @@ public interface ManagementServer {
      * @return list of GuestOSCategories
      */
     public List<GuestOSCategoryVO> listAllGuestOSCategories();
-    
-    /**
-     * Obtains statistics for a list of VMs; vCPU utilisation, disk utilisation, and network utilisation
-     * @param vmIds 
-     * @return list of VmStats
-     * @throws InternalErrorException
-     */
-    List<VmStats> listVirtualMachineStatistics(List<Long> vmIds) throws InternalErrorException;
-    long listVirtualMachineStatisticsAsync(List<Long> vmIds) throws InvalidParameterValueException;
-    
-    /**
-     * Obtains statistics for a list of hosts; vCPU utilisation, memory utilisation, and network utilisation
-     * @param hostIds
-     * @return list of HostStats
-     * @throws InternalErrorException
-     */
-    List<HostStats> listHostStatistics(List<Long> hostIds) throws InternalErrorException;
-    long listHostStatisticsAsync(List<Long> hostIds) throws InvalidParameterValueException;
-    
+        
     /**
      * Logs out a user
      * @param userId
@@ -1409,9 +1394,11 @@ public interface ManagementServer {
 	/**
      * delete a domain with the given domainId
      * @param domainId
+     * @param ownerId
+     * @param cleanup - whether or not to delete all accounts/VMs/sub-domains when deleting the domain
      */
-	public String deleteDomain(Long domainId, Long ownerId);
-
+	public String deleteDomain(Long domainId, Long ownerId, Boolean cleanup);
+	public long deleteDomainAsync(Long domainId, Long ownerId, Boolean cleanup);
     /**
      * update an existing domain
      * @param domainId the id of the domain to be updated
@@ -1499,22 +1486,15 @@ public interface ManagementServer {
     public Account findAccountByIpAddress(String ipAddress);
 
     /**
-     * Creates a new Limit, for either a domain or an account.
-     * @param domainId
-     * @param accountId
-     * @param type 
-     * @param max
-     * @return the new Limit
-     */
-    public ResourceLimitVO createResourceLimit(Long domainId, Long accountId, ResourceType type, Long max) throws InvalidParameterValueException;
-    
-    /**
-     * Updates an existing Limit, for a specified Limit ID.
-     * @param limitId
-     * @param max
-     * @return true if successful, false if not
-     */
-    public boolean updateResourceLimit(long limitId, Long max);
+	 * Updates an existing resource limit with the specified details. If a limit doesn't exist, will create one.
+	 * @param domainId
+	 * @param accountId
+	 * @param type
+	 * @param max
+	 * @return
+	 * @throws InvalidParameterValueException
+	 */
+    public ResourceLimitVO updateResourceLimit(Long domainId, Long accountId, ResourceType type, Long max) throws InvalidParameterValueException;
     
     /**
      * Deletes a Limit
@@ -1534,7 +1514,7 @@ public interface ManagementServer {
      * Searches for Limits.
      * @param domainId
      * @param accountId
-     * @param type (current types: "user_vm", "public_ip")
+     * @param type 
      * @return a list of Limits
      */
     public List<ResourceLimitVO> searchForLimits(Criteria c);
@@ -1587,14 +1567,11 @@ public interface ManagementServer {
     public long createSnapshotAsync(long userId, long volumeId) throws InvalidParameterValueException, VmopsRuntimeException, ResourceAllocationException ;
 
     /**
-     * After successfully backing up the current snapshot of a volume, 
-     * delete the previous snapshot from the primary storage. 
-     * Note that the previous snapshot had already been backed up on the secondary, hence no data is destroyed.  
-     * @param userId The user who invoked this command.
-     * @param snapshot Info about the created snapshot on primary storage.
-     * @return True if the snapshot was successfully deleted. 
+     * @param userId    The Id of the user who invoked this operation.
+     * @param volumeId  The volume for which this snapshot is being taken
+     * @return          The properties of the snapshot taken
      */
-    public boolean destroyPreviousSnapshot(long userId, Snapshot snapshot);
+    SnapshotVO createTemplateSnapshot(Long userId, long volumeId);
     
     /**
      * Destroy a snapshot
@@ -1659,7 +1636,7 @@ public interface ManagementServer {
      * @throws InvalidParameterValueException, ResourceAllocationException
      */
     public VMTemplateVO createPrivateTemplate(VMTemplateVO template, Long userId, long snapshotId, String name, String description) throws InvalidParameterValueException;
-    public long createPrivateTemplateAsync(Long userId, long vmId, String name, String description, long guestOSId, Boolean requiresHvm, Integer bits, Boolean passwordEnabled, boolean isPublic) throws InvalidParameterValueException, ResourceAllocationException;
+    public long createPrivateTemplateAsync(Long userId, long vmId, String name, String description, long guestOSId, Boolean requiresHvm, Integer bits, Boolean passwordEnabled, boolean isPublic, boolean featured) throws InvalidParameterValueException, ResourceAllocationException;
     
     
     /**
@@ -1674,13 +1651,14 @@ public interface ManagementServer {
      * @param templateId
      * @param operation
      * @param isPublic
+     * @param isFeatured
      * @param accountNames
      * @return
      * @throws InvalidParameterValueException
      * @throws PermissionDeniedException
      * @throws InternalErrorException
      */
-    public boolean updateTemplatePermissions(long templateId, String operation, Boolean isPublic, List<String> accountNames) throws InvalidParameterValueException, PermissionDeniedException, InternalErrorException;
+    public boolean updateTemplatePermissions(long templateId, String operation, Boolean isPublic, Boolean isFeatured, List<String> accountNames) throws InvalidParameterValueException, PermissionDeniedException, InternalErrorException;
 
     /**
      * List the permissions on a template.  This will return a list of account names that have been granted permission to launch instances from the template.
@@ -1700,8 +1678,7 @@ public interface ManagementServer {
      * List templates by the given search criteria
      * @param name a name (possibly partial) to search for
      * @param keyword a keyword (using partial match) to search for, currently only searches name
-     * @param isReady optional boolean value for ready status of template
-     * @param isPublic option boolean value for searching for public or private templates
+     * @param templateFilter - the category of template to return
      * @param isIso whether this is an ISO search or non-ISO search
      * @param bootable if null will return both bootable and non-bootable ISOs, else will return only one or the other, depending on the boolean value 
      * @param accountId parameter to use when searching for owner of template
@@ -1709,7 +1686,7 @@ public interface ManagementServer {
      * @param startIndex index in to search results to use
      * @return
      */
-    public List<VMTemplateVO> listTemplates(String name, String keyword, Boolean isReady, Boolean isPublic, boolean isIso, Boolean bootable, Long accountId, Integer pageSize, Long startIndex);
+    public List<VMTemplateVO> listTemplates(String name, String keyword, TemplateFilter templateFilter, boolean isIso, Boolean bootable, Long accountId, Integer pageSize, Long startIndex);
 
     /**
      * Finds a list of disk offering by virtual machine instance id
@@ -1911,4 +1888,13 @@ public interface ManagementServer {
 	 * @return True if the domainIds are equal, or if the second domain is a child of the first domain.  False otherwise.
 	 */
     public boolean isChildDomain(Long parentId, Long childId);
+    
+    /**
+     * List interval types the specified snapshot belongs to
+     * @param snapshotId
+     * @return
+     */
+    String getSnapshotIntervalTypes(long snapshotId);
+    
+    
 }

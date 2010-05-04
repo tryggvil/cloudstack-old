@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -26,6 +26,7 @@ public class CreateVolumeFromSnapshotCommand extends Command {
     private String volumeName;
     private String secondaryStoragePoolName;
     private String backedUpSnapshotUuid;
+    private String templateUUID;
     
     protected CreateVolumeFromSnapshotCommand() {
         
@@ -51,12 +52,14 @@ public class CreateVolumeFromSnapshotCommand extends Command {
     public CreateVolumeFromSnapshotCommand(String primaryStoragePoolUuid,
                                            String volumeName, 
                                            String secondaryStoragePoolName,
-                                           String backedUpSnapshotUuid) 
+                                           String backedUpSnapshotUuid,
+                                           String templateUUID) 
     {
         this.primaryStoragePoolUuid = primaryStoragePoolUuid;
         this.volumeName = volumeName;
         this.secondaryStoragePoolName = secondaryStoragePoolName;
         this.backedUpSnapshotUuid = backedUpSnapshotUuid;
+        this.templateUUID = templateUUID;
     }
 
     /**
@@ -89,6 +92,13 @@ public class CreateVolumeFromSnapshotCommand extends Command {
         return backedUpSnapshotUuid;
     }
 
+    /**
+     * @return the templateUUID
+     */
+    public String getTemplateUUID() {
+        return templateUUID;
+    }
+    
     /**
      * {@inheritDoc}
      */

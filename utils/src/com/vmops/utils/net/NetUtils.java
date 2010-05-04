@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -542,9 +542,9 @@ public class NetUtils {
 
     // test only
 	private static void configLog4j() {
-		URL configUrl = System.class.getResource("/conf/log4j-vmops.xml");
+		URL configUrl = System.class.getResource("/conf/log4j-cloud.xml");
 		if(configUrl != null) {
-			System.out.println("Configure log4j using log4j-vmops.xml");
+			System.out.println("Configure log4j using log4j-cloud.xml");
 
 			try {
 				File file = new File(configUrl.toURI());

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -29,8 +29,9 @@ public interface Snapshot {
     public static final short TYPE_WEEKLY = 3;
     public static final short TYPE_MONTHLY = 4;
     public static final short TYPE_NONE = 5;
+    public static final short TYPE_TEMPLATE = 6;
 
-    public static final String[] TYPE_DESCRIPTIONS = { "user", "hourly", "daily", "weekly", "monthly", "none" };
+    public static final String[] TYPE_DESCRIPTIONS = { "user", "hourly", "daily", "weekly", "monthly", "none", "template" };
     
     Long getId();
     long getAccountId();

@@ -25,6 +25,10 @@
 				<value>admin</value>
 			</item>
 			<item>
+				<name>domainid</name>
+				<value>1</value>
+			</item>
+			<item>
 				<name>displayname</name>
 				<value>namefordisplay</value>
 			</item>
@@ -51,6 +55,10 @@
 			<item>
 				<name>account</name>
 				<value>admin</value>
+			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
 			</item>
 		</parameters>
 		<returnvalue> 
@@ -680,6 +688,10 @@
 				<name>account</name>
 				<value>admin</value>
 			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
+			</item>
 		</parameters>
 		<returnvalue> 
 			<item setparam="true">
@@ -1150,6 +1162,10 @@
 				<value>admin</value>
 			</item>
 			<item>
+				<name>domainid</name>
+				<value>1</value>
+			</item>
+			<item>
 				<name>displayname</name>
 				<value>namefordisplay</value>
 			</item>
@@ -1190,6 +1206,10 @@
 				<value>admin</value>
 			</item>
 			<item>
+				<name>domainid</name>
+				<value>1</value>
+			</item>
+			<item>
 				<name>displayname</name>
 				<value>namefordisplay</value>
 			</item>
@@ -1216,6 +1236,10 @@
 			<item>
 				<name>account</name>
 				<value>admin</value>
+			</item>
+			<item>
+				<name>domainid</name>
+				<value>1</value>
 			</item>
 		</parameters>
 		<returnvalue> 

@@ -1,7 +1,7 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
- * This software is licensed under the GNU General Public License v3 or later.
+ * This software is licensed under the GNU General Public License v3 or later.  
  * 
  * It is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -54,6 +54,7 @@ import com.vmops.agent.api.PingCommand;
 import com.vmops.agent.api.PingComputingCommand;
 import com.vmops.agent.api.PingRoutingCommand;
 import com.vmops.agent.api.PingStorageCommand;
+import com.vmops.agent.api.ReadyAnswer;
 import com.vmops.agent.api.ShutdownCommand;
 import com.vmops.agent.api.StartupAnswer;
 import com.vmops.agent.api.StartupCommand;
@@ -123,6 +124,7 @@ import com.vmops.storage.dao.StoragePoolHostDao;
 import com.vmops.storage.dao.VMTemplateDao;
 import com.vmops.storage.dao.VMTemplateHostDao;
 import com.vmops.storage.dao.VolumeDao;
+import com.vmops.storage.resource.DummySecondaryStorageResource;
 import com.vmops.storage.template.TemplateInfo;
 import com.vmops.user.Account;
 import com.vmops.user.dao.UserStatisticsDao;
@@ -242,7 +244,6 @@ public class AgentManagerImpl implements AgentManager, HandlerFactory {
     protected long _nodeId = -1;
     protected int _overProvisioningFactor = 1;
     protected float _cpuOverProvisioningFactor = 1;
-    protected String _mgmtNetCidr;
 
     protected Random _rand = new Random(System.currentTimeMillis());
 
@@ -284,8 +285,6 @@ public class AgentManagerImpl implements AgentManager, HandlerFactory {
 
         value = configs.get("update.wait");
         _updateWait = NumbersUtil.parseInt(value, 600);
-
-        _mgmtNetCidr = configs.get("management.network.cidr");
 
         value = configs.get("ping.timeout");
         final float multiplier = value != null ? Float.parseFloat(value) : 2.5f;
@@ -476,7 +475,7 @@ public class AgentManagerImpl implements AgentManager, HandlerFactory {
         return null;
     }
 
-    protected DirectAgentAttache handleDirectConnect(ServerResource resource, StartupCommand[] startup, Map<String, String> details, boolean old) {
+    protected AgentAttache handleDirectConnect(ServerResource resource, StartupCommand[] startup, Map<String, String> details, boolean old) {
         if (startup == null) {
             return null;
         }
@@ -487,7 +486,7 @@ public class AgentManagerImpl implements AgentManager, HandlerFactory {
 
         long id = server.getId();
 
-        DirectAgentAttache attache = createAttache(id, server, resource);
+        AgentAttache attache = createAttache(id, server, resource);
         notifyMonitorsOfConnection(id, startup);
         return attache;
     }
@@ -508,6 +507,8 @@ public class AgentManagerImpl implements AgentManager, HandlerFactory {
                     if (attache != null) {
                         hosts.add(_hostDao.findById(attache.getId()));
                     }
+                    discoverer.postDiscovery(hosts, _nodeId);
+                    
                 }
                 s_logger.info("server resources successfully discovered by " + discoverer.getName());
                 return hosts;
@@ -793,13 +794,20 @@ public class AgentManagerImpl implements AgentManager, HandlerFactory {
     }
 
     protected void notifyMonitorsOfConnection(final long hostId, final StartupCommand[] cmd) {
+        HostVO host = _hostDao.findById(hostId);
         for (final Listener monitor : _hostMonitors.values()) {
             if (s_logger.isDebugEnabled()) {
                 s_logger.debug("Sending Connect to listener: " + monitor.getClass().getSimpleName());
             }
-            for (int i = 0; i < cmd.length; i++)
-                monitor.processConnect(hostId, cmd[i]);
+            for (int i = 0; i < cmd.length; i++) {
+                if (!monitor.processConnect(hostId, cmd[i])) {
+                    s_logger.info("Monitor " + monitor.getClass().getSimpleName() + " says not to continue the connect process for " + hostId);
+                    _hostDao.updateStatus(host, Event.AgentDisconnected, _nodeId);
+                }
+            }
         }
+        
+        _hostDao.updateStatus(host, Event.Ready, _nodeId);
     }
 
     @Override
@@ -859,8 +867,8 @@ public class AgentManagerImpl implements AgentManager, HandlerFactory {
         if (host.getPodId() != null) {
             params.put("pod", Long.toString(host.getPodId()));
         }
-        params.put("management.network.cidr", _mgmtNetCidr);
         params.put(Config.Wait.toString().toLowerCase(), Integer.toString(_wait));
+        params.put("secondary.storage.vm", "false");
         
         try {
             resource.configure(host.getName(), params);
@@ -879,7 +887,7 @@ public class AgentManagerImpl implements AgentManager, HandlerFactory {
 
     protected AgentAttache simulateStart(ServerResource resource, Map<String, String> details, boolean old) {
         StartupCommand[] cmds = resource.initialize();
-        DirectAgentAttache attache = null;
+        AgentAttache attache = null;
         if (s_logger.isDebugEnabled()) {
             s_logger.debug("Startup request from directly connected host: " + new Request(0, -1, -1, cmds[0], false).toString());
         }
@@ -932,20 +940,14 @@ public class AgentManagerImpl implements AgentManager, HandlerFactory {
     }
 
     @Override
-    public List<HostStats> listHostStatistics(List<Long> hostIds) throws InternalErrorException {
-    	List<HostStats> hostStatsList = new ArrayList<HostStats>();
-    	
-    	for (Long hostId : hostIds) {
-    		GetHostStatsCommand cmd = new GetHostStatsCommand();
-    		Answer answer = easySend(hostId, cmd);
-    		if (answer == null || !answer.getResult()) {
-    			throw new InternalErrorException("Unable to obtain host statistics.");
-    		} else {
-    			hostStatsList.add((GetHostStatsAnswer) answer);
-    		}
-    	}
-
-        return hostStatsList;
+    public HostStats getHostStatistics(long hostId) throws InternalErrorException {
+    	GetHostStatsCommand cmd = new GetHostStatsCommand();
+		Answer answer = easySend(hostId, cmd);
+		if (answer == null || !answer.getResult()) {
+			throw new InternalErrorException("Unable to obtain host statistics.");
+		} else {
+			return (GetHostStatsAnswer) answer;
+		}
     }
     
     public Long getGuestOSCategoryId(long hostId) {
@@ -1266,6 +1268,9 @@ public class AgentManagerImpl implements AgentManager, HandlerFactory {
             StartupStorageCommand ssCmd = ((StartupStorageCommand) startup);
             if (ssCmd.getResourceType() == StorageResourceType.SECONDARY_STORAGE) {
                 type = Host.Type.SecondaryStorage;
+                if (resource != null && resource instanceof DummySecondaryStorageResource){
+                	resource = null;
+                }
             } else {
                 type = Host.Type.Storage;
             }
@@ -1298,6 +1303,9 @@ public class AgentManagerImpl implements AgentManager, HandlerFactory {
 
         Long id = null;
         HostVO server = _hostDao.findByGuid(startup.getGuid());
+        if (server == null) {
+        	server = _hostDao.findByGuid(startup.getGuidWithoutResource());
+        }
         if (server != null && server.getRemoved() == null) {
             id = server.getId();
             if (s_logger.isDebugEnabled()) {
@@ -1361,6 +1369,8 @@ public class AgentManagerImpl implements AgentManager, HandlerFactory {
         return server;
     }
 
+
+    
     protected void createPVTemplate(long Hostid, StartupStorageCommand cmd) {
     	Map<String, TemplateInfo> tmplts = cmd.getTemplateInfo();
         if ((tmplts != null) && !tmplts.isEmpty()) {
@@ -1370,7 +1380,7 @@ public class AgentManagerImpl implements AgentManager, HandlerFactory {
     			Long id;
     			if (tmplt == null) {
     				 id = _tmpltDao.getNextInSequence(Long.class, "id");
-    				VMTemplateVO template = new VMTemplateVO(id, xenPVISO.getTemplateName(), xenPVISO.getTemplateName(), ImageFormat.ISO , true, FileSystem.cdfs.toString(), "/opt/xensource/packages/iso/xs-tools-5.5.0.iso", null, true, 64, Account.ACCOUNT_ID_SYSTEM, null, "xen-pv-drv-iso", false, 1, false);
+    				VMTemplateVO template = new VMTemplateVO(id, xenPVISO.getTemplateName(), xenPVISO.getTemplateName(), ImageFormat.ISO , true, true, FileSystem.cdfs.toString(), "/opt/xensource/packages/iso/xs-tools-5.5.0.iso", null, true, 64, Account.ACCOUNT_ID_SYSTEM, null, "xen-pv-drv-iso", false, 1, false);
     				template.setCreateStatus(AsyncInstanceCreateStatus.Created);
     				template.setReady(true);
     				_tmpltDao.persist(template);
@@ -1514,8 +1524,11 @@ public class AgentManagerImpl implements AgentManager, HandlerFactory {
         return attache;
     }
 
-    protected DirectAgentAttache createAttache(long id, HostVO server, ServerResource resource) {
+    protected AgentAttache createAttache(long id, HostVO server, ServerResource resource) {
         s_logger.debug("Adding directly connect host for " + id);
+        if (resource instanceof DummySecondaryStorageResource) {
+        	return new DummyAttache(id, false);
+        }
         final DirectAgentAttache attache = new DirectAgentAttache(id, resource, server.getStatus() == Status.Maintenance
                 || server.getStatus() == Status.ErrorInMaintenance || server.getStatus() == Status.PrepareForMaintenance, this);
         AgentAttache old = null;
@@ -1911,6 +1924,10 @@ public class AgentManagerImpl implements AgentManager, HandlerFactory {
                                 }
                             }
                             answer = new PingAnswer((PingCommand) cmd);
+                        } else if (cmd instanceof ReadyAnswer) {
+                            HostVO host = _hostDao.findById(attache.getId());
+                            s_logger.info("Host " + attache.getId() + " is now ready to processing commands.");
+                            _hostDao.updateStatus(host, Event.Ready, _nodeId);
                         } else {
                             answer = new Answer(cmd);
                         }

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -43,21 +43,21 @@ public class SnapshotScheduleDaoImpl extends GenericDaoBase<SnapshotScheduleVO, 
 	protected SnapshotScheduleDaoImpl() {
 		
 	    executableSchedulesSearch = createSearchBuilder();
-        executableSchedulesSearch.addAnd("scheduledTimestamp", executableSchedulesSearch.entity().getScheduledTimestamp(), SearchCriteria.Op.LT);
+        executableSchedulesSearch.and("scheduledTimestamp", executableSchedulesSearch.entity().getScheduledTimestamp(), SearchCriteria.Op.LT);
         executableSchedulesSearch.done();
         
         coincidingSchedulesSearch = createSearchBuilder();
-        coincidingSchedulesSearch.addAnd("volumeId", coincidingSchedulesSearch.entity().getVolumeId(), SearchCriteria.Op.EQ);
-        coincidingSchedulesSearch.addAnd("scheduledTimestamp", coincidingSchedulesSearch.entity().getScheduledTimestamp(), SearchCriteria.Op.LT);
+        coincidingSchedulesSearch.and("volumeId", coincidingSchedulesSearch.entity().getVolumeId(), SearchCriteria.Op.EQ);
+        coincidingSchedulesSearch.and("scheduledTimestamp", coincidingSchedulesSearch.entity().getScheduledTimestamp(), SearchCriteria.Op.LT);
         coincidingSchedulesSearch.done();
 		
         volumeSearch = createSearchBuilder();
-        volumeSearch.addAnd("volumeId", volumeSearch.entity().getVolumeId(), SearchCriteria.Op.EQ);
+        volumeSearch.and("volumeId", volumeSearch.entity().getVolumeId(), SearchCriteria.Op.EQ);
         volumeSearch.done();
         
         policyInstanceSearch = createSearchBuilder();
-        policyInstanceSearch.addAnd("volumeId", policyInstanceSearch.entity().getVolumeId(), SearchCriteria.Op.EQ);
-        policyInstanceSearch.addAnd("policyId", policyInstanceSearch.entity().getPolicyId(), SearchCriteria.Op.EQ);
+        policyInstanceSearch.and("volumeId", policyInstanceSearch.entity().getVolumeId(), SearchCriteria.Op.EQ);
+        policyInstanceSearch.and("policyId", policyInstanceSearch.entity().getPolicyId(), SearchCriteria.Op.EQ);
         policyInstanceSearch.done();
         
 	}

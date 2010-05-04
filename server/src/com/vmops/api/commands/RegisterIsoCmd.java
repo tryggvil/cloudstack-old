@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -45,6 +45,7 @@ public class RegisterIsoCmd extends BaseCmd {
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT_OBJ, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.USER_ID, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.IS_PUBLIC, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.IS_FEATURED, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.OS_TYPE_ID, Boolean.TRUE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.BOOTABLE, Boolean.FALSE));
     }
@@ -66,16 +67,31 @@ public class RegisterIsoCmd extends BaseCmd {
         String name = (String)params.get(BaseCmd.Properties.NAME.getName());
         String url = (String)params.get(BaseCmd.Properties.URL.getName());
         Boolean isPublic = (Boolean)params.get(BaseCmd.Properties.IS_PUBLIC.getName());
+        Boolean featured = (Boolean)params.get(BaseCmd.Properties.IS_FEATURED.getName());
         Long guestOSId = (Long) params.get(BaseCmd.Properties.OS_TYPE_ID.getName());
         Boolean bootable = (Boolean) params.get(BaseCmd.Properties.BOOTABLE.getName());
 
         if (isPublic == null) {
             isPublic = Boolean.FALSE;
         }
+        
+        
 
         long accountId = 1L; // default to system account
         if (account != null) {
             accountId = account.getId().longValue();
+        }
+        
+        Account accountObj;
+        if (account == null) {
+        	accountObj = getManagementServer().findAccountById(accountId);
+        } else {
+        	accountObj = account;
+        }
+        
+        boolean isAdmin = (accountObj.getType() == Account.ACCOUNT_TYPE_ADMIN);
+        if (!isAdmin || featured == null) {
+        	featured = Boolean.FALSE;
         }
 
         // If command is executed via 8096 port, set userId to the id of System account (1)
@@ -89,7 +105,7 @@ public class RegisterIsoCmd extends BaseCmd {
 
         Long templateId;
         try {
-        	templateId = getManagementServer().createTemplate(userId, description, isPublic.booleanValue(), ImageFormat.ISO.toString(), FileSystem.cdfs.toString(), url, null, true, 64 /*bits*/, false, guestOSId, bootable);
+        	templateId = getManagementServer().createTemplate(userId, description, isPublic.booleanValue(), featured.booleanValue(), ImageFormat.ISO.toString(), FileSystem.cdfs.toString(), url, null, true, 64 /*bits*/, false, guestOSId, bootable);
         } catch (Exception ex) {
             throw new ServerApiException(BaseCmd.INTERNAL_ERROR, ex.getMessage());
         }
@@ -97,14 +113,6 @@ public class RegisterIsoCmd extends BaseCmd {
         VMTemplateVO template = getManagementServer().findTemplateById(templateId);
         if (template != null) {
             List<Pair<String, Object>> templateData = new ArrayList<Pair<String, Object>>();
-            
-            // TODO : when UI has completed migration, remove following block
-            templateData.add(new Pair<String, Object>(BaseCmd.Properties.ID.getName(), template.getId().toString()));
-            templateData.add(new Pair<String, Object>(BaseCmd.Properties.NAME.getName(), template.getName()));
-            templateData.add(new Pair<String, Object>(BaseCmd.Properties.DISPLAY_TEXT.getName(), template.getDisplayText()));
-            templateData.add(new Pair<String, Object>(BaseCmd.Properties.IS_PUBLIC.getName(), Boolean.valueOf(template.isPublicTemplate()).toString()));
-            templateData.add(new Pair<String, Object>(BaseCmd.Properties.CREATED.getName(), getDateString(template.getCreated())));
-            templateData.add(new Pair<String, Object>(BaseCmd.Properties.IS_READY.getName(), Boolean.valueOf(template.isReady()).toString()));
             
             // Use embeded object for response
             List<Pair<String, Object>> listForEmbeddedObject = new ArrayList<Pair<String, Object>>();
@@ -114,6 +122,9 @@ public class RegisterIsoCmd extends BaseCmd {
             listForEmbeddedObject.add(new Pair<String, Object>(BaseCmd.Properties.IS_PUBLIC.getName(), Boolean.valueOf(template.isPublicTemplate()).toString()));
             listForEmbeddedObject.add(new Pair<String, Object>(BaseCmd.Properties.CREATED.getName(), getDateString(template.getCreated())));
             listForEmbeddedObject.add(new Pair<String, Object>(BaseCmd.Properties.IS_READY.getName(), Boolean.valueOf(template.isReady()).toString()));
+            listForEmbeddedObject.add(new Pair<String, Object>(BaseCmd.Properties.IS_FEATURED.getName(), Boolean.valueOf(template.isFeatured()).toString()));
+            listForEmbeddedObject.add(new Pair<String, Object>(BaseCmd.Properties.BOOTABLE.getName(), Boolean.valueOf(template.isBootable()).toString()));
+            listForEmbeddedObject.add(new Pair<String, Object>(BaseCmd.Properties.OS_TYPE_ID.getName(), template.getGuestOSId()));
             
             templateData.add(new Pair<String, Object>("iso", new Object[] { listForEmbeddedObject } ));
             return templateData;

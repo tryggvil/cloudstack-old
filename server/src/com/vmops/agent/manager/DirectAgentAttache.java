@@ -1,7 +1,7 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
- * This software is licensed under the GNU General Public License v3 or later.  
+ * This software is licensed under the GNU General Public License v3 or later.
  * 
  * It is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,10 +28,10 @@ import org.apache.log4j.Logger;
 
 import com.vmops.agent.api.Answer;
 import com.vmops.agent.api.Command;
+import com.vmops.agent.api.CronCommand;
 import com.vmops.agent.api.PingCommand;
 import com.vmops.agent.api.StartupAnswer;
 import com.vmops.agent.api.StartupCommand;
-import com.vmops.agent.api.WatchCommand;
 import com.vmops.agent.transport.Request;
 import com.vmops.agent.transport.Response;
 import com.vmops.exception.AgentUnavailableException;
@@ -95,20 +95,21 @@ public class DirectAgentAttache extends AgentAttache {
 	        if (answers != null && answers[0] instanceof StartupAnswer) {
 	            StartupAnswer startup = (StartupAnswer)answers[0];
 	            int interval = startup.getPingInterval();
-	            _futures.add(_executor.schedule(new PingTask(), interval, TimeUnit.SECONDS));
+	            _futures.add(_executor.scheduleAtFixedRate(new PingTask(), interval, interval, TimeUnit.SECONDS));
 	        }
 	    } else {
     	    Command[] cmds = req.getCommands();
-    	    if (cmds.length > 0 && !(cmds[0] instanceof WatchCommand)) {
+    	    if (cmds.length > 0 && !(cmds[0] instanceof CronCommand)) {
     	        _executor.execute(new Task(req));
     	    } else {
-    	        WatchCommand cmd = (WatchCommand)cmds[0];
-    	        _futures.add(_executor.schedule(new Task(req), cmd.getInterval(), TimeUnit.SECONDS));
+    	        CronCommand cmd = (CronCommand)cmds[0];
+    	        _futures.add(_executor.scheduleAtFixedRate(new Task(req), cmd.getInterval(), cmd.getInterval(), TimeUnit.SECONDS));
     	    }
 	    }
 	}
 	
-	public void process(Answer[] answers) {
+	@Override
+    public void process(Answer[] answers) {
         if (answers != null && answers[0] instanceof StartupAnswer) {
             StartupAnswer startup = (StartupAnswer)answers[0];
             int interval = startup.getPingInterval();

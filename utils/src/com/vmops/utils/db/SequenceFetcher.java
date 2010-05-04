@@ -1,7 +1,19 @@
 /**
- * Copyright (c) 2008, 2009, VMOps Inc.
- *
- * This code is Copyrighted and must not be reused, modified, or redistributed without the explicit consent of VMOps.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
+ * 
+ * This software is licensed under the GNU General Public License v3 or later.  
+ * 
+ * It is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
  */
 package com.vmops.utils.db;
 
@@ -33,9 +45,6 @@ import com.vmops.utils.concurrency.NamedThreadFactory;
 public class SequenceFetcher {
     private final static Logger s_logger = Logger.getLogger(SequenceFetcher.class);
     ExecutorService _executors;
-    
-    private static final String SelectSql = "SELECT ? FROM ? WHERE ?=? FOR UPDATE";
-    private static final String UpdateSql = "UPDATE ? SET ?=?+? WHERE ?=?";
     
     public <T> T getNextSequence(Class<T> clazz, TableGenerator tg) {
         return getNextSequence(clazz, tg, null);
@@ -76,7 +85,7 @@ public class SequenceFetcher {
             try {
                 StringBuilder sql = new StringBuilder("SELECT ");
                 sql.append(_tg.valueColumnName()).append(" FROM ").append(_tg.table());
-                sql.append(" WHERE ").append(_tg.pkColumnName()).append(" = ?");
+                sql.append(" WHERE ").append(_tg.pkColumnName()).append(" = ? FOR UPDATE");
                 
                 Transaction txn = Transaction.open("Sequence");
                 

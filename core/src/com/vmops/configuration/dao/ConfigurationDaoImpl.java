@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -96,10 +96,10 @@ public class ConfigurationDaoImpl extends GenericDaoBase<ConfigurationVO, String
     	super.configure(name, params);
     	
         InstanceSearch = createSearchBuilder();
-        InstanceSearch.addAnd("instance", InstanceSearch.entity().getInstance(), SearchCriteria.Op.EQ);
+        InstanceSearch.and("instance", InstanceSearch.entity().getInstance(), SearchCriteria.Op.EQ);
         
         NameSearch = createSearchBuilder();
-        NameSearch.addAnd("name", NameSearch.entity().getName(), SearchCriteria.Op.EQ);
+        NameSearch.and("name", NameSearch.entity().getName(), SearchCriteria.Op.EQ);
         return true;
     }
     

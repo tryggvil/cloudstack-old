@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -42,8 +42,8 @@ public class SyncQueueItemDaoImpl extends GenericDaoBase<SyncQueueItemVO, Long> 
 	public SyncQueueItemVO getNextQueueItem(long queueId) {
 		
 		SearchBuilder<SyncQueueItemVO> sb = createSearchBuilder();
-        sb.addAnd("queueId", sb.entity().getQueueId(), SearchCriteria.Op.EQ);
-        sb.addAnd("lastProcessNumber", sb.entity().getLastProcessNumber(),
+        sb.and("queueId", sb.entity().getQueueId(), SearchCriteria.Op.EQ);
+        sb.and("lastProcessNumber", sb.entity().getLastProcessNumber(),
     		SearchCriteria.Op.NULL);
         sb.done();
         
@@ -95,7 +95,7 @@ public class SyncQueueItemDaoImpl extends GenericDaoBase<SyncQueueItemVO, Long> 
 	@Override
 	public List<SyncQueueItemVO> getActiveQueueItems(Long msid) {
 		SearchBuilder<SyncQueueItemVO> sb = createSearchBuilder();
-        sb.addAnd("lastProcessMsid", sb.entity().getLastProcessMsid(),
+        sb.and("lastProcessMsid", sb.entity().getLastProcessMsid(),
     		SearchCriteria.Op.EQ);
         sb.done();
         

@@ -9,22 +9,22 @@ usage() {
 }
 
 deploy_server() {
-  ssh root@$1 "yum remove -y \"vmops*\" && yum clean all && cd /usr/share/vmops/ && rm -rf * ; yum install -y vmops-client vmops-premium"
+  ssh root@$1 "yum remove -y \"cloud*\" && yum clean all && cd /usr/share/cloud/ && rm -rf * && rm -rf /var/cache/cloud ; yum install -y cloud-client cloud-premium cloud-usage"
   if [ $? -gt 0 ]; then echo "failed to install on $1"; return 2; fi
  echo "Management server is deployed successfully"
 }
 
 deploy_db() {
   echo "Deploying database on $1"
-  ssh root@$1 "cp /root/deploy/server-setup.xml /usr/share/vmops/management/setup/. ; cp /root/deploy/templates.sql /usr/share/vmops/management/setup/. ; cp /root/deploy/agent.properties /etc/vmops/agent/agent.properties"
-ssh root@$1 "vmops-setup-databases user@$1 --deploy-as=root --auto=/usr/share/vmops/management/setup/server-setup.xml"
+  ssh root@$1 "cp $CONFIGDIR/server-setup.xml /usr/share/cloud/setup/. ; cp $CONFIGDIR/templates.sql /usr/share/cloud/setup/templates.xenserver.sql "
+ssh root@$1 "cloud-setup-databases bala@$1 --deploy-as=root --auto=/usr/share/cloud/setup/server-setup.xml xenserver"
   if [ $? -gt 0 ]; then echo "failed to deploy db on $1"; return 2; fi
   echo "Database is deployed successfully"
 }
 
 
 kill_server() {
-  pids=$(ssh root@$1 "for i in \$(ps -ef | grep java | grep vmops | grep -v grep | awk '{print \$2}'); do pwdx \$i | grep $2 ;done"  | cut -d: -f1)
+  pids=$(ssh root@$1 "for i in \$(ps -ef | grep java | grep cloud | grep -v grep | awk '{print \$2}'); do pwdx \$i | grep $2 ;done"  | cut -d: -f1)
  for p in $pids
  do
    ssh root@$1 "kill -9 $p"
@@ -36,13 +36,13 @@ run_agent_solaris() {
   local mgmtip=$4
   kill_agent_solaris $1 $2
   echo -n "Running: "
-  ssh root@$1 "svcadm enable vmops"
+  ssh root@$1 "svcadm enable cloud"
   if [ $? -gt 0 ]; then  failure ; else success;fi
 }
 
 run_server() {
   kill_server $1 $SERVERDIR/bin
-  ssh root@$1 "service vmops-management start; service vmops-agent start; service vmops-usage start 2>&1 &"
+  ssh root@$1 "service cloud-management start; service cloud-usage start 2>&1 &"
   echo "server $1 is started under  $SERVERDIR/bin"
 }
 
@@ -60,7 +60,6 @@ if [ "$SERVER" == "" ]; then
   printf "ERROR: Need to specify the management server\n"
   exit 1
 fi
-
 
 deployflag=
 runflag=
@@ -129,7 +128,6 @@ then
     done
 fi
 
-
 if [ "$runflag" == "1" ]
 then
    echo "Starting Management server"
@@ -141,7 +139,7 @@ then
                 for j in $COMPUTE
                 do
                         echo -n "Connecting host $j: "
-                        wget "http://$i:8096/?command=addHost&zoneId=1&podId=1&url=http://$j&username=root&password=password"
+                        wget "http://$i:8096/?command=addHost&zoneId=100&podId=1&url=http://$j&username=root&password=password"
                 done
         done
 fi

@@ -508,11 +508,16 @@ AjaxViewer.prototype = {
 
 			window.onStatusNotify(ajaxViewer.STATUS_RECEIVING);
 			$.getScript(url, function(data, textStatus) {
-				eval(data);
-				ajaxViewer.setDirty(true);
-				window.onStatusNotify(ajaxViewer.STATUS_RECEIVED);
-				
-				ajaxViewer.checkUpdate();
+				if(/^<html>/.test(data)) {
+					ajaxViewer.stop();
+					$(document.body).html(data);
+				} else {
+					eval(data);
+					ajaxViewer.setDirty(true);
+					window.onStatusNotify(ajaxViewer.STATUS_RECEIVED);
+					
+					ajaxViewer.checkUpdate();
+				}
 			});
 		} 
 	},

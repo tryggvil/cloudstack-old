@@ -71,8 +71,8 @@
 				<name>created</name>
 			</item>
 			<item>
-				<name>isdisabled</name>
-				<value>false</value>
+				<name>state</name>
+				<value>enabled</value>
 			</item>
 		</returnvalue>
 	</command>
@@ -135,8 +135,8 @@
 				<value>0</value>
 			</item>
 			<item>
-				<name>isdisabled</name>
-				<value>false</value>
+				<name>state</name>
+				<value>enabled</value>
 			</item>
 			<item>
 				<name>iscleanuprequired</name>
@@ -234,8 +234,8 @@
 				<value>ROOT</value>
 			</item>
 			<item>
-				<name>isdisabled</name>
-				<value>false</value>
+				<name>state</name>
+				<value>enabled</value>
 			</item>
 			<item>
 				<name>created</name>
@@ -246,7 +246,6 @@
 	<!-- Test case #428 - disableUser command -->
 	<command>
 		<name>disableUser</name>
-		
 		<testcase>428</testcase>
 		<parameters>
 			<item getparam="true">
@@ -567,6 +566,10 @@
 				<param>accountname</param>
 			</item>
 			<item>
+				<name>domainid</name>
+				<value>1</value>
+			</item>
+			<item>
 				<name>displayname</name>
 				<value>namefordisplay</value>
 			</item>
@@ -834,6 +837,10 @@
 		<item getparam="true">
 			<name>account</name>
 			<param>accountname</param>
+		</item>
+		<item>
+			<name>domainid</name>
+			<value>1</value>
 		</item>
 		</parameters>
 		<returnvalue> 
@@ -2637,12 +2644,12 @@
 	
 <!-- Test case #953 - createLimit command -->	
 	<command>
-		<name>createResourceLimit</name>
+		<name>updateResourceLimit</name>
 		<testcase>953</testcase>
 		<parameters>
 			<item>
-			    <name>type</name>
-				<value>public_ip</value>
+			    <name>resourcetype</name>
+				<value>1</value>
 			</item>
 			<item>
 			    <name>max</name>

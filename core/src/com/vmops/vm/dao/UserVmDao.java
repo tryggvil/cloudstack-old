@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -74,4 +74,11 @@ public interface UserVmDao extends GenericDao<UserVmVO, Long> {
 	 * @return
 	 */
 	List<UserVmVO> listByRouterId(long routerId);
+	
+	/**
+	 * List running VMs on the specified host
+	 * @param id
+	 * @return
+	 */
+	public List<UserVmVO> listRunningByHostId(long hostId);
 }

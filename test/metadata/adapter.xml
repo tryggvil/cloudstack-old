@@ -1,11 +1,11 @@
 <regression>
 	<globalparam>
 		<param>
-			<name>172.16.1.237</name>
+			<name>172.16.1.220</name>
 			<variable>hostip</variable>
 		</param>
 		<param>
-			<name>172.16.1.237</name>
+			<name>172.16.1.220</name>
 			<variable>db</variable>
 		</param>
 		<param>
@@ -39,7 +39,7 @@
 		<filename>../metadata/regression.xml</filename>
 		<testname>SANITY TEST</testname>
 	</test>
-	
+<!--	-->
 <!--	<test run="true">-->
 <!--		<class>com.vmops.test.regression.VMApiTest</class>-->
 <!--		<filename>../metadata/userapi.xml</filename>-->
@@ -51,13 +51,13 @@
 <!--		<filename>../metadata/vmapi.xml</filename>-->
 <!--		<testname>VM TEST</testname>-->
 <!--	</test>-->
-	
+<!--	-->
 <!--	<test run="true">-->
 <!--		<class>com.vmops.test.regression.ConfigTest</class>-->
 <!--		<filename>../metadata/configtest.xml</filename>-->
 <!--		<testname>CONFIG TEST</testname>-->
 <!--	</test>-->
-<!---->
+
 <!--	<test run="true">-->
 <!--		<class>com.vmops.test.regression.ApiWebPortTest</class>-->
 <!--		<filename>../metadata/user_port8080.xml</filename>-->
@@ -81,13 +81,13 @@
 <!--		<filename>../metadata/securitygroups.xml</filename>-->
 <!--		<testname>PORT FORWARDING TEST</testname>-->
 <!--	</test>-->
-
+<!---->
 <!--	<test run="true">-->
 <!--		<class>com.vmops.test.regression.VMApiTest</class>-->
 <!--		<filename>../metadata/sharedstorage_volume_test.xml</filename>-->
 <!--		<testname>VOLUMES IN SHARED STORAGE SETUP</testname>-->
 <!--	</test>-->
-
+<!---->
 <!--	<test run="true">-->
 <!--		<class>com.vmops.test.regression.VMApiTest</class>-->
 <!--		<filename>../metadata/localstorage_volume_test.xml</filename>-->

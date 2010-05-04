@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -602,7 +602,7 @@ public class ComponentLocator extends Thread implements ComponentLocatorMBean {
     	if (PropertiesUtil.findConfigFile(configfile) == null){
     		configfile = "components.xml";
     	}
-        return getLocatorInternal(server, true, configfile, "log4j-vmops");
+        return getLocatorInternal(server, true, configfile, "log4j-cloud");
     }
 
     public static ComponentLocator getCurrentLocator() {

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -19,6 +19,7 @@
 package com.vmops.async;
 
 import com.vmops.agent.AgentManager;
+import com.vmops.async.dao.AsyncJobDao;
 import com.vmops.event.dao.EventDao;
 import com.vmops.network.NetworkManager;
 import com.vmops.network.dao.IPAddressDao;
@@ -27,6 +28,7 @@ import com.vmops.storage.dao.VolumeDao;
 import com.vmops.storage.snapshot.SnapshotManager;
 import com.vmops.user.AccountManager;
 import com.vmops.user.dao.AccountDao;
+import com.vmops.user.dao.UserDao;
 import com.vmops.utils.component.Manager;
 import com.vmops.vm.UserVmManager;
 import com.vmops.vm.dao.DomainRouterDao;
@@ -45,4 +47,6 @@ public interface AsyncJobExecutorContext extends Manager {
 	public VolumeDao getVolumeDao();
     public DomainRouterDao getRouterDao();
     public IPAddressDao getIpAddressDao();
+    public AsyncJobDao getJobDao();
+    public UserDao getUserDao();
 }

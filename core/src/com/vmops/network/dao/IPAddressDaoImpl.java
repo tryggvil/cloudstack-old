@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -52,46 +52,46 @@ public class IPAddressDaoImpl extends GenericDaoBase<IPAddressVO, String> implem
     // make it public for JUnit test
     public IPAddressDaoImpl() {
 	    AccountDcSearch = createSearchBuilder();
-	    AccountDcSearch.addAnd("accountId", AccountDcSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
-	    AccountDcSearch.addAnd("dataCenterId", AccountDcSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+	    AccountDcSearch.and("accountId", AccountDcSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
+	    AccountDcSearch.and("dataCenterId", AccountDcSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
 	    AccountDcSearch.done();
 
 	    AccountDcSnatSearch = createSearchBuilder();
-	    AccountDcSnatSearch.addAnd("accountId", AccountDcSnatSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
-	    AccountDcSnatSearch.addAnd("dataCenterId", AccountDcSnatSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
-	    AccountDcSnatSearch.addAnd("sourceNat", AccountDcSnatSearch.entity().isSourceNat(), SearchCriteria.Op.EQ);
+	    AccountDcSnatSearch.and("accountId", AccountDcSnatSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
+	    AccountDcSnatSearch.and("dataCenterId", AccountDcSnatSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+	    AccountDcSnatSearch.and("sourceNat", AccountDcSnatSearch.entity().isSourceNat(), SearchCriteria.Op.EQ);
 	    AccountDcSnatSearch.done();
 	    
 	    AddressSearch = createSearchBuilder();
-	    AddressSearch.addAnd("address", AddressSearch.entity().getAddress(), SearchCriteria.Op.EQ);
+	    AddressSearch.and("address", AddressSearch.entity().getAddress(), SearchCriteria.Op.EQ);
 	    AddressSearch.done();
 	    
 	    DcSearchAll = createSearchBuilder();
-	    DcSearchAll.addAnd("dataCenterId", DcSearchAll.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+	    DcSearchAll.and("dataCenterId", DcSearchAll.entity().getDataCenterId(), SearchCriteria.Op.EQ);
 	    DcSearchAll.done();
 	    
 	    DcIpSearch = createSearchBuilder();
-	    DcIpSearch.addAnd("dataCenterId", DcIpSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
-	    DcIpSearch.addAnd("ipAddress", DcIpSearch.entity().getAddress(), SearchCriteria.Op.EQ);
+	    DcIpSearch.and("dataCenterId", DcIpSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+	    DcIpSearch.and("ipAddress", DcIpSearch.entity().getAddress(), SearchCriteria.Op.EQ);
 	    DcIpSearch.done();
 	    
 	    VlanDbIdSearchUnallocated = createSearchBuilder();
-	    VlanDbIdSearchUnallocated.addAnd("allocated", VlanDbIdSearchUnallocated.entity().getAllocated(), SearchCriteria.Op.NULL);
-	    VlanDbIdSearchUnallocated.addAnd("vlanDbId", VlanDbIdSearchUnallocated.entity().getVlanDbId(), SearchCriteria.Op.EQ);
+	    VlanDbIdSearchUnallocated.and("allocated", VlanDbIdSearchUnallocated.entity().getAllocated(), SearchCriteria.Op.NULL);
+	    VlanDbIdSearchUnallocated.and("vlanDbId", VlanDbIdSearchUnallocated.entity().getVlanDbId(), SearchCriteria.Op.EQ);
 	    //VlanDbIdSearchUnallocated.addRetrieve("ipAddress", VlanDbIdSearchUnallocated.entity().getAddress());
 	    VlanDbIdSearchUnallocated.done();
 	    
 	    VlanDbIdSearch = createSearchBuilder();
-	    VlanDbIdSearch.addAnd("vlanDbId", VlanDbIdSearch.entity().getVlanDbId(), SearchCriteria.Op.EQ);
+	    VlanDbIdSearch.and("vlanDbId", VlanDbIdSearch.entity().getVlanDbId(), SearchCriteria.Op.EQ);
 	    VlanDbIdSearch.done();
 	    
 	    AccountIdSearch = createSearchBuilder();
-	    AccountIdSearch.addAnd("accountId", AccountIdSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
+	    AccountIdSearch.and("accountId", AccountIdSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
 	    AccountIdSearch.done();
 
         AccountIdSourceNatSearch = createSearchBuilder();
-        AccountIdSourceNatSearch.addAnd("accountId", AccountIdSourceNatSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
-        AccountIdSourceNatSearch.addAnd("sourceNat", AccountIdSourceNatSearch.entity().isSourceNat(), SearchCriteria.Op.EQ);
+        AccountIdSourceNatSearch.and("accountId", AccountIdSourceNatSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
+        AccountIdSourceNatSearch.and("sourceNat", AccountIdSourceNatSearch.entity().isSourceNat(), SearchCriteria.Op.EQ);
         AccountIdSourceNatSearch.done();
     }
     

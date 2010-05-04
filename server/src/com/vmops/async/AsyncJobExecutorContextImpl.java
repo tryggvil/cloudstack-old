@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -24,6 +24,7 @@ import javax.ejb.Local;
 import javax.naming.ConfigurationException;
 
 import com.vmops.agent.AgentManager;
+import com.vmops.async.dao.AsyncJobDao;
 import com.vmops.event.dao.EventDao;
 import com.vmops.network.NetworkManager;
 import com.vmops.network.dao.IPAddressDao;
@@ -32,6 +33,7 @@ import com.vmops.storage.dao.VolumeDao;
 import com.vmops.storage.snapshot.SnapshotManager;
 import com.vmops.user.AccountManager;
 import com.vmops.user.dao.AccountDao;
+import com.vmops.user.dao.UserDao;
 import com.vmops.utils.component.ComponentLocator;
 import com.vmops.vm.UserVmManager;
 import com.vmops.vm.dao.DomainRouterDao;
@@ -52,6 +54,8 @@ public class AsyncJobExecutorContextImpl implements AsyncJobExecutorContext {
     private VolumeDao _volumeDao;
     private DomainRouterDao _routerDao;
     private IPAddressDao _ipAddressDao;
+    private AsyncJobDao _jobDao;
+    private UserDao _userDao;
     
     private ManagementServer _managementServer;
     
@@ -118,6 +122,16 @@ public class AsyncJobExecutorContextImpl implements AsyncJobExecutorContext {
     	return _ipAddressDao;
     }
 	
+	@Override
+    public AsyncJobDao getJobDao() {
+    	return _jobDao;
+    }
+	
+	@Override
+    public UserDao getUserDao() {
+    	return _userDao;
+    }
+	
     @Override
     public boolean configure(String name, Map<String, Object> params) throws ConfigurationException {
     	_name = name;
@@ -181,6 +195,16 @@ public class AsyncJobExecutorContextImpl implements AsyncJobExecutorContext {
         _ipAddressDao = locator.getDao(IPAddressDao.class);
         if (_ipAddressDao == null) {
             throw new ConfigurationException("unable to get " + IPAddressDao.class.getName());
+        }
+        
+        _jobDao = locator.getDao(AsyncJobDao.class);
+        if(_jobDao == null) {
+            throw new ConfigurationException("unable to get " + AsyncJobDao.class.getName());
+        }
+        
+        _userDao = locator.getDao(UserDao.class);
+        if(_userDao == null) {
+            throw new ConfigurationException("unable to get " + UserDao.class.getName());
         }
         
     	return true;

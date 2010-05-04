@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -222,14 +222,14 @@ public class AgentSimulator implements MultiCasterListener, IAgentShell {
     }
     
     private static void configLog4j() {
-        File file = PropertiesUtil.findConfigFile("log4j-vmops.xml");
+        File file = PropertiesUtil.findConfigFile("log4j-cloud.xml");
         if (file != null) {
-            System.out.println("Using log4j-vmops.xml configuration file : " + file.getAbsolutePath());
+            System.out.println("Using log4j-cloud.xml configuration file : " + file.getAbsolutePath());
             DOMConfigurator.configureAndWatch(file.getAbsolutePath());
         } else {
-            file = PropertiesUtil.findConfigFile("log4j-vmops.properties");
+            file = PropertiesUtil.findConfigFile("log4j-cloud.properties");
             if (file != null) {
-                System.out.println("Using log4j-vmops.properties configuration file : " + file.getAbsolutePath());
+                System.out.println("Using log4j-cloud.properties configuration file : " + file.getAbsolutePath());
                 PropertyConfigurator.configureAndWatch(file.getAbsolutePath());
             }
         }

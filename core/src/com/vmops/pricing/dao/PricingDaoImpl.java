@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -39,11 +39,11 @@ public class PricingDaoImpl extends GenericDaoBase<PricingVO, Long> implements P
 
 	public PricingDaoImpl() {
 		TypeAndIdSearch = createSearchBuilder();
-		TypeAndIdSearch.addAnd("type", TypeAndIdSearch.entity().getType(), SearchCriteria.Op.EQ);
-		TypeAndIdSearch.addAnd("typeId", TypeAndIdSearch.entity().getTypeId(), SearchCriteria.Op.EQ);
+		TypeAndIdSearch.and("type", TypeAndIdSearch.entity().getType(), SearchCriteria.Op.EQ);
+		TypeAndIdSearch.and("typeId", TypeAndIdSearch.entity().getTypeId(), SearchCriteria.Op.EQ);
 		
 		TypeSearch = createSearchBuilder();
-		TypeSearch.addAnd("type", TypeSearch.entity().getType(), SearchCriteria.Op.EQ);
+		TypeSearch.and("type", TypeSearch.entity().getType(), SearchCriteria.Op.EQ);
 	}
 	
 	public PricingVO findByTypeAndId(String type, Long typeId) {

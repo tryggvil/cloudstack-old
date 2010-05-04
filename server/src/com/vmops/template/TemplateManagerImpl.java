@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -35,12 +35,14 @@ import com.vmops.agent.api.storage.ManageVolumeAnswer;
 import com.vmops.agent.api.storage.ManageVolumeCommand;
 import com.vmops.agent.api.storage.PrimaryStorageDownloadCommand;
 import com.vmops.configuration.ResourceCount.ResourceType;
+import com.vmops.configuration.dao.ConfigurationDao;
 import com.vmops.event.EventTypes;
 import com.vmops.event.EventVO;
 import com.vmops.event.dao.EventDao;
 import com.vmops.exception.InternalErrorException;
 import com.vmops.host.HostVO;
 import com.vmops.host.dao.HostDao;
+import com.vmops.storage.StorageManager;
 import com.vmops.storage.StoragePoolHostVO;
 import com.vmops.storage.StoragePoolVO;
 import com.vmops.storage.VMTemplateHostVO;
@@ -62,6 +64,7 @@ import com.vmops.user.UserVO;
 import com.vmops.user.dao.AccountDao;
 import com.vmops.user.dao.UserAccountDao;
 import com.vmops.user.dao.UserDao;
+import com.vmops.utils.NumbersUtil;
 import com.vmops.utils.component.ComponentLocator;
 import com.vmops.utils.db.DB;
 import com.vmops.utils.db.SearchBuilder;
@@ -89,17 +92,20 @@ public class TemplateManagerImpl implements TemplateManager {
     AgentManager _agentMgr;
     AccountManager _accountMgr;
     HostDao _hostDao;
+    ConfigurationDao _configDao;
+    long _routerTemplateId = -1;
+    StorageManager _storageMgr;
     protected SearchBuilder<VMTemplateHostVO> HostTemplateStatesSearch;
     
 
     @Override
-    public Long create(long userId, String displayText, boolean isPublic, ImageFormat format, FileSystem fs, URI url, String chksum, boolean requiresHvm, int bits, boolean enablePassword, long guestOSId, boolean bootable) {
+    public Long create(long userId, String displayText, boolean isPublic, boolean featured, ImageFormat format, FileSystem fs, URI url, String chksum, boolean requiresHvm, int bits, boolean enablePassword, long guestOSId, boolean bootable) {
         Long id = _tmpltDao.getNextInSequence(Long.class, "id");
         
         UserVO user = _userDao.findById(userId);
         long accountId = user.getAccountId();
         
-        VMTemplateVO template = new VMTemplateVO(id, displayText, format, isPublic, fs, url.toString(), requiresHvm, bits, accountId, chksum, displayText, enablePassword, guestOSId, bootable);
+        VMTemplateVO template = new VMTemplateVO(id, displayText, format, isPublic, featured, fs, url.toString(), requiresHvm, bits, accountId, chksum, displayText, enablePassword, guestOSId, bootable);
         
         Long templateId = _tmpltDao.persist(template);
         UserAccount userAccount = _userAccountDao.findById(userId);
@@ -233,7 +239,14 @@ public class TemplateManagerImpl implements TemplateManager {
     }
     
     @Override
-    public boolean copy(long templateId, long zoneId) {
+    public boolean copy(long templateId, long sourceZoneId, long destZoneId) {
+    	HostVO sourceSecondaryStorageHost = _storageMgr.getSecondaryStorageHost(sourceZoneId);
+    	HostVO destSecondaryStorageHost = _storageMgr.getSecondaryStorageHost(destZoneId);
+    	VMTemplateHostVO templateHostVO = _tmpltHostDao.findByHostTemplate(destSecondaryStorageHost.getId(), templateId);
+    	if (templateHostVO == null) {
+    		templateHostVO = new VMTemplateHostVO(templateId, destSecondaryStorageHost.getId());
+    		_tmpltHostDao.persist(templateHostVO);
+    	}
     	return true;
     }
     
@@ -484,13 +497,25 @@ public class TemplateManagerImpl implements TemplateManager {
         if (_accountMgr == null) {
             throw new ConfigurationException("Unable to find AccountManager");
         }
+        _configDao = locator.getDao(ConfigurationDao.class);
         
+        if (_configDao == null) {
+            throw new ConfigurationException("Unable to find ConfigurationDao");
+        }
+
+        final Map<String, String> configs = _configDao.getConfiguration("AgentManager", params);
+        _routerTemplateId = NumbersUtil.parseInt(configs.get("router.template.id"), 1);
+        
+        _storageMgr = locator.getManager(StorageManager.class);
+        if (_storageMgr == null) {
+            throw new ConfigurationException("Unable to find StorageManager");
+        }
         HostTemplateStatesSearch = _tmpltHostDao.createSearchBuilder();
-        HostTemplateStatesSearch.addAnd("id", HostTemplateStatesSearch.entity().getTemplateId(), SearchCriteria.Op.EQ);
-        HostTemplateStatesSearch.addAnd("state", HostTemplateStatesSearch.entity().getDownloadState(), SearchCriteria.Op.EQ);
+        HostTemplateStatesSearch.and("id", HostTemplateStatesSearch.entity().getTemplateId(), SearchCriteria.Op.EQ);
+        HostTemplateStatesSearch.and("state", HostTemplateStatesSearch.entity().getDownloadState(), SearchCriteria.Op.EQ);
         
         SearchBuilder<HostVO> HostSearch = _hostDao.createSearchBuilder();
-        HostSearch.addAnd("dcId", HostSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        HostSearch.and("dcId", HostSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
         
         HostTemplateStatesSearch.join("host", HostSearch, HostSearch.entity().getId(), HostTemplateStatesSearch.entity().getHostId());
         HostSearch.done();

@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -42,6 +42,7 @@ public class UserVmDaoImpl extends GenericDaoBase<UserVmVO, Long> implements Use
     protected final SearchBuilder<UserVmVO> AccountDataCenterSearch;
     protected final SearchBuilder<UserVmVO> AccountSearch;
     protected final SearchBuilder<UserVmVO> HostSearch;
+    protected final SearchBuilder<UserVmVO> HostRunningSearch;
     protected final SearchBuilder<UserVmVO> NameSearch;
     protected final SearchBuilder<UserVmVO> StateChangeSearch;
     protected final SearchBuilder<UserVmVO> StorageIpSearch;
@@ -50,46 +51,51 @@ public class UserVmDaoImpl extends GenericDaoBase<UserVmVO, Long> implements Use
     
     protected UserVmDaoImpl() {
         AccountSearch = createSearchBuilder();
-        AccountSearch.addAnd("account", AccountSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
+        AccountSearch.and("account", AccountSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
         AccountSearch.done();
         
         HostSearch = createSearchBuilder();
-        HostSearch.addAnd("host", HostSearch.entity().getHostId(), SearchCriteria.Op.EQ);
+        HostSearch.and("host", HostSearch.entity().getHostId(), SearchCriteria.Op.EQ);
         HostSearch.done();
         
+        HostRunningSearch = createSearchBuilder();
+        HostRunningSearch.and("host", HostRunningSearch.entity().getHostId(), SearchCriteria.Op.EQ);
+        HostRunningSearch.and("state", HostRunningSearch.entity().getState(), SearchCriteria.Op.EQ);
+        HostRunningSearch.done();
+        
         NameSearch = createSearchBuilder();
-        NameSearch.addAnd("name", NameSearch.entity().getName(), SearchCriteria.Op.EQ);
+        NameSearch.and("name", NameSearch.entity().getName(), SearchCriteria.Op.EQ);
         NameSearch.done();
         
         RouterStateSearch = createSearchBuilder();
-        RouterStateSearch.addAnd("router", RouterStateSearch.entity().getDomainRouterId(), SearchCriteria.Op.EQ);
+        RouterStateSearch.and("router", RouterStateSearch.entity().getDomainRouterId(), SearchCriteria.Op.EQ);
         RouterStateSearch.done();
         
         RouterIdSearch = createSearchBuilder();
-        RouterIdSearch.addAnd("router", RouterIdSearch.entity().getDomainRouterId(), SearchCriteria.Op.EQ);
+        RouterIdSearch.and("router", RouterIdSearch.entity().getDomainRouterId(), SearchCriteria.Op.EQ);
         RouterIdSearch.done();
         
         AccountDataCenterSearch = createSearchBuilder();
-        AccountDataCenterSearch.addAnd("account", AccountDataCenterSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
-        AccountDataCenterSearch.addAnd("dc", AccountDataCenterSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        AccountDataCenterSearch.and("account", AccountDataCenterSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
+        AccountDataCenterSearch.and("dc", AccountDataCenterSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
         AccountDataCenterSearch.done();
         
         StateChangeSearch = createSearchBuilder();
-        StateChangeSearch.addAnd("id", StateChangeSearch.entity().getId(), SearchCriteria.Op.EQ);
-        StateChangeSearch.addAnd("states", StateChangeSearch.entity().getState(), SearchCriteria.Op.EQ);
-        StateChangeSearch.addAnd("host", StateChangeSearch.entity().getHostId(), SearchCriteria.Op.EQ);
-        StateChangeSearch.addAnd("update", StateChangeSearch.entity().getUpdated(), SearchCriteria.Op.EQ);
+        StateChangeSearch.and("id", StateChangeSearch.entity().getId(), SearchCriteria.Op.EQ);
+        StateChangeSearch.and("states", StateChangeSearch.entity().getState(), SearchCriteria.Op.EQ);
+        StateChangeSearch.and("host", StateChangeSearch.entity().getHostId(), SearchCriteria.Op.EQ);
+        StateChangeSearch.and("update", StateChangeSearch.entity().getUpdated(), SearchCriteria.Op.EQ);
         StateChangeSearch.done();
         
         StorageIpSearch = createSearchBuilder();
-        StorageIpSearch.addAnd("dc", StorageIpSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
-        StorageIpSearch.addAnd("pod", StorageIpSearch.entity().getPodId(), SearchCriteria.Op.EQ);
-        StorageIpSearch.addAnd("ip", StorageIpSearch.entity().getStorageIp(), SearchCriteria.Op.EQ);
+        StorageIpSearch.and("dc", StorageIpSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        StorageIpSearch.and("pod", StorageIpSearch.entity().getPodId(), SearchCriteria.Op.EQ);
+        StorageIpSearch.and("ip", StorageIpSearch.entity().getStorageIp(), SearchCriteria.Op.EQ);
         StorageIpSearch.done();
         
         DestroySearch = createSearchBuilder();
-        DestroySearch.addAnd("state", DestroySearch.entity().getState(), SearchCriteria.Op.IN);
-        DestroySearch.addAnd("updateTime", DestroySearch.entity().getUpdateTime(), SearchCriteria.Op.LT);
+        DestroySearch.and("state", DestroySearch.entity().getState(), SearchCriteria.Op.IN);
+        DestroySearch.and("updateTime", DestroySearch.entity().getUpdateTime(), SearchCriteria.Op.LT);
         DestroySearch.done();
         
         _updateTimeAttr = _allAttributes.get("updateTime");
@@ -199,6 +205,14 @@ public class UserVmDaoImpl extends GenericDaoBase<UserVmVO, Long> implements Use
     public List<UserVmVO> listByHostId(Long id) {
         SearchCriteria sc = HostSearch.create();
         sc.setParameters("host", id);
+        
+        return listActiveBy(sc);
+    }
+    
+    public List<UserVmVO> listRunningByHostId(long hostId) {
+        SearchCriteria sc = HostRunningSearch.create();
+        sc.setParameters("host", hostId);
+        sc.setParameters("state", State.Running);
         
         return listActiveBy(sc);
     }

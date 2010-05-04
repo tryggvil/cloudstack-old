@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -32,7 +32,7 @@ public class ScheduledVolumeBackupDaoImpl extends GenericDaoBase<ScheduledVolume
 
     public ScheduledVolumeBackupDaoImpl() {
         VolumeIdSearch = createSearchBuilder();
-        VolumeIdSearch.addAnd("volumeId", VolumeIdSearch.entity().getVolumeId(), SearchCriteria.Op.EQ);
+        VolumeIdSearch.and("volumeId", VolumeIdSearch.entity().getVolumeId(), SearchCriteria.Op.EQ);
         VolumeIdSearch.done();
     }
 

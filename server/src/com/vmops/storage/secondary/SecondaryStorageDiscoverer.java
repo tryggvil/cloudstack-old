@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -20,7 +20,9 @@ package com.vmops.storage.secondary;
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -30,11 +32,22 @@ import javax.naming.ConfigurationException;
 import org.apache.log4j.Logger;
 
 import com.vmops.configuration.dao.ConfigurationDao;
+import com.vmops.host.HostVO;
+import com.vmops.host.Status.Event;
+import com.vmops.host.dao.HostDao;
 import com.vmops.resource.Discoverer;
 import com.vmops.resource.ServerResource;
+import com.vmops.storage.VMTemplateHostVO;
+import com.vmops.storage.VMTemplateStorageResourceAssoc;
+import com.vmops.storage.VMTemplateVO;
+import com.vmops.storage.dao.VMTemplateDao;
+import com.vmops.storage.dao.VMTemplateHostDao;
 import com.vmops.storage.resource.DummySecondaryStorageResource;
 import com.vmops.storage.resource.NfsSecondaryStorageResource;
+import com.vmops.storage.template.TemplateConstants;
 import com.vmops.utils.component.ComponentLocator;
+import com.vmops.utils.component.Inject;
+import com.vmops.utils.exception.VmopsRuntimeException;
 import com.vmops.utils.net.NfsUtils;
 import com.vmops.utils.script.Script;
 
@@ -53,6 +66,12 @@ public class SecondaryStorageDiscoverer implements Discoverer {
     boolean _useServiceVM = false;
     Random _random = new Random(System.currentTimeMillis());
     ConfigurationDao _configDao;
+    @Inject
+    protected HostDao _hostDao = null;
+    @Inject
+    protected VMTemplateDao _tmpltDao = null;
+    @Inject
+    protected VMTemplateHostDao _vmTemplateHostDao = null;
     
     protected SecondaryStorageDiscoverer() {
     }
@@ -86,7 +105,11 @@ public class SecondaryStorageDiscoverer implements Discoverer {
     protected Map<? extends ServerResource, Map<String, String>> createNfsSecondaryStorageResource(long dcId, Long podId, String urlString) {
         
     	if (_useServiceVM) {
-    		return null;
+    		try {
+				return createDummySecondaryStorageResource(dcId, podId, new URI(urlString));
+			} catch (URISyntaxException e) {
+				s_logger.warn("Invalid uri  " + urlString);
+			}
     	}
         String mountStr;
         try {
@@ -137,6 +160,7 @@ public class SecondaryStorageDiscoverer implements Discoverer {
             params.put("pod", podId.toString());
         }
         params.put("guid", urlString);
+        params.put("secondary.storage.vm", "false");
         
         try {
             storage.configure("Storage", params);
@@ -181,7 +205,7 @@ public class SecondaryStorageDiscoverer implements Discoverer {
     protected Map<ServerResource, Map<String, String>> createDummySecondaryStorageResource(long dcId, Long podId, URI uri) {
         Map<ServerResource, Map<String, String>> srs = new HashMap<ServerResource, Map<String, String>>();
         
-        DummySecondaryStorageResource storage = new DummySecondaryStorageResource();
+        DummySecondaryStorageResource storage = new DummySecondaryStorageResource(_useServiceVM);
         Map<String, String> details = new HashMap<String, String>();
         
         details.put("mount.path", uri.toString());
@@ -242,5 +266,28 @@ public class SecondaryStorageDiscoverer implements Discoverer {
     @Override
     public boolean stop() {
         return true;
+    }
+
+	@Override
+	public void postDiscovery(List<HostVO> hosts, long msId) {
+		if (_useServiceVM) {
+			for (HostVO h: hosts) {
+				_hostDao.disconnect(h, Event.AgentDisconnected, msId);
+				associateSystemVmTemplate(h.getId());
+			}
+		}
+		
+	}
+	
+    protected void associateSystemVmTemplate(long hostId) {
+    	VMTemplateVO tmplt = _tmpltDao.findById(TemplateConstants.DEFAULT_SYSTEM_VM_DB_ID);
+    	if (tmplt == null) {
+    		throw new VmopsRuntimeException("Cannot find routing template in vm_template table. Check your configuration");
+    	} 
+    	VMTemplateHostVO tmpltHost = _vmTemplateHostDao.findByHostTemplate(hostId, TemplateConstants.DEFAULT_SYSTEM_VM_DB_ID);
+    	if (tmpltHost == null) {
+    		VMTemplateHostVO vmTemplateHost = new VMTemplateHostVO(hostId, TemplateConstants.DEFAULT_SYSTEM_VM_DB_ID, new Date(), 100, VMTemplateStorageResourceAssoc.Status.DOWNLOADED, null, null, null, TemplateConstants.DEFAULT_SYSTEM_VM_TEMPLATE_PATH);
+    		_vmTemplateHostDao.persist(vmTemplateHost);
+    	}      
     }
 }

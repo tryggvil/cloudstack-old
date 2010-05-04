@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -63,8 +63,8 @@ public class SyncQueueDaoImpl extends GenericDaoBase<SyncQueueVO, Long> implemen
 	public SyncQueueVO find(String syncObjType, long syncObjId) {
 		
 		SearchBuilder<SyncQueueVO> sb = createSearchBuilder();
-        sb.addAnd("syncObjType", sb.entity().getSyncObjType(), SearchCriteria.Op.EQ);
-        sb.addAnd("syncObjId", sb.entity().getSyncObjId(), SearchCriteria.Op.EQ);
+        sb.and("syncObjType", sb.entity().getSyncObjType(), SearchCriteria.Op.EQ);
+        sb.and("syncObjId", sb.entity().getSyncObjId(), SearchCriteria.Op.EQ);
         sb.done();
         
     	SearchCriteria sc = sb.create();

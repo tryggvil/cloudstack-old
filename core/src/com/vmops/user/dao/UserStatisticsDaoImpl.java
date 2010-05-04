@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -45,12 +45,12 @@ public class UserStatisticsDaoImpl extends GenericDaoBase<UserStatisticsVO, Long
     
     public UserStatisticsDaoImpl() {
     	UserSearch = createSearchBuilder();
-    	UserSearch.addAnd("account", UserSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
+    	UserSearch.and("account", UserSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
     	UserSearch.done();
 
     	UserDcSearch = createSearchBuilder();
-        UserDcSearch.addAnd("account", UserDcSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
-        UserDcSearch.addAnd("dc", UserDcSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        UserDcSearch.and("account", UserDcSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
+        UserDcSearch.and("dc", UserDcSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
         UserDcSearch.done();
     }
     

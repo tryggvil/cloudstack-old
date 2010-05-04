@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -18,6 +18,8 @@
 
 package com.vmops.configuration.dao;
 
+import java.util.List;
+
 import javax.ejb.Local;
 
 import com.vmops.configuration.ResourceCount;
@@ -33,9 +35,9 @@ public class ResourceLimitDaoImpl extends GenericDaoBase<ResourceLimitVO, Long> 
 	
 	public ResourceLimitDaoImpl () {
 		IdTypeSearch = createSearchBuilder();
-		IdTypeSearch.addAnd("type", IdTypeSearch.entity().getType(), SearchCriteria.Op.EQ);
-	    IdTypeSearch.addAnd("domainId", IdTypeSearch.entity().getDomainId(), SearchCriteria.Op.EQ);
-	    IdTypeSearch.addAnd("accountId", IdTypeSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
+		IdTypeSearch.and("type", IdTypeSearch.entity().getType(), SearchCriteria.Op.EQ);
+	    IdTypeSearch.and("domainId", IdTypeSearch.entity().getDomainId(), SearchCriteria.Op.EQ);
+	    IdTypeSearch.and("accountId", IdTypeSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
 	    IdTypeSearch.done();
 	}
 	
@@ -50,6 +52,16 @@ public class ResourceLimitDaoImpl extends GenericDaoBase<ResourceLimitVO, Long> 
 		return findOneBy(sc);
 	}
 	
+	public List<ResourceLimitVO> listByDomainId(Long domainId) {
+		if (domainId == null)
+			return null;
+		
+		SearchCriteria sc = IdTypeSearch.create();
+		sc.setParameters("domainId", domainId);
+		
+		return listBy(sc);
+	}
+	
 	public ResourceLimitVO findByAccountIdAndType(Long accountId, ResourceCount.ResourceType type) {
 		if (accountId == null || type == null)
 			return null;
@@ -61,8 +73,18 @@ public class ResourceLimitDaoImpl extends GenericDaoBase<ResourceLimitVO, Long> 
 		return findOneBy(sc);
 	}
 	
+	public List<ResourceLimitVO> listByAccountId(Long accountId) {
+		if (accountId == null)
+			return null;
+	
+		SearchCriteria sc = IdTypeSearch.create();
+		sc.setParameters("accountId", accountId);
+		
+		return listBy(sc);
+	}
+	
 	public boolean update(Long id, Long max) {
-        ResourceLimitVO limit = createForUpdate();
+        ResourceLimitVO limit = findById(id);
         if (max != null)
         	limit.setMax(max);
         else

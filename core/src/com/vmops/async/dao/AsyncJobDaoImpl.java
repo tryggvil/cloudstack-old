@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -38,11 +38,11 @@ public class AsyncJobDaoImpl extends GenericDaoBase<AsyncJobVO, Long> implements
 	
 	public AsyncJobDaoImpl() {
 		pendingAsyncJobSearch = createSearchBuilder();
-		pendingAsyncJobSearch.addAnd("instanceType", pendingAsyncJobSearch.entity().getInstanceType(), 
+		pendingAsyncJobSearch.and("instanceType", pendingAsyncJobSearch.entity().getInstanceType(), 
 			SearchCriteria.Op.EQ);
-		pendingAsyncJobSearch.addAnd("instanceId", pendingAsyncJobSearch.entity().getInstanceId(), 
+		pendingAsyncJobSearch.and("instanceId", pendingAsyncJobSearch.entity().getInstanceId(), 
 			SearchCriteria.Op.EQ);
-		pendingAsyncJobSearch.addAnd("status", pendingAsyncJobSearch.entity().getStatus(), 
+		pendingAsyncJobSearch.and("status", pendingAsyncJobSearch.entity().getStatus(), 
 				SearchCriteria.Op.EQ);
 		pendingAsyncJobSearch.done();
 	}

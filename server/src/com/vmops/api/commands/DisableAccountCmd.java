@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -35,6 +35,7 @@ public class DisableAccountCmd extends BaseCmd {
     private static final List<Pair<Enum, Boolean>> s_properties = new ArrayList<Pair<Enum, Boolean>>();
 
     static {
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT_OBJ, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ID, Boolean.TRUE));
     }
 
@@ -50,30 +51,34 @@ public class DisableAccountCmd extends BaseCmd {
 
     @Override
     public List<Pair<String, Object>> execute(Map<String, Object> params) {
+        Account adminAccount = (Account)params.get(BaseCmd.Properties.ACCOUNT_OBJ.getName());
         Long id = (Long)params.get(BaseCmd.Properties.ID.getName());
-        
-        //check if account specified by id exists in the system
+
+        // don't allow modify system account
+        if (id.longValue() == Account.ACCOUNT_ID_SYSTEM) {
+            throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "can not disable system account");
+        }
+
+        // check if account specified by id exists in the system
         Account account = getManagementServer().findAccountById(id);
         if (account == null) {
         	throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to find account by id");
-        }
-        else if (getManagementServer().findActiveAccount(account.getAccountName(), account.getDomainId()) == null) {
+        } else if (getManagementServer().findActiveAccount(account.getAccountName(), account.getDomainId()) == null) {
         	throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to find account by id");
         }
-        
-        //don't allow modify system account
-    	if (id == Long.valueOf(Account.ACCOUNT_ID_SYSTEM)) {
-    		throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "can not disable system account");
-    	}
+
+        if ((adminAccount != null) && !getManagementServer().isChildDomain(adminAccount.getDomainId(), account.getDomainId())) {
+            throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to disable account " + id + ", permission denied.");
+        }
 
         long jobId = getManagementServer().disableAccountAsync(id.longValue());
-        if(jobId == 0) {
+        if (jobId == 0) {
         	s_logger.warn("Unable to schedule async-job for DisableAccount comamnd");
         } else {
-	        if(s_logger.isDebugEnabled())
+	        if (s_logger.isDebugEnabled())
 	        	s_logger.debug("DisableAccount command has been accepted, job id: " + jobId);
         }
-        
+
         List<Pair<String, Object>> returnValues = new ArrayList<Pair<String, Object>>();
         returnValues.add(new Pair<String, Object>(BaseCmd.Properties.JOB_ID.getName(), Long.valueOf(jobId))); 
         return returnValues;

@@ -9,10 +9,12 @@ createUser=com.vmops.api.commands.CreateUserCmd;1
 updateUser=com.vmops.api.commands.UpdateUserCmd;1
 deleteUser=com.vmops.api.commands.DeleteUserCmd;1
 listUsers=com.vmops.api.commands.ListUsersCmd;7
+lockUser=com.vmops.api.commands.LockUserCmd;3
 disableUser=com.vmops.api.commands.DisableUserCmd;3
 enableUser=com.vmops.api.commands.EnableUserCmd;3
 disableAccount=com.vmops.api.commands.DisableAccountCmd;3
 enableAccount=com.vmops.api.commands.EnableAccountCmd;3
+lockAccount=com.vmops.api.commands.LockAccountCmd;3
 
 #### Domain commands
 createDomain=com.vmops.api.commands.CreateDomainCmd;3
@@ -22,10 +24,8 @@ listDomains=com.vmops.api.commands.ListDomainsCmd;7
 listDomainChildren=com.vmops.api.commands.ListDomainChildrenCmd;7
 
 #### Limit commands
-createResourceLimit=com.vmops.api.commands.CreateResourceLimitCmd;3
 updateResourceLimit=com.vmops.api.commands.UpdateResourceLimitCmd;3
-deleteResourceLimit=com.vmops.api.commands.DeleteResourceLimitCmd;3
-listResourceLimits=com.vmops.api.commands.ListResourceLimitsCmd;7
+listResourceLimits=com.vmops.api.commands.ListResourceLimitsCmd;15
 
 #### VM commands
 deployVirtualMachine=com.vmops.api.commands.DeployVMCmd;11
@@ -38,7 +38,6 @@ changeServiceForVirtualMachine=com.vmops.api.commands.UpgradeVMCmd;15
 updateVirtualMachine=com.vmops.api.commands.UpdateVMCmd;15
 recoverVirtualMachine=com.vmops.api.commands.RecoverVMCmd;3
 listVirtualMachines=com.vmops.api.commands.ListVMsCmd;15
-listVirtualMachineStatistics=com.vmops.api.commands.ListVMStatsCmd;15
 
 #### snapshot commands
 createSnapshot=com.vmops.api.commands.CreateSnapshotCmd;15
@@ -48,6 +47,7 @@ createVolumeFromSnapshot=com.vmops.api.commands.CreateVolumeFromSnapshotCmd;15
 createSnapshotPolicy=com.vmops.api.commands.CreateSnapshotPolicyCmd;15
 deleteSnapshotPolicies=com.vmops.api.commands.DeleteSnapshotPoliciesCmd;15
 listSnapshotPolicies=com.vmops.api.commands.ListSnapshotPoliciesCmd;15
+listRecurringSnapshotSchedule=com.vmops.api.commands.ListRecurringSnapshotScheduleCmd;15
 
 #### template commands
 createTemplate=com.vmops.api.commands.CreateTemplateCmd;15
@@ -168,7 +168,6 @@ prepareHostForMaintenance=com.vmops.api.commands.PrepareForMaintenanceCmd;1
 cancelHostMaintenance=com.vmops.api.commands.CancelMaintenanceCmd;1
 listHosts=com.vmops.api.commands.ListHostsCmd;1
 addSecondaryStorage=com.vmops.api.commands.AddSecondaryStorageCmd;1
-listHostStats=com.vmops.api.commands.ListHostStatsCmd;1
 
 #### volume commands
 attachVolume=com.vmops.api.commands.AttachVolumeCmd;15

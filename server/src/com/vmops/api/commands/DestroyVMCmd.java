@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -55,35 +55,39 @@ public class DestroyVMCmd extends BaseCmd {
         Account account = (Account)params.get(BaseCmd.Properties.ACCOUNT_OBJ.getName());
         Long userId = (Long)params.get(BaseCmd.Properties.USER_ID.getName());
         Long vmId = (Long)params.get(BaseCmd.Properties.ID.getName());
-        
-        //Verify input parameters
+
+        // Verify input parameters
         UserVmVO vmInstance = getManagementServer().findUserVMInstanceById(vmId.longValue());
         if (vmInstance == null) {
         	throw new ServerApiException (BaseCmd.VM_INVALID_PARAM_ERROR, "unable to find a virtual machine with id " + vmId);
         }
 
-        if ((account != null) && !isAdmin(account.getType())) {
-            if (account.getId().longValue() != vmInstance.getAccountId()) {
-                throw new ServerApiException(BaseCmd.VM_INVALID_PARAM_ERROR, "unable to find a virtual machine with id " + vmId + "for this account");
+        if (account != null) {
+            if (!isAdmin(account.getType())) {
+                if (account.getId().longValue() != vmInstance.getAccountId()) {
+                    throw new ServerApiException(BaseCmd.VM_INVALID_PARAM_ERROR, "unable to find a virtual machine with id " + vmId + "for this account");
+                }
+            } else if (!getManagementServer().isChildDomain(account.getDomainId(), vmInstance.getDomainId())) {
+                throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to destroy virtual machine with id " + vmId + ", permission denied.");
             }
         }
-        
-       //If command is executed via 8096 port, set userId to the id of System account (1)
+
+        // If command is executed via 8096 port, set userId to the id of System account (1)
         if (userId == null) {
             userId = Long.valueOf(1);
         }
 
         long jobId = getManagementServer().destroyVirtualMachineAsync(userId.longValue(), vmId.longValue());
-        if(jobId == 0) {
-        	s_logger.warn("Unable to schedule async-job for DestroyVM command");
+        if (jobId == 0) {
+            s_logger.warn("Unable to schedule async-job for DestroyVM command");
         } else {
-	        if(s_logger.isDebugEnabled())
-	        	s_logger.debug("DestroyVM command has been accepted, job id: " + jobId);
+            if (s_logger.isDebugEnabled())
+                s_logger.debug("DestroyVM command has been accepted, job id: " + jobId);
         }
-        
+
         List<Pair<String, Object>> returnValues = new ArrayList<Pair<String, Object>>();
         returnValues.add(new Pair<String, Object>(BaseCmd.Properties.JOB_ID.getName(), Long.valueOf(jobId))); 
-        
+
         return returnValues;
     }
 }

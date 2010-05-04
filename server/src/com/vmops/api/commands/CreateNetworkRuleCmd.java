@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -25,8 +25,11 @@ import java.util.Map;
 import org.apache.log4j.Logger;
 
 import com.vmops.api.BaseCmd;
+import com.vmops.api.ServerApiException;
 import com.vmops.async.AsyncJobResult;
 import com.vmops.async.executor.CreateOrUpdateRuleResultObject;
+import com.vmops.network.SecurityGroupVO;
+import com.vmops.user.Account;
 import com.vmops.utils.Pair;
 
 public class CreateNetworkRuleCmd extends BaseCmd {
@@ -58,13 +61,29 @@ public class CreateNetworkRuleCmd extends BaseCmd {
 
     @Override
     public List<Pair<String, Object>> execute(Map<String, Object> params) {
+        Account account = (Account)params.get(BaseCmd.Properties.ACCOUNT_OBJ.getName());
         Long userId = (Long)params.get(BaseCmd.Properties.USER_ID.getName());
         String publicPort = (String)params.get(BaseCmd.Properties.PUBLIC_PORT.getName());
         String privatePort = (String)params.get(BaseCmd.Properties.PRIVATE_PORT.getName());
         String protocol = (String)params.get(BaseCmd.Properties.PROTOCOL.getName());
         Long securityGroupId = (Long)params.get(BaseCmd.Properties.SECURITY_GROUP_ID.getName());
 
-        //If command is executed via 8096 port, set userId to the id of System account (1)
+        if (account != null) {
+            SecurityGroupVO sg = getManagementServer().findSecurityGroupById(securityGroupId);
+            if (sg == null) {
+                throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to find security group with id " + securityGroupId);
+            }
+
+            if (isAdmin(account.getType())) {
+                if (!getManagementServer().isChildDomain(account.getDomainId(), sg.getDomainId())) {
+                    throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to create network rule for security group " + securityGroupId + ", permission denied.");
+                }
+            } else if (account.getId().longValue() != sg.getAccountId().longValue()) {
+                throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Invalid security group (" + securityGroupId + ") given, unable to create network rule.");
+            }
+        }
+
+        // If command is executed via 8096 port, set userId to the id of System account (1)
         if (userId == null) {
             userId = Long.valueOf(1);
         }
@@ -92,7 +111,7 @@ public class CreateNetworkRuleCmd extends BaseCmd {
 		if(resultObject != null) {
 			return resultObject.getRuleId();
 		}
-		
+
 		return 0;
 	}
 }

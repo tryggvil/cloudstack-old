@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -23,7 +23,7 @@ package com.vmops.agent.api;
  */
 public class DeleteSnapshotBackupCommand extends Command {
     private String volumeName;
-    private String secondaryStoragePoolName;
+    private String secondaryStoragePoolURL;
     private String backupUUID;
     private String childUUID;
     
@@ -50,19 +50,19 @@ public class DeleteSnapshotBackupCommand extends Command {
      *       - Essentially we are deleting the oldest VHD file and setting the current oldest VHD to childUUID                               
      *       
      * @param volumeName                  The name of the volume whose snapshot was taken (something like i-3-SV-ROOT) 
-     * @param secondaryStoragePoolName    This is what shows up in the UI when you click on Secondary storage. 
+     * @param secondaryStoragePoolURL    This is what shows up in the UI when you click on Secondary storage. 
      *                                    In the code, it is present as: In the vmops.host_details table, there is a field mount.parent. This is the value of that field
      *                                    If you have better ideas on how to get it, you are welcome. 
      * @param backupUUID                  The VHD which has to be deleted    
      * @param childUUID                   The child VHD file of the backup whose parent is reset to its grandparent.  
      */
     public DeleteSnapshotBackupCommand(String volumeName,
-                                       String secondaryStoragePoolName, 
+                                       String secondaryStoragePoolURL, 
                                        String backupUUID, 
                                        String childUUID) 
     {
         this.volumeName = volumeName;
-        this.secondaryStoragePoolName = secondaryStoragePoolName;
+        this.secondaryStoragePoolURL = secondaryStoragePoolURL;
         this.backupUUID = backupUUID;
         this.childUUID = childUUID;
     }
@@ -70,8 +70,8 @@ public class DeleteSnapshotBackupCommand extends Command {
     /**
      * @return the secondaryStoragePoolName
      */
-    public String getSecondaryStoragePoolName() {
-        return secondaryStoragePoolName;
+    public String getSecondaryStoragePoolURL() {
+        return secondaryStoragePoolURL;
     }
 
     /**

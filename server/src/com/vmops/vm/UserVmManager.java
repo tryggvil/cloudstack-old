@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 VMOps, Inc.  All rights reserved.
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.  
  * 
@@ -17,9 +17,12 @@
  */
 package com.vmops.vm;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.vmops.agent.api.GetVmStatsAnswer;
+import com.vmops.agent.api.VmStatsEntry;
 import com.vmops.async.executor.DestroyVMExecutor;
 import com.vmops.async.executor.RebootVMExecutor;
 import com.vmops.async.executor.StartVMExecutor;
@@ -32,6 +35,7 @@ import com.vmops.exception.ResourceAllocationException;
 import com.vmops.service.ServiceOfferingVO;
 import com.vmops.storage.DiskOfferingVO;
 import com.vmops.storage.InsufficientStorageCapacityException;
+import com.vmops.storage.SnapshotVO;
 import com.vmops.storage.StoragePoolVO;
 import com.vmops.storage.VMTemplateVO;
 import com.vmops.user.AccountVO;
@@ -156,12 +160,13 @@ public interface UserVmManager extends Manager, VirtualMachineManager<UserVmVO> 
     String upgradeVirtualMachine(long vmId, long serviceOfferingId);
     
     /**
-     * Obtains statistics for a list of VMs; vCPU utilisation, disk utilisation, and network utilisation
-     * @param list of vmIds
-     * @return list VmStats
+     * Obtains statistics for a list of VMs; CPU and network utilization
+     * @param host ID
+     * @param list of VM IDs
+     * @return GetVmStatsAnswer
      * @throws InternalErrorException
      */
-    List<VmStats> listVirtualMachineStatistics(List<Long> vmIds) throws InternalErrorException;
+    HashMap<Long, VmStatsEntry> getVirtualMachineStatistics(long hostId, List<Long> vmIds) throws InternalErrorException;
     
     boolean rebootVirtualMachine(long userId, long vmId);
     boolean executeRebootVM(RebootVMExecutor executor, VMOperationParam param);
@@ -173,7 +178,6 @@ public interface UserVmManager extends Manager, VirtualMachineManager<UserVmVO> 
      * @param snapshotId the id of the snapshot to destroy
      * @return true if the snapshot was successfully destroyed, false otherwise
      */
-    boolean destroySnapshot(Long userId, long snapshotId);
     boolean destroyRecurringSnapshot(Long userId, long snapshotId);
 
     /**
@@ -196,7 +200,7 @@ public interface UserVmManager extends Manager, VirtualMachineManager<UserVmVO> 
 
     ScheduledVolumeBackup findRecurringSnapshotSchedule(long volumeId);
 
-    VMTemplateVO createPrivateTemplateRecord(Long userId, long vmId, String name, String description, long guestOsId, Boolean requiresHvm, Integer bits, Boolean passwordEnabled, boolean isPublic)
+    VMTemplateVO createPrivateTemplateRecord(Long userId, long vmId, String name, String description, long guestOsId, Boolean requiresHvm, Integer bits, Boolean passwordEnabled, boolean isPublic, boolean featured)
 		throws InvalidParameterValueException;
     
     /**
@@ -210,10 +214,19 @@ public interface UserVmManager extends Manager, VirtualMachineManager<UserVmVO> 
     VMTemplateVO createPrivateTemplate(VMTemplateVO template, Long userId, long snapshotId, String name, String description);
 
     /**
+     * @param userId    The Id of the user who invoked this operation.
+     * @param volumeId  The volume for which this snapshot is being taken
+     * @return          The properties of the snapshot taken
+     */
+    SnapshotVO createTemplateSnapshot(long userId, long volumeId);
+    boolean destroyTemplateSnapshot(Long userId, long snapshotId);
+
+    /**
      * Clean the network rules for the given VM
      * @param userId
      * @param instanceId the id of the instance for which the network rules should be cleaned
      */
     void cleanNetworkRules(long userId, long instanceId);
+
 
 }
