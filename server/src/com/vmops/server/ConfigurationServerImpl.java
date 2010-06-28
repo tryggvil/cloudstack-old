@@ -347,4 +347,27 @@ public class ConfigurationServerImpl implements ConfigurationServer {
         } catch (SQLException ex) {
         }
     }
+
+
+	public static void main(String args[]){
+		try {
+			String password="password";
+			MessageDigest md5 = MessageDigest.getInstance("MD5");
+			md5.reset();
+	        BigInteger pwInt = new BigInteger(1, md5.digest(password.getBytes()));
+	        String pwStr = pwInt.toString(16);
+	        int padding = 32 - pwStr.length();
+	        StringBuffer sb = new StringBuffer();
+	        for (int i = 0; i < padding; i++) {
+	            sb.append('0'); // make sure the MD5 password is 32 digits long
+	        }
+	        sb.append(pwStr);
+	        System.out.println("password: "+password+" is encrypted: "+sb);
+		} catch (NoSuchAlgorithmException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}
+
 }

@@ -26,7 +26,10 @@ import java.math.BigInteger;
 import java.net.URLEncoder;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -476,6 +479,70 @@ public class Client {
 		}
 		return 0;
     }
+    
+    public String generateUsageRecords(long domainId, Date startDate, Date endDate) throws HttpException, IOException {
+    	Map<String, Object> params = new HashMap<String, Object>();
+    	
+    	params.put("domainid", Long.toString(domainId));
+    	SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+    	String sEndDate = format.format(endDate);
+    	
+    	String sStartDate = format.format(startDate);
+    	
+    	params.put("startDate", sStartDate);
+    	params.put("endDate", sEndDate);
+    	
+		HttpClient client = new HttpClient();
+		HttpMethod method = prepare("generateUsageRecords", params);
+		String response = null;
+		int responseCode = client.executeMethod(method);
+		if(responseCode == 200) {
+			//InputStream is = method.getResponseBodyAsStream();
+			response = method.getResponseBodyAsString();
+			s_logger.info("generateUsageRecords: "+response);
+			/*Map<String, String> response = getResultMap(is);
+			String result = response.get("jobid");
+			if(result != null){
+				return Long.parseLong(result);
+			}
+			*/
+		}
+		return response;
+    }
+    
+    public String listUsageRecords(long domainId, Date startDate, Date endDate, String account) throws HttpException, IOException {
+    	Map<String, Object> params = new HashMap<String, Object>();
+    	
+
+    	params.put("domainid", Long.toString(domainId));
+    	params.put("accountid",  account);
+    	SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+    	String sEndDate = format.format(endDate);
+    	
+    	String sStartDate = format.format(startDate);
+    	
+    	params.put("startDate", sStartDate);
+    	params.put("endDate", sEndDate);
+    	params.put("domainid", 1);
+    	
+		HttpClient client = new HttpClient();
+		HttpMethod method = prepare("listUsageRecords", params);
+		
+		String response = null;
+		int responseCode = client.executeMethod(method);
+		if(responseCode == 200) {
+			//InputStream is = method.getResponseBodyAsStream();
+			response = method.getResponseBodyAsString();
+			s_logger.info("listUsageRecords: "+response);
+			/*Map<String, String> response = getResultMap(is);
+			String result = response.get("jobid");
+			if(result != null){
+				return Long.parseLong(result);
+			}
+			*/
+		}
+		return response;
+    }
 
     public long createTemplateAsync(long vmId, String name, String description) throws HttpException, IOException {
     	Map<String, Object> params = new HashMap<String, Object>();
@@ -526,6 +593,59 @@ public class Client {
     }
     
     private String composeCommandUrl(String cmdName, Map<String, Object> params) {
+    	
+    	Map<String,Object> requestParameters = new HashMap<String,Object>();
+    	requestParameters.putAll(params);
+    	//extra put command parameter:
+    	requestParameters.put("command", cmdName);
+    	
+    	if(apiKey != null) {
+    		try {
+    			requestParameters.put("apikey",URLEncoder.encode(apiKey, "UTF-8"));
+			} catch (UnsupportedEncodingException e) {
+			}
+    	}    	
+    	
+    	// - build a request string with sorted params, make sure it's all lowercase
+        // - sign the request, verify the signature is the same
+        List<String> parameterNames = new ArrayList<String>();
+
+        for (Object paramNameObj : requestParameters.keySet()) {
+            parameterNames.add((String)paramNameObj); // put the name in a list that we'll sort later
+        }
+    	
+    	Collections.sort(parameterNames);
+    	String unsignedRequest = null;
+        for (String paramName : parameterNames) {
+            // parameters come as name/value pairs in the form String/String[]
+            Object oParamValue = requestParameters.get(paramName);
+            String paramValue = null;
+            if(oParamValue!=null){
+            	paramValue=oParamValue.toString();
+        	}
+            if ("signature".equalsIgnoreCase(paramName)) {
+                //signature = paramValue;
+            } else {
+            	try{
+	                if (unsignedRequest == null) {
+	                    unsignedRequest = paramName + "=" + URLEncoder.encode(paramValue, "UTF-8");
+	                } else {
+	                    unsignedRequest = unsignedRequest + "&" + paramName + "=" + URLEncoder.encode(paramValue, "UTF-8");
+	                }
+            	}
+            	catch(UnsupportedEncodingException e){}
+            }
+        }
+    	
+        String signature = null;
+    	if(apiKey != null) {
+    		try {
+    			signature = signRequest(unsignedRequest, secretKey);
+				signature = URLEncoder.encode(signature, "UTF-8");
+			} catch (UnsupportedEncodingException e) {
+			}
+    	}  
+    	
     	StringBuffer sb = new StringBuffer("command=").append(cmdName);
     	for(Map.Entry<String, Object> entry: params.entrySet()) {
     		sb.append("&").append(entry.getKey()).append("=");
@@ -538,9 +658,10 @@ public class Client {
     	if(apiKey != null) {
     		try {
 	    		sb.append("&apikey=").append(URLEncoder.encode(apiKey, "UTF-8"));
-	    		String signature = signRequest(sb.toString(), secretKey);
-				signature = URLEncoder.encode(signature, "UTF-8");
-	    		sb.append("&signature=").append(signature);
+	    		if(signature!=null){
+	    			//signature = URLEncoder.encode(signature, "UTF-8");
+	    			sb.append("&signature=").append(signature);
+	    		}
 			} catch (UnsupportedEncodingException e) {
 			}
     	}
@@ -679,5 +800,29 @@ public class Client {
 		} catch (IOException e) {
 		}
 		return new String(out.toByteArray());
+	}
+
+	public String getApiServerUrl() {
+		return apiServerUrl;
+	}
+
+	public void setApiServerUrl(String apiServerUrl) {
+		this.apiServerUrl = apiServerUrl;
+	}
+
+	public String getApiKey() {
+		return apiKey;
+	}
+
+	public void setApiKey(String apiKey) {
+		this.apiKey = apiKey;
+	}
+
+	public String getSecretKey() {
+		return secretKey;
+	}
+
+	public void setSecretKey(String secretKey) {
+		this.secretKey = secretKey;
 	}
 }

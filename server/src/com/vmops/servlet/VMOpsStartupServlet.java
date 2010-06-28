@@ -47,11 +47,11 @@ public class VMOpsStartupServlet extends HttpServlet {
 	    try {
 	    	c.persistDefaultValues();
 	    } catch (InvalidParameterValueException ipve) {
-	    	throw new ServletException (ipve.getMessage());
+	    	throw new ServletException (ipve);
 	    } catch (InternalErrorException iee) {
-	    	throw new ServletException (iee.getMessage());
-	    } catch (Exception e) {
-	    	throw new ServletException (e.getMessage());
+	    	throw new ServletException (iee);
+	    //} catch (Exception e) {
+	    //	throw new ServletException (e.getMessage());
 	    }
 
 	    s_locator = ComponentLocator.getLocator(ManagementServer.Name);

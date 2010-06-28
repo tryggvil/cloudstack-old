@@ -19,6 +19,9 @@
 package com.vmops.api;
 
 import java.io.IOException;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.Map;
 
 import org.apache.commons.httpclient.HttpException;
@@ -29,8 +32,12 @@ import com.vmops.utils.testcase.Log4jEnabledTestCase;
 public class TestApi extends Log4jEnabledTestCase {
 	private static final Logger s_logger = Logger.getLogger(TestApi.class.getName());
 
+	
+	String hostname="mgmt1.dev.greenqloud.com";
+	//String hostname="79.171.100.126";
+	
 	public void testLogin() {
-		Client client = new Client(true, "localhost", 8080);
+		Client client = new Client(true, hostname, 8080);
 		
 		try {
 			client.login(1, "admin", "password");
@@ -60,5 +67,64 @@ public class TestApi extends Log4jEnabledTestCase {
 		} catch (IOException e) {
 			s_logger.error("Exception: ", e);
 		}
+	}
+	
+	public void testGenerateUsageRecords() {
+		Client client = new Client(false, hostname, 8080);
+		
+		try {
+			//client.login(1, "admin", "password");
+			client.setApiKey("PjiawxFaJFsccSeQCBd4bjgK967QsRGroMSQsYMv7arbqbIJs-eZp_IJxoXDELqDTy58Goi7mFtOWkWoWJhhzA");
+			client.setSecretKey("sO8TPK9SDj2qmTPWIS0ml-brXEGikYMoLCp6DfFCj1QOO3UiDpSZTE8GUJpL4EIu2OOMGlp9xHWLDWocn3XYFQ");
+			//long jobId = client.createTemplateAsync(6, "Test template", "Description of test template");
+			//long jobId = client.startVMAsync(7);
+			//Calendar calendar = new GregorianCalendar();
+			Date nowDate = new Date();
+			Calendar calendaraMonthAgo = new GregorianCalendar();
+			calendaraMonthAgo.setTime(nowDate);
+			calendaraMonthAgo.add(Calendar.MONTH, -1);
+			Date aMonthAgo = calendaraMonthAgo.getTime();
+			String outString = client.generateUsageRecords(1,aMonthAgo,nowDate);
+			s_logger.info("generateUsageRecords: "+outString);
+			System.out.println("generateUsageRecords: "+outString);
+		} catch (HttpException e) {
+			s_logger.error("Exception: ", e);
+		} catch (IOException e) {
+			s_logger.error("Exception: ", e);
+		}
+	}
+	
+	public void testListUsageRecords() {
+		Client client = new Client(false, hostname, 8080);
+		
+		try {
+			//client.login(1, "admin", "password");
+			//admin
+			client.setApiKey("PjiawxFaJFsccSeQCBd4bjgK967QsRGroMSQsYMv7arbqbIJs-eZp_IJxoXDELqDTy58Goi7mFtOWkWoWJhhzA");
+			client.setSecretKey("sO8TPK9SDj2qmTPWIS0ml-brXEGikYMoLCp6DfFCj1QOO3UiDpSZTE8GUJpL4EIu2OOMGlp9xHWLDWocn3XYFQ");
+			
+			//client.setApiKey("z3iwmGaRxN6lOdBRnwJnVw1QNQ3OE5fHudxoYw2UFnfs5MurynNt-CbDHzpimYr2VTGyB_-kL8ugN8Qf_ewK1A");
+			//client.setSecretKey("y8P8YktVwUXvLMKEEuqtZIo17RaQilYHAZA1fUbZKKuol0UpbSPh0DvIsN-uvXUPO06O6DHjCQq-RUhAigvqgw");
+			//long jobId = client.createTemplateAsync(6, "Test template", "Description of test template");
+			//long jobId = client.startVMAsync(7);
+			//Calendar calendar = new GregorianCalendar();
+			Date nowDate = new Date();
+			Calendar calendaraMonthAgo = new GregorianCalendar();
+			calendaraMonthAgo.setTime(nowDate);
+			calendaraMonthAgo.add(Calendar.MONTH, -1);
+			Date aMonthAgo = calendaraMonthAgo.getTime();
+			String outString = client.listUsageRecords(1,aMonthAgo,nowDate,"3");
+			s_logger.info("listUsageRecords: "+outString);
+			System.out.println("listUsageRecords: "+outString);
+		} catch (HttpException e) {
+			s_logger.error("Exception: ", e);
+		} catch (IOException e) {
+			s_logger.error("Exception: ", e);
+		}
+	}
+	
+	public static void main(String[] args){
+		TestApi api = new TestApi();
+		api.testListUsageRecords();
 	}
 }
