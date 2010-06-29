@@ -24,7 +24,11 @@ case "$1" in
 		chmod 0640 $i
 		chgrp cloud $i
 	done
-
+	
+	if [ "$2" = "" ] ; then # no recently configured version, this is a first install
+		/usr/sbin/update-rc.d cloud-management defaults || true
+	fi
+	
     ;;
 esac
 

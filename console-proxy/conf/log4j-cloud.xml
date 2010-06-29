@@ -9,9 +9,9 @@
 
    <!-- A time/date based rolling appender -->
    <appender name="FILE" class="org.apache.log4j.DailyRollingFileAppender">
-      <param name="File" value="/var/log/vmops/logs/vmops.log"/>
+      <param name="File" value="/var/log/cloud/cloud.log"/>
       <param name="Append" value="true"/>
-      <param name="Threshold" value="DEBUG"/>
+      <param name="Threshold" value="WARN"/>
 
       <!-- Rollover at midnight each day -->
       <param name="DatePattern" value="'.'yyyy-MM-dd"/>
@@ -38,23 +38,23 @@
    <!-- Limit categories -->
    <!-- ================ -->
 
-   <category name="com.vmops.console.ConsoleCanvas">
+   <category name="com.cloud.console.ConsoleCanvas">
      <priority value="WARN"/>
    </category>
    
-   <category name="com.vmops.consoleproxy.ConsoleProxyAjaxImageHandler">
+   <category name="com.cloud.consoleproxy.ConsoleProxyAjaxImageHandler">
      <priority value="WARN"/>
    </category>
    
-   <category name="com.vmops.consoleproxy.ConsoleProxyViwer">
+   <category name="com.cloud.consoleproxy.ConsoleProxyViwer">
      <priority value="WARN"/>
    </category>
 
-   <category name="com.vmops.consoleproxy">
+   <category name="com.cloud.consoleproxy">
      <priority value="INFO"/>
    </category>
 
-   <category name="com.vmops">
+   <category name="com.cloud">
      <priority value="DEBUG"/>
    </category>
    

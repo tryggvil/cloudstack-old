@@ -1,9 +1,51 @@
-The Cloud.com CloudStack(TM) is Open Source Software that allows organizations to build Infrastructure as a Service (Iaas) clouds.  Working with server, storage, and networking equipment of your choice, the CloudStack provides a turn-key software stack that dramatically simplifies the process of deploying and managing a cloud. 
+Hello, and thanks for downloading the Cloud.com CloudStack™!  The 
+Cloud.com CloudStack™ is Open Source Software that allows 
+organizations to build Infrastructure as a Service (Iaas) clouds.  
+Working with server, storage, and networking equipment of your 
+choice, the CloudStack provides a turn-key software stack that 
+dramatically simplifies the process of deploying and managing a 
+cloud. 
 
-This 2.0 beta 3 release was made available by Cloud.com in May, 2010.
+This 2.0 Preview release was made available by Cloud.com in May, 2010.
 
-For installation instructions and other project information please visit http://open.cloud.com.
+---------------------------
 
+BUILD AND INSTALLATION INSTRUCTIONS
+
+1. Become root.
+2. Install the build dependencies.
+
+   Fedora: ./waf installrpmdeps
+   Ubuntu: ./waf installdebdeps
+
+3. Install the CloudStack itself.
+
+   a) building and installing packages:
+
+   Building Fedora packages:  ./waf rpm
+   (you will find the installable RPMs in artifacts/rpmbuild)
+   Building Ubuntu packages:  ./waf deb
+   (you will find the installable DEBs in artifacts/debbuild)
+
+   b) installing from source:
+
+   i.  install the runtime dependencies
+   ii. ./waf install
+
+Before you do ./waf install, you can run a configure step that allows
+you to specify several options, such as installation directories.
+Consult   ./waf --help   to discover these options.
+
+---------------------------
+
+BE PART OF THE CLOUD.COM COMMUNITY!
+
+We are more than happy to receive your contributions.  Our forums are
+available at http://open.cloud.com. If you find bugs, please log on to 
+http://bugs.cloud.com/ and file a report.  If you have patches to 
+send us get in touch with us at info@cloud.com.  
+
+---------------------------
 Cloud.com's contact information is:
 
 20400 Stevens Creek Blvd
@@ -12,5 +54,5 @@ Cupertino, CA 95014
 Tel: +1 (888) 384-0962
 
 
-This software is OSI certified Open Source Software.  OSI Certified is a certification mark of the Open Source Initiative.
-
+This software is OSI certified Open Source Software.  OSI Certified is a 
+certification mark of the Open Source Initiative.

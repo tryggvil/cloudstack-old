@@ -1,3 +1,23 @@
+ /**
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
+ * 
+ * This software is licensed under the GNU General Public License v3 or later.
+ * 
+ * It is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ */
+
+// Version: @VERSION@
+
 function showEventsTab(showEvents) {
     var currentSubMenu = $("#submenu_events");
     
@@ -15,10 +35,7 @@ function showEventsTab(showEvents) {
 		    template.find("#event_level").text(json.level);
 		    template.find("#event_desc").text(json.description);  
 		    
-		    var created = new Date();
-		    created.setISO8601(json.created);
-		    var showDate = created.format("m/d/Y H:i:s");
-		    template.find("#event_date").text(showDate);						    
+		    setDateField(json.created, template.find("#event_date"));		   			    
         }
       
         function listEvents() {      
@@ -28,13 +45,16 @@ function showEventsTab(showEvents) {
 			var advanced = submenuContent.find("#search_button").data("advanced");                    
 			if (advanced != null && advanced) {		
 			    var type = submenuContent.find("#advanced_search #adv_search_type").val();	
-			    var level = submenuContent.find("#advanced_search #adv_search_level").val();	
+			    var level = submenuContent.find("#advanced_search #adv_search_level").val();
+			    var domainId = submenuContent.find("#advanced_search #adv_search_domain").val();	
 			    var account = submenuContent.find("#advanced_search #adv_search_account").val();
 			    var moreCriteria = [];								
 				if (type!=null && trim(type).length > 0) 
 					moreCriteria.push("&type="+encodeURIComponent(trim(type)));		
-			    if (level!=null && trim(level).length > 0) 
-					moreCriteria.push("&level="+encodeURIComponent(trim(level)));					
+			    if (level!=null && level.length > 0) 
+					moreCriteria.push("&level="+encodeURIComponent(trim(level)));	
+				if (domainId!=null && domainId.length > 0) 
+					moreCriteria.push("&domainid="+domainId);					
 				if (account!=null && account.length > 0) 
 					moreCriteria.push("&account="+account);		
 				commandString = "command=listEvents&page="+currentPage+moreCriteria.join("")+"&response=json";   
@@ -63,7 +83,7 @@ function showEventsTab(showEvents) {
 				var submenuContent = $("#submenu_content_events").show();
 				$("#submenu_content_alerts").hide();				
 				
-				submenuContent.find("#adv_search_account_li").show();  
+				submenuContent.find("#adv_search_domain_li, #adv_search_account_li").show();  
 					
 				currentPage = 1;			
 				listEvents();    
@@ -104,10 +124,7 @@ function showEventsTab(showEvents) {
 		        template.find("#alert_type").text((toAlertType(json.type)));
 			    template.find("#alert_desc").text(json.description);
     			
-			    var sent = new Date();
-			    sent.setISO8601(json.sent);
-			    var showDate = sent.format("m/d/Y H:i:s");
-			    template.find("#alert_sent").text(showDate);		    					    
+    			setDateField(json.sent, template.find("#alert_sent"));			    					    
             }
 			
 			function listAlerts() {		

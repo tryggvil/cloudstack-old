@@ -1,2 +1,9 @@
 /usr/bin/cloud-setup-databases
-/usr/share/cloud/setup
+/usr/share/cloud/setup/create-database.sql
+/usr/share/cloud/setup/create-index-fk.sql
+/usr/share/cloud/setup/create-schema.sql
+/usr/share/cloud/setup/server-setup.sql
+/usr/share/cloud/setup/templates.kvm.sql
+/usr/share/cloud/setup/templates.xenserver.sql
+/usr/share/cloud/setup/deploy-db-dev.sh
+/usr/share/cloud/setup/server-setup.xml

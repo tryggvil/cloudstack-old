@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<!--
+	ANT build file to create the JavaDoc of the simple demo.
+-->
+
+<project basedir="." default="doc" name="Simple">
+	
+	<target name="doc" description="Builds the Demo JavaDoc" depends="clean">
+		<javadoc destdir="doc">
+			<taglet name="net.sourceforge.taglets.Taglets" path="../../taglets.jar"/>
+			<fileset dir="src" includes="**/*.java"/>
+		</javadoc>
+	</target>
+	
+	<target name="clean" description="Removes the generated doc folder">
+		<delete quiet="true" includeEmptyDirs="true">
+			<fileset dir="doc"/>
+		</delete>
+	</target>
+	
+</project>

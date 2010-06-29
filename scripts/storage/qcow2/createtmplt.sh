@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# $Id: createtmplt.sh 9132 2010-06-04 20:17:43Z manuel $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/storage/qcow2/createtmplt.sh $
 # createtmplt.sh -- install a template
 
 usage() {
@@ -82,20 +83,7 @@ create_from_file() {
 
   #copy the file to the disk
   mv $tmpltimg /$tmpltfs/$tmpltname
-  #create symbolic link if it is *.vhd
- 
-  file=$tmpltname
-  if [ "${file%.vhd}" != "$file" ]
-  then
-    tmpltfs=/$tmpltfs/$file
-    mp=${tmpltfs%/template/*}
-    mp=$mp/template
-    path=${tmpltfs##*/template/}
-    pushd $mp
-    ln -s $path $file
-    popd
-  fi
-
+  
   if [ "$cleanup" == "true" ]
   then
     rm -f $tmpltimg

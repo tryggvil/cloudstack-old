@@ -4,7 +4,7 @@
     <div class="submenu_links_off" id="submenu_storage">
         Secondary Storage</div>
     <div class="submenu_links_off" id="submenu_volume">
-        Volume</div>
+        Volumes</div>
     <div class="submenu_links_off" id="submenu_snapshot" style="display:none">
         Snapshots</div>
 </div>
@@ -31,6 +31,7 @@
                 <div class="adv_searchformbox">
                     <h3>
                         Advance Search</h3>
+                         <a id="advanced_search_close" href="#">Close </a>
                     <form action="#" method="post">
                     <ol>
                         <li>
@@ -56,9 +57,9 @@
                         </li>
                     </ol>
                     </form>
-                    <div id="advanced_search_close" class="adv_search_actionbox">
-                        <a href="#">Close </a>
-                    </div>
+                    <div class="adv_search_actionbox">
+                    	<div class="adv_searchpopup_button" id="adv_search_button"></div>
+					</div>
                 </div>
             </div>
         </div>
@@ -115,6 +116,9 @@
                 <div class="grid_headertitles">
                     Created</div>
             </div>
+			<div class="grid_genheader_cell" style="width:10%;">
+				<div class="grid_headertitles">Actions</div>
+			</div>
         </div>
         <div id="grid_content">
         </div>
@@ -140,8 +144,15 @@
         </div>
     </div>
 </div>
-<!--Storage Template -->
+<!-- Pool Template (begin) -->
 <div id="pool_template" style="display: none">
+    <div class="adding_loading" style="height: 25px; display: none;">
+        <div class="adding_animation">
+        </div>
+        <div class="adding_text">
+            Waiting &hellip;
+        </div>
+    </div>
     <div id="row_container">
         <div class="grid_smallgenrow_cell" style="width: 3%;">
             <div class="netgrid_celltitles" id="pool_id">
@@ -175,9 +186,14 @@
             <div class="netgrid_celltitles" id="pool_created">
                 16/02/2010</div>
         </div>
+		<div class="grid_smallgenrow_cell" style="width:10%;">
+		    <div class="netgrid_celltitles">			   
+			    <span><a href="#" id="delete_link">Delete</a></span>               
+		    </div>
+	    </div>
     </div>
 </div>
-<!-- END Primary Storage Template -->
+<!-- Pool Template (end) -->
 <!-- Add Primary Storage Dialog -->
 <div id="dialog_add_pool" title="Add Primary Storage" style="display: none">
     <p>
@@ -218,11 +234,25 @@
                 <div id="add_pool_nfs_server_errormsg" class="dialog_formcontent_errormsg" style="display: none;">
                 </div>
             </li>
-            <li>
+            <li id="add_pool_path_container">
                 <label for="add_pool_path">
                     Path:</label>
                 <input class="text" type="text" name="add_pool_path" id="add_pool_path" />
                 <div id="add_pool_path_errormsg" class="dialog_formcontent_errormsg" style="display: none;">
+                </div>
+            </li>
+			<li id="add_pool_iqn_container" style="display:none">
+                <label for="add_pool_iqn">
+                    Target IQN:</label>
+                <input class="text" type="text" name="add_pool_iqn" id="add_pool_iqn" />
+                <div id="add_pool_iqn_errormsg" class="dialog_formcontent_errormsg" style="display: none;">
+                </div>
+            </li>
+			<li id="add_pool_lun_container" style="display:none">
+                <label for="add_pool_lun">
+                    LUN #:</label>
+                <input class="text" type="text" name="add_pool_lun" id="add_pool_lun" />
+                <div id="add_pool_lun_errormsg" class="dialog_formcontent_errormsg" style="display: none;">
                 </div>
             </li>
         </ol>
@@ -254,6 +284,7 @@
                 <div class="adv_searchformbox">
                     <h3>
                         Advance Search</h3>
+                         <a id="advanced_search_close" href="#">Close </a>
                     <form action="#" method="post">
                     <ol>
                         <li>
@@ -290,11 +321,16 @@
                             <select class="select" id="adv_search_pod">
                             </select>
                         </li>
+                        <li id="adv_search_domain_li" style="display: none;">
+                            <label for="filter">Domain:</label>
+                            <select class="select" id="adv_search_domain">
+                            </select>
+                        </li>
                     </ol>
                     </form>
-                    <div id="advanced_search_close" class="adv_search_actionbox">
-                        <a href="#">Close </a>
-                    </div>
+                    <div class="adv_search_actionbox">
+                    	<div class="adv_searchpopup_button" id="adv_search_button"></div>
+					</div>
                 </div>
             </div>
         </div>
@@ -324,11 +360,15 @@
 			    <div class="grid_headertitles">State Bar</div>
 			</div>
 			!-->
-            <div class="grid_genheader_cell" style="width: 15%;">
+            <div class="grid_genheader_cell" style="width: 10%;">
                 <div class="grid_headertitles">
                     Type</div>
             </div>
-            <div class="grid_genheader_cell" style="width: 25%;">
+            <div class="grid_genheader_cell" style="width: 10%;">
+                <div class="grid_headertitles">
+                    Zone</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 36%;">
                 <div class="grid_headertitles">
                     Name</div>
             </div>
@@ -336,19 +376,17 @@
                 <div class="grid_headertitles">
                     IP</div>
             </div>
-            <div class="grid_genheader_cell" style="width: 15%;">
+            <div class="grid_genheader_cell" style="width: 10%;">
                 <div class="grid_headertitles">
                     Version</div>
             </div>
-            <div class="grid_genheader_cell" style="width: 15%;">
-                >
-                <div class="grid_headertitles">
-                    Management Server ID</div>
-            </div>
-            <div class="grid_genheader_cell" style="width: 15%;">
+            <div class="grid_genheader_cell" style="width: 13%;">
                 <div class="grid_headertitles">
                     Last Disconnected</div>
             </div>
+            <div class="grid_genheader_cell" style="width:10%;">
+				<div class="grid_headertitles">Actions</div>
+			</div>
         </div>
         <div id="grid_content">
         </div>
@@ -377,6 +415,13 @@
 <!-- Secondary Storage Content Panel (end) -->
 <!-- Secondary Storage Template (begin) -->
 <div id="storage_template" style="display: none">
+    <div class="adding_loading" style="height: 25px; display: none;">
+        <div class="adding_animation">
+        </div>
+        <div class="adding_text">
+            Waiting &hellip;
+        </div>
+    </div>
     <div id="row_container">
         <!--
 		<div class="green_statusbar" id="storage_state_bar"></div>		
@@ -384,11 +429,15 @@
 			<div class="grid_runningtitles" id="storage_state"></div>
 		</div>
 		!-->
-        <div class="grid_smallgenrow_cell" style="width: 15%;">
+        <div class="grid_smallgenrow_cell" style="width: 10%;">
             <div class="netgrid_celltitles" id="storage_type">
             </div>
         </div>
-        <div class="grid_smallgenrow_cell" style="width: 25%;">
+        <div class="grid_smallgenrow_cell" style="width: 10%;">
+            <div class="netgrid_celltitles" id="storage_zone">
+            </div>
+        </div>
+        <div class="grid_smallgenrow_cell" style="width: 36%;">
             <div class="netgrid_celltitles" id="storage_name">
             </div>
         </div>
@@ -396,18 +445,19 @@
             <div class="netgrid_celltitles" id="storage_ip">
             </div>
         </div>
-        <div class="grid_smallgenrow_cell" style="width: 15%;">
+        <div class="grid_smallgenrow_cell" style="width: 10%;">
             <div class="netgrid_celltitles" id="storage_version">
             </div>
         </div>
-        <div class="grid_smallgenrow_cell" style="width: 15%;">
-            <div class="netgrid_celltitles" id="storage_mgmt">
-            </div>
-        </div>
-        <div class="grid_smallgenrow_cell" style="width: 15%;">
+        <div class="grid_smallgenrow_cell" style="width: 13%;">
             <div class="netgrid_celltitles" id="storage_disconnected">
             </div>
-        </div>
+        </div>        
+        <div class="grid_smallgenrow_cell" style="width:10%;">
+		    <div class="netgrid_celltitles">			   
+			    <span><a href="#" id="delete_link">Delete</a></span>               
+		    </div>
+	    </div>        
     </div>
 </div>
 <!-- Secondary Storage Template (end) -->
@@ -453,7 +503,7 @@
             <img src="images/storagetitle_icons.gif" title="volume" />
         </div>
         <h1>
-            Volume</h1>
+            Volumes</h1>
         <a class="add_volumebutton" id="storage_action_new_volume" href="#"></a>
         <div class="search_formarea">
             <form action="#" method="post">
@@ -469,6 +519,7 @@
                 <div class="adv_searchformbox">
                     <h3>
                         Advance Search</h3>
+                         <a id="advanced_search_close" href="#">Close </a>
                     <form action="#" method="post">
                     <ol>
                         <li>
@@ -488,17 +539,21 @@
                             <select class="select" id="adv_search_pod">
                             </select>
                         </li>
+                        <li id="adv_search_domain_li" style="display: none;">
+                            <label for="filter">Domain:</label>
+                            <select class="select" id="adv_search_domain">
+                            </select>
+                        </li>
                         <li id="adv_search_account_li" style="display: none;">
                             <label for="filter">
                                 Account:</label>
-                            <select class="select" id="adv_search_account">
-                            </select>
+                            <input class="text" type="text" id="adv_search_account" />  
                         </li>
                     </ol>
                     </form>
-                    <div id="advanced_search_close" class="adv_search_actionbox">
-                        <a href="#">Close </a>
-                    </div>
+                    <div class="adv_search_actionbox">
+                    	<div class="adv_searchpopup_button" id="adv_search_button"></div>
+					</div>
                 </div>
             </div>
         </div>
@@ -527,15 +582,19 @@
                 <div class="grid_headertitles">
                     ID</div>
             </div>
-            <div class="grid_genheader_cell" style="width: 20%;">
+            <div class="grid_genheader_cell" style="width: 13%;">
                 <div class="grid_headertitles">
                     Name</div>
             </div>
-            <div class="grid_genheader_cell" style="width: 15%;">
+            <div class="grid_genheader_cell" style="width: 13%;">
                 <div class="grid_headertitles">
                     Type</div>
             </div>
-            <div class="grid_genheader_cell" style="width: 20%;">
+			<div class="grid_genheader_cell" style="width: 10%;">
+                <div class="grid_headertitles">
+                    Zone</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 14%;">
                 <div class="grid_headertitles">
                     Instance Name</div>
             </div>
@@ -543,7 +602,11 @@
                 <div class="grid_headertitles">
                     Size</div>
             </div>
-            <div class="grid_genheader_cell" style="width: 12%;">
+             <div class="grid_genheader_cell" style="width: 7%;">
+                <div class="grid_headertitles">
+                    State</div>
+            </div>
+            <div class="grid_genheader_cell" id="volume_created_header" style="width: 10%;">
                 <div class="grid_headertitles">
                     Created</div>
             </div>
@@ -599,26 +662,30 @@
             Creating &hellip;
         </div>
     </div>
-    <div class="result_loading" style="height: 25px; display: none;" id="created_successfully">
+    <div class="result_loading" style="height: 45px; display: none;" id="created_successfully">
         <p>
             Created Successfully</p>
         <div class="result_closebutton" id="close_button">
         </div>
     </div>
-    <div id="volume_body" style="height: 45px;">
+    <div id="row_container" style="height: 45px;">
         <div class="grid_smallgenrow_cell" style="width: 5%;">
             <div class="netgrid_celltitles" id="volume_id">
                 ID</div>
         </div>
-        <div class="grid_smallgenrow_cell" style="width: 20%;">
+        <div class="grid_smallgenrow_cell" style="width: 13%;">
             <div class="netgrid_celltitles" id="volume_name">
                 Name</div>
         </div>
-        <div class="grid_smallgenrow_cell" style="width: 15%;">
+        <div class="grid_smallgenrow_cell" style="width: 13%;">
             <div class="netgrid_celltitles" id="volume_type">
                 Type</div>
         </div>
-        <div class="grid_smallgenrow_cell" style="width: 20%;">
+		<div class="grid_smallgenrow_cell" style="width: 10%;">
+            <div class="netgrid_celltitles" id="volume_zone">
+            </div>
+        </div>
+        <div class="grid_smallgenrow_cell" style="width: 14%;">
             <div class="netgrid_celltitles" id="volume_vmname">
             </div>
         </div>
@@ -626,7 +693,11 @@
             <div class="netgrid_celltitles" id="volume_size">
                 size</div>
         </div>
-        <div class="grid_smallgenrow_cell" style="width: 12%;">
+        <div class="grid_smallgenrow_cell" style="width: 7%;">
+            <div class="netgrid_celltitles" id="volume_state">
+                state</div>
+        </div>
+        <div class="grid_smallgenrow_cell" id="volume_created_container" style="width: 10%;">
             <div class="netgrid_celltitles" id="volume_created">
                 Created</div>
         </div>
@@ -669,15 +740,23 @@
     <div class="hostadmin_showdetails_panel" id="volume_snapshot_detail_panel" style="display: none;">
         <div class="hostadmin_showdetails_grid">
             <div class="hostadmin_showdetailsheader">
-                <div class="hostadmin_showdetailsheader_cell" style="width: 10%">
+                <div class="hostadmin_showdetailsheader_cell" style="width: 5%">
                     <div class="grid_headertitles">
                         ID</div>
                 </div>
                 <div class="hostadmin_showdetailsheader_cell" style="width: 20%">
                     <div class="grid_headertitles">
                         Name</div>
-                </div>                            
-                <div class="hostadmin_showdetailsheader_cell" style="width: 20%">
+                </div>     
+                <div class="hostadmin_showdetailsheader_cell" style="width: 10%">
+                    <div class="grid_headertitles">
+                        Volume</div>
+                </div>   
+                <div class="hostadmin_showdetailsheader_cell" style="width: 8%">
+                    <div class="grid_headertitles">
+                        Interval Type</div>
+                </div>                          
+                <div class="hostadmin_showdetailsheader_cell" style="width: 10%">
                     <div class="grid_headertitles">
                         Created</div>
                 </div>          
@@ -690,7 +769,7 @@
                     <div class="grid_headertitles">
                         Domain</div>
                 </div>                         
-                <div class="hostadmin_showdetailsheader_cell" style="width: 20%">
+                <div class="hostadmin_showdetailsheader_cell" style="width: 22%">
                     <div class="grid_headertitles">
                         Actions
                     </div>
@@ -718,16 +797,24 @@
             Detaching &hellip;
         </div>
     </div>
-    <div id="volume_snapshot_body">
-        <div class="hostadmin_showdetailsrow_cell" style="width: 10%">
+    <div id="row_container">
+        <div class="hostadmin_showdetailsrow_cell" style="width: 5%">
             <div class="netgrid_celltitles" id="id">
             </div>
         </div>
         <div class="hostadmin_showdetailsrow_cell" style="width: 20%">
             <div class="netgrid_celltitles" id="name">
             </div>
-        </div>       
-        <div class="hostadmin_showdetailsrow_cell" style="width: 20%">
+        </div>      
+        <div class="hostadmin_showdetailsrow_cell" style="width: 10%">
+            <div class="netgrid_celltitles" id="volume">
+            </div>
+        </div>     
+        <div class="hostadmin_showdetailsrow_cell" style="width: 8%">
+            <div class="netgrid_celltitles" id="interval_type">
+            </div>
+        </div>      
+        <div class="hostadmin_showdetailsrow_cell" style="width: 10%">
             <div class="netgrid_celltitles" id="created">
             </div>
         </div>   
@@ -739,11 +826,19 @@
             <div class="netgrid_celltitles" id="domain">
             </div>
         </div>   
-        <div class="hostadmin_showdetailsrow_cell" style="width: 20%">
-            <div class="netgrid_celltitles" id="Div1">
-                <a id="volume_snapshot_action_create_volume" href="#">Create Volume</a>
-                <span id="Span1">&nbsp;&nbsp;|</span>
-                <a id="volume_snapshot_action_delete_snapshot" href="#">Delete</a>
+        <div class="hostadmin_showdetailsrow_cell" style="width: 22%">
+            <div class="netgrid_celltitles">
+                <span id="volume_snapshot_action_create_volume_container">
+                    <a id="volume_snapshot_action_create_volume" href="#">Create Volume</a>
+                </span>
+                <span id="volume_snapshot_action_delete_snapshot_container">
+                    <span>&nbsp;&nbsp;|</span>
+                    <a id="volume_snapshot_action_delete_snapshot" href="#">Delete</a>
+                </span> 
+                <span id="volume_snapshot_action_create_template_container">
+                    <span>&nbsp;&nbsp;|</span>
+                    <a id="volume_snapshot_action_create_template" href="#">Create Template</a> 
+                </span> 
             </div>
         </div>             
     </div>
@@ -801,93 +896,103 @@
 
 <!-- Recurring Snapshots Dialog (begin) -->
 <div id="dialog_recurring_snapshot" title="Recurring Snapshot" style="display:none;">
-    <div class="dialog_snapshotconatiner">
-        <div class="dialog_snapshotleft">
+    <div class="dialog_snapshotcontainer">
+        <div class="dialog_snapshotleft" id="dialog_snapshotleft">
             
                 <div class="dialog_snapshotleft_list">
                     <div class="dialog_snapshotleft_label">
                         Hourly:</div>
-                    <div class="dialog_snapshotleft_info">                        
-                        <span>00</span><span>:</span><span id="read_hourly_minute">mm</span>                        
+					<div class="dialog_snapshotleft_info" id="dialog_snapshot_hourly_info_unset">                        
+						<p><i>&nbsp;Please click <b>'Edit'</b> to set your <b>hourly</b> recurring snapshot schedule</i></p>
+                    </div>
+                    <div class="dialog_snapshotleft_info" id="dialog_snapshot_hourly_info_set" style="display:none">                        
+                        <span id="read_hourly_minute">mm</span></span><span> Minute(s) Past the Hour</span><span id="read_hourly_timezone"></span>            
                     </div>
                     <div class="dialog_snapshotleft_max">
-                        <p>Max:</p>
-                        <span id="read_hourly_max">N</span></div>
+                        <p>Keeping:</p>
+                        <span id="read_hourly_max">N/A</span></div>
                     <div class="dialog_snapshotleft_actions">
-                        <a id="hourly_edit_link" href="#">Edit</a> | <a id="hourly_delete_link" href="#">Delete</a></div>
+                        <a id="hourly_edit_link" href="#">Edit</a> | <a id="hourly_delete_link" href="#">&nbsp;Delete</a></div>
                 </div>
                 <div class="dialog_snapshotleft_list">
                     <div class="dialog_snapshotleft_label">
                         Daily:</div>
-                    <div class="dialog_snapshotleft_info">                       
+					<div class="dialog_snapshotleft_info" id="dialog_snapshot_daily_info_unset">                        
+						<p><i>&nbsp;Please click <b>'Edit'</b> to set your  <b>daily</b> recurring snapshot schedule</i></p>
+                    </div>
+                    <div class="dialog_snapshotleft_info" id="dialog_snapshot_daily_info_set" style="display:none">                       
                         <span id="read_daily_hour">hh</span><span>:</span><span id="read_daily_minute">mm</span>
-                        <span id="read_daily_meridiem">AM</span>
+                        <span id="read_daily_meridiem">AM</span><span id="read_daily_timezone"></span>
                     </div>
                     <div class="dialog_snapshotleft_max">
                         <p>
-                            Max:</p>
-                        <span id="read_daily_max">N</span></div>
+                            Keeping:</p>
+                        <span id="read_daily_max">N/A</span></div>
                     <div class="dialog_snapshotleft_actions">
-                        <a id="daily_edit_link" href="#">Edit</a> | <a id="daily_delete_link" href="#">Delete</a></div>
+                        <a id="daily_edit_link" href="#">Edit</a> | <a id="daily_delete_link" href="#">&nbsp;Delete</a></div>
                 </div>
                 <div class="dialog_snapshotleft_list">
                     <div class="dialog_snapshotleft_label">
                         Weekly:</div>
-                    <div class="dialog_snapshotleft_info">                       
+					<div class="dialog_snapshotleft_info" id="dialog_snapshot_weekly_info_unset">                        
+						<p><i>&nbsp;Please click <b>'Edit'</b> to set your  <b>weekly</b> recurring snapshot schedule</i></p>
+                    </div>
+                    <div class="dialog_snapshotleft_info" id="dialog_snapshot_weekly_info_set" style="display:none">                       
                         <span id="read_weekly_hour">hh</span><span>:</span><span id="read_weekly_minute">mm</span>
-                        <span id="read_weekly_meridiem">AM</span>
+                        <span id="read_weekly_meridiem">AM</span><span id="read_weekly_timezone"></span>
                         <span id="read_weekly_day_of_week">day-of-week</span>
                     </div>
                     <div class="dialog_snapshotleft_max">
-                        <p>Max:</p>
-                        <span id="read_weekly_max">N</span></div>
+                        <p>Keeping:</p>
+                        <span id="read_weekly_max">N/A</span></div>
                     <div class="dialog_snapshotleft_actions">
-                        <a id="weekly_edit_link" href="#">Edit</a> | <a id="weekly_delete_link" href="#">Delete</a></div>
+                        <a id="weekly_edit_link" href="#">Edit</a> | <a id="weekly_delete_link" href="#">&nbsp;Delete</a></div>
                 </div>        
                 <div class="dialog_snapshotleft_list">
                     <div class="dialog_snapshotleft_label">
                         Monthly:</div>
-                    <div class="dialog_snapshotleft_info">                       
+					<div class="dialog_snapshotleft_info" id="dialog_snapshot_monthly_info_unset">                        
+						<p><i>&nbsp;Please click <b>'Edit'</b> to set your  <b>monthly</b> recurring snapshot schedule</i></p>
+                    </div>
+                    <div class="dialog_snapshotleft_info" id="dialog_snapshot_monthly_info_set" style="display:none">                       
                         <span id="read_monthly_hour">hh</span><span>:</span><span id="read_monthly_minute">mm</span>
-                        <span id="read_monthly_meridiem">AM</span>
+                        <span id="read_monthly_meridiem">AM</span><span id="read_monthly_timezone"></span>
                         <span id="read_monthly_day_of_month">day-of-month</span>
                     </div>
                     <div class="dialog_snapshotleft_max">
-                        <p>Max:</p>
-                        <span id="read_monthly_max">N</span></div>
+                        <p>Keeping:</p>
+                        <span id="read_monthly_max">N/A</span></div>
                     <div class="dialog_snapshotleft_actions">
-                        <a id="monthly_edit_link" href="#">Edit</a> | <a id="monthly_delete_link" href="#">Delete</a></div>
+                        <a id="monthly_edit_link" href="#">Edit</a> | <a id="monthly_delete_link" href="#">&nbsp;Delete</a></div>
                 </div>             
               </div>
-        <div class="dialog_snapshotright">
+        <div class="dialog_snapshotright" id="dialog_snapshotright">
         	<div class="dialog_snapshotright_infotext" style="display:none"> Cick Edit to Schedule</div>
             <div class="dialog_snapshots_editcontent" style="display:block;">
                 <div class="dialog_snapshots_editcontent_title">
-                    <p>
-                        Edit:</p>
-                    <span id="edit_interval_type">Interval Type</span>
+                    <p>&nbsp;Edit:</p>
+                    <span id="edit_interval_type" style="text-decoration:underline">Interval Type</span>
                 </div>
                 <div class="dialog_formcontent">
                     <form action="#" method="post" id="form4">
                     <ol>
                         <li>
-                            <label for="add_volume_name">
+                            <label for="add_volume_name" style="width:75px">
                                 Time:</label>
                             <span id="edit_hardcoding_hour" style="display:none">00</span>
                             <span id="edit_hour_container">
                             	
                                 <select class="snapselect" id="edit_hour">
-                                    <option value="">Hour</option>
-                                    <option value="0">0</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                    <option value="5">5</option>
-                                    <option value="6">6</option>
-                                    <option value="7">7</option>
-                                    <option value="8">8</option>
-                                    <option value="9">9</option>
+                                    <option value="00">00</option>
+                                    <option value="01">01</option>
+                                    <option value="02">02</option>
+                                    <option value="03">03</option>
+                                    <option value="04">04</option>
+                                    <option value="05">05</option>
+                                    <option value="06">06</option>
+                                    <option value="07">07</option>
+                                    <option value="08">08</option>
+                                    <option value="09">09</option>
                                     <option value="10">10</option>
                                     <option value="11">11</option>                                    
                                 </select>                               
@@ -897,7 +1002,6 @@
                             
                             <span id="edit_minute_container">
                                 <select class="snapselect" id="edit_minute">
-                                    <option value="">Minute</option>
                                     <option value="00">00</option>
                                     <option value="01">01</option>
                                     <option value="02">02</option>
@@ -960,44 +1064,33 @@
                                     <option value="59">59</option>                        
                                 </select>                                
                             </span>
+							
+							<span id="edit_past_the_hour" style="display:none"> Minute(s) Past the Hour</span>
                             
                             <span id="edit_meridiem_container">
                                 <select class="snapselect"id="edit_meridiem">                                                                
                                     <option value="AM">AM</option>
                                     <option value="PM">PM</option>                                   
                                 </select>
-                            </span>
-                            
-                            <div id="edit_time_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div> 
-                        </li>
-                        <li style="margin-top:10px;">
-                            <label for="edit_max">
-                                Max:</label>
-                            <span>Keep</span>
-                            <input class="text" style="width: 60px;" type="text" id="edit_max" />
-                            <span>snapshot</span>
-                            <div id="edit_max_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div>                             
-                        </li>                       
+                            </span>                     
+                        </li>                     
                         <li style="margin-top:10px;" id="edit_day_of_week_container">
-                            <label for="filter">
+                            <label for="filter" style="width:75px">
                                 Day of Week:</label>
                             <select class="snapselect"id="edit_day_of_week">
-                                <option value=""></option>
-                                <option value="1">Sun.</option>
-                                <option value="2">Mon.</option>
-                                <option value="3">Tue.</option>
-                                <option value="4">Wed.</option>
-                                <option value="5">Thu.</option>
-                                <option value="6">Fri.</option>
-                                <option value="7">Sat.</option>                                
-                            </select>
-                            <div id="edit_day_of_week_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div> 
+                                <option value="1">Sunday</option>
+                                <option value="2">Monday</option>
+                                <option value="3">Tuesday</option>
+                                <option value="4">Wednesday</option>
+                                <option value="5">Thursday</option>
+                                <option value="6">Friday</option>
+                                <option value="7">Saturday</option>                                
+                            </select>                            
                         </li>
                         <li style="margin-top:10px;" id="edit_day_of_month_container">
-                            <label for="filter">
+                            <label for="filter" style="width:75px">
                                 Day of Month:</label>
                             <select class="snapselect" id="edit_day_of_month">
-                                <option value=""></option>
                                 <option value="1">1</option>
                                 <option value="2">2</option>
                                 <option value="3">3</option>
@@ -1026,9 +1119,80 @@
                                 <option value="26">26</option>
                                 <option value="27">27</option>
                                 <option value="28">28</option>
-                            </select>
-                            <div id="edit_day_of_month_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div>
+                            </select>                            
                         </li>
+                        <li style="margin-top:10px;">
+                            <label for="edit_timezone" style="width:75px">
+                                Time Zone:</label>                             
+                            <select class="snapselect" id="edit_timezone" style="width:240px">
+								<option value='Etc/GMT+12'>[UTC-12:00] GMT-12:00</option>
+								<option value='Etc/GMT+11'>[UTC-11:00] GMT-11:00</option>
+								<option value='Pacific/Samoa'>[UTC-11:00] Samoa Standard Time</option>
+								<option value='Pacific/Honolulu'>[UTC-10:00] Hawaii Standard Time</option>
+								<option value='US/Alaska'>[UTC-09:00] Alaska Standard Time</option>
+								<option value='America/Los_Angeles'>[UTC-08:00] Pacific Standard Time</option>
+								<option value='Mexico/BajaNorte'>[UTC-08:00] Baja California</option>
+								<option value='US/Arizona'>[UTC-07:00] Arizona</option>
+								<option value='US/Mountain'>[UTC-07:00] Mountain Standard Time</option>
+								<option value='America/Chihuahua'>[UTC-07:00] Chihuahua, La Paz</option>
+								<option value='America/Chicago'>[UTC-06:00] Central Standard Time</option>
+								<option value='America/Costa_Rica'>[UTC-06:00] Central America</option>
+								<option value='America/Mexico_City'>[UTC-06:00] Mexico City, Monterrey</option>
+								<option value='Canada/Saskatchewan'>[UTC-06:00] Saskatchewan</option>
+								<option value='America/Bogota'>[UTC-05:00] Bogota, Lima</option>
+								<option value='America/New_York'>[UTC-05:00] Eastern Standard Time</option>
+								<option value='America/Caracas'>[UTC-04:00] Venezuela Time</option>
+								<option value='America/Asuncion'>[UTC-04:00] Paraguay Time</option>
+								<option value='America/Cuiaba'>[UTC-04:00] Amazon Time</option>
+								<option value='America/Halifax'>[UTC-04:00] Atlantic Standard Time</option>
+								<option value='America/La_Paz'>[UTC-04:00] Bolivia Time</option>
+								<option value='America/Santiago'>[UTC-04:00] Chile Time</option>
+								<option value='America/St_Johns'>[UTC-03:30] Newfoundland Standard Time</option>
+								<option value='America/Araguaina'>[UTC-03:00] Brasilia Time</option>
+								<option value='America/Argentina/Buenos_Aires'>[UTC-03:00] Argentine Time</option>
+								<option value='America/Cayenne'>[UTC-03:00] French Guiana Time</option>
+								<option value='America/Godthab'>[UTC-03:00] Greenland Time</option>
+								<option value='America/Montevideo'>[UTC-03:00] Uruguay Time]</option>
+								<option value='Etc/GMT+2'>[UTC-02:00] GMT-02:00</option>
+								<option value='Atlantic/Azores'>[UTC-01:00] Azores Time</option>
+								<option value='Atlantic/Cape_Verde'>[UTC-01:00] Cape Verde Time</option>
+								<option value='Africa/Casablanca'>[UTC] Casablanca</option>
+								<option value='Etc/UTC'>[UTC] Coordinated Universal Time</option>
+								<option value='Atlantic/Reykjavik'>[UTC] Reykjavik</option>
+								<option value='Europe/London'>[UTC] Western European Time</option>
+								<option value='CET'>[UTC+01:00] Central European Time</option>
+								<option value='Europe/Bucharest'>[UTC+02:00] Eastern European Time</option>
+								<option value='Africa/Johannesburg'>[UTC+02:00] South Africa Standard Time</option>
+								<option value='Asia/Beirut'>[UTC+02:00] Beirut</option>
+								<option value='Africa/Cairo'>[UTC+02:00] Cairo</option>
+								<option value='Asia/Jerusalem'>[UTC+02:00] Israel Standard Time</option>
+								<option value='Europe/Minsk'>[UTC+02:00] Minsk</option>
+								<option value='Europe/Moscow'>[UTC+03:00] Moscow Standard Time</option>
+								<option value='Africa/Nairobi'>[UTC+03:00] Eastern African Time</option>
+								<option value='Asia/Karachi'>[UTC+05:00] Pakistan Time</option>
+								<option value='Asia/Kolkata'>[UTC+05:30] India Standard Time</option>
+								<option value='Asia/Bangkok'>[UTC+05:30] Indochina Time</option>
+								<option value='Asia/Shanghai'>[UTC+08:00] China Standard Time</option>
+								<option value='Asia/Kuala_Lumpur'>[UTC+08:00] Malaysia Time</option>
+								<option value='Australia/Perth'>[UTC+08:00] Western Standard Time (Australia)</option>
+								<option value='Asia/Taipei'>[UTC+08:00] Taiwan</option>
+								<option value='Asia/Tokyo'>[UTC+09:00] Japan Standard Time</option>
+								<option value='Asia/Seoul'>[UTC+09:00] Korea Standard Time</option>
+								<option value='Australia/Adelaide'>[UTC+09:30] Central Standard Time (South Australia)</option>
+								<option value='Australia/Darwin'>[UTC+09:30] Central Standard Time (Northern Territory)</option>
+								<option value='Australia/Brisbane'>[UTC+10:00] Eastern Standard Time (Queensland)</option>
+								<option value='Australia/Canberra'>[UTC+10:00] Eastern Standard Time (New South Wales)</option>
+								<option value='Pacific/Guam'>[UTC+10:00] Chamorro Standard Time</option>
+								<option value='Pacific/Auckland'>[UTC+12:00] New Zealand Standard Time</option>
+         		            </select>                                                          
+                        </li>
+						<li style="margin-top:10px;">
+                            <label for="edit_max" style="width:75px">
+                                Keep:</label>
+                            <input class="text" style="width: 68px;" type="text" id="edit_max"/>
+                            <span>Snapshot(s)</span>
+                            <div id="edit_max_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div>                             
+                        </li>  						
                     </ol>
                     <input class="ui-state-default" type="submit" id="apply_button" value="Apply Schedule" style="background-color:Yellow; width: 150px; height:20px; margin:15px 0 0 0;"/>
                     </form>
@@ -1105,17 +1269,17 @@
             <li>
                 <label for="create_template_public">
                     Public:</label>
-                <select class="select" name="create_template_public" id="create_template_public">
-                    <option value="true">Yes</option>
+                <select class="select" name="create_template_public" id="create_template_public">                    
                     <option value="false">No</option>
+                    <option value="true">Yes</option>
                 </select>
             </li>
             <li>
                 <label for="create_template_password">
                     Password Enabled?:</label>
                 <select class="select" name="create_template_password" id="create_template_password">
-                    <option value="true">Yes</option>
                     <option value="false">No</option>
+                    <option value="true">Yes</option>                    
                 </select>
             </li>
         </ol>
@@ -1138,7 +1302,7 @@
             <img src="images/accountstitle_icons.gif" title="routers" />
         </div>
         <h1>
-            snapshots</h1>
+            Snapshots</h1>
         <div class="search_formarea">
             <form action="#" method="post">
             <ol>
@@ -1153,19 +1317,24 @@
                 <div class="adv_searchformbox">
                     <h3>
                         Advance Search</h3>
+                         <a id="advanced_search_close" href="#">Close </a>
                     <form action="#" method="post">
-                    <ol>                       
+                    <ol>    
+                        <li id="adv_search_domain_li" style="display: none;">
+                            <label for="filter">Domain:</label>
+                            <select class="select" id="adv_search_domain">
+                            </select>
+                        </li>                   
                         <li id="adv_search_account_li" style="display: none;">
                             <label for="filter">
                                 Account:</label>
-                            <select class="select" id="adv_search_account">
-                            </select>
+                            <input class="text" type="text" id="adv_search_account" />  
                         </li>
                     </ol>
                     </form>
-                    <div id="advanced_search_close" class="adv_search_actionbox">
-                        <a href="#">Close </a>
-                    </div>
+                    <div class="adv_search_actionbox">
+                    	<div class="adv_searchpopup_button" id="adv_search_button"></div>
+					</div>
                 </div>
             </div>
         </div>
@@ -1180,15 +1349,23 @@
                 Loading...</p>
         </div>
         <div class="grid_header">
-            <div class="hostadmin_showdetailsheader_cell" style="width: 10%">
+            <div class="hostadmin_showdetailsheader_cell" style="width: 5%">
                 <div class="grid_headertitles">
                     ID</div>
             </div>
             <div class="hostadmin_showdetailsheader_cell" style="width: 20%">
                 <div class="grid_headertitles">
                     Name</div>
-            </div>            
-            <div class="hostadmin_showdetailsheader_cell" style="width: 20%">
+            </div>     
+            <div class="hostadmin_showdetailsheader_cell" style="width: 10%">
+                <div class="grid_headertitles">
+                    Volume</div>
+            </div>   
+            <div class="hostadmin_showdetailsheader_cell" style="width: 8%">
+                <div class="grid_headertitles">
+                    Interval Type</div>
+            </div>          
+            <div class="hostadmin_showdetailsheader_cell" style="width: 10%">
                 <div class="grid_headertitles">
                     Created</div>
             </div>
@@ -1200,7 +1377,7 @@
                 <div class="grid_headertitles">
                     Domain</div>
             </div>
-            <div class="hostadmin_showdetailsheader_cell" style="width: 20%">
+            <div class="hostadmin_showdetailsheader_cell" style="width: 22%">
                 <div class="grid_headertitles">
                     Actions
                 </div>
@@ -1232,7 +1409,7 @@
 </div>
 
 <!-- Snapshot Template (begin) -->
-<div id="snapshot_template" style="height: 24px; display: none">
+<div id="snapshot_template" style="display: none">
     <div class="adding_loading" style="height: 25px; display: none;">
         <div class="adding_animation">
         </div>
@@ -1240,8 +1417,8 @@
             Waiting &hellip;
         </div>
     </div>
-    <div id="snapshot_body">
-        <div class="hostadmin_showdetailsrow_cell" style="width: 10%">
+    <div id="row_container">
+        <div class="hostadmin_showdetailsrow_cell" style="width: 5%">
             <div class="netgrid_celltitles" id="id">
             </div>
         </div>
@@ -1249,7 +1426,15 @@
             <div class="netgrid_celltitles" id="name">
             </div>
         </div>    
-        <div class="hostadmin_showdetailsrow_cell" style="width: 20%">
+        <div class="hostadmin_showdetailsrow_cell" style="width: 10%">
+            <div class="netgrid_celltitles" id="volume">
+            </div>
+        </div>    
+         <div class="hostadmin_showdetailsrow_cell" style="width: 8%">
+            <div class="netgrid_celltitles" id="interval_type">
+            </div>
+        </div>    
+        <div class="hostadmin_showdetailsrow_cell" style="width: 10%">
             <div class="netgrid_celltitles" id="created">
             </div>
         </div>
@@ -1261,14 +1446,49 @@
             <div class="netgrid_celltitles" id="domain">
             </div>
         </div>        
-        <div class="hostadmin_showdetailsrow_cell" style="width: 20%">
+        <div class="hostadmin_showdetailsrow_cell" style="width: 22%">
             <div class="netgrid_celltitles" id="detail_action">
-                <a id="snapshot_action_create_volume" href="#">Create Volume</a>
-                <span id="volume_acton_separator">&nbsp;&nbsp;|</span>
-                <a id="snapshot_action_delete" href="#">Delete</a>
+                <span>
+                    <a id="snapshot_action_create_volume" href="#">Create Volume</a>
+                </span>
+                <span>   
+                    <span>&nbsp;&nbsp;|</span>
+                    <a id="snapshot_action_delete" href="#">Delete</a>
+                </span> 
+                <span id="snapshot_action_create_template_container">   
+                    <span>&nbsp;&nbsp;|</span>
+                    <a id="snapshot_action_create_template" href="#">Create Template</a>
+                </span> 
             </div>
         </div>        
     </div>
 </div>
 <!-- Snapshot Template (begin) -->
 <!--*** Snapshot (end) *** -->
+
+
+<!-- Create template from snapshot (begin) -->
+<div id="dialog_create_template_from_snapshot" title="Create Template from Snapshot" style="display:none">	
+	<div class="dialog_formcontent">
+		<form action="#" method="post" id="form6">
+			<ol>
+				<li>
+					<label>Name:</label>
+					<input class="text" type="text" id="name" style="width:250px"/>
+					<div id="name_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div>
+				</li>
+				<li>
+					<label>Display Text:</label>
+					<input class="text" type="text" id="display_text" style="width:250px"/>
+					<div id="display_text_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div>
+				</li>				
+				<li>
+					<label>OS Type:</label>
+					<select class="select" id="os_type">
+					</select>
+				</li>				
+			</ol>
+		</form>
+	</div>
+</div>
+<!-- Create template from snapshot (end) -->

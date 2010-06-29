@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Generated for taglets on 2008/03/30 14:47:34, do not modify!
+-->
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+	<head><style type="text/css">
+    /* <![CDATA[ */
+    @import "../css/tigris.css";
+    @import "../css/inst.css";
+    /* ]]> */
+   </style><link rel="shortcut icon" href="../favicon.ico"/><link media="print" href="../css/print.css" type="text/css" rel="stylesheet"/><title>Taglets: Development: Eclipse Primer</title><meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/><meta http-equiv="Content-style-type" content="text/css"/><meta name="Generator" content="MuliFex WebDoc"/>      <link rel="alternate"       type="application/rss+xml"       title="Taglets"       href="http://taglets.sourceforge.net/rss.xml"/>      </head>
+	<body class="composite" style="margin:0px;">     <div id="banner">     <div class="banner-latest-release">     <a href="http://taglets.sourceforge.net/download.html">     Taglets Collection 2.0.3<br/>     2008/03/30 13:49:50</a></div><h1><a id="sc" href="http://taglets.sourceforge.net/"><span class="alt">Taglets Collection</span></a></h1></div><div id="toptabs" class="tabs"><table border="0" cellspacing="0" cellpadding="4"><tr><td><a href="../index.html">Home</a></td><td><a href="../download.html">Downloads</a></td><td><a href="../userguide/index.html">User Guide</a></td><th><a href="../development/index.html">Development</a></th><td><a href="../legal.html">Legal</a></td></tr></table></div><div id="breadcrumbs"><a href="../index.html">Taglets</a> &gt; <a href="../development/index.html">Development</a> &gt; <a href="../development/primers.html">Primers</a> &gt; Eclipse</div><table id="main" width="100%" cellpadding="4" cellspacing="0" border="0"><tr valign="top"><td id="leftcol"><div id="navcolumn"><div class="toolgroup" id="projecttools"><div class="label"><strong>Taglets</strong></div><div class="body"><div><a href="../index.html">Home</a><div><a href="../news.html">News</a></div><div><a href="../screenshots.html">Screenshots</a></div><div><a href="../download.html">Downloads</a></div><div><a href="../legal.html">Legal</a></div></div><div><a href="../userguide/index.html">User Guide</a><div><a href="../userguide/simple.html">Simple Usage</a></div><div><a href="../userguide/extended.html">Extended Usage</a></div><div><a href="../userguide/custom.html">Custom Taglets</a></div><div><a href="../userguide/configuration.html">Configuration</a></div><div><a href="../userguide/tags.html">Predefined Tags</a></div><div><a href="../userguide/shutdown.html">Shutdown Taglets</a></div><div><a href="../userguide/knownbugs.html">Known Bugs</a></div><div><a href="../userguide/todo.html">ToDo List</a></div></div><div><a href="../development/index.html">Development</a><div><a href="../development/setup.html">Setup</a></div><div><a href="../development/primers.html">Primers</a><div><a href="../development/cvs.html">CVS</a></div><div><strong>Eclipse</strong><div><a href="#ide">Ide</a><div><a href="#version">Version</a></div></div><div><a href="#preferences">Preferences</a><div><a href="#runtime">Runtime</a></div><div><a href="#encodings">Encodings</a></div><div><a href="#line_delimiters">Line Delimiters</a></div><div><a href="#coding_style">Coding Style</a></div><div><a href="#CVS">CVS</a></div></div><div><a href="#ant">Ant</a></div></div><div><a href="../development/release.html">Release</a></div></div><div><a href="../development/build.html">Build System</a></div><div><a href="../development/tools.html">Tools Used</a></div><div><a href="../development/audit.html">Auditing Reports</a></div><div><a href="../development/changelog.html">ChangeLog</a></div></div></div></div><div class="toolgroup" id="apitools"><div class="label"><strong>Taglets API</strong></div><div class="body"><div><a href="../api/simple/api-index.html">Simple</a></div><div><a href="../api/complete/api-index.html">Complete</a></div><div><a href="../api/demo/api-index.html">Demo</a></div></div></div><div class="toolgroup" id="linktools"><div class="label"><strong>Quick Links</strong></div><div class="body"><div><a href="http://www.sourceforge.net/">SourceForge</a><div><a href="http://sourceforge.net/projects/taglets/">Taglets Project</a></div><div><a href="http://sourceforge.net/project/showfiles.php?group_id=95947">Project Downloads</a></div></div><div><a href="http://www.sun.com/">Sun Microsystems</a><div><a href="http://java.sun.com/">Java Homepage</a></div><div><a href="http://java.sun.com/j2se/javadoc/">JavaDoc Tool</a></div></div><div><a href="http://www.codehaus.org/">CodeHaus</a></div><div><a href="http://www.java.net/">Java.net</a></div><div><a href="http://jakarta.apache.org/">Jakarta</a><div><a href="http://ant.apache.org/manual/index.html">Ant Manual</a></div></div></div></div><div class="toolgroup" id="feedtools"><div class="label"><strong>News Feed</strong></div><div class="body"><div><a href="../rss.xml">Taglets</a></div></div></div><div class="strut">&nbsp;</div></div></td><td><div id="bodycol"><div id="apphead"><h2>Development:  <em>Eclipse Primer</em></h2></div><div class="app" id="projecthome"><h3><a name="ide">Eclipse IDE</a></h3><p>
+			This document gives a short introduction to the 
+			<abbr title="Integrated Development Environment">IDE</abbr>
+			<a href="http://www.eclipse.org/">Eclipse</a>.
+		</p><p>
+			To use the Eclipse IDE several preferences should be set correctly.
+			If you are using a different editor or IDE you should try to set this 
+			programs preferences similar to the guidelines described on this page.
+		</p><h4><a name="version">Eclipse Version</a></h4><p>
+			Basically the version of the Eclipse IDE you use does not matter.
+			However versions 2.x contain several bugs that make it worth to switch
+			to version 3.x.
+		</p><p class="infomark">
+			The project files in the repository as well as the code templates and
+			the coding style are built for Eclipse 3.2.x.
+		</p><h3><a name="preferences">Preferences</a></h3><h4><a name="runtime">Default Runtime Environment</a></h4><p>
+			The project relies on a 
+			<abbr title="Java Platform 2 Standard Edition">JavaSE</abbr> 6 or
+			higher.
+		</p><p class="infomark">
+			As of version 3.2 Eclipse supports "Execution Environments".
+			This project makes use of this feature by using the <tt>JavaSE 6</tt>
+			execution environment.
+		</p><p class="warningmark">
+			It appears that if a runtime environment is added using the 
+			"Browse..." button in the "Installed JREs"
+			preferences section the <tt>tools.jar</tt> of the JDK does not
+			get added automatically.<br/>
+			Make sure the <tt>tools.jar</tt> of your JavaSE 6 is included
+			in the runtime environment (default path is <tt>lib/tools.jar</tt>)
+			and add it manually if it is not. Some of the implementation 
+			sources rely on it...
+		</p><h4><a name="encodings">File Encodings</a></h4><p>
+			Please try to stick to "ISO-8859-1" (also known as 
+			"ISO-Latin-1") file encodings.
+			The default file encoding may be set in the preferences on the tab
+			<em>General -&gt; Workspace -&gt; Text file encoding</em>.
+		</p><h4><a name="line_delimiters">Line Delimiters</a></h4><p>
+			Try to use "Unix" line delimiters.
+			The default line delimiter may be set in the preferences on the tab
+			<em>General -&gt; Workspace -&gt; New text file line delimiter</em>.
+		</p><h4><a name="coding_style">Coding Style</a></h4><p>
+			This project uses a project specific coding style. This includes
+			custom <em>templates</em>, <em>formatter</em> and <em>import</em> rules.
+		</p><p>
+			Please try to use the code formatter sparingly, esp. when it comes 
+			down to breaking long lines the results of the formatter are not very 
+			pleasing. Therefore <em>do not format existing code</em>.
+		</p><h4><a name="CVS"><abbr title="Concurrent Versions System">CVS</abbr> 
+			Preferences</a></h4><h5>File Content</h5><p>
+			Eclipse has its own table to figure out whether a file should be treated
+			by <abbr title="Concurrent Versions System">CVS</abbr> as text or binary
+			file. In this table three file extension that are important in our project
+			are missing: <code>dtd</code>, <code>xslt</code>, <code>xsd</code> are 
+			among them (there are probably others...).
+		</p><p>
+			To configure Eclipse for these file extensions go to the preferences tab
+			<em>Team -&gt; File Content</em> and add the following manually:
+		</p><table width="100%" cellpadding="3" cellspacing="2" border="1">
+			<tr>
+				<th style="width:8em;">Extension</th> 
+				<th style="width:8em;">Content</th>
+				<th>Description</th> 
+			</tr> 
+			<tr class="a">
+				<td><tt>cmd</tt></td>
+				<td>ASCII</td>
+				<td>Windows command</td>
+			</tr>
+			<tr class="b">
+				<td><tt>sh</tt></td>
+				<td>ASCII</td>
+				<td>Unix shell script</td>
+			</tr>
+			<tr class="a">
+				<td><tt>css</tt></td>
+				<td>ASCII</td>
+				<td>Cascading stylesheet</td>
+			</tr>
+			<tr class="b">
+				<td><tt>js</tt></td>
+				<td>ASCII</td>
+				<td>Java script</td>
+			</tr>
+			<tr class="a">
+				<td><tt>xslt</tt></td>
+				<td>ASCII</td>
+				<td>XML stylesheet</td>
+			</tr>
+			<tr class="b">
+				<td><tt>mm</tt></td>
+				<td>ASCII</td>
+				<td>Mind map (XML file)</td>
+			</tr>
+		</table><h5>Ignored Resources</h5><p>
+			The following changes have been made to the ignored resources known by
+			Eclipse (see preferences tab under <em>Team -&gt; Ignored Resources</em>):
+		</p><table width="100%" cellpadding="3" cellspacing="2" border="1">
+			<tr>
+				<th style="width:8em;">Extension</th> 
+				<th style="width:12em;">Change</th>
+				<th>Description</th> 
+			</tr> 
+			<tr class="a">
+				<td><tt>*.so</tt></td>
+				<td>Removed from list</td>
+				<td>Unix shared objects (our shared libraries are part of the master)</td>
+			</tr>
+			<tr class="b">
+				<td><tt>*.jbf</tt></td>
+				<td>Added to list</td>
+				<td>Thumbnail database used by various paint programs</td>
+			</tr>
+			<tr class="a">
+				<td><tt>.xvpics</tt></td>
+				<td>Added to list</td>
+				<td>Thumbnail database used by various paint programs</td>
+			</tr>
+		</table><h3><a name="ant">Built-in Ant Support</a></h3><p>
+			Eclipse features a nice built-in Ant support (see <em>Window -&gt; 
+			Show View -&gt; Ant</em>) that allows to execute builds directly from 
+			within Ant.
+		</p><p class="infomark">
+			Run Ant builds with an external JRE to prevent problems.
+		</p></div></div></td></tr></table><div id="footer"><table cellpadding="4" cellspacing="0" border="0" style="width:100%;"><tr><td style="width:84px;"><a id="poweredby" href="http://www.sourceforge.net/"><span class="alt">Powered by SourceForge</span></a></td><td><a href="http://www.sourceforge.net/">SourceForge</a>  | <a href="http://taglets.sourceforge.net/">Taglets Collection</a>  | <a href="http://sourceforge.net/projects/taglets">Project Home</a>  | <a href="http://taglets.sourceforge.net/legal.html">Legal</a><br/>Copyright © 2002-2008  <a href="mailto:essmann@sourceforge.net">Bruno Essmann</a></td><td style="text-align:right;"><abbr title="Source: doc/development/eclipse.html">Page generated on:</abbr><br/><!-- timestamp -->2008/03/30 14:47:34 </td></tr></table></div></body>
+</html>

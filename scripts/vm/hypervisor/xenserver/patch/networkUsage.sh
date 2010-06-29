@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
+# $Id: networkUsage.sh 9547 2010-06-14 13:56:44Z kishan $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/vm/hypervisor/xenserver/patch/networkUsage.sh $
 # networkUsage.sh -- create iptable rules to gather network stats
 #
 #
 usage() {
-  printf "Usage: %s -[c|g|r] -i <domR eth1 ip> \n" $(basename $0)  >&2
+  printf "Usage: %s -[c|g|r] -i <domR eth1 ip> [-[a|d] <public interface>]\n" $(basename $0)  >&2
 }
 
 # check if gateway domain is up and running
@@ -30,10 +31,30 @@ create_usage_rules () {
      return 1
 }
 
+add_public_interface () {
+  local dRIp=$1
+  local pubIf=$2
+   ssh -p 3922 -o StrictHostKeyChecking=no -i $cert root@$dRIp "\
+     iptables -A NETWORK_STATS -i eth0 -o $pubIf > /dev/null;
+     iptables -A NETWORK_STATS -i $pubIf -o eth0 > /dev/null;
+     "
+     return 1
+}
+
+delete_public_interface () {
+  local dRIp=$1
+  local pubIf=$2
+   ssh -p 3922 -o StrictHostKeyChecking=no -i $cert root@$dRIp "\
+     echo $pubIf >> /root/removedVifs;
+     "
+     return 1
+}
+
 get_usage () {
   local dRIp=$1
    ssh -p 3922 -o StrictHostKeyChecking=no -i $cert root@$dRIp "\
-     iptables -L NETWORK_STATS -n -v -x | awk '\$1 ~ /^[0-9]+\$/ { printf \"%s:\", \$2}'
+     iptables -L NETWORK_STATS -n -v -x | awk '\$1 ~ /^[0-9]+\$/ { printf \"%s:\", \$2}';
+     /root/clearUsageRules.sh > /dev/null;
      "
   if [ $? -gt 0  -a $? -ne 2 ]
   then
@@ -59,8 +80,10 @@ cflag=
 gflag=
 rflag=
 iflag=
+aflag=
+dflag=
 
-while getopts 'cgri:' OPTION
+while getopts 'cgri:a:d:' OPTION
 do
   case $OPTION in
   c)	cflag=1
@@ -72,6 +95,12 @@ do
   i)	iflag=1
 		domRIp="$OPTARG"
 		;;
+  a)    aflag=1
+                publicIf="$OPTARG"
+               ;;
+  d)    dflag=1
+                publicIf="$OPTARG"
+                ;;
   ?)	usage
 		exit 2
 		;;
@@ -101,6 +130,18 @@ fi
 if [ "$rflag" == "1" ] 
 then
   reset_usage $domRIp  
+  exit $?
+fi
+
+if [ "$aflag" == "1" ] 
+then
+  add_public_interface $domRIp $publicIf 
+  exit $?
+fi
+
+if [ "$dflag" == "1" ] 
+then
+  delete_public_interface $domRIp $publicIf 
   exit $?
 fi
 

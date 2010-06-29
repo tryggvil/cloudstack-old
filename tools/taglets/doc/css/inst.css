@@ -1,0 +1,324 @@
+/* $Id: inst.css,v 1.7 2008/03/30 12:38:19 essmann Exp $
+
+This file contains rules that extend or override the more basic formatting defined in tigris.css. Edit it to customize the look of applications using tigris.css (instances). You are responsible for maintaining your own set of (optional) deltas from tigris.css defaults; this file is intended as an example.
+
+*/
+
+.version-release {
+	padding-right: 16px;
+}
+
+.version-beta {
+	padding-right: 16px;
+	background: url(../images/version-beta.gif) no-repeat;
+	background-position: center right;
+}
+
+.version-alpha {
+	padding-right: 16px;
+	background: url(../images/version-alpha.gif) no-repeat;
+	background-position: center right;
+}
+
+.news-entry {
+	margin: 2px;
+	background-color: #efefef;
+}
+
+.news-entry ul {
+	margin-top: 0;
+	margin-bottom: 0;
+}
+
+.news-entry li {
+	margin-left: -1em;
+}
+
+.latest-news {
+	margin: 2px;
+}
+
+.latest-news ul {
+	margin-top: 0;
+	margin-bottom: 0;
+}
+
+.latest-news li {
+	margin-left: -1em;
+}
+
+.banner-latest-release {
+	position: absolute; 
+	right:0px; 
+	top:0px; 
+	padding: 8px; 
+	text-align: right; 
+	font-size:75%;
+	color: #ccc !important;
+}
+
+.banner-latest-release a {
+	color: #ccc !important;
+	text-decoration: none;
+}
+
+pre.source {
+	border-color: #888;
+	border-style: dotted;
+	border-width: 1px;
+	padding: 0.33em;
+	margin: 0;
+}
+
+.auditNormal, .auditWarning {
+  margin: 0;
+	padding: 0px 0px 0px 20px;
+}
+
+.auditWarning {
+	background: url(../images/icon_warning_sml.gif) no-repeat;
+}
+
+.auditOutput {
+	margin-left: 2px;
+	margin-right: 2px;
+  font-family: monospace;
+	border: 1px solid #888;
+  background-color: #ccc;
+  padding: 5px;
+}
+
+.junitError {
+	background: #f4f;
+	color: white;
+	font-weight: bold;
+}
+.junitFailure {
+	font-weight: bold;
+	background: #f44;
+	color: white;
+}
+.junitSuccess {
+	background: #4f4;
+	color: black;
+}
+.junitErrorOverview {
+	background: #f4f;
+	color: white;
+	font-weight: bold;
+}
+.junitFailureOverview {
+	font-weight: bold;
+	background: #f44;
+	color: white;
+}
+.junitSuccessOverview {
+	background: #4f4;
+	color: black;
+}
+.checkstyleError {
+	background: #f44;
+	color: white;
+	font-weight: bold;
+}
+.checkstyleSuccess {
+	background: #4f4;
+	color: black;
+}
+
+.audit-normal, .audit-warning {
+  margin: 0;
+	padding: 0px 0px 0px 20px;
+}
+
+.audit-warning {
+	background: url(../images/icon_warning_sml.gif) no-repeat;
+}
+
+.audit-output {
+	margin-left: 2px;
+	margin-right: 2px;
+  font-family: monospace;
+	border: 1px solid #888;
+  background-color: #ccc;
+  padding: 5px;
+}
+
+#projecttools .label {
+	background-image: url(../images/project-sitemap.gif);
+	background-repeat: no-repeat;
+	background-position: 97%;
+}
+
+#linktools .label {
+	background-image: url(../images/link-sitemap.gif);
+	background-repeat: no-repeat;
+	background-position: 97%;
+}
+
+#feedtools .label {
+	background-image: url(../images/feed-sitemap.gif);
+	background-repeat: no-repeat;
+	background-position: 97%;
+}
+
+#feedtools a {
+	background-image: url(../images/rss.gif);
+	background-repeat: no-repeat;
+	background-position: 0%;
+	padding-left: 32px;
+}
+
+#apitools .label {
+	background-image: url(../images/api-sitemap.gif);
+	background-repeat: no-repeat;
+	background-position: 97%;
+}
+
+.codemessage {
+	margin: .67em 0;
+	padding: .33em 0 .67em 42px;
+	min-height: 32px;
+	border-top: 5px solid #900;
+	border-left: 1px solid #900;
+	background-image: url(../images/icon_doc_lrg.gif);
+	background-repeat: no-repeat;
+	background-position: 5px 1.33em;
+	border-color: #c60;
+}
+
+/* colors, backgrounds, borders, link indication */
+#poweredby {
+	background-image: url(http://sourceforge.net/sflogo.php?group_id=95947&amp;type=1);
+	display: block;
+	height: 31px;
+	width: 88px;
+}
+
+#sc {
+	background-image: url(../images/project-header.png);
+	display: block;
+	height: 50px;
+	width: 98px;
+}
+
+#toptabs td, #toptabs th {
+	/*background-image: url(../images/nw_min_036.gif);*/
+	background-image: url(../images/nw_min_tab.gif);
+}
+
+.app h3, #banner, #banner td, #toptabs {
+	background-color: #000;
+	color: #fff;
+}
+
+body #banner td a, .app h3 a, .app h4 a {
+	color: #fff !important;
+}
+
+#banner {
+	border-top: 1px solid #369;
+}
+
+#mytools .label, #projecttools .label, #projecttools .label, #admintools .label, #communitytools .label {
+	background-color: #ed9; /* #ddd; */
+	border: none;
+}
+
+#mytools .body, #projecttools .body, #projecttools .body, #admintools .body, #communitytools .body {
+	background-color: #ffc; /* #fff; */
+	border-right: none;
+	border-bottom: none;
+	border-top: 1px solid #999;
+}
+
+#mytools, #projecttools, #projecttools, #admintools, #communitytools {
+	background-color: #ed9; /* #ddd; */
+	border-top: 1px solid #fff;
+	border-right: 1px solid #996; /* #666 */
+	border-bottom: 1px solid #996; /* #666 */
+}
+
+#helptext {
+	background-color: #ffc;
+}
+
+#helptext .label {
+	border-bottom: 1px solid #996;
+	border-right: 1px solid #996;
+	background-color: #ed9; /* #cc9; */
+}
+
+#helptext .body {
+	border-bottom: 1px solid #cc9;
+	border-right: 1px solid #cc9;
+}
+
+#topmodule {
+	background-color: #ed9; /* #ddd; */
+	border-top: 1px solid #fff;
+	border-bottom: 1px solid #aaa;
+}
+
+#topmodule #issueid {
+	border-right: 1px solid #aaa;
+}
+
+#login a:link, #login a:visited {
+	color: white;
+	text-decoration: underline;
+}
+
+#banner a:active, #banner a:hover {
+	color: #f90 !important;
+}
+
+#toptabs td {
+	border-bottom: 1px solid #666;
+	border-right: 1px solid #333;
+	border-left: 1px solid #000; /* #036; */
+}
+
+#toptabs th {
+	border-left: 1px solid #000; /* #036 */
+}
+
+/* font and text properties, exclusive of link indication, alignment, text-indent */
+#bodycol h2 {
+	font-family: Tahoma, Verdana, Helvetica, Arial, sans-serif;
+	font-size: 1.5em;
+	font-weight: normal;
+}
+
+/* box properties (exclusive of borders), positioning, alignments, list types, text-indent */
+#toptabs {
+	margin: 0;
+	padding-top: .67em;
+	padding-left: 8px;
+}
+
+#topmodule {
+	margin: -4px -4px 0 -4px;
+}
+
+#topmodule td {
+	vertical-align: middle;
+	padding: 2px 8px;
+}
+
+#navcolumn {
+	margin-right: -4px;
+}
+
+#mytools .body, #projecttools .body, #projecttools .body, #admintools .body, #communitytools .body {
+	padding-top: .33em;
+}
+
+#mytools, #projecttools, #projecttools, #admintools, #communitytools {
+	padding: 0 6px 6px 6px;
+	margin: -4px 0 6px -4px;
+}
+
+#mytools .label, #projecttools .label, #projecttools .label, #admintools .label, #communitytools .label {
+	padding-left: 2px;
+}

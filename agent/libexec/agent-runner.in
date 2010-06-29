@@ -30,7 +30,7 @@ function termagent() {
 
 trap termagent TERM
 while true ; do
-	java -Xms128M -Xmx384M -cp "$CLASSPATH" "$@" com.vmops.agent.AgentShell &
+	java -Xms128M -Xmx384M -cp "$CLASSPATH" "$@" com.cloud.agent.AgentShell &
 	agentpid=$!
 	echo "Agent started.  PID: $!" >&2
 	wait $agentpid

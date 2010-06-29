@@ -28,19 +28,19 @@
     </resource-ref>
     
     <servlet>
-        <servlet-name>vmopsStartupServlet</servlet-name>
-        <servlet-class>com.vmops.servlet.VMOpsStartupServlet</servlet-class>
+        <servlet-name>cloudStartupServlet</servlet-name>
+        <servlet-class>com.cloud.servlet.CloudStartupServlet</servlet-class>
         <load-on-startup>4</load-on-startup>
     </servlet>
 
     <servlet>
         <servlet-name>apiServlet</servlet-name>
-        <servlet-class>com.vmops.api.ApiServlet</servlet-class>
+        <servlet-class>com.cloud.api.ApiServlet</servlet-class>
     </servlet>
     
     <servlet>
         <servlet-name>consoleServlet</servlet-name>
-        <servlet-class>com.vmops.servlet.ConsoleProxyServlet</servlet-class>
+        <servlet-class>com.cloud.servlet.ConsoleProxyServlet</servlet-class>
     </servlet>
     
     <servlet-mapping>   

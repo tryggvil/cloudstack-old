@@ -1,6 +1,26 @@
+ /**
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
+ * 
+ * This software is licensed under the GNU General Public License v3 or later.
+ * 
+ * It is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ */
+
+// Version: @VERSION@
+
 function showDomainsTab() {
 	mainContainer.load("content/tab_domains.html", function() {	   
-	    var defaultRootDomainId = 1;
+	    var defaultRootDomainId = g_domainid;
 	    var defaultRootLevel = 0;	 
 	    var index = 1;	   
 	    var treeContentBox = $("#tree_contentbox");    	   
@@ -36,7 +56,7 @@ function showDomainsTab() {
 	    
 	        var template = treenodeTemplate.clone(true);	            
 	        template.attr("id", "domain_"+json.id);	 
-	        template.data("domainId", json.id).data("domainName", json.name).data("domainLevel", level); 	       
+	        template.data("domainId", json.id).data("domainName", sanitizeXSS(json.name)).data("domainLevel", level); 	       
 	        template.find("#domain_title_container").attr("id", "domain_title_container_"+json.id); 	        
 	        template.find("#domain_expand_icon").attr("id", "domain_expand_icon_"+json.id); 
 	        template.find("#domain_name").attr("id", "domain_name_"+json.id).text(json.name);        	              	
@@ -81,9 +101,8 @@ function showDomainsTab() {
 		    } else {
 			    template.addClass("smallrow_even");
 		    }			    	        
-		    template.find("#grid_row_cell1").text(json.id);
-		    template.find("#grid_row_cell2").text(json.name);
-		    template.find("#grid_row_cell3").text(((json.isdisabled == "true") ? "Yes" : "No"));   				    
+		    template.find("#grid_row_cell1").text(json.domain);
+		    template.find("#grid_row_cell2").text(json.name);		    	    
         }
 		
 		function updateResourceLimit(domainId, type, max) {
@@ -98,10 +117,11 @@ function showDomainsTab() {
 		function listAdminAccounts(domainId) {   
 		    gridContent.empty();
 		    index = 0;		    
-		    rightPanelDetailContent.find("#loading_gridtable").show(); 			    		
+		    rightPanelDetailContent.find("#loading_gridtable").show(); 		
+		    var accountType = (domainId==1)? 1: 2; 	    		
 		    $.ajax({
 				cache: false,				
-				data: "command=listAccounts&domainid="+domainId+"&accounttype=1&response=json",
+				data: "command=listAccounts&domainid="+domainId+"&accounttype="+accountType+"&response=json",
 				dataType: "json",
 				success: function(json) {
 					var accounts = json.listaccountsresponse.account;					
@@ -114,8 +134,8 @@ function showDomainsTab() {
 					} 
 				    rightPanelDetailContent.find("#loading_gridtable").hide();                  
 				},
-				error: function(XMLHttpRequest) {									
-					handleError(XMLHttpRequest);
+				error: function(XMLHttpResponse) {									
+					handleError(XMLHttpResponse);
 					rightPanelDetailContent.find("#loading_gridtable").hide(); 
 				}			
 			});		
@@ -229,10 +249,7 @@ function showDomainsTab() {
 									}
 								}	
 								$("#dialog_resource_limits")
-								.dialog('option', 'buttons', { 
-									"Cancel": function() { 
-										$(this).dialog("close"); 
-									},
+								.dialog('option', 'buttons', { 									
 									"Save": function() { 	
 										// validate values
 										var isValid = true;					
@@ -265,6 +282,9 @@ function showDomainsTab() {
 										if (templateLimit != preTemplateLimit) {
 											updateResourceLimit(domainId, 4, templateLimit);
 										}
+									}, 
+									"Cancel": function() { 
+										$(this).dialog("close"); 
 									} 
 								}).dialog("open");
 							}
@@ -319,7 +339,7 @@ function showDomainsTab() {
         });
     	
 	    searchInput.bind("keypress", function(event) {		        
-            if(event.keyCode == 13) {                 		        
+            if(event.keyCode == keycode_Enter) {                 		        
 	            searchButton.click();			
 	            return false;     
 	        }		    
@@ -354,6 +374,8 @@ function showDomainsTab() {
 		//draw breadcrumb all the way up
 		function drawBreadcrumb(domainId) {		    
 		    var domainName = domainIdNameMap[domainId];
+		    if(domainName == null)
+		        return;
 		    
 		    var onePiece = breadcrumbPieceTemplate.clone(true).attr("id", "breadcrumb_"+domainId).data("domainId", domainId).text(" > "+domainName);
 		    breadcrumbBox.prepend(onePiece.show());		    

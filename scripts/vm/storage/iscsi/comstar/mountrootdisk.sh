@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# $Id: mountrootdisk.sh 9132 2010-06-04 20:17:43Z manuel $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/vm/storage/iscsi/comstar/mountrootdisk.sh $
 # mountrootdisk.sh -- mount  image directory from NFS and ISCSI server
 #
 #

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# $Id: firewall.sh 9373 2010-06-09 01:57:36Z edison $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/network/domr/firewall.sh $
 # firewall.sh -- allow some ports / protocols to vm instances
 #
 #
@@ -7,7 +8,7 @@ usage() {
   printf "Usage: %s: (-A|-D) -i <domR eth1 ip>  -r <target-instance-ip> -P protocol (-p port_range | -t icmp_type_code)  -l <public ip address> -d <target port> [-f <firewall ip> -u <firewall user> -y <firewall password> -z <firewall enable password> ] \n" $(basename $0) >&2
 }
 
-cert="$(dirname $0)/id_rsa"
+cert="/root/.ssh/id_rsa.cloud"
 
 # set -x
 

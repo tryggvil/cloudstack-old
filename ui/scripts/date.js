@@ -1,3 +1,21 @@
+ /**
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
+ * 
+ * This software is licensed under the GNU General Public License v3 or later.
+ * 
+ * It is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ */
+
 Date.prototype.setISO8601 = function(dString){
 
 	var regexp = /(\d\d\d\d)(-)?(\d\d)(-)?(\d\d)(T)?(\d\d)(:)?(\d\d)(:)?(\d\d)(\.\d+)?(Z|([+-])(\d\d)(:)?(\d\d))/;
@@ -28,6 +46,22 @@ Date.prototype.setISO8601 = function(dString){
 	}
 	return this;
 };
+
+//***** vmops (begin) ***************************************************************
+
+/* 
+This is a hack/temporary solution that lacks calculation of Daylight Saving Time. 
+We'll fix the problem by getting datetime in a specified timezone (including Daylight Saving Time) from server-side in next release.
+*/
+Date.prototype.getTimePlusTimezoneOffset = function(timezoneOffset) {
+    var milliseconds = this.getTime();  
+    var s1  = new Date(milliseconds + (timezoneOffset * 60 * 60 * 1000)).toUTCString(); //e.g. "Tue, 08 Jun 2010 19:13:49 GMT", "Tue, 25 May 2010 12:07:01 UTC"    
+    var s2 = s1.substring(s1.indexOf(", ")+2);                                          //e.g. "08 Jun 2010 19:13:49 GMT", "25 May 2010 12:07:01 UTC"   
+    var s3 = s2.substring(0,s2.length-4);                                               //e.g. "08 Jun 2010 19:13:49", "25 May 2010 12:10:16"	
+    return s3;
+}
+
+//***** vmops (end) *****************************************************************
 
 Date.prototype.format = function(format) {
 	var returnStr = '';

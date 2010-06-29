@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# $Id: iscsi_common.sh 9132 2010-06-04 20:17:43Z manuel $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/vm/storage/iscsi/comstar/iscsi_common.sh $
 # iscsi_common.sh -- mount  volume from ISCSI server
 #
 #

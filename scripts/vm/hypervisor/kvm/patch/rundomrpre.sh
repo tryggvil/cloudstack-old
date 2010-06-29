@@ -1,6 +1,7 @@
-#/bin/bash
+#!/bin/bash
+# $Id: rundomrpre.sh 9132 2010-06-04 20:17:43Z manuel $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/vm/hypervisor/kvm/patch/rundomrpre.sh $
 
-#set -x
+set -x
 
 mntpath() {
   local vmname=$1
@@ -83,24 +84,20 @@ mount_raw_disk() {
         printf "$datadisk doesn't exist" >&2
         return 2
     fi
-    
-    losetup -f $datadisk &>/dev/null
 
+    retry=10
+    while [ $retry -gt 0 ]
+    do
+    mount $datadisk $path -o loop  &>/dev/null
+    sleep 10
     if [ $? -gt 0 ]
     then
-        printf "Failed to losetup $datadisk" 
-        return 2
-    fi
-
-    local loopdev=$(losetup -j $datadisk 2>/dev/null|cut -d: -f 1)
-    
-    mount $loopdev $path  &>/dev/null
-    if [ $? -gt 0 ]
-    then
-        printf "Failed to mount $datadisk to $path" >&2
-        losetup -d $loopdev &>/dev/null
-        exit 2
+	sleep 5
+    else
+       break
     fi 
+    retry=$(($retry-1))
+    done
     return 0
 }
 
@@ -108,23 +105,18 @@ umount_raw_disk() {
     local vmname=$1
     local datadisk=$2
     local path=$(mntpath $vmname)
-    local loopdev=$(losetup -j $datadisk 2>/dev/null|cut -d: -f 1 2> /dev/null)
-    if [ "$loopdev" = "" ]
-    then
-       return 2 
-    fi
     
-    umount $loopdev &>/dev/null
     retry=10
+    sync
     while [ $retry -gt 0 ]
     do
-        losetup -d $loopdev &>/dev/null
-        if [  $? -gt 0 ]
-        then
-            sleep 5
-        else
-            break;
-        fi
+        umount $path &>/dev/null
+    	if [ $? -gt 0 ]
+    	then
+	   sleep 5
+    	else
+           break
+    	fi
         retry=$(($retry-1))
     done
     return $?
@@ -199,10 +191,19 @@ patch_all() {
     local cmdline=$4
     local datadisk=$5
     local path=$(mntpath $vmname)
-    alias cp='cp'
 
-    cp -f $domrpatch $path/
-    cp -f $domppatch $path/ 
+    if [ ! -f $path/$domrpatch ]
+    then
+    cp  $domrpatch $path/
+    fi
+    if [ ! -f $path/console-proxy.zip ]
+    then	
+    cp  $domppatch $path/console-proxy.zip
+    fi
+    if [ -f ~/.ssh/id_rsa.pub.cloud ]
+    then
+        cp ~/.ssh/id_rsa.pub.cloud  $path/id_rsa.pub
+    fi
     echo $cmdline > $path/cmdline 
     sed -i "s/,/\ /g" $path/cmdline
     return 0
@@ -272,7 +273,9 @@ then
         printf "Failed to mount $rootdisk"
         exit $?
     fi
-    patch_all $vmname $(dirname $0)/patch.tgz $(dirname $0)/console-proxy.zip $cmdline $rootdisk
+    cpfile=$(dirname $0)/../../systemvm-premium.zip
+    [ -f $cpfile ] || cpfile=$(dirname $0)/../../systemvm.zip
+    patch_all $vmname $(dirname $0)/patch.tgz $cpfile $cmdline $rootdisk
     umount_raw_disk $vmname $rootdisk    
     exit $?
 fi
@@ -296,12 +299,16 @@ then
   fi
 fi
 
-if [ "$vmtype" = "domp" ]  && [ -f $(dirname $0)/console-proxy.zip ]
+cpfile=$(dirname $0)/../../systemvm-premium.zip
+[ -f $cpfile ] || $(dirname $0)/../../systemvm.zip
+[ -f $cpfile ] || $(dirname $0)/systemvm-premium.zip
+[ -f $cpfile ] || $(dirname $0)/systemvm.zip
+if [ "$vmtype" = "domp" ]  && [ -f $cpfile ]
 then
-  patch_console_proxy $vmname $(dirname $0)/console-proxy.zip
+  patch_console_proxy $vmname $cpfile
   if [ $? -gt 0 ]
   then
-    printf "Failed to apply patch console-proxy.zip to $vmname\n" >&2
+    printf "Failed to apply patch $cpfile to $vmname\n" >&2
     umount_local $vmname
     exit 5
   fi

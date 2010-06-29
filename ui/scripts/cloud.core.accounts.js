@@ -1,3 +1,23 @@
+ /**
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
+ * 
+ * This software is licensed under the GNU General Public License v3 or later.
+ * 
+ * It is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ */
+
+// Version: @VERSION@
+
 function showAccountsTab(domainId) {
 	// Manage Events 
 	mainContainer.load("content/tab_accounts.html", function() {	
@@ -25,244 +45,166 @@ function showAccountsTab(domainId) {
 			});
 		}
 	        
-	    $("#account_template #account_change_state").bind("click", function(event) {	        
-	        var elementId = $(this).attr("id");	      	       
-	        var thisLink = $("#"+elementId); 
-	        var accountId = thisLink.data("accountId");
-	        var accountName = thisLink.data("accountName");
-	        var template = $("#account"+accountId);	        
-	        var action = $(this).text();	        
-	        if(action == "enable") {	    
-                $("#dialog_confirmation")
-                .html("<p>Please confirm you want to enable account: </b>" + accountName + "</b></p>")
-                .dialog('option', 'buttons', {
-                    "Cancel": function() {
-                        $(this).dialog("close");		     
-                    },
-                    "Yes": function() { 		                    
-                        $(this).dialog("close");	    		                    
-                        $.ajax({
-			                data: "command=enableAccount&id="+accountId+"&response=json",
-			                dataType: "json",
-			                success: function(json) {				                    					                
-				                template.find("#account_state").text("enabled");
-				                thisLink.text("disable");
-			                }
-		                });	 		                    	     
-                    }
-                }).dialog("open"); 
-            }  
-            else if(action == "disable") {            
-                $("#dialog_disable_account")
-                .dialog('option', 'buttons', {
-                    "Cancel": function() {
-                        $(this).dialog("close");
-                    },
-                    "Save": function() {
-                        $(this).dialog("close");			                                             
-                        if($("#change_state_type").val()=="disable") {                            
-                            var loadingImg = template.find(".adding_loading");		
-                            var rowContainer = template.find("#account_body");    	                               
-                            loadingImg.find(".adding_text").text("Disabling....");	
-                            loadingImg.show();  
-                            rowContainer.hide();                                           
-                            
-                            $.ajax({
-			                    data: "command=disableAccount&id="+accountId+"&response=json", 
-			                    dataType: "json",
-			                    success: function(json) {						        
-			                        var jobId = json.disableaccountresponse.jobid;					                       
-			                        var timerKey = "disableAccountJob"+jobId;
-        								    
-			                        $("body").everyTime(2000, timerKey, function() {
-					                    $.ajax({
-						                    data: "command=queryAsyncJobResult&jobId="+json.disableaccountresponse.jobid+"&response=json",
-						                    dataType: "json",
-						                    success: function(json) {										       						   
-							                    var result = json.queryasyncjobresultresponse;
-							                    if (result.jobstatus == 0) {
-								                    return; //Job has not completed
-							                    } else {											    
-								                    $("body").stopTime(timerKey);
-								                    if (result.jobstatus == 1) {
-									                    // Succeeded				                    
-        											    template.find("#account_state").text("disabled");
-						                                thisLink.text("enable");
-									                    loadingImg.hide();  
-                                                        rowContainer.show();	                                                             
-								                    } else if (result.jobstatus == 2) {										        
-									                    $("#dialog_alert").html("<p>" + result.jobresult + "</p>").dialog("open");		
-									                    loadingImg.hide();  
-                                                        rowContainer.show();										   					    
-								                    }
-							                    }
-						                    },
-						                    error: function(XMLHttpRequest) {
-							                    $("body").stopTime(timerKey);
-							                    handleError(XMLHttpRequest);	
-							                    loadingImg.hide();  
-                                                rowContainer.show();									    
-						                    }
-					                    });
-				                    }, 0);						    					
-			                    },
-			                    error: function(XMLHttpRequest) {							    
-					                handleError(XMLHttpRequest);
-					                loadingImg.hide();  
-                                    rowContainer.show();								
-			                    }
-		                    });	                            
-                        }
-                        else { //"lock"                   
-                            $.ajax({
-					            data: "command=lockAccount&id="+accountId+"&response=json",
-					            dataType: "json",
-					            success: function(json) {							                
-						            template.find("#account_state").text("locked");
-						            thisLink.text("enable");
-					            }
-				            });		                            
-                        }
-                    }		           
-                }).dialog("open");                 
-            }                
+	    $("#account_template #account_enable").bind("click", function(event) {	        
+	        var accountId = $(this).data("accountId");	       
+	        var template = $("#account"+accountId);	  
+	        var accountName = template.data("accountName"); 
+	        var domainId = template.data("domainId");
+
+            $("#dialog_confirmation")
+            .html("<p>Please confirm you want to enable account: </b>" + accountName + "</b></p>")
+            .dialog('option', 'buttons', {                    
+                "Yes": function() { 		                    
+                    $(this).dialog("close");	    		                    
+                    $.ajax({
+		                data: "command=enableAccount&account="+accountName+"&domainId="+domainId+"&response=json",
+		                dataType: "json",
+		                success: function(json) {				                    					                
+			                template.find("#account_state").text("enabled");         
+					        template.find("#account_enable_container").hide();
+					        template.find("#account_disable_container").show();			                
+		                }
+	                });	 		                    	     
+                },
+                "Cancel": function() {
+                    $(this).dialog("close");		     
+                }
+            }).dialog("open");             
+              
             return false; //event.preventDefault() + event.stopPropagation()  		            
         });	    
+	    
+	    $("#account_template #account_disable").bind("click", function(event) {	            
+	        var accountId = $(this).data("accountId");	       
+	        var template = $("#account"+accountId);	  
+	        var accountName = template.data("accountName");      
+	        var domainId = template.data("domainId");
+	          
+	        var dialogDisableAccount = $("#dialog_disable_account");
+	        dialogDisableAccount.find("#change_state_type").val("disable");
+	                            
+            dialogDisableAccount
+            .dialog('option', 'buttons', {                    
+                "Save": function() {   
+                    dialogDisableAccount.dialog("close");	                 		                                             
+                    if(dialogDisableAccount.find("#change_state_type").val()=="disable") { //disable the account                           
+                        var loadingImg = template.find(".adding_loading");		
+                        var rowContainer = template.find("#account_body");    	                               
+                        loadingImg.find(".adding_text").text("Disabling....");	
+                        loadingImg.show();  
+                        rowContainer.hide();                                           
+                        
+                        $.ajax({
+		                    data: "command=disableAccount&account="+accountName+"&domainId="+domainId+"&response=json", 
+		                    dataType: "json",
+		                    success: function(json) {						        
+		                        var jobId = json.disableaccountresponse.jobid;					                       
+		                        var timerKey = "disableAccountJob"+jobId;
+    								    
+		                        $("body").everyTime(2000, timerKey, function() {
+				                    $.ajax({
+					                    data: "command=queryAsyncJobResult&jobId="+json.disableaccountresponse.jobid+"&response=json",
+					                    dataType: "json",
+					                    success: function(json) {										       						   
+						                    var result = json.queryasyncjobresultresponse;
+						                    if (result.jobstatus == 0) {
+							                    return; //Job has not completed
+						                    } else {											    
+							                    $("body").stopTime(timerKey);
+							                    if (result.jobstatus == 1) {
+								                    // Succeeded				                    
+    											    template.find("#account_state").text("disabled");
+					                                template.find("#account_disable_container").hide();
+					                                template.find("#account_enable_container").show();
+								                    loadingImg.hide();  
+                                                    rowContainer.show();	                                                             
+							                    } else if (result.jobstatus == 2) {										        
+								                    $("#dialog_alert").html("<p>" + sanitizeXSS(result.jobresult) + "</p>").dialog("open");		
+								                    loadingImg.hide();  
+                                                    rowContainer.show();										   					    
+							                    }
+						                    }
+					                    },
+					                    error: function(XMLHttpResponse) {
+						                    $("body").stopTime(timerKey);
+						                    handleError(XMLHttpResponse);	
+						                    loadingImg.hide();  
+                                            rowContainer.show();									    
+					                    }
+				                    });
+			                    }, 0);						    					
+		                    },
+		                    error: function(XMLHttpResponse) {							    
+				                handleError(XMLHttpResponse);
+				                loadingImg.hide();  
+                                rowContainer.show();								
+		                    }
+	                    });	                            
+                    }
+                    else { //lock the account                         
+                        if(template.find("#account_state").text() == "locked")  //if the state is locked already, do nothing.
+                            return;                                                                 
+                        $.ajax({
+				            data: "command=lockAccount&account="+accountName+"&domainId="+domainId+"&response=json",
+				            dataType: "json",
+				            success: function(json) {							                
+					            template.find("#account_state").text("locked");
+					            template.find("#account_enable_container").show();					            
+				            }
+			            });		                            
+                    }                    
+                },
+                "Cancel": function() {
+                    $(this).dialog("close");
+                }		           
+            }).dialog("open");                 
+                           
+            return false; //event.preventDefault() + event.stopPropagation()  		            
+        });	 
 	    
 	    function accountJSONToTemplate(json, template) {   
 	        (index++ % 2 == 0)? template.addClass("smallrow_even"): template.addClass("smallrow_odd");		    		    
 		    var accountId = json.id;
 		    var accountName = json.name;
-		    template.attr("id", "account"+accountId).data("accountId", accountId).data("accountName", accountName);		    		    				    
+		    var domainId = json.domainid;
+		    template.attr("id", "account"+accountId).data("accountId", accountId).data("accountName", sanitizeXSS(accountName)).data("domainId", sanitizeXSS(domainId));		
+		       		    				    
 		    template.find("#account_role").text(toRole(json.accounttype));
 		    template.find("#account_accountid").text(json.id);
 		    template.find("#account_accountname").text(accountName);
 		    template.find("#account_domain").text(json.domain);
-		    template.find("#account_vms").text(json.vmtotal);
-		    template.find("#account_ips").text(json.iptotal);
+		    template.find("#account_vms_link").text(json.vmtotal);
+		    template.find("#account_ips_link").text(json.iptotal);
 		    template.find("#account_received").text(convertBytes(json.receivedbytes));
 		    template.find("#account_sent").text(convertBytes(json.sentbytes));
 		    template.find("#account_state").text(json.state);
-		    		    
-		    if(accountId == systemAccountId || accountId == adminAccountId) {
-		        template.find("#action_links").hide();
-		    } else {			        
-		        var accountChangeState = template.find("#account_change_state").attr("id", "account_change_state_"+accountId).data("accountId", accountId).data("accountName",accountName);    
-		        if(json.state=="enabled") {	
-		            accountChangeState.text("disable");
-		        	
-		            /*           
-		            template.find("#account_change_state").text("disable").bind("click", function() {		                
-		                $("#dialog_disable_account")
-		                .dialog('option', 'buttons', {
-		                    "Cancel": function() {
-		                        $(this).dialog("close");
-		                    },
-		                    "Save": function() {
-		                        $(this).dialog("close");			                                             
-		                        if($("#change_state_type").val()=="disable") {                            
-		                            var loadingImg = template.find(".adding_loading");		
-	                                var rowContainer = template.find("#account_body");    	                               
-                                    loadingImg.find(".adding_text").text("Disabling....");	
-                                    loadingImg.show();  
-                                    rowContainer.hide();                                           
-		                            
-		                            $.ajax({
-					                    data: "command=disableAccount&id="+accountId+"&response=json", 
-					                    dataType: "json",
-					                    success: function(json) {						        
-					                        var jobId = json.disableaccountresponse.jobid;					                       
-					                        var timerKey = "disableAccountJob"+jobId;
-                								    
-					                        $("body").everyTime(2000, timerKey, function() {
-							                    $.ajax({
-								                    data: "command=queryAsyncJobResult&jobId="+json.disableaccountresponse.jobid+"&response=json",
-								                    dataType: "json",
-								                    success: function(json) {										       						   
-									                    var result = json.queryasyncjobresultresponse;
-									                    if (result.jobstatus == 0) {
-										                    return; //Job has not completed
-									                    } else {											    
-										                    $("body").stopTime(timerKey);
-										                    if (result.jobstatus == 1) {
-											                    // Succeeded				                    
-                											    template.find("#account_state").text("disabled");
-								                                template.find("#account_change_state").text("enable");
-											                    loadingImg.hide();  
-                                                                rowContainer.show();	                                                             
-										                    } else if (result.jobstatus == 2) {										        
-											                    $("#dialog_alert").html("<p>" + result.jobresult + "</p>").dialog("open");		
-											                    loadingImg.hide();  
-                                                                rowContainer.show();										   					    
-										                    }
-									                    }
-								                    },
-								                    error: function(XMLHttpRequest) {
-									                    $("body").stopTime(timerKey);
-									                    handleError(XMLHttpRequest);	
-									                    loadingImg.hide();  
-                                                        rowContainer.show();									    
-								                    }
-							                    });
-						                    }, 0);						    					
-					                    },
-					                    error: function(XMLHttpRequest) {							    
-							                handleError(XMLHttpRequest);
-							                loadingImg.hide();  
-                                            rowContainer.show();								
-					                    }
-				                    });	                            
-		                        }
-		                        else { //"lock"                   
-		                            $.ajax({
-							            data: "command=lockAccount&id="+accountId+"&response=json",
-							            dataType: "json",
-							            success: function(json) {							                
-								            template.find("#account_state").text("locked");
-								            template.find("#account_change_state").text("enable");
-							            }
-						            });		                            
-		                        }
-		                    }		           
-		                }).dialog("open");
-		            });
-		            */
-		            
-		            
-		        }
-		        else if(json.state=="disabled" || json.state=="locked") {
-		            accountChangeState.text("enable");
-		            
-		            /*
-		            template.find("#account_change_state").text("enable").data("accountId", json.id).bind("click", function() {
-    		            $("#dialog_confirmation")
-    		            .html("<p>Please confirm you want to enable account: </b>" + accountName + "</b></p>")
-    		            .dialog('option', 'buttons', {
-    		                "Cancel": function() {
-    		                    $(this).dialog("close");		     
-    		                },
-    		                "Yes": function() { 		                    
-    		                    $(this).dialog("close");	    		                    
-    		                    $.ajax({
-						            data: "command=enableAccount&id="+accountId+"&response=json",
-						            dataType: "json",
-						            success: function(json) {							                
-							            template.find("#account_state").text("enabled");
-							            template.find("#account_change_state").text("disable");
-						            }
-					            });	 		                    	     
-    		                }
-    		            }).dialog("open");    		            
-		            });
-		            */
-		            
-		        }		        
-		    }
 		    
-			if (json.accounttype == 0) {
-				template.find("#account_resource_limits").show().data("account",json.name).data("domainId",json.domainid).bind("click", function() {
-					var domainId = $(this).data("domainId");
-					var account = $(this).data("account");
+		    template.find("#account_vms_link").bind("click", function(event) {		       
+		        $("#menutab_vm").data("domainId", domainId).data("account", accountName).click();
+		        return false; //event.preventDefault() + event.stopPropagation()
+		    });
+		    		 
+		    template.find("#account_ips_link").bind("click", function(event) {		       
+		        $("#menutab_networking").data("domainId", domainId).data("account", accountName).click();
+		        return false; //event.preventDefault() + event.stopPropagation()
+		    });
+		    		    
+		    if(accountId == systemAccountId || accountId == adminAccountId) 
+		        template.find("#action_links").hide();		    
+		    
+		    if(json.state == "enabled")
+		        template.find("#account_enable_container").hide();		        
+		    else if(json.state == "disabled")
+		        template.find("#account_disable_container").hide();     	    		   
+		    
+		    template.find("#account_enable, #account_disable").data("accountId", accountId);		  
+		    		    		    
+			if (json.accounttype == roleTypeUser || json.accounttype == roleTypeDomainAdmin) {
+			    template.find("#account_resource_limits_container").show();
+			    var that = template;
+				template.find("#account_resource_limits").bind("click", function() {
+					var domainId = that.data("domainId");
+					var account = that.data("accountName");
 					$.ajax({
 						cache: false,				
 						data: "command=listResourceLimits&domainid="+domainId+"&account="+account+"&response=json",
@@ -298,10 +240,7 @@ function showAccountsTab(domainId) {
 								}
 							}	
 							$("#dialog_resource_limits")
-							.dialog('option', 'buttons', { 
-								"Cancel": function() { 
-									$(this).dialog("close"); 
-								},
+							.dialog('option', 'buttons', { 								
 								"Save": function() { 	
 									// validate values
 									var isValid = true;					
@@ -334,6 +273,9 @@ function showAccountsTab(domainId) {
 									if (templateLimit != preTemplateLimit) {
 										updateResourceLimit(domainId, account, 4, templateLimit);
 									}
+								}, 
+								"Cancel": function() { 
+									$(this).dialog("close"); 
 								} 
 							}).dialog("open");
 						}
@@ -341,7 +283,7 @@ function showAccountsTab(domainId) {
 					return false;
 				});
 			} else {
-				template.find("#account_resource_limits").hide();
+				template.find("#account_resource_limits_container").hide();
 			}
 	    }
 		    
@@ -379,7 +321,6 @@ function showAccountsTab(domainId) {
 	    var index;
 	    currentPage = 1;	
 	    listAccounts();
-		
 		
 	});
 }

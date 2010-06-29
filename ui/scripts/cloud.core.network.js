@@ -1,4 +1,24 @@
-function showNetworkingTab() {
+ /**
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
+ * 
+ * This software is licensed under the GNU General Public License v3 or later.
+ * 
+ * It is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ */
+
+// Version: @VERSION@
+
+function showNetworkingTab(p_domainId, p_account) {   
 	// Manage Networking 
 	mainContainer.load("content/tab_networking.html", function() {
 		// Sub Menus				
@@ -13,7 +33,7 @@ function showNetworkingTab() {
 				var zoneSelect = $("#dialog_acquire_public_ip #acquire_zone").empty();	
 				if (zones != null && zones.length > 0) {	
 				    for (var i = 0; i < zones.length; i++) {
-					    zoneSelect.append("<option value='" + zones[i].id + "'>" + zones[i].name + "</option>"); 
+					    zoneSelect.append("<option value='" + zones[i].id + "'>" + sanitizeXSS(zones[i].name) + "</option>"); 
 				    }
 			    }
 			}
@@ -30,15 +50,11 @@ function showNetworkingTab() {
 
             var submenuContent = $("#submenu_content_public_ips");
             
-			// Populate the template
-			var allocated = new Date();
-			if(addressJSON.allocated != null)
-			    allocated.setISO8601(addressJSON.allocated);
-			var showDate = allocated.format("m/d/Y H:i:s");
+			setDateField(addressJSON.allocated, ipTemplate.find("#ip_allocated"));		
+						
 			ipTemplate.find("#ip_address").text(addressJSON.ipaddress);
 			ipTemplate.find("#ip_zone").text(addressJSON.zonename);
-			ipTemplate.find("#ip_source_nat").text(((addressJSON.issourcenat == "true") ? "Yes" : "No"));
-			ipTemplate.find("#ip_allocated").text(showDate);
+			ipTemplate.find("#ip_source_nat").text(((addressJSON.issourcenat == "true") ? "Yes" : "No"));			
 			ipTemplate.find("#ip_vlan").text(addressJSON.vlanname);
 			ipTemplate.find("#ip_domain").text(addressJSON.domain);
 			ipTemplate.find("#ip_account").text(addressJSON.account);
@@ -76,7 +92,7 @@ function showNetworkingTab() {
 			sgTemplate.find("#sg_account").text(sgJSON.account);
 			
 			// Clicking on a row will open up the right Rules Section
-			sgTemplate.data("sgId", sgJSON.id).data("sgName", sgJSON.name).bind("click", function(event) {
+			sgTemplate.data("sgId", sgJSON.id).data("sgName", sanitizeXSS(sgJSON.name)).bind("click", function(event) {
 				var sgId = $(this).data("sgId");
 				var sgName = $(this).data("sgName");
 				$("#submenu_content_security_groups .net_displaytitlebox h2").text(sgName);
@@ -85,10 +101,10 @@ function showNetworkingTab() {
 				
 				// Load the grid
 				$.ajax({
-					data: "command=listNetworkRules&securitygroupId="+sgId+"&response=json",
+					data: "command=listPortForwardingServiceRules&portforwardingserviceid="+sgId+"&response=json",
 					dataType: "json",
 					success: function(json) {
-						var rules = json.listnetworkrulesresponse.networkrule;
+						var rules = json.listportforwardingservicerulesresponse.portforwardingservicerule;
 						$("#submenu_content_security_groups #display_gridcontent").empty();
 						if (rules != null && rules.length > 0) {
 							for (var i = 0; i < rules.length; i++) {
@@ -103,31 +119,29 @@ function showNetworkingTab() {
 			});
 			
 			// Deletion
-			sgTemplate.find("#sg_delete").data("sgId", sgJSON.id).data("sgName", sgJSON.name).bind("click", function(event) {
+			sgTemplate.find("#sg_delete").data("sgId", sgJSON.id).data("sgName", sanitizeXSS(sgJSON.name)).bind("click", function(event) {
 				var sgId = $(this).data("sgId");
 				var sgName = $(this).data("sgName");
 				var submenuContent = $("#submenu_content_security_groups");
 				
 				$("#dialog_confirmation")
-				.html("<p>Please confirm you want to delete your security group <b>"+sgName+"</b>.</p>")
-				.dialog('option', 'buttons', { 
-					"Cancel": function() { 
-						$(this).dialog("close"); 
-					},
+				.html("<p>Please confirm you want to delete your port forwarding service <b>"+sgName+"</b>.</p>")
+				.dialog('option', 'buttons', { 					
 					"Confirm": function() { 
 						var dialogBox = $(this);
 						$(this).dialog("close");
 						$.ajax({
-							data: "command=deleteSecurityGroup&id="+sgId+"&response=json",
+							data: "command=deletePortForwardingService&id="+sgId+"&response=json",
 							dataType: "json",
 							success: function(json) {
-								submenuContent.find(".net_displaytitlebox h2").text("Click on a Security Group to see more details");
-								submenuContent.find(".add_rules").data("sgId", sgId).hide();
-								submenuContent.find(".net_displaybox_mid").hide();
+								CleanUpBubble(submenuContent, "Port Forwarding Service");
 								submenuContent.find("#sg"+sgId).slideUp("slow", function() { $(this).remove() });
 								changeGridRowsTotal(submenuContent.find("#grid_rows_total"), -1);
 							}
 						});
+					}, 
+					"Cancel": function() { 
+						$(this).dialog("close"); 
 					} 
 				}).dialog("open");
 			});
@@ -155,11 +169,8 @@ function showNetworkingTab() {
 				var protocol = sgRule.data("protocol");
 				var timerKey = "sgRule"+sgId;
 				$("#dialog_confirmation")
-				.html("<p>Please confirm you want to delete the following security group rule.<br/><br/><b>Public Port:  "+publicPort+"<br/>Private Port:  "+privatePort+"<br/>Protocol:  "+protocol+"</b></p>")
-				.dialog('option', 'buttons', { 
-					"Cancel": function() { 
-						$(this).dialog("close"); 
-					},
+				.html("<p>Please confirm you want to delete the following port forwarding service rule.<br/><br/><b>Public Port:  "+publicPort+"<br/>Private Port:  "+privatePort+"<br/>Protocol:  "+protocol+"</b></p>")
+				.dialog('option', 'buttons', { 					
 					"Confirm": function() { 
 						var dialogBox = $(this);
 						$(this).dialog("close");
@@ -167,10 +178,10 @@ function showNetworkingTab() {
 						sgRuleTemplate.find(".display_rowloading p").text("Deleting...");
 						sgRuleTemplate.find(".display_rowloading").fadeIn("slow");
 						$.ajax({
-							data: "command=deleteNetworkRule&id="+sgId+"&response=json",
+							data: "command=deletePortForwardingServiceRule&id="+sgId+"&response=json",
 							dataType: "json",
 							success: function(json) {
-								var nwJSON = json.deletenetworkruleresponse;
+								var nwJSON = json.deleteportforwardingserviceruleresponse;
 								$("body").everyTime(
 									5000,
 									timerKey,
@@ -193,13 +204,13 @@ function showNetworkingTab() {
 													} else if (result.jobstatus == 2) { // Failed
 														sgRuleTemplate.find(".display_rowloading").hide();
 														sgRuleTemplate.find("#sg_body").fadeIn("slow");
-														$("#dialog_error").html("<p style='color:red'>We were unable to delete the security group rule: <br/><br/><b>Public Port:  "+publicPort+"<br/>Private Port:  "+privatePort+"<br/>Protocol:  "+protocol+"</b></p>").dialog("open");
+														$("#dialog_error").html("<p style='color:red'>We were unable to delete the port forwarding service rule: <br/><br/><b>Public Port:  "+publicPort+"<br/>Private Port:  "+privatePort+"<br/>Protocol:  "+protocol+"</b></p>").dialog("open");
 													}
 												}
 											},
-											error: function(XMLHttpRequest) {
+											error: function(XMLHttpResponse) {
 												$("body").stopTime(timerKey);
-												handleError(XMLHttpRequest);
+												handleError(XMLHttpResponse);
 											}
 										});
 									},
@@ -207,6 +218,9 @@ function showNetworkingTab() {
 								);
 							}
 						});
+					}, 
+					"Cancel": function() { 
+						$(this).dialog("close"); 
 					} 
 				}).dialog("open");
 			});
@@ -222,10 +236,7 @@ function showNetworkingTab() {
 			var lbInstance = $("#submenu_content_load_balancer_policies #lbInstance"+vmId);
 			$("#dialog_confirmation")
 			.html("<p>Please confirm you want to remove the following Virtual Instance," + vmName + ", from your load balancer policy.</p>")
-			.dialog('option', 'buttons', { 
-				"Cancel": function() { 
-					$(this).dialog("close"); 
-				},
+			.dialog('option', 'buttons', { 				
 				"Confirm": function() { 
 					var dialogBox = $(this);
 					$(this).dialog("close");
@@ -233,10 +244,10 @@ function showNetworkingTab() {
 					lbInstance.find(".load_loadingvm").fadeIn("slow");
 					lbInstance.find(".load_workingvm").hide();
 					$.ajax({
-						data: "command=removeFromLoadBalancer&id="+lbInstanceId+"&virtualmachineid="+vmId+"&response=json",
+						data: "command=removeFromLoadBalancerRule&id="+lbInstanceId+"&virtualmachineid="+vmId+"&response=json",
 						dataType: "json",
 						success: function(json) {
-							var lbJSON = json.removefromloadbalancerresponse;
+							var lbJSON = json.removefromloadbalancerruleresponse;
 							$("body").everyTime(
 								5000,
 								timerKey,
@@ -261,9 +272,9 @@ function showNetworkingTab() {
 												}
 											}
 										},
-										error: function(XMLHttpRequest) {
+										error: function(XMLHttpResponse) {
 											$("body").stopTime(timerKey);
-											handleError(XMLHttpRequest);
+											handleError(XMLHttpResponse);
 										}
 									});
 								},
@@ -271,6 +282,9 @@ function showNetworkingTab() {
 							);
 						}
 					});
+				}, 
+				"Cancel": function() { 
+					$(this).dialog("close"); 
 				} 
 			}).dialog("open");
 		});
@@ -294,7 +308,7 @@ function showNetworkingTab() {
 			lbTemplate.find("#lb_account").text(lbJSON.account);
 
 			// Clicking on a row will open up the right Load Balancer Instance section
-			lbTemplate.data("lbId", lbJSON.id).data("lbName", lbJSON.name).data("lbPublicIp", lbJSON.publicip).bind("click", function(event) {
+			lbTemplate.data("lbId", lbJSON.id).data("lbName", sanitizeXSS(lbJSON.name)).data("lbPublicIp", lbJSON.publicip).bind("click", function(event) {
 				var lbId = $(this).data("lbId");
 				var lbName = $(this).data("lbName");
 				$("#submenu_content_load_balancer_policies .net_displaytitlebox h2").text(lbName);
@@ -306,10 +320,10 @@ function showNetworkingTab() {
 				// Load the grid
 				$.ajax({
 					cache: false,
-					data: "command=listLoadBalancerInstances&id="+lbId+"&response=json",
+					data: "command=listLoadBalancerRuleInstances&id="+lbId+"&response=json",
 					dataType: "json",
 					success: function(json) {
-						var instances = json.listloadbalancerinstancesresponse.loadbalancerinstance;
+						var instances = json.listloadbalancerruleinstancesresponse.loadbalancerruleinstance;
 						var lbInstanceContent = $("#submenu_content_load_balancer_policies #load_vmlist_container").empty();
 						if (instances != null && instances.length > 0) {
 							$("#lb_instance_new").hide();
@@ -328,28 +342,26 @@ function showNetworkingTab() {
 			});
 			
 			// Deletion
-			lbTemplate.find("#lb_delete").data("lbId", lbJSON.id).data("lbName", lbJSON.name).bind("click", function(event) {
+			lbTemplate.find("#lb_delete").data("lbId", lbJSON.id).data("lbName", sanitizeXSS(lbJSON.name)).bind("click", function(event) {
 				var lbId = $(this).data("lbId");
 				var lbName = $(this).data("lbName");
 				var lbRow = $("#lb"+lbId);
 				var timerKey = "lbRule"+lbId;
 				$("#dialog_confirmation")
-				.html("<p>Please confirm you want to delete your load balancer policy: <b>"+lbName+"</b>.</p>")
-				.dialog('option', 'buttons', { 
-					"Cancel": function() { 
-						$(this).dialog("close"); 
-					},
+				.html("<p>Please confirm you want to delete your load balancer rule: <b>"+lbName+"</b>.</p>")
+				.dialog('option', 'buttons', { 					
 					"Confirm": function() { 
 						var dialogBox = $(this);
 						$(this).dialog("close");						
-						var submenuContent = $("#submenu_content_load_balancer_policies");						
+						var submenuContent = $("#submenu_content_load_balancer_policies");
+						lbRow.find(".adding_text").html("Deleting &hellip;");
 						lbRow.find(".adding_loading").show();
-						lbRow.find("#lb_body").hide();
+						lbRow.find("#row_container").hide();
 						$.ajax({
-							data: "command=deleteLoadBalancer&id="+lbId+"&response=json",
+							data: "command=deleteLoadBalancerRule&id="+lbId+"&response=json",
 							dataType: "json",
 							success: function(json) {
-								var lbJSON = json.deleteloadbalancerresponse;
+								var lbJSON = json.deleteloadbalancerruleresponse;
 								$("body").everyTime(
 									5000,
 									timerKey,
@@ -364,9 +376,12 @@ function showNetworkingTab() {
 												} else {
 													$("body").stopTime(timerKey);
 													if (result.jobstatus == 1) { // Succeeded
-														submenuContent.find(".net_displaytitlebox h2").text("Click on a Load Balancer to see more details");
+														submenuContent.find(".net_displaytitlebox h2").text("Click on a Load Balancer Rule to see more details");
 														submenuContent.find(".add_rules").hide();
 														submenuContent.find(".net_displaybox_mid").hide();
+														
+														CleanUpBubble(submenuContent, "Load Balancer Rule");
+														
 														lbRow.slideUp("slow", function() {
 															$(this).remove();
 															changeGridRowsTotal(submenuContent.find("#grid_rows_total"), -1);
@@ -377,9 +392,9 @@ function showNetworkingTab() {
 													}
 												}
 											},
-											error: function(XMLHttpRequest) {
+											error: function(XMLHttpResponse) {
 												$("body").stopTime(timerKey);
-												handleError(XMLHttpRequest);
+												handleError(XMLHttpResponse);
 											}
 										});
 									},
@@ -387,9 +402,18 @@ function showNetworkingTab() {
 								);
 							}
 						});
+					}, 
+					"Cancel": function() { 
+						$(this).dialog("close"); 
 					} 
 				}).dialog("open");
 			});
+		}
+		
+		function CleanUpBubble(submenuContent, item_label) {		    
+		    submenuContent.find(".net_displaytitlebox h2").text("Click on a "+item_label+" to see more details");    
+			submenuContent.find(".add_rules").hide();	
+			submenuContent.find(".net_displaybox_mid").hide();			
 		}
 		
 		// Dialog Setup
@@ -428,25 +452,39 @@ function showNetworkingTab() {
 		$(".add_publicipbutton").bind("click", function(event) {
 			event.preventDefault();
 			var submenuContent = $("#submenu_content_public_ips");
-			$("#dialog_acquire_public_ip").dialog("option", "buttons", {
-				"Cancel": function() { 
-					$(this).dialog("close"); 
-				},
+			$("#dialog_acquire_public_ip").dialog('option', 'buttons', {				
 				"Acquire": function() { 
-					var dialogBox = $(this);
-					var zId = dialogBox.find("#acquire_zone").val();
-					dialogBox.dialog("close");
+					var thisDialog = $(this);
+										
+					var template = $("#ip_template").clone(true)
+					var loadingImg = template.find(".adding_loading");		
+                    var rowContainer = template.find("#row_container");    	                               
+                    loadingImg.find(".adding_text").text("Acquiring New IP....");	
+                    loadingImg.show();  
+                    rowContainer.hide();                                   
+                    submenuContent.find("#grid_content").prepend(template.fadeIn("slow"));    
+					
+					var zId = thisDialog.find("#acquire_zone").val();
+					thisDialog.dialog("close");
+					
 					$.ajax({
 						data: "command=associateIpAddress&zoneid="+zId+"&response=json",
 						dataType: "json",
 						success: function(json) {
-							var ipJSON = json.associateipaddressresponse.publicipaddress[0];
-							var ipTemplate = $("#ip_template").clone(true).attr("id","ip"+ipJSON.ipaddress);
-							ipJSONToTemplate(ipJSON, ipTemplate);
-							submenuContent.find("#grid_content").prepend(ipTemplate.slideDown("slow"));
+							var items = json.associateipaddressresponse.publicipaddress;							
+							ipJSONToTemplate(items[0], template);							
 							changeGridRowsTotal(submenuContent.find("#grid_rows_total"), 1);
-						}
+							loadingImg.hide();  
+                            rowContainer.show();    
+						},			
+	                    error: function(XMLHttpResponse) {		                   
+		                    handleError(XMLHttpResponse);	
+		                    template.slideUp("slow", function(){ $(this).remove(); } );							    
+	                    }							
 					});
+				},
+				"Cancel": function() { 
+					$(this).dialog("close"); 
 				}
 			});
 			$("#dialog_acquire_public_ip").dialog("open");
@@ -460,10 +498,7 @@ function showNetworkingTab() {
 			$("#security_group_protocol").val("");
 			
 			var sgId = $(this).data("sgId");
-			$("#dialog_add_security_group_rule").dialog('option', 'buttons', { 
-				"Cancel": function() { 
-					$(this).dialog("close"); 
-				},
+			$("#dialog_add_security_group_rule").dialog('option', 'buttons', { 				
 				"Add": function() { 					
 					// validate values
 					var isValid = true;							
@@ -477,10 +512,10 @@ function showNetworkingTab() {
 										
 					var dialogBox = $(this);		
 					$.ajax({
-						data: "command=createNetworkRule&publicport="+publicPort+"&privateport="+privatePort+"&protocol="+protocol+"&securitygroupid="+sgId+"&response=json",
+						data: "command=createPortForwardingServiceRule&publicport="+publicPort+"&privateport="+privatePort+"&protocol="+protocol+"&portforwardingserviceid="+sgId+"&response=json",
 						dataType: "json",
 						success: function(json) {
-							var sgRuleJSON = json.createnetworkruleresponse;
+							var sgRuleJSON = json.createportforwardingserviceruleresponse;
 							var timerKey = "sg"+sgRuleJSON.jobid;
 							var sgRuleTemplate = $("#sg_rule_template").clone(true).attr("id","sg"+sgRuleJSON.jobid);
 							sgRuleTemplate.find(".display_rowloading p").text("Adding...");
@@ -502,18 +537,19 @@ function showNetworkingTab() {
 												$("body").stopTime(timerKey);
 												if (result.jobstatus == 1) { // Succeeded
 													sgRuleTemplate.find(".display_rowloading").hide();
-													sgRuleJSONToTemplate(sgRuleTemplate, result.networkrule[0]);
+													sgRuleJSONToTemplate(sgRuleTemplate, result.portforwardingservicerule[0]);
 													sgRuleTemplate.find("#sg_body").fadeIn("slow");
 												} else if (result.jobstatus == 2) { // Failed
+												    $("#dialog_alert").text("Unable to add port forwarding service rule due to the error: " + result.jobresult).dialog("open");
 													sgRuleTemplate.fadeOut("slow", function() {
 														$(this).remove();
 													});
 												}
 											}
 										},
-										error: function(XMLHttpRequest) {
+										error: function(XMLHttpResponse) {
 											$("body").stopTime(timerKey);
-											handleError(XMLHttpRequest);
+											handleError(XMLHttpResponse);
 										}
 									});
 								},
@@ -522,6 +558,9 @@ function showNetworkingTab() {
 						}
 					});
 					dialogBox.dialog("close");
+				}, 
+				"Cancel": function() { 
+					$(this).dialog("close"); 
 				}
 			}).dialog("open");
 		});
@@ -532,34 +571,47 @@ function showNetworkingTab() {
 			var submenuContent = $("#submenu_content_security_groups");			
 			$("#security_group_name").val("");
 			$("#security_group_desc").val("");
-			$("#dialog_add_security_groups").dialog('option', 'buttons', { 
-				"Cancel": function() { 
-					$(this).dialog("close"); 
-				},
-				"Add": function() { 					
+			$("#dialog_add_security_groups").dialog('option', 'buttons', { 				
+				"Add": function() { 	
+				    var thisDialog = $(this);	
+								
 					// validate values
 					var isValid = true;
-					isValid &= validateString("Name", $("#security_group_name"), $("#security_group_name_errormsg"));
-					isValid &= validateString("Description", $("#security_group_desc"), $("#security_group_desc_errormsg"));					
+					isValid &= validateString("Name", thisDialog.find("#security_group_name"), thisDialog.find("#security_group_name_errormsg"));
+					isValid &= validateString("Description", thisDialog.find("#security_group_desc"), thisDialog.find("#security_group_desc_errormsg"));					
 					if (!isValid) return;	
 					
-					var name = trim($("#security_group_name").val());
-					var desc = trim($("#security_group_desc").val());
+					var template = $("#sg_template").clone(true);
+					var loadingImg = template.find(".adding_loading");		
+                    var rowContainer = template.find("#row_container");    	                               
+                    loadingImg.find(".adding_text").text("Adding....");	
+                    loadingImg.show();  
+                    rowContainer.hide();                                   
+                    submenuContent.find("#grid_content").prepend(template.fadeIn("slow"));    					
 					
-					var dialogBox = $(this);				
+					var name = trim(thisDialog.find("#security_group_name").val());
+					var desc = trim(thisDialog.find("#security_group_desc").val());
+					
+					thisDialog.dialog("close");
+								
 					$.ajax({
-						data: "command=createSecurityGroup&name="+encodeURIComponent(name)+"&description="+encodeURIComponent(desc)+"&response=json",
+						data: "command=createPortForwardingService&name="+encodeURIComponent(name)+"&description="+encodeURIComponent(desc)+"&response=json",
 						dataType: "json",
 						success: function(json) {
-							var sgJSON = json.createsecuritygroupresponse.securitygroup[0];
-							var sgTemplate = $("#sg_template").clone(true).attr("id","sg"+sgJSON.id);
-							sgJSONToTemplate(sgJSON, sgTemplate);
-							submenuContent.find("#grid_content").prepend(sgTemplate.fadeIn("slow"));
-							changeGridRowsTotal(submenuContent.find("#grid_rows_total"), 1);
-							dialogBox.dialog("close");
-						}
-					});
-					dialogBox.dialog("close");
+							var items = json.createportforwardingserviceresponse.portforwardingservice;							
+							sgJSONToTemplate(items[0], template);							
+							changeGridRowsTotal(submenuContent.find("#grid_rows_total"), 1);	
+							loadingImg.hide();  
+                            rowContainer.show();    						
+						}, 								
+	                    error: function(XMLHttpResponse) {		                   
+		                    handleError(XMLHttpResponse);	
+		                    template.slideUp("slow", function(){ $(this).remove(); } );							    
+	                    }	
+					});					
+				},
+				"Cancel": function() { 
+					$(this).dialog("close"); 
 				}
 			}).dialog("open");
 		});
@@ -573,7 +625,7 @@ function showNetworkingTab() {
 			//$("#lb_form_algorithm").val("");
 			
 			$.ajax({
-				data: "command=listPublicIpAddresses&response=json",
+				data: "command=listPublicIpAddresses&domainid="+g_domainid+"&account="+g_account+"&response=json",
 				dataType: "json",
 				success: function(json) {
 					var addressesJSON = json.listpublicipaddressesresponse.publicipaddress;
@@ -588,10 +640,7 @@ function showNetworkingTab() {
 				}
 			});
 				
-			$("#dialog_add_lb_policy").dialog('option', 'buttons', { 
-				"Cancel": function() { 
-					$(this).dialog("close"); 
-				},
+			$("#dialog_add_lb_policy").dialog('option', 'buttons', { 				
 				"Add": function() { 					
 					// validate values
 					var isValid = true;					
@@ -602,6 +651,14 @@ function showNetworkingTab() {
 					
 					var submenuContent = $("#submenu_content_load_balancer_policies");
 					
+					var template = $("#lb_template").clone(true);					
+					var loadingImg = template.find(".adding_loading");		
+                    var rowContainer = template.find("#row_container");    	                               
+                    loadingImg.find(".adding_text").text("Adding....");	
+                    loadingImg.show();  
+                    rowContainer.hide();                                   
+                    submenuContent.find("#grid_content").prepend(template.fadeIn("slow"));   
+					
 					var name = trim($("#lb_form_name").val());
 					var ip = $("#lb_form_public_ip").val();
 					var publicPort = trim($("#lb_form_public_port").val());
@@ -610,17 +667,24 @@ function showNetworkingTab() {
 					
 					var dialogBox = $(this);
 					$.ajax({
-						data: "command=createLoadBalancer&name="+encodeURIComponent(name)+"&ipaddress="+ip+"&publicport="+publicPort+"&privateport="+privatePort+"&algorithm="+algorithm+"&response=json",
+						data: "command=createLoadBalancerRule&name="+encodeURIComponent(name)+"&publicip="+ip+"&publicport="+publicPort+"&privateport="+privatePort+"&algorithm="+algorithm+"&response=json",
 						dataType: "json",
 						success: function(json) {
-							var lbJSON = json.createloadbalancerresponse.loadbalancer[0];
-							var lbTemplate = $("#lb_template").clone(true).attr("id","lb"+lbJSON.id);
-							lbJSONToTemplate(lbJSON, lbTemplate);
-							submenuContent.find("#grid_content").prepend(lbTemplate.fadeIn("slow"));
+							var items = json.createloadbalancerruleresponse.loadbalancerrule;							
+							lbJSONToTemplate(items[0], template);							
 							changeGridRowsTotal(submenuContent.find("#grid_rows_total"), 1);
-						}
+							loadingImg.hide();  
+                            rowContainer.show();    
+						},			
+	                    error: function(XMLHttpResponse) {		                   
+		                    handleError(XMLHttpResponse);	
+		                    template.slideUp("slow", function(){ $(this).remove(); } );							    
+	                    }						
 					});
 					dialogBox.dialog("close");
+				}, 
+				"Cancel": function() { 
+					$(this).dialog("close"); 
 				}
 			}).dialog("open");
 		});
@@ -633,14 +697,14 @@ function showNetworkingTab() {
 			// Load the select box with the VMs that haven't been applied a LB rule to.
 			$.ajax({
 				cache: false,
-				data: "command=listLoadBalancerInstances&id="+lbId+"&applied=false&response=json",
+				data: "command=listLoadBalancerRuleInstances&id="+lbId+"&applied=false&response=json",
 				dataType: "json",
 				success: function(json) {
-					var instances = json.listloadbalancerinstancesresponse.loadbalancerinstance;
+					var instances = json.listloadbalancerruleinstancesresponse.loadbalancerruleinstance;
 					var vmSelect = $("#vm_to_lb").empty();
 					if (instances != null && instances.length > 0) {
 						for (var i = 0; i < instances.length; i++) {
-							html = $("<option value='" + instances[i].id + "'>" + instances[i].name + "</option>")
+							html = $("<option value='" + instances[i].id + "'>" +  getVmName(instances[i].name, instances[i].displayname) + "</option>")
 							html.data("vmIp", instances[i].privateip);
 							vmSelect.append(html); 
 						}
@@ -651,22 +715,22 @@ function showNetworkingTab() {
 			});
 			
 			var lbId = $(this).data("lbId");
-			$("#dialog_add_vm_to_lb").dialog('option', 'buttons', { 
-				"Cancel": function() { 
-					$(this).dialog("close"); 
-				},
+			$("#dialog_add_vm_to_lb").dialog('option', 'buttons', { 				
 				"Add": function() { 
 					var dialogBox = $(this);
 					var selected = $("#vm_to_lb");
 					var vmId = selected.val();
-					var vmName = selected.find(":selected").text();
+					if(vmId	== null)
+					    return;
+					
+					var vmName = sanitizeXSS(selected.find(":selected").text());
 					var vmIp = selected.find(":selected").data("vmIp");
 					
 					$.ajax({
-						data: "command=assignToLoadBalancer&id="+lbId+"&virtualmachineid="+vmId+"&response=json",
+						data: "command=assignToLoadBalancerRule&id="+lbId+"&virtualmachineid="+vmId+"&response=json",
 						dataType: "json",
 						success: function(json) {
-							var lbInstanceJSON = json.assigntoloadbalancerresponse;
+							var lbInstanceJSON = json.assigntoloadbalancerruleresponse;
 							$("#lb_instance_new").hide();
 							var lbInstanceContent = $("#submenu_content_load_balancer_policies #load_vmlist_container");
 							var lbInstanceNew = $("#lb_instance_template").clone(true).attr("id", "lbInstanceNew"+lbInstanceJSON.jobid);
@@ -695,15 +759,15 @@ function showNetworkingTab() {
 													lbInstanceNew.find(".load_loadingvm").hide();
 													lbInstanceNew.find(".load_workingvm").fadeIn();
 												} else if (result.jobstatus == 2) { // Failed
-													$("#dialog_error").html("<p style='color:red'><b>Operation error:</b></p><br/><p style='color:red'>"+ result.jobresult+"</p>").dialog("open");
+													$("#dialog_error").html("<p style='color:red'><b>Operation error:</b></p><br/><p style='color:red'>"+ sanitizeXSS(result.jobresult)+"</p>").dialog("open");
 													lbInstanceNew.find(".load_loadingvm").hide();
 													$("#lb_instance_new").show();
 												}
 											}
 										},
-										error: function(XMLHttpRequest) {
+										error: function(XMLHttpResponse) {
 											$("body").stopTime(timerKey);
-											handleError(XMLHttpRequest);
+											handleError(XMLHttpResponse);
 										}
 									});
 								},
@@ -711,6 +775,9 @@ function showNetworkingTab() {
 							);
 						}
 					});
+				}, 
+				"Cancel": function() { 
+					$(this).dialog("close"); 
 				}
 			}).dialog("open");
 		});
@@ -725,20 +792,31 @@ function showNetworkingTab() {
         	var commandString;            
 			var advanced = submenuContent.find("#search_button").data("advanced");   	              
 			if (advanced != null && advanced) {					   
-			    var zone = submenuContent.find("#advanced_search #adv_search_zone").val();			  
+			    var zone = submenuContent.find("#advanced_search #adv_search_zone").val();
+			    var domainId = submenuContent.find("#advanced_search #adv_search_domain").val();			  
 			    var account = submenuContent.find("#advanced_search #adv_search_account").val();
 			    var moreCriteria = [];					
 			    if (zone!=null && zone.length > 0) 
-					moreCriteria.push("&zoneId="+zone);	 
+					moreCriteria.push("&zoneId="+zone);	
+				if (domainId!=null && domainId.length > 0) 
+					moreCriteria.push("&domainid="+domainId);	 
 				if (account!=null && account.length > 0) 
 					moreCriteria.push("&account="+account);		
 				commandString = "command=listPublicIpAddresses&page="+currentPage+moreCriteria.join("")+"&response=json";       
 			} else {              
         	    var searchInput = submenuContent.find("#search_input").val();            
-                if (searchInput != null && searchInput.length > 0) 
-                    commandString = "command=listPublicIpAddresses&page="+currentPage+"&keyword="+searchInput+"&response=json"
-                else
-                    commandString = "command=listPublicIpAddresses&page="+currentPage+"&response=json";    
+                if (searchInput != null && searchInput.length > 0) {
+                    commandString = "command=listPublicIpAddresses&page="+currentPage+"&keyword="+searchInput+"&response=json" 
+                }
+                else {                                      
+                    var moreCriteria = [];	
+                    // "p_domainId!=null" and "p_account!=null" means redirected from "IPs" link on Accounts page to here(Public IPs page)  
+                    if (p_domainId!=null && p_domainId.length > 0) 
+					    moreCriteria.push("&domainid="+p_domainId);		
+                    if (p_account!=null && p_account.length > 0) 
+					    moreCriteria.push("&account="+p_account);	                    
+                    commandString = "command=listPublicIpAddresses&page="+currentPage+moreCriteria.join("")+"&response=json";  
+                }  
             }
 		
 		    //listItems(submenuContent, commandString, jsonResponse1, jsonResponse2, template, fnJSONToTemplate);         
@@ -761,7 +839,7 @@ function showNetworkingTab() {
 				$("#ip_account_header, #ip_account_container, #ip_vlan_header, #ip_vlan_container, #ip_domain_header, #ip_domain_container").show();
 				$("#ip_release_header").removeClass("ip_gridheader_cell2").addClass("ip_gridheader_cell3");
 				$("#ip_release_container").removeClass("ip_gridrow_cell2").addClass("ip_gridrow_cell3");				
-				submenuContent.find("#adv_search_account_li").show();  
+				submenuContent.find("#adv_search_domain_li, #adv_search_account_li").show();  
 			}
 			
 			currentPage = 1;  
@@ -775,24 +853,27 @@ function showNetworkingTab() {
 	        var commandString;            
 			var advanced = submenuContent.find("#search_button").data("advanced");                    
 			if (advanced != null && advanced) {		
-			    var name = submenuContent.find("#advanced_search #adv_search_name").val();				   
+			    var name = submenuContent.find("#advanced_search #adv_search_name").val();	
+			    var domainId = submenuContent.find("#advanced_search #adv_search_domain").val();			   
 			    var account = submenuContent.find("#advanced_search #adv_search_account").val();
 			    var moreCriteria = [];								
 				if (name!=null && trim(name).length > 0) 
-					moreCriteria.push("&name="+encodeURIComponent(trim(name)));					
+					moreCriteria.push("&name="+encodeURIComponent(trim(name)));		
+				if (domainId!=null && domainId.length > 0) 
+					moreCriteria.push("&domainid="+domainId);				
 				if (account!=null && account.length > 0) 
 					moreCriteria.push("&account="+account);		
-				commandString = "command=listSecurityGroups&page="+currentPage+moreCriteria.join("")+"&response=json";   
+				commandString = "command=listPortForwardingServices&page="+currentPage+moreCriteria.join("")+"&response=json";   
 			} else {         
 	            var searchInput = submenuContent.find("#search_input").val();            
                 if (searchInput != null && searchInput.length > 0) 
-                    commandString = "command=listSecurityGroups&page="+currentPage+"&keyword="+searchInput+"&response=json";
+                    commandString = "command=listPortForwardingServices&page="+currentPage+"&keyword="+searchInput+"&response=json";
                 else
-                    commandString = "command=listSecurityGroups&page="+currentPage+"&response=json";
+                    commandString = "command=listPortForwardingServices&page="+currentPage+"&response=json";
             }
 	        
 	        //listItems(submenuContent, commandString, jsonResponse1, jsonResponse2, template, fnJSONToTemplate);         
-            listItems(submenuContent, commandString, "listsecuritygroupsresponse", "securitygroup", $("#sg_template"), sgJSONToTemplate);    	        
+            listItems(submenuContent, commandString, "listportforwardingservicesresponse", "portforwardingservice", $("#sg_template"), sgJSONToTemplate);    	        
 		}
 		
 		submenuContentEventBinder($("#submenu_content_security_groups"), listSecurityGroups);
@@ -805,13 +886,14 @@ function showNetworkingTab() {
 			currentSubMenu = $(this);		
 			var submenuContent = $("#submenu_content_security_groups").show();
 			$("#submenu_content_public_ips").hide();
-			$("#submenu_content_load_balancer_policies").hide();			
+			$("#submenu_content_load_balancer_policies").hide();
+			CleanUpBubble(submenuContent, "Port Forwarding Service");			
 			
 			if (isAdmin()) {
 				$("#sg_account_container, #sg_rule_account_header").show();
 				$("#sg_desc_container").removeClass("net_row_cell2").addClass("net_row_cell4");
 				$("#sg_rule_desc_header").removeClass("netgridheader_cell2").addClass("netgridheader_cell4");				
-				submenuContent.find("#adv_search_account_li").show();  
+				submenuContent.find("#adv_search_domain_li, #adv_search_account_li").show();  
 			}
 			
 			currentPage = 1;  
@@ -827,24 +909,27 @@ function showNetworkingTab() {
 	        var commandString;            
 			var advanced = submenuContent.find("#search_button").data("advanced");                    
 			if (advanced != null && advanced) {		
-			    var name = submenuContent.find("#advanced_search #adv_search_name").val();				   
+			    var name = submenuContent.find("#advanced_search #adv_search_name").val();	
+			    var domainId = submenuContent.find("#advanced_search #adv_search_domain").val();			   
 			    var account = submenuContent.find("#advanced_search #adv_search_account").val();
 			    var moreCriteria = [];								
 				if (name!=null && trim(name).length > 0) 
-					moreCriteria.push("&name="+encodeURIComponent(trim(name)));			
+					moreCriteria.push("&name="+encodeURIComponent(trim(name)));	
+				if (domainId!=null && domainId.length > 0) 
+					moreCriteria.push("&domainid="+domainId);			
 				if (account!=null && account.length > 0) 
 					moreCriteria.push("&account="+account);		
-				commandString = "command=listLoadBalancers&page="+currentPage+moreCriteria.join("")+"&response=json";  
+				commandString = "command=listLoadBalancerRules&page="+currentPage+moreCriteria.join("")+"&response=json";  
 			} else {          
 	            var searchInput = submenuContent.find("#search_input").val();            
                 if (searchInput != null && searchInput.length > 0) 
-                    commandString = "command=listLoadBalancers&page="+currentPage+"&keyword="+searchInput+"&response=json"
+                    commandString = "command=listLoadBalancerRules&page="+currentPage+"&keyword="+searchInput+"&response=json"
                 else
-                    commandString = "command=listLoadBalancers&page="+currentPage+"&response=json";
+                    commandString = "command=listLoadBalancerRules&page="+currentPage+"&response=json";
             }
 	        
 	        //listItems(submenuContent, commandString, jsonResponse1, jsonResponse2, template, fnJSONToTemplate);         
-            listItems(submenuContent, commandString, "listloadbalancersresponse", "loadbalancer", lbTemplate, lbJSONToTemplate);   
+            listItems(submenuContent, commandString, "listloadbalancerrulesresponse", "loadbalancerrule", lbTemplate, lbJSONToTemplate);   
 		}
 		
 		submenuContentEventBinder($("#submenu_content_load_balancer_policies"), listLoadBalancers);
@@ -858,12 +943,13 @@ function showNetworkingTab() {
 			var submenuContent = $("#submenu_content_load_balancer_policies").show();
 			$("#submenu_content_public_ips").hide();
 			$("#submenu_content_security_groups").hide();
+			CleanUpBubble(submenuContent, "Load Balancer Rule");
 			
 			if (isAdmin()) {
 				$("#lb_account_header, #lb_account_container").show();
 				$("#lb_name_header").removeClass("loadgridheader_cell1").addClass("loadgridheader_cell4");
 				$("#lb_name_container").removeClass("load_row_cell1").addClass("load_row_cell4");				
-				submenuContent.find("#adv_search_account_li").show();   
+				submenuContent.find("#adv_search_domain_li, #adv_search_account_li").show();   
 			}	
 			
 			currentPage = 1;

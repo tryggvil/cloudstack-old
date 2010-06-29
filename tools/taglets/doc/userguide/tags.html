@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Generated for taglets on 2008/03/30 14:47:34, do not modify!
+-->
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+	<head><style type="text/css">
+    /* <![CDATA[ */
+    @import "../css/tigris.css";
+    @import "../css/inst.css";
+    /* ]]> */
+   </style><link rel="shortcut icon" href="../favicon.ico"/><link media="print" href="../css/print.css" type="text/css" rel="stylesheet"/><title>Taglets: User Guide: Predefined Tags</title><meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/><meta http-equiv="Content-style-type" content="text/css"/><meta name="Generator" content="MuliFex WebDoc"/>      <link rel="alternate"       type="application/rss+xml"       title="Taglets"       href="http://taglets.sourceforge.net/rss.xml"/>      </head>
+	<body class="composite" style="margin:0px;">     <div id="banner">     <div class="banner-latest-release">     <a href="http://taglets.sourceforge.net/download.html">     Taglets Collection 2.0.3<br/>     2008/03/30 13:49:50</a></div><h1><a id="sc" href="http://taglets.sourceforge.net/"><span class="alt">Taglets Collection</span></a></h1></div><div id="toptabs" class="tabs"><table border="0" cellspacing="0" cellpadding="4"><tr><td><a href="../index.html">Home</a></td><td><a href="../download.html">Downloads</a></td><th><a href="../userguide/index.html">User Guide</a></th><td><a href="../development/index.html">Development</a></td><td><a href="../legal.html">Legal</a></td></tr></table></div><div id="breadcrumbs"><a href="../index.html">Taglets</a> &gt; <a href="../userguide/index.html">User Guide</a> &gt; Predefined Tags</div><table id="main" width="100%" cellpadding="4" cellspacing="0" border="0"><tr valign="top"><td id="leftcol"><div id="navcolumn"><div class="toolgroup" id="projecttools"><div class="label"><strong>Taglets</strong></div><div class="body"><div><a href="../index.html">Home</a><div><a href="../news.html">News</a></div><div><a href="../screenshots.html">Screenshots</a></div><div><a href="../download.html">Downloads</a></div><div><a href="../legal.html">Legal</a></div></div><div><a href="../userguide/index.html">User Guide</a><div><a href="../userguide/simple.html">Simple Usage</a></div><div><a href="../userguide/extended.html">Extended Usage</a></div><div><a href="../userguide/custom.html">Custom Taglets</a></div><div><a href="../userguide/configuration.html">Configuration</a></div><div><strong>Predefined Tags</strong><div><a href="#overview">Overview</a></div><div><a href="#defaults">Defaults</a><div><a href="#block_Tags">Block Tags</a></div><div><a href="#inline_Tags">Inline Tags</a></div></div></div><div><a href="../userguide/shutdown.html">Shutdown Taglets</a></div><div><a href="../userguide/knownbugs.html">Known Bugs</a></div><div><a href="../userguide/todo.html">ToDo List</a></div></div><div><a href="../development/index.html">Development</a><div><a href="../development/setup.html">Setup</a></div><div><a href="../development/primers.html">Primers</a></div><div><a href="../development/build.html">Build System</a></div><div><a href="../development/tools.html">Tools Used</a></div><div><a href="../development/audit.html">Auditing Reports</a></div><div><a href="../development/changelog.html">ChangeLog</a></div></div></div></div><div class="toolgroup" id="apitools"><div class="label"><strong>Taglets API</strong></div><div class="body"><div><a href="../api/simple/api-index.html">Simple</a></div><div><a href="../api/complete/api-index.html">Complete</a></div><div><a href="../api/demo/api-index.html">Demo</a></div></div></div><div class="toolgroup" id="linktools"><div class="label"><strong>Quick Links</strong></div><div class="body"><div><a href="http://www.sourceforge.net/">SourceForge</a><div><a href="http://sourceforge.net/projects/taglets/">Taglets Project</a></div><div><a href="http://sourceforge.net/project/showfiles.php?group_id=95947">Project Downloads</a></div></div><div><a href="http://www.sun.com/">Sun Microsystems</a><div><a href="http://java.sun.com/">Java Homepage</a></div><div><a href="http://java.sun.com/j2se/javadoc/">JavaDoc Tool</a></div></div><div><a href="http://www.codehaus.org/">CodeHaus</a></div><div><a href="http://www.java.net/">Java.net</a></div><div><a href="http://jakarta.apache.org/">Jakarta</a><div><a href="http://ant.apache.org/manual/index.html">Ant Manual</a></div></div></div></div><div class="toolgroup" id="feedtools"><div class="label"><strong>News Feed</strong></div><div class="body"><div><a href="../rss.xml">Taglets</a></div></div></div><div class="strut">&nbsp;</div></div></td><td><div id="bodycol"><div id="apphead"><h2>User Guide:  <em>Predefined Tags</em></h2></div><div class="app" id="projecthome"><p>
+			This section describes the predefined tags included in the default
+			configuration of the <em>Taglets Collection</em>.
+		</p><p>
+			It also gives an overview of the canned taglet classes that are suitable 
+			for defining new tags from existing taglet classes.
+		</p><h3><a name="overview">Overview</a></h3><p>
+			Definition of a new custom tag is done by specifying the tag name
+			as well as its option in a configuration file.
+		</p><h4>Tag Definition</h4><p>
+			The following example shows the default definition of the <tt>@todo</tt>
+			block tag:
+		</p><pre class="source">Taglets.taglet.todo= net.sourceforge.taglets.simple.block.ParamBlockTaglet
+Taglets.taglet.todo.dl.class= tagletsTodo
+Taglets.taglet.todo.dl.header= &lt;b&gt;Todo:&lt;/b&gt;
+Taglets.taglet.todo.before= impl</pre><p>
+			As you can see tags are introduced by using:
+		</p><pre class="source">Taglets.taglet.&lt;name&gt;= &lt;fully-qualified-implementation-class&gt;</pre><p>
+			And options are added by using:
+		</p><pre class="source">Taglets.taglet.&lt;name&gt;.option= value</pre><p>
+			The configuration can include any number of options. The options
+			are made available to the taglet under the name following the
+			tag name, e.g. to the <tt>@todo</tt> taglet listed above the
+			following options are "visible": <tt>dl.class</tt>,
+			<tt>dl.header</tt>, <tt>before</tt>.
+		</p><h4>Default Options</h4><p>
+			Similar to the <a href="configuration.html#ordering">tag ordering for 
+			standard tags</a> each taglet tag definition also "inherits"
+			the following ordering options:
+		</p><pre class="source">Taglets.taglet.&lt;name&gt;.before= &lt;next-tagname&gt;
+Taglets.taglet.&lt;name&gt;.after= &lt;previous-tagname&gt;
+Taglets.tag.&lt;name&gt;.between= &lt;previous-tagname&gt;, &lt;next-tagname&gt;</pre><p class="infomark">
+			Standard tags and custom taglet tags can be mixed in any order you like.
+		</p><h3><a name="defaults">Default Tags</a></h3><p>
+			The following subsections list the tags included in the default
+			configuration of the <em>Taglets Collection</em>.
+		</p><p>
+			The links in the tag tables point to a sample use in the 
+			<a href="../api/demo/api-index.html">Demo API Reference</a>.
+		</p><h4>Tag Options</h4><p>
+			To configure the default tags please have a look at their default
+			configuration in file <a href="taglets-default.properties">
+			<tt>/META-INF/taglets-default.properties</tt></a>
+			of your <tt>taglets.jar</tt>.
+		</p><p>
+			Have a look at the implementation
+			class and use the API documentation to see what configuration
+			options are available.
+		</p><h4><a name="block_Tags">Default Block Tags</a></h4><table border="1" cellpadding="3" cellspacing="2" width="100%">
+			<tr>
+				<th style="width: 10em;">Tag</th>
+				<th>Description</th>
+			</tr>
+			<tr class="b">
+				<td><tt><a style="text-decoration: none;" href="../api/demo/net/sourceforge/taglets/demo/Demo.html">@adm</a></tt></td>
+				<td>
+					Prints general information about a source file.<br/>
+					Formates contents in form "<tt>$Revision$ $Date$</tt>"
+					to a nice listing consisting of <em>Version</em> and <em>Maintainer</em>
+					with complete revision information and a "mailto" link
+					to the maintainer (including preconfigured subject with all versioning
+					information).<br/>
+					Uses the following parameters <tt>params.maintainer.name</tt>,
+					<tt>params.maintainer.mail</tt> and <tt>params.maintainer.project</tt>.
+				</td>
+			</tr>
+			<tr class="a">
+				<td><tt><a style="text-decoration: none;" href="../api/demo/net/sourceforge/taglets/demo/block/Implementation.html#CONSTANT">@constant</a></tt></td>
+				<td>
+					Automagic constant value tag filler.<br/>
+					This tag need not be used in the JavaDoc, the taglet will
+					automagically insert the constant value of the field with
+					link to the constants overview HTML page.<br/>
+					If specified for a field no value will be generated but
+					the text of the tag is used without generating a link.
+				</td>
+			</tr>
+			<tr class="b">
+				<td><tt><a style="text-decoration: none;" href="../api/demo/net/sourceforge/taglets/demo/block/BlockTags.html#done()">@done</a></tt></td>
+				<td>
+					Block tag for "Done" messages.
+				</td>
+			</tr>
+			<tr class="a">
+				<td><tt><a style="text-decoration: none;" href="../api/demo/net/sourceforge/taglets/demo/block/Implementation.html#equivalence()">@equivalence</a></tt></td>
+				<td>
+					Block tag for "Equivalent To".<br/>
+					Preformatted and pretty-printed by default.
+				</td>
+			</tr>
+			<tr class="b">
+				<td><tt><a style="text-decoration: none;" href="../api/demo/net/sourceforge/taglets/demo/block/BlockTags.html#error()">@error</a></tt></td>
+				<td>
+					Block tag for "Errors".
+				</td>
+			</tr>
+			<tr class="a">
+				<td><tt><a style="text-decoration: none;" href="../api/demo/net/sourceforge/taglets/demo/block/Implementation.html#impl()">@impl</a></tt></td>
+				<td>
+					Block tag for "Implementation Notes".
+				</td>
+			</tr>
+			<tr class="b">
+				<td><tt><a style="text-decoration: none;" href="../api/demo/net/sourceforge/taglets/demo/block/BlockTags.html#info()">@info</a></tt></td>
+				<td>
+					Block tag for "Informations".
+				</td>
+			</tr>
+			<tr class="a">
+				<td><tt><a style="text-decoration: none;" href="../api/demo/net/sourceforge/taglets/demo/Demo.html">@new</a></tt></td>
+				<td>
+					Block tag used for new revisions that have not yet been released.<br/>
+					When used in conjunction with the <tt>mandatory</tt> option of the
+					<tt>@since</tt> tags no warnings are issued for elements defining an
+					<tt>@new</tt> tag.
+				</td>
+			</tr>
+			<tr class="b">
+				<td><tt><a style="text-decoration: none;" href="../api/demo/net/sourceforge/taglets/demo/block/BlockTags.html#note()">@note</a></tt></td>
+				<td>
+					Block tag for "Notes".
+				</td>
+			</tr>
+			<tr class="a">
+				<td><tt><a style="text-decoration: none;" href="../api/demo/net/sourceforge/taglets/demo/Demo.html">@since</a></tt></td>
+				<td>
+					Overrides the standard <tt>@since</tt> tag.<br/>
+					Behaves as the standard tag except that if option <tt>mandatory</tt>
+					is set to <tt>true</tt> warnings are printed for all <tt>@since</tt>
+					tags missing. (See also <tt>@new</tt>)
+				</td>
+			</tr>
+			<tr class="b">
+				<td><tt><a style="text-decoration: none;" href="../api/demo/net/sourceforge/taglets/demo/block/Implementation.html#testcase()">@testcase</a></tt></td>
+				<td>
+					Block tag for listings of "Testcases".<br/>
+					Preformatted and pretty-printed by default.
+				</td>
+			</tr>
+			<tr class="a">
+				<td><tt><a style="text-decoration: none;" href="../api/demo/net/sourceforge/taglets/demo/block/BlockTags.html#todo()">@todo</a></tt></td>
+				<td>
+					Block tag for "ToDo" messages.
+				</td>
+			</tr>
+			<tr class="b">
+				<td><tt><a style="text-decoration: none;" href="../api/demo/net/sourceforge/taglets/demo/Demo.html">@adm</a></tt></td>
+				<td>
+					Overrides the standard <tt>@version</tt> tag.<br/>
+					Behaves as the standard tag except if the contents is 
+					<tt>$Revision$ $Date$</tt>
+					in this case the output is beautified.<br/>
+					Similar to <tt>@adm</tt> except that it does not generate
+					maintainer information.
+				</td>
+			</tr>
+			<tr class="a">
+				<td><tt><a style="text-decoration: none;" href="../api/demo/net/sourceforge/taglets/demo/block/BlockTags.html#warning()">@warning</a></tt></td>
+				<td>
+					Block tag for "Warnings".
+				</td>
+			</tr>
+		</table><h4><a name="inline_Tags">Default Inline Tags</a></h4><table border="1" cellpadding="3" cellspacing="2" width="100%">
+			<tr>
+				<th style="width: 10em;">Tag</th>
+				<th>Description</th>
+			</tr>
+			<tr class="b">
+				<td><tt><a style="text-decoration: none;" href="../api/demo/net/sourceforge/taglets/demo/inline/SourceCode.html#annotation()">{@annotation}</a></tt></td>
+				<td>
+					Used to include an annotation in an inline tag.<br/>
+					The same as {@at}.
+				</td>
+			</tr>
+			<tr class="a">
+				<td><tt><a style="text-decoration: none;" href="../api/demo/net/sourceforge/taglets/demo/inline/SourceCode.html#at()">{@at}</a></tt></td>
+				<td>
+					Used to escape the at sign '@' in inline tags.<br/>
+					The same as {@annotation}.
+				</td>
+			</tr>
+			<tr class="b">
+				<td><tt><a style="text-decoration: none;" href="../api/demo/net/sourceforge/taglets/demo/inline/SourceCode.html#example()">{@example}</a></tt></td>
+				<td>
+					Creates a sticky with the default title "Example".<br/>
+					Contents is generated in literal, preformatted mode.
+				</td>
+			</tr>
+			<tr class="a">
+				<td><tt><a style="text-decoration: none;" href="../api/demo/net/sourceforge/taglets/demo/inline/SourceCode.html#markupExample()">{@markupExample}</a></tt></td>
+				<td>
+					Creates a sticky with the default title "Example".<br/>
+					Contents is generated in preformatted, but not literal mode.
+				</td>
+			</tr>
+			<tr class="b">
+				<td><tt><a style="text-decoration: none;" href="../api/demo/net/sourceforge/taglets/demo/inline/SourceCode.html#markupSource()">{@markupSource}</a></tt></td>
+				<td>
+					Creates a box containing sourcecode, 
+					does not have a title by default.<br/>
+					Contents is generated in literal, preformatted mode.
+				</td>
+			</tr>
+			<tr class="a">
+				<td><tt><a style="text-decoration: none;" href="../api/demo/net/sourceforge/taglets/demo/inline/SourceCode.html#source()">{@source}</a></tt></td>
+				<td>
+					Creates a box containing sourcecode, 
+					does not have a title by default.<br/>
+					Contents is generated in preformatted, but not literal mode.
+				</td>
+			</tr>
+			<tr class="b">
+				<td><tt><a style="text-decoration: none;" href="../api/demo/net/sourceforge/taglets/demo/inline/Stickies.html#stickyDone()">{@stickyDone}</a></tt></td>
+				<td>
+					Creates a sticky with the default title "Done".
+				</td>
+			</tr>
+			<tr class="a">
+				<td><tt><a style="text-decoration: none;" href="../api/demo/net/sourceforge/taglets/demo/inline/Stickies.html#stickyError()">{@stickyError}</a></tt></td>
+				<td>
+					Creates a sticky with the default title "Error".
+				</td>
+			</tr>
+			<tr class="b">
+				<td><tt><a style="text-decoration: none;" href="../api/demo/net/sourceforge/taglets/demo/inline/Stickies.html#stickyInfo()">{@stickyInfo}</a></tt></td>
+				<td>
+					Creates a sticky with the default title "Info".
+				</td>
+			</tr>
+			<tr class="a">
+				<td><tt><a style="text-decoration: none;" href="../api/demo/net/sourceforge/taglets/demo/inline/Stickies.html#stickyNote()">{@stickyNote}</a></tt></td>
+				<td>
+					Creates a sticky with the default title "Note".
+				</td>
+			</tr>
+			<tr class="b">
+				<td><tt><a style="text-decoration: none;" href="../api/demo/net/sourceforge/taglets/demo/inline/Stickies.html#stickyWarning()">{@stickyWarning}</a></tt></td>
+				<td>
+					Creates a sticky with the default title "Warning".
+				</td>
+			</tr>
+			<tr class="a">
+				<td><tt><a style="text-decoration: none;" href="../api/demo/net/sourceforge/taglets/demo/inline/Table.html">{@table}</a></tt></td>
+				<td>
+					Creates an M*N table.<br/>
+					Has a header and fills available browser width by default.
+				</td>
+			</tr>
+		</table></div></div></td></tr></table><div id="footer"><table cellpadding="4" cellspacing="0" border="0" style="width:100%;"><tr><td style="width:84px;"><a id="poweredby" href="http://www.sourceforge.net/"><span class="alt">Powered by SourceForge</span></a></td><td><a href="http://www.sourceforge.net/">SourceForge</a>  | <a href="http://taglets.sourceforge.net/">Taglets Collection</a>  | <a href="http://sourceforge.net/projects/taglets">Project Home</a>  | <a href="http://taglets.sourceforge.net/legal.html">Legal</a><br/>Copyright © 2002-2008  <a href="mailto:essmann@sourceforge.net">Bruno Essmann</a></td><td style="text-align:right;"><abbr title="Source: doc/userguide/tags.html">Page generated on:</abbr><br/><!-- timestamp -->2008/03/30 14:47:34 </td></tr></table></div></body>
+</html>

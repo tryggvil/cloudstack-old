@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# $Id: get_iqn.sh 9132 2010-06-04 20:17:43Z manuel $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/storage/zfs/iscsi/get_iqn.sh $
 # get_iqn.sh -- return iSCSI iqn of initiator (Linux) or target (OpenSolaris)
 
 usage() {

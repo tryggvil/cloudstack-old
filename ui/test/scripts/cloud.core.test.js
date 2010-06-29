@@ -1,11 +1,39 @@
+ /**
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
+ * 
+ * This software is licensed under the GNU General Public License v3 or later.
+ * 
+ * It is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ */
+
+// Version: @VERSION@
+
 var rootDomainId = 1;
 
 var systemUserId = 1;
 var adminUserId = 2;
 
+var keycode_Enter = 13;
+
 var activeDialogs = new Array();
 function activateDialog(dialog) {
 	activeDialogs[activeDialogs.length] = dialog;
+	
+	//bind Enter-Key-pressing event handler to the dialog 	
+	dialog.keypress(function(event) {
+	    if(event.keyCode == keycode_Enter) 	        
+	        $('[aria-labelledby$='+dialog.attr("id")+']').find(":button:first").click();	    
+	});
 }
 function removeDialogs() {
 	for (var i = 0; i < activeDialogs.length; i++) {
@@ -20,51 +48,34 @@ function toRole(type) {
 	} else if (type == "1") {
 		return "Admin";
 	} else if (type == "2") {
-		return "Domain";
+		return "Domain-Admin";
 	}
 }
 
-function validateNumber(label, field, errMsgField, min, max, isOptional) {
-    var isValid = true;
-    var errMsg = "";
-    var value = field.val();       
-	if (value != null && value.length != 0) {
-		if(isNaN(value)) {
-			errMsg = label + " must be a number";
-			isValid = false;
-		} else {
-			if (min != null && value < min) {
-				errMsg = label + " must be a value greater than or equal to " + min;
-				isValid = false;
-			}
-			if (max != null && value > max) {
-				errMsg = label + " must be a value less than or equal to " + max;
-				isValid = false;
-			}
-		}
-	} else if(isOptional!=true){  //required field
-		errMsg = label + " is a required value";
-		isValid = false;
-	}
-	showError(isValid, field, errMsgField, errMsg);	
-	return isValid;
-}
-
+// Validation functions
 function validateString(label, field, errMsgField, isOptional) {  
     var isValid = true;
     var errMsg = "";
     var value = field.val();     
 	if (isOptional!=true && (value == null || value.length == 0)) {	 //required field   
-	    errMsg = label + " is a required value";	   
+	    errMsg = label + " is a required value. ";	   
 		isValid = false;		
 	} 	
 	else if (value!=null && value.length >= 255) {	    
 	    errMsg = label + " must be less than 255 characters";	   
 		isValid = false;		
 	} 	
+	else if(value.indexOf('"')!=-1) {
+	    errMsg = "Double quotes are not allowed.";	   
+		isValid = false;	
+	}
 	showError(isValid, field, errMsgField, errMsg);	
 	return isValid;
 }
+
+function cleanErrMsg(field, errMsgField) {
+    showError(true, field, errMsgField);
+}	
 
 function showError(isValid, field, errMsgField, errMsg) {    
 	if(isValid) {
@@ -82,6 +93,15 @@ function trim(val) {
     return val.replace(/^\s*/, "").replace(/\s*$/, "");
 }
 
+// Prevent cross-site-script(XSS) attack. 
+// used right before adding user input to the DOM tree. e.g. DOM_element.html(sanitizeXSS(user_input));  
+function sanitizeXSS(val) {     
+    if(val == null)
+        return val; 
+    val = val.replace(/</g, "&lt;");  //replace < whose unicode is \u003c     
+    val = val.replace(/>/g, "&gt;");  //replace > whose unicode is \u003e  
+    return val;
+}
 
 // FUNCTION: Handles AJAX error callbacks.  You can pass in an optional function to 
 // handle errors that are not already handled by this method.  
@@ -95,9 +115,73 @@ function handleError(xmlHttp, handleErrorCallback) {
 		var start = xmlHttp.responseText.indexOf("h1") + 3;
 		var end = xmlHttp.responseText.indexOf("</h1");
 		var errorMsg = xmlHttp.responseText.substring(start, end);
-		$("#dialog_error").html("<p><b>Encountered an error:</b></p><br/><p>"+errorMsg.substring(errorMsg.indexOf("-")+2)+"</p>").dialog("open");
+		$("#dialog_error").html("<p><b>Encountered an error:</b></p><br/><p>"+sanitizeXSS(errorMsg.substring(errorMsg.indexOf("-")+2))+"</p>").dialog("open");
 	}
 }
+
+
+
+// Timezones
+var timezones = new Object();
+timezones['Etc/GMT+12']='[UTC-12:00] GMT-12:00';
+timezones['Etc/GMT+11']='[UTC-11:00] GMT-11:00';
+timezones['Pacific/Samoa']='[UTC-11:00] Samoa Standard Time';
+timezones['Pacific/Honolulu']='[UTC-10:00] Hawaii Standard Time';
+timezones['US/Alaska']='[UTC-09:00] Alaska Standard Time';
+timezones['America/Los_Angeles']='[UTC-08:00] Pacific Standard Time';
+timezones['Mexico/BajaNorte']='[UTC-08:00] Baja California';
+timezones['US/Arizona']='[UTC-07:00] Arizona';
+timezones['US/Mountain']='[UTC-07:00] Mountain Standard Time';
+timezones['America/Chihuahua']='[UTC-07:00] Chihuahua, La Paz';
+timezones['America/Chicago']='[UTC-06:00] Central Standard Time';
+timezones['America/Costa_Rica']='[UTC-06:00] Central America';
+timezones['America/Mexico_City']='[UTC-06:00] Mexico City, Monterrey';
+timezones['Canada/Saskatchewan']='[UTC-06:00] Saskatchewan';
+timezones['America/Bogota']='[UTC-05:00] Bogota, Lima';
+timezones['America/New_York']='[UTC-05:00] Eastern Standard Time';
+timezones['America/Caracas']='[UTC-04:00] Venezuela Time';
+timezones['America/Asuncion']='[UTC-04:00] Paraguay Time';
+timezones['America/Cuiaba']='[UTC-04:00] Amazon Time';
+timezones['America/Halifax']='[UTC-04:00] Atlantic Standard Time';
+timezones['America/La_Paz']='[UTC-04:00] Bolivia Time';
+timezones['America/Santiago']='[UTC-04:00] Chile Time';
+timezones['America/St_Johns']='[UTC-03:30] Newfoundland Standard Time';
+timezones['America/Araguaina']='[UTC-03:00] Brasilia Time';
+timezones['America/Argentina/Buenos_Aires']='[UTC-03:00] Argentine Time';
+timezones['America/Cayenne']='[UTC-03:00] French Guiana Time';
+timezones['America/Godthab']='[UTC-03:00] Greenland Time';
+timezones['America/Montevideo']='[UTC-03:00] Uruguay Time]';
+timezones['Etc/GMT+2']='[UTC-02:00] GMT-02:00';
+timezones['Atlantic/Azores']='[UTC-01:00] Azores Time';
+timezones['Atlantic/Cape_Verde']='[UTC-01:00] Cape Verde Time';
+timezones['Africa/Casablanca']='[UTC] Casablanca';
+timezones['Etc/UTC']='[UTC] Coordinated Universal Time';
+timezones['Atlantic/Reykjavik']='[UTC] Reykjavik';
+timezones['Europe/London']='[UTC] Western European Time';
+timezones['CET']='[UTC+01:00] Central European Time';
+timezones['Europe/Bucharest']='[UTC+02:00] Eastern European Time';
+timezones['Africa/Johannesburg']='[UTC+02:00] South Africa Standard Time';
+timezones['Asia/Beirut']='[UTC+02:00] Beirut';
+timezones['Africa/Cairo']='[UTC+02:00] Cairo';
+timezones['Asia/Jerusalem']='[UTC+02:00] Israel Standard Time';
+timezones['Europe/Minsk']='[UTC+02:00] Minsk';
+timezones['Europe/Moscow']='[UTC+03:00] Moscow Standard Time';
+timezones['Africa/Nairobi']='[UTC+03:00] Eastern African Time';
+timezones['Asia/Karachi']='[UTC+05:00] Pakistan Time';
+timezones['Asia/Kolkata']='[UTC+05:30] India Standard Time';
+timezones['Asia/Bangkok']='[UTC+05:30] Indochina Time';
+timezones['Asia/Shanghai']='[UTC+08:00] China Standard Time';
+timezones['Asia/Kuala_Lumpur']='[UTC+08:00] Malaysia Time';
+timezones['Australia/Perth']='[UTC+08:00] Western Standard Time (Australia)';
+timezones['Asia/Taipei']='[UTC+08:00] Taiwan';
+timezones['Asia/Tokyo']='[UTC+09:00] Japan Standard Time';
+timezones['Asia/Seoul']='[UTC+09:00] Korea Standard Time';
+timezones['Australia/Adelaide']='[UTC+09:30] Central Standard Time (South Australia)';
+timezones['Australia/Darwin']='[UTC+09:30] Central Standard Time (Northern Territory)';
+timezones['Australia/Brisbane']='[UTC+10:00] Eastern Standard Time (Queensland)';
+timezones['Australia/Canberra']='[UTC+10:00] Eastern Standard Time (New South Wales)';
+timezones['Pacific/Guam']='[UTC+10:00] Chamorro Standard Time';
+timezones['Pacific/Auckland']='[UTC+12:00] New Zealand Standard Time';
 
 $(document).ready(function() {
 	function showTestTab() {
@@ -117,6 +201,8 @@ $(document).ready(function() {
 				template.find("#user_email").text(json.email);
 				template.find("#user_firstname").text(json.firstname);
 				template.find("#user_lastname").text(json.lastname);
+				template.find("#user_timezone").text(timezones[json.timezone]);
+				template.data("timezone", json.timezone);
 				if(json.id==systemUserId || json.id==adminUserId) 
 					 template.find("#delete_link").hide();
 			}
@@ -176,54 +262,72 @@ $(document).ready(function() {
 				var submenuContent = $("#submenu_content_user");   		    
 							
 				dialogAddUser
-				.dialog('option', 'buttons', { 
-					"Cancel": function() { 
-						$(this).dialog("close"); 
-					},
-					"Create": function() { 					    			
+				.dialog('option', 'buttons', { 					
+					"Create": function() { 	
+					    var thisDialog = $(this);
+									    			
 						// validate values
 						var isValid = true;					
-						isValid &= validateString("User name", $("#add_user_username"), $("#add_user_username_errormsg"));
-						isValid &= validateString("Password", $("#add_user_password"), $("#add_user_password_errormsg"));				
+						isValid &= validateString("User name", thisDialog.find("#add_user_username"), thisDialog.find("#add_user_username_errormsg"), false);   //required
+						isValid &= validateString("Password", thisDialog.find("#add_user_password"), thisDialog.find("#add_user_password_errormsg"), false);    //required	
+						isValid &= validateString("Email", thisDialog.find("#add_user_email"), thisDialog.find("#add_user_email_errormsg"), true);              //optional	
+						isValid &= validateString("First name", thisDialog.find("#add_user_firstname"), thisDialog.find("#add_user_firstname_errormsg"), true); //optional	
+						isValid &= validateString("Last name", thisDialog.find("#add_user_lastname"), thisDialog.find("#add_user_lastname_errormsg"), true);    //optional	
+						isValid &= validateString("Account", thisDialog.find("#add_user_account"), thisDialog.find("#add_user_account_errormsg"), true);        //optional	
 						if (!isValid) return;
-																	
-						var username = $("#add_user_username").val();
-						var password = MD5($("#add_user_password").val());
-						var email = $("#add_user_email").val();
+													
+						var template  = $("#user_template").clone(true);	
+						var loadingImg = template.find(".adding_loading");		
+                        var rowContainer = template.find("#row_container");    	                               
+                        loadingImg.find(".adding_text").text("Adding....");	
+                        loadingImg.show();  
+                        rowContainer.hide();                                   
+                        submenuContent.find("#grid_content").prepend(template.fadeIn("slow"));    
+																								
+						var username = thisDialog.find("#add_user_username").val();
+						var password = $.md5(thisDialog.find("#add_user_password").val());
+						var email = thisDialog.find("#add_user_email").val();
 						if(email == "")
 							email = username;
-						var firstname = $("#add_user_firstname").val();
+						var firstname = thisDialog.find("#add_user_firstname").val();
 						if(firstname == "")
 							firstname = username;
-						var lastname = $("#add_user_lastname").val();
+						var lastname = thisDialog.find("#add_user_lastname").val();
 						if(lastname == "")
 							lastname = username;
-						var account = $("#add_user_account").val();					
+						var account = thisDialog.find("#add_user_account").val();					
 						if(account == "")
 							account = username;
-						var accountType = $("#add_user_account_type").val();					
-						var domainId = $("#add_user_domain").val();
-						if (parseInt(domainId) > 0 && parseInt(accountType) == 1) {
+						var accountType = thisDialog.find("#add_user_account_type").val();					
+						var domainId = thisDialog.find("#add_user_domain").val();
+						if (parseInt(domainId) > rootDomainId && parseInt(accountType) == 1) {
 							accountType = 2; // Change to domain admin 
 						}
-											
-						var dialogBox = $(this);
-						dialogBox.dialog("close");					
+						
+						var moreCriteria = [];
+						var timezone = thisDialog.find("#add_user_timezone").val();	
+						if(timezone != null && timezone.length > 0)
+			                moreCriteria.push("&timezone="+encodeURIComponent(timezone));	
+			        						
+						thisDialog.dialog("close");					
 											
 						$.ajax({
-							data: "command=createUser&username="+escape(username)+"&password="+escape(password)+"&email="+escape(email)+"&firstname="+escape(firstname)+"&lastname="+escape(lastname)+"&account="+account+"&accounttype="+accountType+"&domainid="+domainId+"&response=json",
+							data: "command=createUser&username="+encodeURIComponent(username)+"&password="+encodeURIComponent(password)+"&email="+encodeURIComponent(email)+"&firstname="+encodeURIComponent(firstname)+"&lastname="+encodeURIComponent(lastname)+"&account="+account+"&accounttype="+accountType+"&domainid="+domainId+moreCriteria.join("")+"&response=json",
 							dataType: "json",
 							async: false,
-							success: function(json) {					      
-								var grid = submenuContent.find("#grid_content");
-								var template = $("#user_template");	
-								var newTemplate = template.clone(true);
-								userJSONToTemplate(json.createuserresponse.user[0], newTemplate);
-								grid.prepend(newTemplate.fadeIn("slow"));						   
-								dialogBox.dialog("close");
-							}
-						});
-						
+							success: function(json) {								    					
+								userJSONToTemplate(json.createuserresponse.user[0], template);	
+								loadingImg.hide();  
+                                rowContainer.show();    				
+							},			
+	                        error: function(XMLHttpResponse) {		                   
+		                        handleError(XMLHttpResponse);	
+		                        template.slideUp("slow", function(){ $(this).remove(); } );							    
+	                        }								
+						});						
+					},
+					"Cancel": function() { 
+						$(this).dialog("close"); 
 					} 
 				}).dialog("open");
 				return false;
@@ -259,39 +363,44 @@ $(document).ready(function() {
 											
 						dialogEditUser.find("#edit_user_email").val(template.find("#user_email").text());
 						dialogEditUser.find("#edit_user_firstname").val(template.find("#user_firstname").text());
-						dialogEditUser.find("#edit_user_lastname").val(template.find("#user_lastname").text());
+						dialogEditUser.find("#edit_user_lastname").val(template.find("#user_lastname").text());						
+						dialogEditUser.find("#edit_user_timezone").val(template.data("timezone"));
 						
-						$("#dialog_edit_user")
-						.dialog('option', 'buttons', { 
-							"Cancel": function() { 
-								$(this).dialog("close"); 
-							},
-							"Save": function() { 						
+						dialogEditUser
+						.dialog('option', 'buttons', { 							
+							"Save": function() { 	
+							    var thisDialog = $(this);
+												
 								// validate values						   
 								var isValid = true;					
-								isValid &= validateString("User name", $("#edit_user_username"), $("#edit_user_username_errormsg"));						      
-								isValid &= validateString("Email", $("#edit_user_email"), $("#edit_user_email_errormsg"));	
-								isValid &= validateString("First name", $("#edit_user_firstname"), $("#edit_user_firstname_errormsg"));
-								isValid &= validateString("Last name", $("#edit_user_lastname"), $("#edit_user_lastname_errormsg"));		   	
+								isValid &= validateString("User name", thisDialog.find("#edit_user_username"), thisDialog.find("#edit_user_username_errormsg"), false);	  //required					      
+								isValid &= validateString("Email", thisDialog.find("#edit_user_email"), thisDialog.find("#edit_user_email_errormsg"), true);	          //optional
+								isValid &= validateString("First name", thisDialog.find("#edit_user_firstname"), thisDialog.find("#edit_user_firstname_errormsg"), true); //optional
+								isValid &= validateString("Last name", thisDialog.find("#edit_user_lastname"), thisDialog.find("#edit_user_lastname_errormsg"), true);	  //optional	   	
 								if (!isValid) return;
 															
-								var username = trim($("#edit_user_username").val());							  
-								var email = trim($("#edit_user_email").val());
-								var firstname = trim($("#edit_user_firstname").val());
-								var lastname = trim($("#edit_user_lastname").val()); 						
-								
-								var dialogBox = $(this);
-								dialogBox.dialog("close");
+								var username = trim(thisDialog.find("#edit_user_username").val());							  
+								var email = trim(thisDialog.find("#edit_user_email").val());
+								var firstname = trim(thisDialog.find("#edit_user_firstname").val());
+								var lastname = trim(thisDialog.find("#edit_user_lastname").val()); 	
+								var timezone = trim(thisDialog.find("#edit_user_timezone").val()); 							
+																
+								thisDialog.dialog("close");
 								$.ajax({
-									data: "command=updateUser&id="+id+"&username="+escape(username)+"&email="+escape(email)+"&firstname="+escape(firstname)+"&lastname="+escape(lastname)+"&response=json",
+									data: "command=updateUser&id="+id+"&username="+encodeURIComponent(username)+"&email="+encodeURIComponent(email)+"&firstname="+encodeURIComponent(firstname)+"&lastname="+encodeURIComponent(lastname)+"&timezone="+encodeURIComponent(timezone)+"&response=json",
 									dataType: "json",
 									success: function(json) {								      						    					
 										template.find("#user_username").text(username);
 										template.find("#user_email").text(email);
 										template.find("#user_firstname").text(firstname);
-										template.find("#user_lastname").text(lastname);						
+										template.find("#user_lastname").text(lastname);		
+										template.find("#user_timezone").text(timezones[timezone]);		
+										template.data("timezone", timezone);
 									}
 								});
+							},
+							"Cancel": function() { 
+								$(this).dialog("close"); 
 							} 
 						}).dialog("open");
 						
@@ -302,26 +411,27 @@ $(document).ready(function() {
 						dialogChangePassword.find("#change_password_password1").val("");         
 						
 						$("#dialog_change_password")
-						.dialog('option', 'buttons', { 
-							"Cancel": function() { 
-								$(this).dialog("close"); 
-							},
-							"Save": function() { 						
+						.dialog('option', 'buttons', { 							
+							"Save": function() { 	
+							    var thisDialog = $(this);
+							    					
 								// validate values						   
 								var isValid = true;					      	
-								isValid &= validateString("Password", $("#change_password_password1"), $("#change_password_password1_errormsg"));						      		   	
+								isValid &= validateString("Password", thisDialog.find("#change_password_password1"), thisDialog.find("#change_password_password1_errormsg"), false); //required						      		   	
 								if (!isValid) return;
 																						
-								var password = MD5($("#change_password_password1").val());						   					
-								
-								var dialogBox = $(this);
-								dialogBox.dialog("close");
+								var password = $.md5(encodeURIComponent((thisDialog.find("#change_password_password1").val())));						   					
+																
+								thisDialog.dialog("close");
 								$.ajax({
-									data: "command=updateUser&id="+id+"&password="+escape(password)+"&response=json",
+									data: "command=updateUser&id="+id+"&password="+password+"&response=json",
 									dataType: "json",
 									success: function(json) {							       				
 									}
 								});
+							},
+							"Cancel": function() { 
+								$(this).dialog("close"); 
 							} 
 						}).dialog("open");
 						
@@ -349,6 +459,7 @@ $(document).ready(function() {
 				template.attr("id", "domain_"+json.id).data("domainId", json.id);	  
 				template.find("#domain_id").text(json.id);	   
 				template.find("#domain_name").text(json.name);
+				template.find("#domain_level").text(json.level);
 				template.find("#parent_domain_name").text(json.parentdomainname);	  
 				if(json.id == rootDomainId)
 					template.find("#domain_links").hide();
@@ -406,39 +517,49 @@ $(document).ready(function() {
 				var submenuContent = $("#submenu_content_domain");   			
 				
 				dialogAddDomain
-				.dialog('option', 'buttons', { 
-					"Cancel": function() { 
-						$(this).dialog("close"); 
-					},
-					"Create": function() { 					    			
+				.dialog('option', 'buttons', { 					
+					"Create": function() { 	
+					    var thisDialog = $(this);
+					    				    			
 						// validate values
 						var isValid = true;					
-						isValid &= validateString("Name", $("#add_domain_name"), $("#add_domain_name_errormsg"));					
+						isValid &= validateString("Name", thisDialog.find("#add_domain_name"), thisDialog.find("#add_domain_name_errormsg"));					
 						if (!isValid) return;
+												
+						var template = $("#domain_template").clone(true);		
+						var loadingImg = template.find(".adding_loading");		
+                        var rowContainer = template.find("#row_container");    	                               
+                        loadingImg.find(".adding_text").text("Adding....");	
+                        loadingImg.show();  
+                        rowContainer.hide();                                   
+                        submenuContent.find("#grid_content").prepend(template.fadeIn("slow"));    
 																	
-						var name = trim($("#add_domain_name").val());											
-						var parentDomainId = $("#add_domain_parent").val();
+						var name = trim(thisDialog.find("#add_domain_name").val());											
+						var parentDomainId = thisDialog.find("#add_domain_parent").val();
 						var moreCriteria = [];	
 						if(parentDomainId!=null)
 							moreCriteria.push("&parentdomainid="+parentDomainId);	
-																
-						var dialogBox = $(this);
-						dialogBox.dialog("close");					
+															
+						thisDialog.dialog("close");					
 								
 						$.ajax({
-							data: "command=createDomain&name="+escape(name)+moreCriteria.join("")+"&response=json",
+							data: "command=createDomain&name="+encodeURIComponent(name)+moreCriteria.join("")+"&response=json",
 							dataType: "json",
 							async: false,
-							success: function(json) {					      
-								var grid = submenuContent.find("#grid_content");
-								var template = $("#domain_template");	
-								var newTemplate = template.clone(true);					       
-								domainJSONToTemplate(json.createdomainresponse.domain[0], newTemplate);
-								grid.prepend(newTemplate.fadeIn("slow"));						   
-								dialogBox.dialog("close");
-							}
+							success: function(json) {	   															       
+								domainJSONToTemplate(json.createdomainresponse.domain[0], template);	
+								loadingImg.hide();  
+                                rowContainer.show();    				
+							},			
+	                        error: function(XMLHttpResponse) {		                   
+		                        handleError(XMLHttpResponse);	
+		                        template.slideUp("slow", function(){ $(this).remove(); } );							    
+	                        }								
 						});
 						
+					}, 
+					"Cancel": function() { 
+						$(this).dialog("close"); 
 					} 
 				}).dialog("open");
 				return false;
@@ -460,28 +581,29 @@ $(document).ready(function() {
 						var dialogEditDomain = $("#dialog_edit_domain");			            	           
 						dialogEditDomain.find("#edit_domain_name").val(template.find("#domain_name").text());		           
 					   
-						$("#dialog_edit_domain")
-						.dialog('option', 'buttons', { 
-							"Cancel": function() { 
-								$(this).dialog("close"); 
-							},
-							"Save": function() { 						
+						dialogEditDomain
+						.dialog('option', 'buttons', { 							
+							"Save": function() { 
+							    var thisDialog = $(this);
+							     						
 								// validate values						   
 								var isValid = true;					
-								isValid &= validateString("Name", $("#edit_domain_name"), $("#edit_domain_name_errormsg"));						       	   	
+								isValid &= validateString("Name", thisDialog.find("#edit_domain_name"), thisDialog.find("#edit_domain_name_errormsg"));						       	   	
 								if (!isValid) return;
 															
-								var name = trim($("#edit_domain_name").val());	
-																			
-								var dialogBox = $(this);
-								dialogBox.dialog("close");
+								var name = trim(thisDialog.find("#edit_domain_name").val());																				
+								
+								thisDialog.dialog("close");
 								$.ajax({
-									data: "command=updateDomain&id="+id+"&name="+escape(name)+"&response=json",
+									data: "command=updateDomain&id="+id+"&name="+encodeURIComponent(name)+"&response=json",
 									dataType: "json",
 									success: function(json) {								      						    					
 										template.find("#domain_name").text(name);								  	
 									}
 								});
+							}, 
+							"Cancel": function() { 
+								$(this).dialog("close"); 
 							} 
 						}).dialog("open");
 						
@@ -512,7 +634,7 @@ $(document).ready(function() {
 						dropDownBox.empty();			        				       		            							
 						if (domains != null && domains.length > 0) {
 							for (var i = 0; i < domains.length; i++) 				
-								dropDownBox.append("<option value='" + domains[i].id + "'>" + domains[i].name + "</option>"); 		
+								dropDownBox.append("<option value='" + domains[i].id + "'>" + sanitizeXSS(domains[i].name) + "</option>"); 		
 						}	
 						dropDownBox.val(rootDomainId);				    	
 					}
@@ -615,214 +737,5 @@ $(document).ready(function() {
 	showTestTab();
 });
 
-/**
-*  VMOps is borrowing this MD5 Javascript to generate the password for the user registration process.   
-*
-*
-*  MD5 (Message-Digest Algorithm)
-*  http://www.webtoolkit.info/
-*
-**/
- 
-var MD5 = function (string) {
- 
-	function RotateLeft(lValue, iShiftBits) {
-		return (lValue<<iShiftBits) | (lValue>>>(32-iShiftBits));
-	}
- 
-	function AddUnsigned(lX,lY) {
-		var lX4,lY4,lX8,lY8,lResult;
-		lX8 = (lX & 0x80000000);
-		lY8 = (lY & 0x80000000);
-		lX4 = (lX & 0x40000000);
-		lY4 = (lY & 0x40000000);
-		lResult = (lX & 0x3FFFFFFF)+(lY & 0x3FFFFFFF);
-		if (lX4 & lY4) {
-			return (lResult ^ 0x80000000 ^ lX8 ^ lY8);
-		}
-		if (lX4 | lY4) {
-			if (lResult & 0x40000000) {
-				return (lResult ^ 0xC0000000 ^ lX8 ^ lY8);
-			} else {
-				return (lResult ^ 0x40000000 ^ lX8 ^ lY8);
-			}
-		} else {
-			return (lResult ^ lX8 ^ lY8);
-		}
- 	}
- 
- 	function F(x,y,z) { return (x & y) | ((~x) & z); }
- 	function G(x,y,z) { return (x & z) | (y & (~z)); }
- 	function H(x,y,z) { return (x ^ y ^ z); }
-	function I(x,y,z) { return (y ^ (x | (~z))); }
- 
-	function FF(a,b,c,d,x,s,ac) {
-		a = AddUnsigned(a, AddUnsigned(AddUnsigned(F(b, c, d), x), ac));
-		return AddUnsigned(RotateLeft(a, s), b);
-	};
- 
-	function GG(a,b,c,d,x,s,ac) {
-		a = AddUnsigned(a, AddUnsigned(AddUnsigned(G(b, c, d), x), ac));
-		return AddUnsigned(RotateLeft(a, s), b);
-	};
- 
-	function HH(a,b,c,d,x,s,ac) {
-		a = AddUnsigned(a, AddUnsigned(AddUnsigned(H(b, c, d), x), ac));
-		return AddUnsigned(RotateLeft(a, s), b);
-	};
- 
-	function II(a,b,c,d,x,s,ac) {
-		a = AddUnsigned(a, AddUnsigned(AddUnsigned(I(b, c, d), x), ac));
-		return AddUnsigned(RotateLeft(a, s), b);
-	};
- 
-	function ConvertToWordArray(string) {
-		var lWordCount;
-		var lMessageLength = string.length;
-		var lNumberOfWords_temp1=lMessageLength + 8;
-		var lNumberOfWords_temp2=(lNumberOfWords_temp1-(lNumberOfWords_temp1 % 64))/64;
-		var lNumberOfWords = (lNumberOfWords_temp2+1)*16;
-		var lWordArray=Array(lNumberOfWords-1);
-		var lBytePosition = 0;
-		var lByteCount = 0;
-		while ( lByteCount < lMessageLength ) {
-			lWordCount = (lByteCount-(lByteCount % 4))/4;
-			lBytePosition = (lByteCount % 4)*8;
-			lWordArray[lWordCount] = (lWordArray[lWordCount] | (string.charCodeAt(lByteCount)<<lBytePosition));
-			lByteCount++;
-		}
-		lWordCount = (lByteCount-(lByteCount % 4))/4;
-		lBytePosition = (lByteCount % 4)*8;
-		lWordArray[lWordCount] = lWordArray[lWordCount] | (0x80<<lBytePosition);
-		lWordArray[lNumberOfWords-2] = lMessageLength<<3;
-		lWordArray[lNumberOfWords-1] = lMessageLength>>>29;
-		return lWordArray;
-	};
- 
-	function WordToHex(lValue) {
-		var WordToHexValue="",WordToHexValue_temp="",lByte,lCount;
-		for (lCount = 0;lCount<=3;lCount++) {
-			lByte = (lValue>>>(lCount*8)) & 255;
-			WordToHexValue_temp = "0" + lByte.toString(16);
-			WordToHexValue = WordToHexValue + WordToHexValue_temp.substr(WordToHexValue_temp.length-2,2);
-		}
-		return WordToHexValue;
-	};
- 
-	function Utf8Encode(string) {
-		string = string.replace(/\r\n/g,"\n");
-		var utftext = "";
- 
-		for (var n = 0; n < string.length; n++) {
- 
-			var c = string.charCodeAt(n);
- 
-			if (c < 128) {
-				utftext += String.fromCharCode(c);
-			}
-			else if((c > 127) && (c < 2048)) {
-				utftext += String.fromCharCode((c >> 6) | 192);
-				utftext += String.fromCharCode((c & 63) | 128);
-			}
-			else {
-				utftext += String.fromCharCode((c >> 12) | 224);
-				utftext += String.fromCharCode(((c >> 6) & 63) | 128);
-				utftext += String.fromCharCode((c & 63) | 128);
-			}
- 
-		}
- 
-		return utftext;
-	};
- 
-	var x=Array();
-	var k,AA,BB,CC,DD,a,b,c,d;
-	var S11=7, S12=12, S13=17, S14=22;
-	var S21=5, S22=9 , S23=14, S24=20;
-	var S31=4, S32=11, S33=16, S34=23;
-	var S41=6, S42=10, S43=15, S44=21;
- 
-	string = Utf8Encode(string);
- 
-	x = ConvertToWordArray(string);
- 
-	a = 0x67452301; b = 0xEFCDAB89; c = 0x98BADCFE; d = 0x10325476;
- 
-	for (k=0;k<x.length;k+=16) {
-		AA=a; BB=b; CC=c; DD=d;
-		a=FF(a,b,c,d,x[k+0], S11,0xD76AA478);
-		d=FF(d,a,b,c,x[k+1], S12,0xE8C7B756);
-		c=FF(c,d,a,b,x[k+2], S13,0x242070DB);
-		b=FF(b,c,d,a,x[k+3], S14,0xC1BDCEEE);
-		a=FF(a,b,c,d,x[k+4], S11,0xF57C0FAF);
-		d=FF(d,a,b,c,x[k+5], S12,0x4787C62A);
-		c=FF(c,d,a,b,x[k+6], S13,0xA8304613);
-		b=FF(b,c,d,a,x[k+7], S14,0xFD469501);
-		a=FF(a,b,c,d,x[k+8], S11,0x698098D8);
-		d=FF(d,a,b,c,x[k+9], S12,0x8B44F7AF);
-		c=FF(c,d,a,b,x[k+10],S13,0xFFFF5BB1);
-		b=FF(b,c,d,a,x[k+11],S14,0x895CD7BE);
-		a=FF(a,b,c,d,x[k+12],S11,0x6B901122);
-		d=FF(d,a,b,c,x[k+13],S12,0xFD987193);
-		c=FF(c,d,a,b,x[k+14],S13,0xA679438E);
-		b=FF(b,c,d,a,x[k+15],S14,0x49B40821);
-		a=GG(a,b,c,d,x[k+1], S21,0xF61E2562);
-		d=GG(d,a,b,c,x[k+6], S22,0xC040B340);
-		c=GG(c,d,a,b,x[k+11],S23,0x265E5A51);
-		b=GG(b,c,d,a,x[k+0], S24,0xE9B6C7AA);
-		a=GG(a,b,c,d,x[k+5], S21,0xD62F105D);
-		d=GG(d,a,b,c,x[k+10],S22,0x2441453);
-		c=GG(c,d,a,b,x[k+15],S23,0xD8A1E681);
-		b=GG(b,c,d,a,x[k+4], S24,0xE7D3FBC8);
-		a=GG(a,b,c,d,x[k+9], S21,0x21E1CDE6);
-		d=GG(d,a,b,c,x[k+14],S22,0xC33707D6);
-		c=GG(c,d,a,b,x[k+3], S23,0xF4D50D87);
-		b=GG(b,c,d,a,x[k+8], S24,0x455A14ED);
-		a=GG(a,b,c,d,x[k+13],S21,0xA9E3E905);
-		d=GG(d,a,b,c,x[k+2], S22,0xFCEFA3F8);
-		c=GG(c,d,a,b,x[k+7], S23,0x676F02D9);
-		b=GG(b,c,d,a,x[k+12],S24,0x8D2A4C8A);
-		a=HH(a,b,c,d,x[k+5], S31,0xFFFA3942);
-		d=HH(d,a,b,c,x[k+8], S32,0x8771F681);
-		c=HH(c,d,a,b,x[k+11],S33,0x6D9D6122);
-		b=HH(b,c,d,a,x[k+14],S34,0xFDE5380C);
-		a=HH(a,b,c,d,x[k+1], S31,0xA4BEEA44);
-		d=HH(d,a,b,c,x[k+4], S32,0x4BDECFA9);
-		c=HH(c,d,a,b,x[k+7], S33,0xF6BB4B60);
-		b=HH(b,c,d,a,x[k+10],S34,0xBEBFBC70);
-		a=HH(a,b,c,d,x[k+13],S31,0x289B7EC6);
-		d=HH(d,a,b,c,x[k+0], S32,0xEAA127FA);
-		c=HH(c,d,a,b,x[k+3], S33,0xD4EF3085);
-		b=HH(b,c,d,a,x[k+6], S34,0x4881D05);
-		a=HH(a,b,c,d,x[k+9], S31,0xD9D4D039);
-		d=HH(d,a,b,c,x[k+12],S32,0xE6DB99E5);
-		c=HH(c,d,a,b,x[k+15],S33,0x1FA27CF8);
-		b=HH(b,c,d,a,x[k+2], S34,0xC4AC5665);
-		a=II(a,b,c,d,x[k+0], S41,0xF4292244);
-		d=II(d,a,b,c,x[k+7], S42,0x432AFF97);
-		c=II(c,d,a,b,x[k+14],S43,0xAB9423A7);
-		b=II(b,c,d,a,x[k+5], S44,0xFC93A039);
-		a=II(a,b,c,d,x[k+12],S41,0x655B59C3);
-		d=II(d,a,b,c,x[k+3], S42,0x8F0CCC92);
-		c=II(c,d,a,b,x[k+10],S43,0xFFEFF47D);
-		b=II(b,c,d,a,x[k+1], S44,0x85845DD1);
-		a=II(a,b,c,d,x[k+8], S41,0x6FA87E4F);
-		d=II(d,a,b,c,x[k+15],S42,0xFE2CE6E0);
-		c=II(c,d,a,b,x[k+6], S43,0xA3014314);
-		b=II(b,c,d,a,x[k+13],S44,0x4E0811A1);
-		a=II(a,b,c,d,x[k+4], S41,0xF7537E82);
-		d=II(d,a,b,c,x[k+11],S42,0xBD3AF235);
-		c=II(c,d,a,b,x[k+2], S43,0x2AD7D2BB);
-		b=II(b,c,d,a,x[k+9], S44,0xEB86D391);
-		a=AddUnsigned(a,AA);
-		b=AddUnsigned(b,BB);
-		c=AddUnsigned(c,CC);
-		d=AddUnsigned(d,DD);
-	}
- 
-	var temp = WordToHex(a)+WordToHex(b)+WordToHex(c)+WordToHex(d);
- 
-	return temp.toLowerCase();
-}
 
 

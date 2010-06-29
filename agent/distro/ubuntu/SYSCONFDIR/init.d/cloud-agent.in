@@ -38,6 +38,14 @@ start() {
 		exit 1
 	fi
 
+	# Workaround for ubuntu bug:577264, make sure cgconfig/cgred start before libvirt
+	service cgred stop
+	service cgconfig stop
+	service cgconfig start
+	service cgred start
+	service libvirt-bin restart
+        
+ 
 	if start-stop-daemon --start --quiet \
 		--pidfile "$PIDFILE" \
 		--exec "$DAEMONIZE" -- -n "$SHORTNAME" -p "$PIDFILE" -l "$LOGFILE" "$PROG" $OPTIONS
@@ -83,6 +91,7 @@ case "$1" in
 	;;
   restart)
 	stop
+	sleep 3
 	start
 	;;
   *)

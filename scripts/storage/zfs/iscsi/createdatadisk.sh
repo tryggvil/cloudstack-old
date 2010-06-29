@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# $Id: createdatadisk.sh 9132 2010-06-04 20:17:43Z manuel $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/storage/zfs/iscsi/createdatadisk.sh $
 # createdatadisk.sh -- create a thin-provisioned data disk
 #
 

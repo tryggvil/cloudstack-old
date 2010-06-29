@@ -1,4 +1,24 @@
-function showInstancesTab(domainId) {
+ /**
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
+ * 
+ * This software is licensed under the GNU General Public License v3 or later.
+ * 
+ * It is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ */
+
+// Version: @VERSION@
+
+function showInstancesTab(p_domainId, p_account) {
 	// Manage VM Tab
 	mainContainer.load("content/tab_instances.html", function() {
 		// Submenus change based on role
@@ -7,11 +27,11 @@ function showInstancesTab(domainId) {
 		} else if (isDomainAdmin()) {
 			$("#submenu_console").hide();
 		}
-		
-		var gridContainer = $(".grid_container #grid_content");
+				
 		var vIndex = 0;
+		var vmPopup = $("#vmpopup");
 		var currentPageInPopupStep2 =1;
-		var filterInPopupStep2 = "featured";
+		var filterInPopupStep2;  //filterInPopupStep2 will be set to "featured" when new VM dialog box opens
 		
 		activateDialog($("#dialog_change_service_offering").dialog({ 
 			width: 600,
@@ -75,7 +95,7 @@ function showInstancesTab(domainId) {
 						}
 					}
 					if (available) {
-						var group = "<li id='"+availableSG[i].id+ "'>" + availableSG[i].name + "</li>";
+						var group = "<li id='"+availableSG[i].id+ "'>" + sanitizeXSS(availableSG[i].name) + "</li>";
 						availableSelect.append(group);
 					}
 				}
@@ -83,7 +103,7 @@ function showInstancesTab(domainId) {
 			var appliedSelect = $("#dialog_apply_security_groups #selectable_applied").empty();
 			if (appliedSG != null && appliedSG.length > 0) {
 				for (var j = 0; j < appliedSG.length ; j++) {
-					var group = "<li id='"+appliedSG[j].id+ "'>" + appliedSG[j].name + "</li>";
+					var group = "<li id='"+appliedSG[j].id+ "'>" + sanitizeXSS(appliedSG[j].name) + "</li>";
 					appliedSelect.append(group);
 				}
 			}
@@ -93,12 +113,7 @@ function showInstancesTab(domainId) {
 			autoOpen: false,
 			modal: true,
 			zIndex: 2000,
-			buttons: {
-				"Close": function() {
-					var dialogBox = $(this);
-					dialogBox.find(".selectable_commentbox, .selectable_errorbox").hide();
-					dialogBox.dialog("close"); 
-				},
+			buttons: {				
 				"Apply": function() { 
 					var dialogBox = $(this);
 					var appliedSG = null;
@@ -118,14 +133,14 @@ function showInstancesTab(domainId) {
 					if (appliedSG == null) appliedSG = "0";
 					dialogBox.find(".selectable_commentbox .selectable_loader").show();
 					dialogBox.find(".selectable_commentbox").fadeIn("slow");
-					dialogBox.find(".selectable_commentbox strong").text("Please wait while we apply your Security Groups...");
+					dialogBox.find(".selectable_commentbox strong").text("Please wait while we apply your Port Forwarding Services...");
 					$.ajax({
-						data: "command=assignSecurityGroup&groupids="+appliedSG+"&publicip="+publicIp+"&virtualmachineid="+vmId+"&response=json",
+						data: "command=assignPortForwardingService&ids="+appliedSG+"&publicip="+publicIp+"&virtualmachineid="+vmId+"&response=json",
 						dataType: "json",
 						success: function(json) {
 							dialogBox.everyTime(2000, function() {
 								$.ajax({
-									data: "command=queryAsyncJobResult&jobId="+json.assignsecuritygroupresponse.jobid+"&response=json",
+									data: "command=queryAsyncJobResult&jobId="+json.assignportforwardingserviceresponse.jobid+"&response=json",
 									dataType: "json",
 									success: function(json) {
 										var result = json.queryasyncjobresultresponse;
@@ -136,7 +151,7 @@ function showInstancesTab(domainId) {
 											if (result.jobstatus == 1) {
 												// Succeeded
 												dialogBox.find(".selectable_commentbox .selectable_loader").hide();
-												dialogBox.find(".selectable_commentbox strong").text("Your Security Groups have been successfully applied.");
+												dialogBox.find(".selectable_commentbox strong").text("Your Port Forwarding Services have been successfully applied.");
 											} else if (result.jobstatus == 2) {
 												// Failed
 												dialogBox.find(".selectable_commentbox").hide();
@@ -146,15 +161,20 @@ function showInstancesTab(domainId) {
 											}
 										}
 									},
-									error: function(XMLHttpRequest) {
+									error: function(XMLHttpResponse) {
 										dialogBox.stopTime();
-										handleError(XMLHttpRequest);
+										handleError(XMLHttpResponse);
 									}
 								});
 							}, 0);
 						}
 					});
-				}
+				},				
+				"Close": function() {
+					var dialogBox = $(this);
+					dialogBox.find(".selectable_commentbox, .selectable_errorbox").hide();
+					dialogBox.dialog("close"); 
+				}				
 			}
 		}));
 		$("#dialog_apply_security_groups #selectable_available, #dialog_apply_security_groups #selectable_applied").selectable();
@@ -178,10 +198,10 @@ function showInstancesTab(domainId) {
 			var appliedSG = null;
 			// Get all the groups applied to this VM
 			$.ajax({
-				data: "command=listSecurityGroupsByVM&ipaddress="+publicIp+"&virtualmachineid="+vmId+"&response=json",
+				data: "command=listPortForwardingServicesByVm&ipaddress="+publicIp+"&virtualmachineid="+vmId+"&response=json",
 				dataType: "json",
 				success: function(json) {
-					var appliedSG = json.searchforsecuritygroupsbyvmresponse.securitygroup;
+					var appliedSG = json.listportforwardingservicesbyvmresponse.portforwardingservice;
 					addSGToSelect(appliedSG);
 				}
 			});
@@ -240,7 +260,7 @@ function showInstancesTab(domainId) {
 			var link = $(event.target);
 			var linkAction = link.attr("id");
 			var vmId = vmInstance.data("id");
-			var vmName = vmInstance.data("name");
+			var vmName = vmInstance.data("name");				
 			var vmState = vmInstance.data("state");
 			var timerKey = "vm"+vmId;
 			
@@ -254,10 +274,7 @@ function showInstancesTab(domainId) {
 				case "vm_action_start" :
 					$("#dialog_confirmation")
 					.html("<p>Please confirm you want to start your virtual machine: <b>"+vmName+"</b></p>")
-					.dialog('option', 'buttons', { 
-						"Cancel": function() { 
-							$(this).dialog("close"); 
-						},
+					.dialog('option', 'buttons', { 						
 						"Confirm": function() { 
 							$(this).dialog("close"); 
 							showInstanceLoading(vmInstance, "Starting...");
@@ -290,15 +307,23 @@ function showInstancesTab(domainId) {
 																vmInstance.find(".loadingmessage_container .loadingmessage_top p").html("Your instance has been successfully started.");
 																vmInstance.find(".loadingmessage_container").fadeIn("slow");
 																vmInstance.find("#vm_state_bar").removeClass("admin_vmgrey_arrow admin_vmred_arrow").addClass("admin_vmgreen_arrow");
-																vmInstance.find("#vm_state").text(result.state).removeClass("grid_celltitles grid_stoppedtitles").addClass("grid_runningtitles");
 																
+																vmInstance.find("#vm_state").text(result.virtualmachine[0].state).removeClass("grid_celltitles grid_stoppedtitles").addClass("grid_runningtitles");
+																vmInstance.data("state", result.virtualmachine[0].state);
+																																											
+																if (result.virtualmachine[0].hostname != undefined) {
+					                                                vmInstance.find("#vm_host").html("<strong>Host:</strong> " + sanitizeXSS(result.virtualmachine[0].hostname));
+				                                                } else {
+				                                                    vmInstance.find("#vm_host").html("<strong>Host:</strong> ");
+				                                                }	
+																																
 																vmInstance.find("#vm_action_start, #vm_action_reset_password, #vm_action_change_service").removeClass().addClass("vmaction_links_off");
 																vmInstance.find("#vm_action_stop, #vm_action_reboot").removeClass().addClass("vmaction_links_on");
-																vmInstance.data("state", result.state);
+																
 																
 																// Console Proxy UI
-																vmInstance.find("#vm_action_view_console").data("imgUrl", "console?cmd=thumbnail&vm=" + result.id + "&w=144&h=110");
-																vmInstance.find("#vm_action_view_console").data("proxyUrl", "console?cmd=access&vm=" + result.id + "&t=" + result.displayname).data("vmId",result.id).click(function(event) {
+																vmInstance.find("#vm_action_view_console").data("imgUrl", "console?cmd=thumbnail&vm=" + result.virtualmachine[0].id + "&w=144&h=110");
+																vmInstance.find("#vm_action_view_console").data("proxyUrl", "console?cmd=access&vm=" + result.virtualmachine[0].id + "&t=" + result.virtualmachine[0].displayname).data("vmId",result.virtualmachine[0].id).click(function(event) {
 																	event.preventDefault();
 																	window.open($(this).data("proxyUrl"),$(this).data("vmId"),"width=820,height=640,resizable=yes,menubar=no,status=no,scrollbars=no,toolbar=no,location=no");
 																});
@@ -315,31 +340,31 @@ function showInstancesTab(domainId) {
 														}
 													}
 												},
-												error: function(XMLHttpRequest) {
+												error: function(XMLHttpResponse) {
 													hideInstanceLoading(vmInstance);
 													$("body").stopTime(timerKey);
-													handleError(XMLHttpRequest);
+													handleError(XMLHttpResponse);
 												}
 											});
 										},
 										0
 									);
 								},
-								error: function(XMLHttpRequest) {
+								error: function(XMLHttpResponse) {
 									hideInstanceLoading(vmInstance);
-									handleError(XMLHttpRequest);
+									handleError(XMLHttpResponse);
 								}
 							});
+						}, 
+						"Cancel": function() { 
+							$(this).dialog("close"); 
 						} 
 					}).dialog("open");
 					break;
 				case "vm_action_stop" :
 					$("#dialog_confirmation")
 					.html("<p>Please confirm you want to stop your virtual machine: <b>"+vmName+"</b></p>")
-					.dialog('option', 'buttons', { 
-						"Cancel": function() { 
-							$(this).dialog("close"); 
-						},
+					.dialog('option', 'buttons', { 						
 						"Confirm": function() { 
 							$(this).dialog("close");
 							showInstanceLoading(vmInstance, "Stopping...");
@@ -371,12 +396,20 @@ function showInstancesTab(domainId) {
 																vmInstance.find(".loadingmessage_container .loadingmessage_top p").html("Your instance has been successfully stopped.");
 																vmInstance.find(".loadingmessage_container").fadeIn("slow");
 																vmInstance.find("#vm_state_bar").removeClass("admin_vmgrey_arrow admin_vmgreen_arrow").addClass("admin_vmred_arrow");
-																vmInstance.find("#vm_state").text("Stopped").removeClass("grid_celltitles grid_runningtitles").addClass("grid_stoppedtitles");
+																
+																vmInstance.find("#vm_state").text(result.virtualmachine[0].state).removeClass("grid_celltitles grid_runningtitles").addClass("grid_stoppedtitles");
+																vmInstance.data("state", result.virtualmachine[0].state);
+																																
+																if (result.virtualmachine[0].hostname != undefined) {
+					                                                vmInstance.find("#vm_host").html("<strong>Host:</strong> " + sanitizeXSS(result.virtualmachine[0].hostname));
+				                                                } else {
+				                                                    vmInstance.find("#vm_host").html("<strong>Host:</strong> ");
+				                                                }																	
 																
 																vmInstance.find("#vm_action_start, #vm_action_reset_password, #vm_action_change_service").removeClass().addClass("vmaction_links_on");
 																vmInstance.find("#vm_action_stop, #vm_action_reboot").removeClass().addClass("vmaction_links_off");
 																vmInstance.find("#vm_action_view_console").unbind("mouseover click");
-																vmInstance.data("state", "Stopped");
+																
 															} else if (result.jobstatus == 2) {
 																// Failed
 																vmInstance.find("#vm_state_bar").removeClass("admin_vmgrey_arrow admin_vmred_arrow").addClass("admin_vmgreen_arrow");
@@ -387,31 +420,31 @@ function showInstancesTab(domainId) {
 														}
 													}
 												},
-												error: function(XMLHttpRequest) {
+												error: function(XMLHttpResponse) {
 													hideInstanceLoading(vmInstance);
 													$("body").stopTime(timerKey);
-													handleError(XMLHttpRequest);
+													handleError(XMLHttpResponse);
 												}
 											});
 										},
 										0
 									);
 								},
-								error: function(XMLHttpRequest) {
+								error: function(XMLHttpResponse) {
 									hideInstanceLoading(vmInstance);
-									handleError(XMLHttpRequest);
+									handleError(XMLHttpResponse);
 								}
 							});
-						} 
+						}, 
+						"Cancel": function() { 
+							$(this).dialog("close"); 
+						}
 					}).dialog("open");
 					break;
 				case "vm_action_reboot" :
 					$("#dialog_confirmation")
 					.html("<p>Please confirm you want to reboot your virtual machine: <b>"+vmName+"</b></p>")
-					.dialog('option', 'buttons', { 
-						"Cancel": function() { 
-							$(this).dialog("close"); 
-						},
+					.dialog('option', 'buttons', { 						
 						"Confirm": function() { 
 							$(this).dialog("close");
 							showInstanceLoading(vmInstance, "Rebooting...");
@@ -452,31 +485,31 @@ function showInstancesTab(domainId) {
 														}
 													}
 												},
-												error: function(XMLHttpRequest) {
+												error: function(XMLHttpResponse) {
 													hideInstanceLoading(vmInstance);
 													$("body").stopTime(timerKey);
-													handleError(XMLHttpRequest);
+													handleError(XMLHttpResponse);
 												}
 											});
 										},
 										0
 									);
 								},
-								error: function(XMLHttpRequest) {
+								error: function(XMLHttpResponse) {
 									hideInstanceLoading(vmInstance);
-									handleError(XMLHttpRequest);
+									handleError(XMLHttpResponse);
 								}
 							});
+						},
+						"Cancel": function() { 
+							$(this).dialog("close"); 
 						} 
 					}).dialog("open");
 					break;
 				case "vm_action_destroy" :
 					$("#dialog_confirmation")
 					.html("<p>Please confirm you want to destroy your virtual machine: <b>"+vmName+"</b>.  Destroying your virtual machine would include deleting the ROOT volume and all attached data disk volumes.</p>")
-					.dialog('option', 'buttons', { 
-						"Cancel": function() { 
-							$(this).dialog("close"); 
-						},
+					.dialog('option', 'buttons', { 						
 						"Confirm": function() { 
 							$(this).dialog("close");
 							showInstanceLoading(vmInstance, "Destroying...");
@@ -509,9 +542,13 @@ function showInstancesTab(domainId) {
 																vmInstance.find(".loadingmessage_container").fadeIn("slow");
 																if (isAdmin()) {
 																	vmInstance.find("#vm_state_bar").removeClass("admin_vmred_arrow admin_vmgreen_arrow").addClass("admin_vmgrey_arrow");
+																	
+																	//No embedded object is returned. So, hardcoding state as "Destroyed".
 																	vmInstance.find("#vm_state").text("Destroyed").removeClass("grid_stoppedtitles grid_runningtitles").addClass("grid_celltitles");
+																	vmInstance.data("state", "Destroyed"); 
+																	
 																	vmInstance.find("#vm_host").html("<strong>Host:</strong>");
-																	vmInstance.data("state", "Destroyed");
+																	
 																	vmInstance.find("#vm_action_restore").show();
 																	vmInstance.find("#vm_action_volumes, #vm_actions").hide();
 																} else {
@@ -537,21 +574,24 @@ function showInstancesTab(domainId) {
 														}
 													}
 												},
-												error: function(XMLHttpRequest) {
+												error: function(XMLHttpResponse) {
 													hideInstanceLoading(vmInstance);
 													$("body").stopTime(timerKey);
-													handleError(XMLHttpRequest);
+													handleError(XMLHttpResponse);
 												}
 											});
 										},
 										0
 									);
 								},
-								error: function(XMLHttpRequest) {
+								error: function(XMLHttpResponse) {
 									hideInstanceLoading(vmInstance);
-									handleError(XMLHttpRequest);
+									handleError(XMLHttpResponse);
 								}
 							});
+						}, 
+						"Cancel": function() { 
+							$(this).dialog("close"); 
 						} 
 					}).dialog("open");
 					break;
@@ -568,10 +608,7 @@ function showInstancesTab(domainId) {
 					}
 					$("#dialog_confirmation")
 					.html("<p>Please confirm you want to change the ROOT password for your virtual machine: <b>"+vmName+"</b></p>")
-					.dialog('option', 'buttons', { 
-						"Cancel": function() { 
-							$(this).dialog("close"); 
-						},
+					.dialog('option', 'buttons', { 						
 						"Confirm": function() { 
 							$(this).dialog("close"); 
 							showInstanceLoading(vmInstance, "Resetting password...");
@@ -597,7 +634,7 @@ function showInstancesTab(domainId) {
 															vmInstance.find("#vm_loading_container").hide();
 															if (result.jobstatus == 1) {
 																// Succeeded
-																vmInstance.find(".loadingmessage_container .loadingmessage_top p").html("Your password has been successfully resetted.  Your new password is : <b>" + result.password + "</b> .  Please reboot your virtual instance for the new password to take effect.");
+																vmInstance.find(".loadingmessage_container .loadingmessage_top p").html("Your password has been successfully resetted.  Your new password is : <b>" + result.virtualmachine[0].password + "</b> .  Please reboot your virtual instance for the new password to take effect.");
 																vmInstance.find(".loadingmessage_container").fadeIn("slow");
 															} else if (result.jobstatus == 2) {
 																// Failed
@@ -607,21 +644,24 @@ function showInstancesTab(domainId) {
 														}
 													}
 												},
-												error: function(XMLHttpRequest) {
+												error: function(XMLHttpResponse) {
 													hideInstanceLoading(vmInstance);
 													$("body").stopTime(timerKey);
-													handleError(XMLHttpRequest);
+													handleError(XMLHttpResponse);
 												}
 											});
 										},
 										0
 									);
 								},
-								error: function(XMLHttpRequest) {
+								error: function(XMLHttpResponse) {
 									hideInstanceLoading(vmInstance);
-									handleError(XMLHttpRequest);
+									handleError(XMLHttpResponse);
 								}
 							});
+						}, 
+						"Cancel": function() { 
+							$(this).dialog("close"); 
 						} 
 					}).dialog("open");
 					break;
@@ -642,7 +682,7 @@ function showInstancesTab(domainId) {
 							
 							if (offerings != null && offerings.length > 0) {
 								for (var i = 0; i < offerings.length; i++) {
-									var option = $("<option value='" + offerings[i].id + "'>" + offerings[i].displaytext + "</option>").data("name", offerings[i].name);
+									var option = $("<option value='" + offerings[i].id + "'>" + sanitizeXSS(offerings[i].displaytext) + "</option>").data("name", offerings[i].name);
 									offeringSelect.append(option); 
 								}
 							} 
@@ -650,10 +690,7 @@ function showInstancesTab(domainId) {
 					});
 					
 					$("#dialog_change_service_offering")
-					.dialog('option', 'buttons', { 
-						"Cancel": function() { 
-							$(this).dialog("close"); 
-						},
+					.dialog('option', 'buttons', { 						
 						"Change": function() { 
 							$(this).dialog("close"); 
 							$.ajax({
@@ -667,6 +704,9 @@ function showInstancesTab(domainId) {
 									vmInstance.find("#vm_service").text(($("#dialog_change_service_offering #change_service_offerings :selected").data("name")));
 								}
 							});
+						}, 
+						"Cancel": function() { 
+							$(this).dialog("close"); 
 						} 
 					}).dialog("open");
 					break;
@@ -702,26 +742,24 @@ function showInstancesTab(domainId) {
 					
 					// Get list of available groups
 					$.ajax({
-						data: "command=listSecurityGroups&response=json"+params,
+						data: "command=listPortForwardingServices&response=json"+params,
 						dataType: "json",
 						success: function(json) {
-							availableSG = json.listsecuritygroupsresponse.securitygroup;
+							availableSG = json.listportforwardingservicesresponse.portforwardingservice;
 							$("#dialog_apply_security_groups #apply_sg_public_ip").change();
 							$("#dialog_apply_security_groups").dialog("open");
 						}
 					});
 					break;
 				case "vm_action_change_group" :
-					$("#dialog_change_group").find("#vm_name").text(vmName);
+					$("#dialog_change_group").find("#vm_name").text(vmName);								
+					$("#dialog_change_group").find("#change_group_name").val((vmInstance.data("group")==null)?"":vmInstance.data("group"));										
 					$("#dialog_change_group")
-					.dialog('option', 'buttons', { 
-						"Cancel": function() { 
-							$(this).dialog("close"); 
-						},
+					.dialog('option', 'buttons', { 						
 						"Confirm": function() { 											
 							// validate values
 					        var isValid = true;					
-					        isValid &= validateString("Group", $("#change_group_name"), $("#change_group_name_errormsg"));								
+					        isValid &= validateString("Group", $("#change_group_name"), $("#change_group_name_errormsg"), true); //group name is optional								
 					        if (!isValid) return;						
 							
 							var group = trim($("#change_group_name").val());
@@ -732,10 +770,13 @@ function showInstancesTab(domainId) {
 								success: function(json) {
 									vmInstance.find("#vm_group").text(group);
 								},
-								error: function(XMLHttpRequest) {
-									handleError(XMLHttpRequest);
+								error: function(XMLHttpResponse) {
+									handleError(XMLHttpResponse);
 								}
 							});
+							$(this).dialog("close"); 
+						}, 
+						"Cancel": function() { 
 							$(this).dialog("close"); 
 						} 
 					}).dialog("open");
@@ -743,10 +784,7 @@ function showInstancesTab(domainId) {
 				case "vm_action_change_name" :
 					$("#dialog_change_name").find("#vm_name").text(vmName);
 					$("#dialog_change_name")
-					.dialog('option', 'buttons', { 
-						"Cancel": function() { 
-							$(this).dialog("close"); 
-						},
+					.dialog('option', 'buttons', { 						
 						"Confirm": function() { 												
 							// validate values
 					        var isValid = true;					
@@ -768,10 +806,13 @@ function showInstancesTab(domainId) {
 									}
 									vmInstance.data("name", name);
 								},
-								error: function(XMLHttpRequest) {
-									handleError(XMLHttpRequest);
+								error: function(XMLHttpResponse) {
+									handleError(XMLHttpResponse);
 								}
 							});
+							$(this).dialog("close"); 
+						}, 
+						"Cancel": function() { 
 							$(this).dialog("close"); 
 						} 
 					}).dialog("open");
@@ -785,10 +826,7 @@ function showInstancesTab(domainId) {
 					}
 					$("#dialog_confirmation")
 					.html(message)
-					.dialog('option', 'buttons', { 
-						"Cancel": function() { 
-							$(this).dialog("close"); 
-						},
+					.dialog('option', 'buttons', { 						
 						"Confirm": function() { 
 							$(this).dialog("close"); 
 							$.ajax({
@@ -806,16 +844,16 @@ function showInstancesTab(domainId) {
 									}
 								}
 							});
+						}, 
+						"Cancel": function() { 
+							$(this).dialog("close"); 
 						} 
 					}).dialog("open");
 					break;
 				case "vm_action_restore" :
 					$("#dialog_confirmation")
 					.html("<p>Please confirm you want to restore the virtual machine: <b>"+vmName+"</b>.</p>")
-					.dialog('option', 'buttons', { 
-						"Cancel": function() { 
-							$(this).dialog("close"); 
-						},
+					.dialog('option', 'buttons', { 						
 						"Confirm": function() { 
 							$(this).dialog("close"); 
 							$.ajax({
@@ -838,6 +876,9 @@ function showInstancesTab(domainId) {
 									vmInstance.data("state", "Stopped");
 								}
 							});
+						}, 
+						"Cancel": function() { 
+							$(this).dialog("close"); 
 						} 
 					}).dialog("open");
 					break;
@@ -852,17 +893,14 @@ function showInstancesTab(domainId) {
 							if (isos != null && isos.length > 0) {
 								isoSelect.empty();
 								for (var i = 0; i < isos.length; i++) {
-									isoSelect.append("<option value='"+isos[i].id+"'>"+isos[i].displaytext+"</option>");;
+									isoSelect.append("<option value='"+isos[i].id+"'>"+sanitizeXSS(isos[i].displaytext)+"</option>");;
 								}
 							}
 						}
 					});
 					$("#dialog_attach_iso").find("#vm_name").text(vmName);
 					$("#dialog_attach_iso")
-					.dialog('option', 'buttons', { 
-						"Cancel": function() { 
-							$(this).dialog("close"); 
-						},
+					.dialog('option', 'buttons', { 						
 						"Confirm": function() { 
 							$(this).dialog("close");
 							var isoId = $("#dialog_attach_iso #attach_iso_select").val();
@@ -908,31 +946,31 @@ function showInstancesTab(domainId) {
 														}
 													}
 												},
-												error: function(XMLHttpRequest) {
+												error: function(XMLHttpResponse) {
 													hideInstanceLoading(vmInstance);
 													$("body").stopTime(timerKey);
-													handleError(XMLHttpRequest);
+													handleError(XMLHttpResponse);
 												}
 											});
 										},
 										0
 									);
 								},
-								error: function(XMLHttpRequest) {
+								error: function(XMLHttpResponse) {
 									hideInstanceLoading(vmInstance);
-									handleError(XMLHttpRequest);
+									handleError(XMLHttpResponse);
 								}
 							});
+						}, 
+						"Cancel": function() { 
+							$(this).dialog("close"); 
 						} 
 					}).dialog("open");
 					break;
 				case "vm_action_detach_iso" :
 					$("#dialog_confirmation")
 					.html("<p>Please confirm you want to detach an ISO from the virtual machine: <b>"+vmName+"</b>.</p>")
-					.dialog('option', 'buttons', { 
-						"Cancel": function() { 
-							$(this).dialog("close"); 
-						},
+					.dialog('option', 'buttons', { 						
 						"Confirm": function() { 
 							$(this).dialog("close");
 							showInstanceLoading(vmInstance, "Detaching ISO...");
@@ -965,27 +1003,30 @@ function showInstancesTab(domainId) {
 																vmInstance.find(".loadingmessage_container").fadeIn("slow");
 															} else if (result.jobstatus == 2) {
 																// Failed
-																vmInstance.find(".loadingmessage_container .loadingmessage_top p").text("We were unable to detach your ISO.  Please contact support or try again.");
+																vmInstance.find(".loadingmessage_container .loadingmessage_top p").text(result.jobresult);
 																vmInstance.find(".loadingmessage_container").fadeIn("slow");
 															}
 														}
 													}
 												},
-												error: function(XMLHttpRequest) {
+												error: function(XMLHttpResponse) {
 													hideInstanceLoading(vmInstance);
 													$("body").stopTime(timerKey);
-													handleError(XMLHttpRequest);
+													handleError(XMLHttpResponse);
 												}
 											});
 										},
 										0
 									);
 								},
-								error: function(XMLHttpRequest) {
+								error: function(XMLHttpResponse) {
 									hideInstanceLoading(vmInstance);
-									handleError(XMLHttpRequest);
+									handleError(XMLHttpResponse);
 								}
 							});
+						}, 
+						"Cancel": function() { 
+							$(this).dialog("close"); 
 						} 
 					}).dialog("open");
 					break;
@@ -1018,12 +1059,9 @@ function showInstancesTab(domainId) {
 											detail.find("#detail_type").text(volumes[i].type + " (local storage)");
 										}
 										
-										detail.find("#detail_size").text((volumes[i].size == "0") ? "" : convertBytes(volumes[i].size));
+										detail.find("#detail_size").text((volumes[i].size == "0") ? "" : convertBytes(volumes[i].size));										
+										setDateField(volumes[i].created, detail.find("#detail_created"));
 																				
-										var created = new Date();
-										created.setISO8601(volumes[i].created);
-										var showDate = created.format("m/d/Y H:i:s");
-										detail.find("#detail_created").text(showDate);
 										grid.append(detail.show());
 																													
 										if(volumes[i].type=="ROOT") {
@@ -1073,39 +1111,33 @@ function showInstancesTab(domainId) {
 		
 		// FUNCTION: Parses the JSON object for VM Instances and applies it to the vm template
 		function vmJSONToTemplate(instanceJSON, instanceTemplate) {
-		    instanceTemplate.attr("id","vm"+instanceJSON.id);  //!!!
+		    instanceTemplate.attr("id","vm"+instanceJSON.id);  
 		    
-			// Setup
-			var vmName = null;
-			if (isAdmin()) {
-				if (instanceJSON.displayname != instanceJSON.name) {
-					vmName = instanceJSON.name + "(" + instanceJSON.displayname + ")";
-				} else {
-					vmName = instanceJSON.name;
-				}
-			} else {
-				vmName = instanceJSON.name = instanceJSON.displayname;
-			}
+			// Setup			
+			var vmName = getVmName(instanceJSON.name, instanceJSON.displayname);
+						
 			instanceTemplate.data("id", instanceJSON.id)
-				.data("systemName", instanceJSON.name)
-				.data("name", vmName)
+				.data("systemName", sanitizeXSS(instanceJSON.name))
+				.data("name", sanitizeXSS(vmName))				
 				.data("passwordEnabled", instanceJSON.passwordenabled)
 				.data("domainId", instanceJSON.domainid)
-				.data("account", instanceJSON.account)
-				.data("zoneId", instanceJSON.zoneid)
+				.data("account", sanitizeXSS(instanceJSON.account))
+				.data("zoneId", sanitizeXSS(instanceJSON.zoneid))
 				.data("state", instanceJSON.state)
 				.data("ha", instanceJSON.haenable);
+			instanceTemplate.data("group", sanitizeXSS(instanceJSON.group));	
+				
 			if (instanceJSON.isoId != undefined && instanceJSON.isoid.length > 0) {
 				instanceTemplate.data("isoId", instanceJSON.isoid);
 			}
 			instanceTemplate.find("#vm_actions").data("id", instanceJSON.id);
 			
 			// Populate the template
-			instanceTemplate.find("#vm_name").html("<strong>Name:</strong> " + vmName);
+			instanceTemplate.find("#vm_name").html("<strong>Name:</strong> " + sanitizeXSS(vmName));
 			instanceTemplate.find("#vm_ip_address").html("<strong>IP Address:</strong> " + instanceJSON.ipaddress);
-			instanceTemplate.find("#vm_zone").html("<strong>Zone:</strong> " + instanceJSON.zonename);
-			instanceTemplate.find("#vm_template").html("<strong>Template:</strong> " + instanceJSON.templatename);
-			instanceTemplate.find("#vm_service").html("<strong>Service:</strong> " + instanceJSON.serviceofferingname);
+			instanceTemplate.find("#vm_zone").html("<strong>Zone:</strong> " + sanitizeXSS(instanceJSON.zonename));
+			instanceTemplate.find("#vm_template").html("<strong>Template:</strong> " + sanitizeXSS(instanceJSON.templatename));
+			instanceTemplate.find("#vm_service").html("<strong>Service:</strong> " + sanitizeXSS(instanceJSON.serviceofferingname));
 			if (instanceJSON.haenable =='true') {
 				instanceTemplate.find("#vm_ha").html("<strong>HA:</strong> Enabled");
 				instanceTemplate.find("#vm_action_ha").text("Disable HA");
@@ -1113,17 +1145,17 @@ function showInstancesTab(domainId) {
 				instanceTemplate.find("#vm_ha").html("<strong>HA:</strong> Disabled");
 				instanceTemplate.find("#vm_action_ha").text("Enable HA");
 			}
-			var created = new Date();
-			created.setISO8601(instanceJSON.created);
-			var showDate = created.format("m/d/Y H:i:s");
-			instanceTemplate.find("#vm_created").html("<strong>Created:</strong> " + showDate);
+			
+			setDateField(instanceJSON.created, instanceTemplate.find("#vm_created"), "<strong>Created:</strong> ");
+						
+			instanceTemplate.find("#vm_account").html("<strong>Account:</strong> " + sanitizeXSS(instanceJSON.account));
+			instanceTemplate.find("#vm_domain").html("<strong>Domain:</strong> " + sanitizeXSS(instanceJSON.domain));
 			if (isAdmin()) {
 				if (instanceJSON.hostname != undefined) {
-					instanceTemplate.find("#vm_host").html("<strong>Host:</strong> " + instanceJSON.hostname);
+					instanceTemplate.find("#vm_host").html("<strong>Host:</strong> " + sanitizeXSS(instanceJSON.hostname));
 				} else {
 				    instanceTemplate.find("#vm_host").html("<strong>Host:</strong> ");
-				}
-				instanceTemplate.find("#vm_account").html("<strong>Account:</strong> " + instanceJSON.account);
+				}				
 			}
 			if (instanceJSON.group != undefined) {
 				instanceTemplate.find("#vm_group").text(instanceJSON.group);
@@ -1170,6 +1202,8 @@ function showInstancesTab(domainId) {
 					instanceTemplate.find("#vm_state_bar").removeClass("admin_vmred_arrow admin_vmgreen_arrow").addClass("admin_vmgrey_arrow");
 					instanceTemplate.find("#vm_state").text(instanceJSON.state).removeClass("grid_stoppedtitles grid_runningtitles").addClass("grid_celltitles");
 					instanceTemplate.find("#vm_action_start, #vm_action_stop, #vm_action_reboot, #vm_action_attach_iso, #vm_action_detach_iso, #vm_action_reset_password, #vm_action_change_service, #vm_action_apply_security").removeClass().addClass("vmaction_links_off");
+					if(instanceJSON.state == 'Creating')
+					    instanceTemplate.find("#vm_action_destroy").hide();
 				}
 				instanceTemplate.find("#vm_action_view_console").unbind("mouseover");
 			}
@@ -1192,12 +1226,13 @@ function showInstancesTab(domainId) {
 					var zoneSelect = $("#wizard_zone").empty();	
 					if (zones != null && zones.length > 0) {
 						for (var i = 0; i < zones.length; i++) {
-							zoneSelect.append("<option value='" + zones[i].id + "'>" + zones[i].name + "</option>"); 
+							zoneSelect.append("<option value='" + zones[i].id + "'>" + sanitizeXSS(zones[i].name) + "</option>"); 
 						}
 					}
 				}
 			});
-				
+			
+			filterInPopupStep2 = "featured";	
 			$("#vmpopup").fadeIn("slow");
 			$("#overlay_black").show();
 		});
@@ -1206,21 +1241,26 @@ function showInstancesTab(domainId) {
 			currentStep = 1;
 			$("#vmpopup").hide();
 			$("#overlay_black").hide();
-			$("#vmpopup #step1").show().nextAll().hide();
-			$("#vmpopup .rev_wizmid_actionback").hide();
-			$("#vmpopup .rev_wizmid_actionnext").show();
-			$("#vmpopup #wizard_message").hide();
+			vmPopup.find("#step1").show().nextAll().hide();
+			vmPopup.find(".rev_wizmid_actionback").hide();
+			vmPopup.find(".rev_wizmid_actionnext").show();
+			vmPopup.find("#wizard_message").hide();
 			$("#wiz_featured").removeClass().addClass("rev_wizmid_selectedtempbut");
 			$("#wiz_my, #wiz_community, #wiz_blank").removeClass().addClass("rev_wizmid_nonselectedtempbut");
 		}
 		
-		$("#vmpopup #vm_wizard_close").bind("click", function(event) {
+		vmPopup.find("#vm_wizard_close").bind("click", function(event) {
 			vmWizardClose();
 			return false;
 		});
+				
+		vmPopup.find("#step2 #wiz_message_continue").bind("click", function(event) {		    
+			vmPopup.find("#step2 #wiz_message").hide();
+			return false;
+		});
 		
-		$("#vmpopup #wiz_message_continue").bind("click", function(event) {
-			$("#vmpopup #wiz_message").hide();
+		vmPopup.find("#step3 #wiz_message_continue").bind("click", function(event) {		    
+			vmPopup.find("#step3 #wiz_message").hide();
 			return false;
 		});
 		
@@ -1239,48 +1279,47 @@ function showInstancesTab(domainId) {
 		}
 		
 		//vm wizard search and pagination
-		$("#vmpopup #search_button").bind("click", function(event) {	              
+		vmPopup.find("#search_button").bind("click", function(event) {	              
             currentPageInPopupStep2 = 1;           	        	
             listTemplatesInPopupStep2();  
             return false;   //event.preventDefault() + event.stopPropagation() 
         });
     	
-	    $("#vmpopup #search_input").bind("keypress", function(event) {		        
-            if(event.keyCode == 13) {                	        
-	            $("#vmpopup #search_button").click();	
+	    vmPopup.find("#search_input").bind("keypress", function(event) {		        
+            if(event.keyCode == keycode_Enter) {                	        
+	            vmPopup.find("#search_button").click();	
 	            return false;   //event.preventDefault() + event.stopPropagation() 		     
 	        }		    
         });   
 				
-		$("#vmpopup #nextPage").bind("click", function(event){	            
+		vmPopup.find("#nextPage").bind("click", function(event){	            
             currentPageInPopupStep2++;        
             listTemplatesInPopupStep2(); 
             return false;   //event.preventDefault() + event.stopPropagation() 
         });		
         
-        $("#vmpopup #prevPage").bind("click", function(event){	                 
+        vmPopup.find("#prevPage").bind("click", function(event){	                 
             currentPageInPopupStep2--;	              	    
             listTemplatesInPopupStep2(); 
             return false;   //event.preventDefault() + event.stopPropagation() 
         });	
-		
+							
 		var vmPopupStep2PageSize = 11; //max number of templates each page in step2 of New VM wizard is 11 
 		function listTemplatesInPopupStep2() {		
-		    var container = $("#vmpopup #template_container");	 		    
-		    var vmPopup = $("#vmpopup");				
+		    var container = vmPopup.find("#template_container");	 		    	
 			   
 		    var commandString;    		  	   
 	        var searchInput = vmPopup.find("#search_input").val();   
 	        if (filterInPopupStep2 != "blank") {      
                 if (searchInput != null && searchInput.length > 0)                 
-                    commandString = "command=listTemplates&templatefilter="+filterInPopupStep2+"&keyword="+searchInput+"&page="+currentPageInPopupStep2+"&response=json"; 
+                    commandString = "command=listTemplates&templatefilter="+filterInPopupStep2+"&zoneid="+wizardSelectedZone+"&keyword="+searchInput+"&page="+currentPageInPopupStep2+"&response=json"; 
                 else
-                    commandString = "command=listTemplates&templatefilter="+filterInPopupStep2+"&page="+currentPageInPopupStep2+"&response=json";           		    		
+                    commandString = "command=listTemplates&templatefilter="+filterInPopupStep2+"&zoneid="+wizardSelectedZone+"&page="+currentPageInPopupStep2+"&response=json";           		    		
 			} else {
 			    if (searchInput != null && searchInput.length > 0)                 
-                    commandString = "command=listIsos&isReady=true&bootable=true&keyword="+searchInput+"&page="+currentPageInPopupStep2+"&response=json";  
+                    commandString = "command=listIsos&isReady=true&bootable=true&zoneid="+wizardSelectedZone+"&keyword="+searchInput+"&page="+currentPageInPopupStep2+"&response=json";  
                 else
-                    commandString = "command=listIsos&isReady=true&bootable=true&page="+currentPageInPopupStep2+"&response=json";  
+                    commandString = "command=listIsos&isReady=true&bootable=true&zoneid="+wizardSelectedZone+"&page="+currentPageInPopupStep2+"&response=json";  
 			}
 			
 			var loading = vmPopup.find("#wiz_template_loading").show();				
@@ -1302,10 +1341,18 @@ function showInstancesTab(domainId) {
 					loading.hide();
 					container.empty();
 					if (items != null && items.length > 0) {
+						var first = true;
 						for (var i = 0; i < items.length; i++) {
-							var html = '<div class="rev_wiztemplistbox" id="'+items[i].id+'">'
+							var divClass = "rev_wiztemplistbox";
+							if (first) {
+								divClass = "rev_wiztemplistbox_selected";
+								first = false;
+							}
+
+							var html = '<div class="'+divClass+'" id="'+items[i].id+'">'
 										  +'<div class="'+getIconForOS(items[i].ostypename)+'"></div>'
-										  +'<div class="rev_wiztemp_listtext">'+items[i].displaytext+' - [created by: <b>'+items[i].account+']</b></div>'
+										  +'<div class="rev_wiztemp_listtext">'+sanitizeXSS(items[i].displaytext)+'</div>'
+										  +'<div class="rev_wiztemp_ownertext">'+sanitizeXSS(items[i].account)+'</div>'
 									  +'</div>';
 							container.append(html);
 						}						
@@ -1331,7 +1378,7 @@ function showInstancesTab(domainId) {
 			});
 		}
 				
-		$("#vmpopup #template_container").bind("click", function(event) {
+		vmPopup.find("#template_container").bind("click", function(event) {
 			var container = $(this);
 			var target = $(event.target);
 			var parent = target.parent();
@@ -1340,27 +1387,66 @@ function showInstancesTab(domainId) {
 			}
 			if (target.attr("id") != "-2") {
 				if (target.hasClass("rev_wiztemplistbox")) {
+					container.find(".rev_wiztemplistbox_selected").removeClass().addClass("rev_wiztemplistbox");
 					target.removeClass().addClass("rev_wiztemplistbox_selected");
 				} else if (target.hasClass("rev_wiztemplistbox_selected")) {
 					target.removeClass().addClass("rev_wiztemplistbox");
 				}
 			}
 		});
-
-		$("#vmpopup .rev_wizmid_actionnext").bind("click", function(event) {
+        
+        var wizardSelectedZone;		
+		vmPopup.find(".rev_wizmid_actionnext").bind("click", function(event) {
 			event.preventDefault();
+			event.stopPropagation();
+			
+			var thisDialog = vmPopup;
+			
+			if (currentStep == 1) {			    
+			    // validate values
+				var isValid = true;		
+				isValid &= validateString("Name", thisDialog.find("#wizard_vm_name"), thisDialog.find("#wizard_vm_name_errormsg"), true);
+				isValid &= validateString("Group", thisDialog.find("#wizard_vm_group"), thisDialog.find("#wizard_vm_group_errormsg"), true);				
+				if (!isValid) return;		
+			}
+			
 			// prevent a person from moving on if no templates are selected
-			if (currentStep == 2 && $("#vmpopup #template_container .rev_wiztemplistbox_selected").length == 0) {
-				$("#wiz_message").show();
+			if (currentStep == 2 && vmPopup.find("#step2 #template_container .rev_wiztemplistbox_selected").length == 0) {
+				$("#step2 #wiz_message").show();
 				return false;
 			}
 			
-			$("#vmpopup #step" + currentStep).hide().next().show();
+			if(currentStep ==3) {
+			    // prevent a person from moving on if no service offering is selected
+			    if(vmPopup.find("#step3 #wizard_service_offering li").length == 0) {
+			        $("#step3 #wiz_message #wiz_message_text").text("Please select a service offering to continue");
+			        $("#step3 #wiz_message").show();
+				    return false;
+				}
+				
+				// prevent a person from moving on if no disk offering is selected
+				if ($("#wiz_blank").hasClass("rev_wizmid_selectedtempbut")) {  //check root disk offering 				    
+				    if(vmPopup.find("#step3 #wizard_root_disk_offering li").length == 0) {
+			            $("#step3 #wiz_message #wiz_message_text").text("Please select a root disk offering to continue");
+			            $("#step3 #wiz_message").show();
+				        return false;
+				    }				    
+				}
+				else {  //check data disk offering				
+				    if(vmPopup.find("#step3 #wizard_data_disk_offering li").length == 0) {
+				        $("#step3 #wiz_message #wiz_message_text").text("Please select a data disk offering to continue");
+			            $("#step3 #wiz_message").show();
+				        return false;
+				    }				
+				}
+			}
+			
+			vmPopup.find("#step" + currentStep).hide().next().show();
 			currentStep++;
 			
 			// Wizard Step 2 - list templates
 			if (currentStep == 2) {
-				var zone = $("#wizard_zone").val();
+				wizardSelectedZone = $("#wizard_zone").val();
 				
 				// Make a check to see if a zone has been selected
 				
@@ -1376,28 +1462,28 @@ function showInstancesTab(domainId) {
 					filterInPopupStep2 = "featured";
 					switch (targetId) {
 						case "wiz_featured":
-						    $("#vmpopup #search_input").val("");  
+						    vmPopup.find("#search_input").val("");  
 						    currentPageInPopupStep2 = 1;
 							filterInPopupStep2 = "featured";
 							container.find("#wiz_featured").removeClass().addClass("rev_wizmid_selectedtempbut");
 							container.find("#wiz_my, #wiz_community, #wiz_blank").removeClass().addClass("rev_wizmid_nonselectedtempbut");
 							break;
 						case "wiz_my":
-						    $("#vmpopup #search_input").val("");  
+						    vmPopup.find("#search_input").val("");  
 						    currentPageInPopupStep2 = 1;
 							container.find("#wiz_my").removeClass().addClass("rev_wizmid_selectedtempbut");
 							container.find("#wiz_featured, #wiz_community, #wiz_blank").removeClass().addClass("rev_wizmid_nonselectedtempbut");
 							filterInPopupStep2 = "selfexecutable";
 							break;	
 						case "wiz_community":
-						    $("#vmpopup #search_input").val("");  
+						    vmPopup.find("#search_input").val("");  
 						    currentPageInPopupStep2 = 1;
 							container.find("#wiz_community").removeClass().addClass("rev_wizmid_selectedtempbut");
 							container.find("#wiz_my, #wiz_featured, #wiz_blank").removeClass().addClass("rev_wizmid_nonselectedtempbut");
 							filterInPopupStep2 = "community";
 							break;
 						case "wiz_blank":
-						    $("#vmpopup #search_input").val("");  
+						    vmPopup.find("#search_input").val("");  
 						    currentPageInPopupStep2 = 1;
 							container.find("#wiz_blank").removeClass().addClass("rev_wizmid_selectedtempbut");
 							container.find("#wiz_my, #wiz_community, #wiz_featured").removeClass().addClass("rev_wizmid_nonselectedtempbut");
@@ -1411,7 +1497,7 @@ function showInstancesTab(domainId) {
 
 			// Wizard Step 3 - list service offerings
 			if (currentStep == 3) {
-				$("#vmpopup #wiz_message").hide();
+				vmPopup.find("#wiz_message").hide();
 				var serviceOfferingSelected = false;
 			    var diskOfferingSelected = false;
 				$.ajax({
@@ -1431,7 +1517,7 @@ function showInstancesTab(domainId) {
 								var html = 
 									"<li>"
 										+"<input class='radio' type='radio' name='service' id='service' value='"+offerings[i].id+"'" + checked + "/>"
-										+"<label style='width:500px;font-size:11px;' for='service'>"+offerings[i].displaytext+"</label>"
+										+"<label style='width:500px;font-size:11px;' for='service'>"+sanitizeXSS(offerings[i].displaytext)+"</label>"
 								   +"</li>";
 								$("#wizard_service_offering").append(html);
 								first = false;
@@ -1446,7 +1532,7 @@ function showInstancesTab(domainId) {
 							dataType: "json",
 							async: false,
 							success: function(json) {
-								var offerings = json.listdiskofferingsresponse.diskOffering;
+								var offerings = json.listdiskofferingsresponse.diskoffering;
 								$("#wizard_root_disk_offering, #wizard_data_disk_offering").empty();
 								var showRootDisk = false;
 								if ($("#wiz_blank").hasClass("rev_wizmid_selectedtempbut")) {
@@ -1467,14 +1553,14 @@ function showInstancesTab(domainId) {
 											var html = 
 												"<li>"
 													+"<input class='radio' type='radio' name='rootdisk' id='rootdisk' value='"+offerings[i].id+"'" + checked + "/>"
-													+"<label style='width:500px;font-size:11px;' for='disk'>"+offerings[i].displaytext+"</label>"
+													+"<label style='width:500px;font-size:11px;' for='disk'>"+sanitizeXSS(offerings[i].displaytext)+"</label>"
 											   +"</li>";
 											$("#wizard_root_disk_offering").append(html);
 										} else {
 											var html = 
 											"<li>"
 												+"<input class='radio' type='radio' name='datadisk' id='datadisk' value='"+offerings[i].id+"'" + checked + "/>"
-												+"<label style='width:500px;font-size:11px;' for='disk'>"+offerings[i].displaytext+"</label>"
+												+"<label style='width:500px;font-size:11px;' for='disk'>"+sanitizeXSS(offerings[i].displaytext)+"</label>"
 										   +"</li>";
 											$("#wizard_data_disk_offering").append(html);
 										}
@@ -1551,7 +1637,7 @@ function showInstancesTab(domainId) {
 				vmInstance.find("#vm_state_bar").removeClass("admin_vmred_arrow admin_vmgreen_arrow").addClass("admin_vmgrey_arrow");
 				vmInstance.find("#vm_state").text("Creating").removeClass("grid_stoppedtitles grid_runningtitles").addClass("grid_celltitles");
 				vmInstance.fadeIn("slow");
-				gridContainer.prepend(vmInstance);
+				$("#submenu_content_vms #grid_content").prepend(vmInstance);
 				
 				$.ajax({
 					data: "command=deployVirtualMachine&zoneId="+zId+"&serviceOfferingId="+soId+diskOffering+template+group+name+"&response=json",
@@ -1604,9 +1690,9 @@ function showInstancesTab(domainId) {
 											}
 										}
 									},
-									error: function(XMLHttpRequest) {
+									error: function(XMLHttpResponse) {
 										$("body").stopTime(timerKey);
-										handleError(XMLHttpRequest);
+										handleError(XMLHttpResponse);
 									}
 								});
 							},
@@ -1615,15 +1701,15 @@ function showInstancesTab(domainId) {
 					}
 				});
 			} else {
-				$("#vmpopup .rev_wizmid_actionback").show();
+				vmPopup.find(".rev_wizmid_actionback").show();
 			}
 		});
 		
-		$("#vmpopup .rev_wizmid_actionback").bind("click", function(event) {		
-			$("#vmpopup #step" + currentStep).hide().prev().show();
+		vmPopup.find(".rev_wizmid_actionback").bind("click", function(event) {		
+			vmPopup.find("#step" + currentStep).hide().prev().show();
 			currentStep--;
 			if (currentStep == 1) {
-				$("#vmpopup .rev_wizmid_actionback").hide();
+				vmPopup.find(".rev_wizmid_actionback").hide();
 			}
 			return false; //event.preventDefault() + event.stopPropagation()
 		});
@@ -1642,8 +1728,7 @@ function showInstancesTab(domainId) {
 			if (isAdmin()) {
 				$("#vm_disk_header").text("Account");
 				$("#vm_group_header").text("Host");
-				submenuContent.find("#adv_search_pod_li").show();
-				submenuContent.find("#adv_search_account_li").show();
+				submenuContent.find("#adv_search_pod_li, #adv_search_domain_li, #adv_search_account_li").show();				
 			}
 			
 			// Setup VM Page by listing User's VMs			
@@ -1653,8 +1738,7 @@ function showInstancesTab(domainId) {
 		
 		function listVirtualMachines() {	
 		    var submenuContent = $("#submenu_content_vms");  			  
-            gridContainer = submenuContent.find("#grid_content");	//***		
-          		     
+                      		     
             var commandString;            
 			var advanced = submenuContent.find("#search_button").data("advanced");                    
 			if (advanced != null && advanced) {		
@@ -1662,6 +1746,7 @@ function showInstancesTab(domainId) {
 			    var state = submenuContent.find("#advanced_search #adv_search_state").val();
 			    var zone = submenuContent.find("#advanced_search #adv_search_zone").val();
 			    var pod = submenuContent.find("#advanced_search #adv_search_pod").val();
+			    var domainId = submenuContent.find("#advanced_search #adv_search_domain").val();
 			    var account = submenuContent.find("#advanced_search #adv_search_account").val();
 			    var moreCriteria = [];								
 				if (name!=null && trim(name).length > 0) 
@@ -1669,21 +1754,28 @@ function showInstancesTab(domainId) {
 				if (state!=null && state.length > 0) 
 					moreCriteria.push("&state="+state);		
 			    if (zone!=null && zone.length > 0) 
-					moreCriteria.push("&zoneId="+zone);		
+					moreCriteria.push("&zoneid="+zone);		
+			    if (domainId!=null && domainId.length > 0) 
+					moreCriteria.push("&domainid="+domainId);		
 			    if (pod!=null && pod.length > 0) 
 					moreCriteria.push("&podId="+pod);		
 				if (account!=null && account.length > 0) 
 					moreCriteria.push("&account="+account);		       
 				commandString = "command=listVirtualMachines&page="+currentPage+moreCriteria.join("")+"&response=json";
-			} else {     
-			    var moreCriteria = [];		
-			    if(domainId!=null)
-			        moreCriteria.push("&domainid="+domainId);			
+			} else {     			    		
 			    var searchInput = submenuContent.find("#search_input").val();	 
-		        if (searchInput != null && searchInput.length > 0) 
-		            commandString = "command=listVirtualMachines&page="+currentPage+moreCriteria.join("")+"&keyword="+searchInput+"&response=json";
-		        else
+		        if (searchInput != null && searchInput.length > 0) {
+		            commandString = "command=listVirtualMachines&page="+currentPage+"&keyword="+searchInput+"&response=json";
+		        }
+		        else {		            
+		            var moreCriteria = [];	
+		            // "p_domainId!=null" and "p_account!=null" means redirected from "VMs" link on Accounts page to here(Instances page) 	
+			        if(p_domainId!=null && p_domainId.length > 0)
+			            moreCriteria.push("&domainid="+p_domainId);	                 
+                    if (p_account!=null && p_account.length > 0) 
+					    moreCriteria.push("&account="+p_account);
 		            commandString = "command=listVirtualMachines&page="+currentPage+moreCriteria.join("")+"&response=json";
+		        }
 			}
 			
 			//listItems(submenuContent, commandString, jsonResponse1, jsonResponse2, template, fnJSONToTemplate);         
@@ -1692,252 +1784,504 @@ function showInstancesTab(domainId) {
 		
 		submenuContentEventBinder($("#submenu_content_vms"), listVirtualMachines);
 		
-		startStopRebootHandler($("#router_template"), "routerId", "routerName", "router", "startRouter", "startrouterresponse", "stopRouter", "stoprouterresponse", "rebootRouter", "rebootrouterresponse", refreshRouterInstance); // Routers submenu
-	    startStopRebootHandler($("#console_template"), "consoleId", "consoleName", "console", "startConsoleProxy", "startconsoleproxyresponse", "stopConsoleProxy", "stopconsoleproxyresponse", "rebootConosoleProxy", "rebootconsoleproxyresponse", refreshConsoleProxyInstance); // Routers submenu
+		        //*** router_template event handler (begin) ******************************************************************    	
+	    $("#router_template").bind("mouseenter", function(event) {
+		    $(this).find("#grid_links_container").show();
+		    return false;
+	    });
+	    $("#router_template").bind("mouseleave", function(event) {
+		    $(this).find("#grid_links_container").hide();
+		    return false;
+	    });
 
-	    function startStopRebootHandler (original_template, template_id, template_name, submenu_name, start_API, 
-	    	start_API_response, stop_API, stop_API_response, reboot_API, reboot_API_response, refreshFunctor) {
-	    	
-		    original_template.bind("mouseenter", function(event) {
-			    $(this).find("#grid_links_container").show();
-			    return false;
-		    });
-		    original_template.bind("mouseleave", function(event) {
-			    $(this).find("#grid_links_container").hide();
-			    return false;
-		    });
+        $("#router_template").bind("click", function(event) {               
+		    var template = $(this);
+		    var link = $(event.target);
+		    var linkAction = link.attr("id");
+		    var id = template.data("routerId");
+		    var name = template.data("routerName");
+		    switch (linkAction) {
+			    case "router_action_start" :
+				    $("#dialog_confirmation")
+				    .html("<p>Please confirm you want to start the router: <b>"+name+"</b></p>")
+				    .dialog('option', 'buttons', { 					    
+					    "Confirm": function() { 
+						    var dialogBox = $(this);
+						    $.ajax({
+							    data: "command=startRouter&id="+id+"&response=json",
+							    dataType: "json",
+							    success: function(json) {
+								    dialogBox.dialog("close");
+									
+								    template.find(".row_loading").show();
+								    template.find(".loading_animationcontainer .loading_animationtext").text("Starting...");
+								    template.find(".loading_animationcontainer").show();
+								    template.fadeIn("slow");
+								    var that = template; //"that" is a closure and will be used in callback function.
+								    template.find(".continue_button").data("id", id).unbind("click").bind("click", function(event) {
+									    event.preventDefault();									    
+									    that.find(".loading_animationcontainer").hide();
+									    that.find(".loadingmessage_container").fadeOut("slow");
+									    that.find(".row_loading").fadeOut("slow");
+								    });
+								    var timerKey = "router"+id;
+								    $("body").everyTime(
+									    10000, 
+									    timerKey,
+									    function() {										      
+										    $.ajax({
+											    data: "command=queryAsyncJobResult&jobId="+json.startrouterresponse.jobid+"&response=json",
+											    dataType: "json",
+											    success: function(json) {
+												    var result = json.queryasyncjobresultresponse;
+												    if (result.jobstatus == 0) {
+													    return; //Job has not completed
+												    } else {
+													    $("body").stopTime(timerKey);
+													    if (result.jobstatus == 1) {
+														    // Succeeded
+														    var json = result.router[0];
+														    template.find("#router_state_bar").removeClass("yellow_statusbar grey_statusbar red_statusbar").addClass("green_statusbar");
+														    template.find("#router_state").text("Running").removeClass("grid_celltitles grid_stoppedtitles").addClass("grid_runningtitles");
+														    template.find(".grid_links").find("#router_action_stop_container, #router_action_view_console_container, #router_action_reboot_container").show();
+														    template.find(".grid_links").find("#router_action_start_container").hide();														    														    
+														    routerJSONToTemplate(json, template, true);
+														    template.find(".loadingmessage_container .loadingmessage_top p").html("Your router has been successfully started.");
+														    template.find(".loadingmessage_container").fadeIn("slow");														   
+														    template.find("#router_action_view_console").data("proxyUrl", "console?cmd=access&vm=" + json.id + "&t=" + json.displayname).data("vmId", json.id).click(function(event) {
+																event.preventDefault();
+																window.open($(this).data("proxyUrl"),$(this).data("vmId"),"width=820,height=640,resizable=yes,menubar=no,status=no,scrollbars=no,toolbar=no,location=no");
+															});
+													    } else if (result.jobstatus == 2) {
+														    // Failed
+														    template.find("#router_state_bar").removeClass("yellow_statusbar green_statusbar grey_statusbar").addClass("red_statusbar");
+														    template.find("#router_state").text("Stopped").removeClass("grid_runningtitles grid_celltitles").addClass("grid_stoppedtitles");
+														    template.find(".grid_links").find("#router_action_start_container").show();
+														    template.find(".grid_links").find("#router_action_stop_container, #router_action_view_console_container, #router_action_reboot_container").hide();
+														    template.find(".loadingmessage_container .loadingmessage_top p").text("We were unable to start the router.  Please check your logs for more info.");
+														    template.find(".loadingmessage_container").fadeIn("slow");
+													    }
+												    }
+											    },
+											    error: function(XMLHttpResponse) {
+												    $("body").stopTime(timerKey);
+												    handleError(XMLHttpResponse);
+											    }
+										    });
+									    },
+									    0
+								    );
+							    }
+						    });
+					    }, 
+					    "Cancel": function() { 
+						    $(this).dialog("close"); 
+					    } 
+				    }).dialog("open");
+				    break;
+			    case "router_action_stop" :
+				    $("#dialog_confirmation")
+				    .html("<p>Please confirm you want to stop the router: <b>"+name+"</b></p>")
+				    .dialog('option', 'buttons', { 					    
+					    "Confirm": function() { 
+						    var dialogBox = $(this);
+						    $.ajax({
+							    data: "command=stopRouter&id="+id+"&response=json",
+							    dataType: "json",
+							    success: function(json) {
+								    dialogBox.dialog("close");
+									
+								    template.find(".row_loading").show();
+								    template.find(".loading_animationcontainer .loading_animationtext").text("Stopping...");
+								    template.find(".loading_animationcontainer").show();
+								    template.fadeIn("slow");
+								    var that = template; //"that" is a closure and will be used in callback function.
+								    template.find(".continue_button").data("id", id).unbind("click").bind("click", function(event) {
+									    event.preventDefault();									   
+									    that.find(".loading_animationcontainer").hide();
+									    that.find(".loadingmessage_container").fadeOut("slow");
+									    that.find(".row_loading").fadeOut("slow");
+								    });
+								    var timerKey = "router"+id;
+								    $("body").everyTime(
+									    10000, 
+									    timerKey,
+									    function() {										     
+										    $.ajax({
+											    data: "command=queryAsyncJobResult&jobId="+json.stoprouterresponse.jobid+"&response=json",
+											    dataType: "json",
+											    success: function(json) {
+												    var result = json.queryasyncjobresultresponse;
+												    if (result.jobstatus == 0) {
+													    return; //Job has not completed
+												    } else {
+													    $("body").stopTime(timerKey);
+													    if (result.jobstatus == 1) {
+														    // Succeeded
+														    var json = result.router[0];
+														    template.find("#router_state_bar").removeClass("yellow_statusbar green_statusbar grey_statusbar").addClass("red_statusbar");
+														    template.find("#router_state").text("Stopped").removeClass("grid_runningtitles grid_celltitles").addClass("grid_stoppedtitles");
+														    template.find(".grid_links").find("#router_action_start_container").show();
+														    template.find(".grid_links").find("#router_action_stop_container, #router_action_view_console_container, #router_action_reboot_container").hide();														    
+														    routerJSONToTemplate(json, template, true);
+														    template.find(".loadingmessage_container .loadingmessage_top p").html("Your router has been successfully stopped.");
+														    template.find(".loadingmessage_container").fadeIn("slow");
+														    template.find("#router_action_view_console").unbind("click");
+													    } else if (result.jobstatus == 2) {
+														    // Failed
+														    template.find("#router_state_bar").removeClass("yellow_statusbar grey_statusbar red_statusbar").addClass("green_statusbar");
+														    template.find("#router_state").text("Running").removeClass("grid_celltitles grid_stoppedtitles").addClass("grid_runningtitles");
+														    template.find(".grid_links").find("#router_action_stop_container, #router_action_view_console_container, #router_action_reboot_container").show();
+														    template.find(".grid_links").find("#router_action_start_container").hide();
+														    template.find(".loadingmessage_container .loadingmessage_top p").text("We were unable to stop the router.  Please check your logs for more info.");
+														    template.find(".loadingmessage_container").fadeIn("slow");
+													    }
+												    }
+											    },
+											    error: function(XMLHttpResponse) {
+												    $("body").stopTime(timerKey);
+												    handleError(XMLHttpResponse);
+											    }
+										    });
+									    },
+									    0
+								    );
+							    }
+						    });
+					    }, 
+					    "Cancel": function() { 
+						    $(this).dialog("close"); 
+					    } 
+				    }).dialog("open");
+				    break;
+			    case "router_action_reboot" :
+				    $("#dialog_confirmation")
+				    .html("<p>Please confirm you want to reboot the router: <b>"+name+"</b></p>")
+				    .dialog('option', 'buttons', { 					    
+					    "Confirm": function() { 
+						    var dialogBox = $(this);
+						    $.ajax({
+							    data: "command=rebootRouter&id="+id+"&response=json",
+							    dataType: "json",
+							    success: function(json) {
+								    dialogBox.dialog("close");
+									
+								    template.find(".row_loading").show();
+								    template.find(".loading_animationcontainer .loading_animationtext").text("Rebooting...");
+								    template.find(".loading_animationcontainer").show();
+								    template.fadeIn("slow");
+								    var that = template; //"that" is a closure and will be used in callback function.
+								    template.find(".continue_button").data("id", id).unbind("click").bind("click", function(event) {
+									    event.preventDefault();									   
+									    that.find(".loading_animationcontainer").hide();
+									    that.find(".loadingmessage_container").fadeOut("slow");
+									    that.find(".row_loading").fadeOut("slow");
+								    });
+								    var timerKey = "router"+id;
+								    $("body").everyTime(
+									    10000, 
+									    timerKey,
+									    function() {										      
+										    $.ajax({
+											    data: "command=queryAsyncJobResult&jobId="+json.rebootrouterresponse.jobid+"&response=json",
+											    dataType: "json",
+											    success: function(json) {
+												    var result = json.queryasyncjobresultresponse;
+												    if (result.jobstatus == 0) {
+													    return; //Job has not completed
+												    } else {
+													    $("body").stopTime(timerKey);
+													    if (result.jobstatus == 1) {
+														    // Succeeded
+														    template.find("#router_state_bar").removeClass("yellow_statusbar grey_statusbar red_statusbar").addClass("green_statusbar");
+														    template.find("#router_state").text("Running").removeClass("grid_celltitles grid_stoppedtitles").addClass("grid_runningtitles");
+														    template.find(".grid_links").find("#routerr_action_stop_container, #router_action_reboot_container").show();
+														    template.find(".grid_links").find("#router_action_start_container").hide();
+														    routerJSONToTemplate(result.router[0], template, true);
+														    template.find(".loadingmessage_container .loadingmessage_top p").html("Your router has been successfully rebooted.");
+														    template.find(".loadingmessage_container").fadeIn("slow");
+													    } else if (result.jobstatus == 2) {
+														    // Failed
+														    template.find("#router_state_bar").removeClass("yellow_statusbar grey_statusbar red_statusbar").addClass("green_statusbar");
+														    template.find("#router_state").text("Running").removeClass("grid_celltitles grid_stoppedtitles").addClass("grid_runningtitles");
+														    template.find(".grid_links").find("#router_action_stop_container, #router_action_view_console_container, #router_action_reboot_container").show();
+														    template.find(".grid_links").find("#router_action_start_container").hide();
+														    template.find(".loadingmessage_container .loadingmessage_top p").text("We were unable to reboot the router.  Please check your logs for more info.");
+														    template.find(".loadingmessage_container").fadeIn("slow");
+													    }
+												    }
+											    },
+											    error: function(XMLHttpResponse) {
+												    $("body").stopTime(timerKey);
+												    handleError(XMLHttpResponse);
+											    }
+										    });
+									    },
+									    0
+								    );
+							    }
+						    });
+					    }, 
+					    "Cancel": function() { 
+						    $(this).dialog("close"); 
+					    } 
+				    }).dialog("open");
+				    break;
+			    default :
+				    break;
+		    }
+		    return false;
+	    });
+        //*** router_template event handler (end) ********************************************************************  
+		
+		//*** console_template event handler (begin) ******************************************************************    	
+	    $("#console_template").bind("mouseenter", function(event) {
+		    $(this).find("#grid_links_container").show();
+		    return false;
+	    });
+	    $("#console_template").bind("mouseleave", function(event) {
+		    $(this).find("#grid_links_container").hide();
+		    return false;
+	    });
 
-            original_template.bind("click", function(event) {               
-			    var template = $(this);
-			    var link = $(event.target);
-			    var linkAction = link.attr("id");
-			    var id = template.data(template_id);
-			    var name = template.data(template_name);
-			    switch (linkAction) {
-				    case submenu_name+"_action_start" :
-					    $("#dialog_confirmation")
-					    .html("<p>Please confirm you want to start the "+submenu_name+": <b>"+name+"</b></p>")
-					    .dialog('option', 'buttons', { 
-						    "Cancel": function() { 
-							    $(this).dialog("close"); 
-						    },
-						    "Confirm": function() { 
-							    var dialogBox = $(this);
-							    $.ajax({
-								    data: "command="+start_API+"&id="+id+"&response=json",
-								    dataType: "json",
-								    success: function(json) {
-									    dialogBox.dialog("close");
-    									
-									    template.find(".row_loading").show();
-									    template.find(".loading_animationcontainer .loading_animationtext").text("Starting...");
-									    template.find(".loading_animationcontainer").show();
-									    template.fadeIn("slow");
-									    template.find(".continue_button").data("id", id).unbind("click").bind("click", function(event) {
-										    event.preventDefault();
-										    var template = $("#"+submenu_name+$(this).data("id"));
-										    template.find(".loading_animationcontainer").hide();
-										    template.find(".loadingmessage_container").fadeOut("slow");
-										    template.find(".row_loading").fadeOut("slow");
-									    });
-									    var timerKey = submenu_name+id;
-									    $("body").everyTime(
-										    10000, 
-										    timerKey,
-										    function() {										      
-											    $.ajax({
-												    data: "command=queryAsyncJobResult&jobId="+json[start_API_response].jobid+"&response=json",
-												    dataType: "json",
-												    success: function(json) {
-													    var result = json.queryasyncjobresultresponse;
-													    if (result.jobstatus == 0) {
-														    return; //Job has not completed
-													    } else {
-														    $("body").stopTime(timerKey);
-														    if (result.jobstatus == 1) {
-															    // Succeeded
-															    template.find("#"+submenu_name+"_state_bar").removeClass("yellow_statusbar grey_statusbar red_statusbar").addClass("green_statusbar");
-															    template.find("#"+submenu_name+"_state").text("Running").removeClass("grid_celltitles grid_stoppedtitles").addClass("grid_runningtitles");
-															    template.find(".grid_links").find("#"+submenu_name+"_action_stop_container, #"+submenu_name+"_action_reboot_container").show();
-															    template.find(".grid_links").find("#"+submenu_name+"_action_start_container").hide();
-															    refreshFunctor(template, id);
-															    template.find(".loadingmessage_container .loadingmessage_top p").html("Your "+submenu_name+" has been successfully started.");
-															    template.find(".loadingmessage_container").fadeIn("slow");
-														    } else if (result.jobstatus == 2) {
-															    // Failed
-															    template.find("#"+submenu_name+"_state_bar").removeClass("yellow_statusbar green_statusbar grey_statusbar").addClass("red_statusbar");
-															    template.find("#"+submenu_name+"_state").text("Stopped").removeClass("grid_runningtitles grid_celltitles").addClass("grid_stoppedtitles");
-															    template.find(".grid_links").find("#"+submenu_name+"_action_start_container").show();
-															    template.find(".grid_links").find("#"+submenu_name+"_action_stop_container, #"+submenu_name+"_action_reboot_container").hide();
-															    template.find(".loadingmessage_container .loadingmessage_top p").text("We were unable to start the "+submenu_name+".  Please check your logs for more info.");
-															    template.find(".loadingmessage_container").fadeIn("slow");
-														    }
-													    }
-												    },
-												    error: function(XMLHttpRequest) {
+        $("#console_template").bind("click", function(event) {               
+		    var template = $(this);
+		    var link = $(event.target);
+		    var linkAction = link.attr("id");
+		    var id = template.data("consoleId");
+		    var name = template.data("consoleName");
+		    switch (linkAction) {
+			    case "console_action_start" :
+				    $("#dialog_confirmation")
+				    .html("<p>Please confirm you want to start the system VM: <b>"+name+"</b></p>")
+				    .dialog('option', 'buttons', { 					    
+					    "Confirm": function() { 
+						    var dialogBox = $(this);
+						    $.ajax({
+							    data: "command=startSystemVm&id="+id+"&response=json",
+							    dataType: "json",
+							    success: function(json) {
+								    dialogBox.dialog("close");
+									
+								    template.find(".row_loading").show();
+								    template.find(".loading_animationcontainer .loading_animationtext").text("Starting...");
+								    template.find(".loading_animationcontainer").show();
+								    template.fadeIn("slow");
+								    var that = template; //"that" is a closure and will be used in callback function.
+								    template.find(".continue_button").data("id", id).unbind("click").bind("click", function(event) {
+									    event.preventDefault();									    
+									    that.find(".loading_animationcontainer").hide();
+									    that.find(".loadingmessage_container").fadeOut("slow");
+									    that.find(".row_loading").fadeOut("slow");
+								    });
+								    var timerKey = "console"+id;
+								    $("body").everyTime(
+									    10000, 
+									    timerKey,
+									    function() {										      
+										    $.ajax({
+											    data: "command=queryAsyncJobResult&jobId="+json["startsystemvmresponse"].jobid+"&response=json",
+											    dataType: "json",
+											    success: function(json) {
+												    var result = json.queryasyncjobresultresponse;
+												    if (result.jobstatus == 0) {
+													    return; //Job has not completed
+												    } else {
 													    $("body").stopTime(timerKey);
-													    handleError(XMLHttpRequest);
-												    }
-											    });
-										    },
-										    0
-									    );
-								    }
-							    });
-						    } 
-					    }).dialog("open");
-					    break;
-				    case submenu_name+"_action_stop" :
-					    $("#dialog_confirmation")
-					    .html("<p>Please confirm you want to stop the "+submenu_name+": <b>"+name+"</b></p>")
-					    .dialog('option', 'buttons', { 
-						    "Cancel": function() { 
-							    $(this).dialog("close"); 
-						    },
-						    "Confirm": function() { 
-							    var dialogBox = $(this);
-							    $.ajax({
-								    data: "command="+stop_API+"&id="+id+"&response=json",
-								    dataType: "json",
-								    success: function(json) {
-									    dialogBox.dialog("close");
-    									
-									    template.find(".row_loading").show();
-									    template.find(".loading_animationcontainer .loading_animationtext").text("Stopping...");
-									    template.find(".loading_animationcontainer").show();
-									    template.fadeIn("slow");
-									    template.find(".continue_button").data("id", id).unbind("click").bind("click", function(event) {
-										    event.preventDefault();
-										    var template = $("#"+submenu_name+$(this).data("id"));
-										    template.find(".loading_animationcontainer").hide();
-										    template.find(".loadingmessage_container").fadeOut("slow");
-										    template.find(".row_loading").fadeOut("slow");
-									    });
-									    var timerKey = submenu_name+id;
-									    $("body").everyTime(
-										    10000, 
-										    timerKey,
-										    function() {										     
-											    $.ajax({
-												    data: "command=queryAsyncJobResult&jobId="+json[stop_API_response].jobid+"&response=json",
-												    dataType: "json",
-												    success: function(json) {
-													    var result = json.queryasyncjobresultresponse;
-													    if (result.jobstatus == 0) {
-														    return; //Job has not completed
-													    } else {
-														    $("body").stopTime(timerKey);
-														    if (result.jobstatus == 1) {
-															    // Succeeded
-															    template.find("#"+submenu_name+"_state_bar").removeClass("yellow_statusbar green_statusbar grey_statusbar").addClass("red_statusbar");
-															    template.find("#"+submenu_name+"_state").text("Stopped").removeClass("grid_runningtitles grid_celltitles").addClass("grid_stoppedtitles");
-															    template.find(".grid_links").find("#"+submenu_name+"_action_start_container").show();
-															    template.find(".grid_links").find("#"+submenu_name+"_action_stop_container, #"+submenu_name+"_action_reboot_container").hide();
-															    refreshFunctor(template, id);
-															    template.find(".loadingmessage_container .loadingmessage_top p").html("Your "+submenu_name+" has been successfully stopped.");
-															    template.find(".loadingmessage_container").fadeIn("slow");
-														    } else if (result.jobstatus == 2) {
-															    // Failed
-															    template.find("#"+submenu_name+"_state_bar").removeClass("yellow_statusbar grey_statusbar red_statusbar").addClass("green_statusbar");
-															    template.find("#"+submenu_name+"_state").text("Running").removeClass("grid_celltitles grid_stoppedtitles").addClass("grid_runningtitles");
-															    template.find(".grid_links").find("#"+submenu_name+"_action_stop_container, #"+submenu_name+"_action_reboot_container").show();
-															    template.find(".grid_links").find("#"+submenu_name+"_action_start_container").hide();
-															    template.find(".loadingmessage_container .loadingmessage_top p").text("We were unable to stop the "+submenu_name+".  Please check your logs for more info.");
-															    template.find(".loadingmessage_container").fadeIn("slow");
-														    }
+													    if (result.jobstatus == 1) {
+														    // Succeeded
+														    var json = result.systemvm[0];
+														    template.find("#console_state_bar").removeClass("yellow_statusbar grey_statusbar red_statusbar").addClass("green_statusbar");
+														    template.find("#console_state").text("Running").removeClass("grid_celltitles grid_stoppedtitles").addClass("grid_runningtitles");
+														    template.find(".grid_links").find("#console_action_stop_container, #console_action_view_console_container, #console_action_reboot_container").show();
+														    template.find(".grid_links").find("#console_action_start_container").hide();														    
+														    consoleJSONToTemplate(json, template, true);
+														    template.find(".loadingmessage_container .loadingmessage_top p").html("Your system vm has been successfully started.");
+														    template.find(".loadingmessage_container").fadeIn("slow");											    
+														    template.find("#console_action_view_console").data("proxyUrl", "console?cmd=access&vm=" + json.id + "&t=" + json.displayname).data("vmId",json.id).click(function(event) {
+																event.preventDefault();
+																window.open($(this).data("proxyUrl"),$(this).data("vmId"),"width=820,height=640,resizable=yes,menubar=no,status=no,scrollbars=no,toolbar=no,location=no");
+															});														    
+													    } else if (result.jobstatus == 2) {
+														    // Failed
+														    template.find("#console_state_bar").removeClass("yellow_statusbar green_statusbar grey_statusbar").addClass("red_statusbar");
+														    template.find("#console_state").text("Stopped").removeClass("grid_runningtitles grid_celltitles").addClass("grid_stoppedtitles");
+														    template.find(".grid_links").find("#console_action_start_container").show();
+														    template.find(".grid_links").find("#console_action_stop_container, #console_action_view_console_container, #console_action_reboot_container").hide();
+														    template.find(".loadingmessage_container .loadingmessage_top p").text("We were unable to start the console.  Please check your logs for more info.");
+														    template.find(".loadingmessage_container").fadeIn("slow");
 													    }
-												    },
-												    error: function(XMLHttpRequest) {
-													    $("body").stopTime(timerKey);
-													    handleError(XMLHttpRequest);
 												    }
-											    });
-										    },
-										    0
-									    );
-								    }
-							    });
-						    } 
-					    }).dialog("open");
-					    break;
-				    case submenu_name+"_action_reboot" :
-					    $("#dialog_confirmation")
-					    .html("<p>Please confirm you want to reboot the "+submenu_name+": <b>"+name+"</b></p>")
-					    .dialog('option', 'buttons', { 
-						    "Cancel": function() { 
-							    $(this).dialog("close"); 
-						    },
-						    "Confirm": function() { 
-							    var dialogBox = $(this);
-							    $.ajax({
-								    data: "command="+reboot_API+"&id="+id+"&response=json",
-								    dataType: "json",
-								    success: function(json) {
-									    dialogBox.dialog("close");
-    									
-									    template.find(".row_loading").show();
-									    template.find(".loading_animationcontainer .loading_animationtext").text("Rebooting...");
-									    template.find(".loading_animationcontainer").show();
-									    template.fadeIn("slow");
-									    template.find(".continue_button").data("id", id).unbind("click").bind("click", function(event) {
-										    event.preventDefault();
-										    var template = $("#"+submenu_name+$(this).data("id"));
-										    template.find(".loading_animationcontainer").hide();
-										    template.find(".loadingmessage_container").fadeOut("slow");
-										    template.find(".row_loading").fadeOut("slow");
-									    });
-									    var timerKey = submenu_name+id;
-									    $("body").everyTime(
-										    10000, 
-										    timerKey,
-										    function() {										      
-											    $.ajax({
-												    data: "command=queryAsyncJobResult&jobId="+json[reboot_API_response].jobid+"&response=json",
-												    dataType: "json",
-												    success: function(json) {
-													    var result = json.queryasyncjobresultresponse;
-													    if (result.jobstatus == 0) {
-														    return; //Job has not completed
-													    } else {
-														    $("body").stopTime(timerKey);
-														    if (result.jobstatus == 1) {
-															    // Succeeded
-															    template.find("#"+submenu_name+"_state_bar").removeClass("yellow_statusbar grey_statusbar red_statusbar").addClass("green_statusbar");
-															    template.find("#"+submenu_name+"_state").text("Running").removeClass("grid_celltitles grid_stoppedtitles").addClass("grid_runningtitles");
-															    template.find(".grid_links").find("#"+submenu_name+"r_action_stop_container, #"+submenu_name+"_action_reboot_container").show();
-															    template.find(".grid_links").find("#"+submenu_name+"_action_start_container").hide();
-															    template.find(".loadingmessage_container .loadingmessage_top p").html("Your "+submenu_name+" has been successfully rebooted.");
-															    template.find(".loadingmessage_container").fadeIn("slow");
-														    } else if (result.jobstatus == 2) {
-															    // Failed
-															    template.find("#"+submenu_name+"_state_bar").removeClass("yellow_statusbar grey_statusbar red_statusbar").addClass("green_statusbar");
-															    template.find("#"+submenu_name+"_state").text("Running").removeClass("grid_celltitles grid_stoppedtitles").addClass("grid_runningtitles");
-															    template.find(".grid_links").find("#"+submenu_name+"_action_stop_container, #"+submenu_name+"_action_reboot_container").show();
-															    template.find(".grid_links").find("#"+submenu_name+"_action_start_container").hide();
-															    template.find(".loadingmessage_container .loadingmessage_top p").text("We were unable to reboot the "+submenu_name+".  Please check your logs for more info.");
-															    template.find(".loadingmessage_container").fadeIn("slow");
-														    }
+											    },
+											    error: function(XMLHttpResponse) {
+												    $("body").stopTime(timerKey);
+												    handleError(XMLHttpResponse);
+											    }
+										    });
+									    },
+									    0
+								    );
+							    }
+						    });
+					    }, 
+					    "Cancel": function() { 
+						    $(this).dialog("close"); 
+					    } 
+				    }).dialog("open");
+				    break;
+			    case "console_action_stop" :
+				    $("#dialog_confirmation")
+				    .html("<p>Please confirm you want to stop the system VM: <b>"+name+"</b></p>")
+				    .dialog('option', 'buttons', { 					    
+					    "Confirm": function() { 
+						    var dialogBox = $(this);
+						    $.ajax({
+							    data: "command=stopSystemVm&id="+id+"&response=json",
+							    dataType: "json",
+							    success: function(json) {
+								    dialogBox.dialog("close");
+									
+								    template.find(".row_loading").show();
+								    template.find(".loading_animationcontainer .loading_animationtext").text("Stopping...");
+								    template.find(".loading_animationcontainer").show();
+								    template.fadeIn("slow");
+								    var that = template; //"that" is a closure and will be used in callback function.
+								    template.find(".continue_button").data("id", id).unbind("click").bind("click", function(event) {
+									    event.preventDefault();									    
+									    that.find(".loading_animationcontainer").hide();
+									    that.find(".loadingmessage_container").fadeOut("slow");
+									    that.find(".row_loading").fadeOut("slow");
+								    });
+								    var timerKey = "console"+id;
+								    $("body").everyTime(
+									    10000, 
+									    timerKey,
+									    function() {										     
+										    $.ajax({
+											    data: "command=queryAsyncJobResult&jobId="+json["stopsystemvmresponse"].jobid+"&response=json",
+											    dataType: "json",
+											    success: function(json) {
+												    var result = json.queryasyncjobresultresponse;
+												    if (result.jobstatus == 0) {
+													    return; //Job has not completed
+												    } else {
+													    $("body").stopTime(timerKey);
+													    if (result.jobstatus == 1) {
+														    // Succeeded
+														    template.find("#console_state_bar").removeClass("yellow_statusbar green_statusbar grey_statusbar").addClass("red_statusbar");
+														    template.find("#console_state").text("Stopped").removeClass("grid_runningtitles grid_celltitles").addClass("grid_stoppedtitles");
+														    template.find(".grid_links").find("#console_action_start_container").show();
+														    template.find(".grid_links").find("#console_action_stop_container, #console_action_view_console_container, #console_action_reboot_container").hide();
+														    consoleJSONToTemplate(result.systemvm[0], template, true);
+														    template.find(".loadingmessage_container .loadingmessage_top p").html("Your system vm has been successfully stopped.");
+														    template.find(".loadingmessage_container").fadeIn("slow");
+														    template.find("#console_action_view_console").unbind("click");
+													    } else if (result.jobstatus == 2) {
+														    // Failed
+														    template.find("#console_state_bar").removeClass("yellow_statusbar grey_statusbar red_statusbar").addClass("green_statusbar");
+														    template.find("#console_state").text("Running").removeClass("grid_celltitles grid_stoppedtitles").addClass("grid_runningtitles");
+														    template.find(".grid_links").find("#console_action_stop_container, #console_action_view_console_container, #console_action_reboot_container").show();
+														    template.find(".grid_links").find("#console_action_start_container").hide();
+														    template.find(".loadingmessage_container .loadingmessage_top p").text("We were unable to stop the console.  Please check your logs for more info.");
+														    template.find(".loadingmessage_container").fadeIn("slow");
 													    }
-												    },
-												    error: function(XMLHttpRequest) {
-													    $("body").stopTime(timerKey);
-													    handleError(XMLHttpRequest);
 												    }
-											    });
-										    },
-										    0
-									    );
-								    }
-							    });
-						    } 
-					    }).dialog("open");
-					    break;
-				    default :
-					    break;
-			    }
-			    return false;
-		    });
-	    }
+											    },
+											    error: function(XMLHttpResponse) {
+												    $("body").stopTime(timerKey);
+												    handleError(XMLHttpResponse);
+											    }
+										    });
+									    },
+									    0
+								    );
+							    }
+						    });
+					    }, 
+					    "Cancel": function() { 
+						    $(this).dialog("close"); 
+					    } 
+				    }).dialog("open");
+				    break;
+			    case "console_action_reboot" :
+				    $("#dialog_confirmation")
+				    .html("<p>Please confirm you want to reboot the system VM: <b>"+name+"</b></p>")
+				    .dialog('option', 'buttons', { 					    
+					    "Confirm": function() { 
+						    var dialogBox = $(this);
+						    $.ajax({
+							    data: "command=rebootSystemVm&id="+id+"&response=json",
+							    dataType: "json",
+							    success: function(json) {
+								    dialogBox.dialog("close");
+									
+								    template.find(".row_loading").show();
+								    template.find(".loading_animationcontainer .loading_animationtext").text("Rebooting...");
+								    template.find(".loading_animationcontainer").show();
+								    template.fadeIn("slow");
+								    var that = template; //"that" is a closure and will be used in callback function.
+								    template.find(".continue_button").data("id", id).unbind("click").bind("click", function(event) {
+									    event.preventDefault();									    
+									    that.find(".loading_animationcontainer").hide();
+									    that.find(".loadingmessage_container").fadeOut("slow");
+									    that.find(".row_loading").fadeOut("slow");
+								    });
+								    var timerKey = "console"+id;
+								    $("body").everyTime(
+									    10000, 
+									    timerKey,
+									    function() {										      
+										    $.ajax({
+											    data: "command=queryAsyncJobResult&jobId="+json["rebootsystemvmresponse"].jobid+"&response=json",
+											    dataType: "json",
+											    success: function(json) {
+												    var result = json.queryasyncjobresultresponse;
+												    if (result.jobstatus == 0) {
+													    return; //Job has not completed
+												    } else {
+													    $("body").stopTime(timerKey);
+													    if (result.jobstatus == 1) {
+														    // Succeeded
+														    template.find("#console_state_bar").removeClass("yellow_statusbar grey_statusbar red_statusbar").addClass("green_statusbar");
+														    template.find("#console_state").text("Running").removeClass("grid_celltitles grid_stoppedtitles").addClass("grid_runningtitles");
+														    template.find(".grid_links").find("#consoler_action_stop_container, #console_action_reboot_container").show();
+														    template.find(".grid_links").find("#console_action_start_container").hide();
+														    consoleJSONToTemplate(result.systemvm[0], template, true);
+														    template.find(".loadingmessage_container .loadingmessage_top p").html("Your system vm has been successfully rebooted.");
+														    template.find(".loadingmessage_container").fadeIn("slow");
+													    } else if (result.jobstatus == 2) {
+														    // Failed
+														    template.find("#console_state_bar").removeClass("yellow_statusbar grey_statusbar red_statusbar").addClass("green_statusbar");
+														    template.find("#console_state").text("Running").removeClass("grid_celltitles grid_stoppedtitles").addClass("grid_runningtitles");
+														    template.find(".grid_links").find("#console_action_stop_container, #console_action_view_console_container, #console_action_reboot_container").show();
+														    template.find(".grid_links").find("#console_action_start_container").hide();
+														    template.find(".loadingmessage_container .loadingmessage_top p").text("We were unable to reboot the console.  Please check your logs for more info.");
+														    template.find(".loadingmessage_container").fadeIn("slow");
+													    }
+												    }
+											    },
+											    error: function(XMLHttpResponse) {
+												    $("body").stopTime(timerKey);
+												    handleError(XMLHttpResponse);
+											    }
+										    });
+									    },
+									    0
+								    );
+							    }
+						    });
+					    }, 
+					    "Cancel": function() { 
+						    $(this).dialog("close"); 
+					    } 
+				    }).dialog("open");
+				    break;
+			    default :
+				    break;
+		    }
+		    return false;
+	    });
+        //*** console_template event handler (end) ********************************************************************    	
 		
 		//routers page	
 		function listRouters() {	
@@ -1950,6 +2294,7 @@ function showInstancesTab(domainId) {
 			    var state = submenuContent.find("#advanced_search #adv_search_state").val();
 			    var zone = submenuContent.find("#advanced_search #adv_search_zone").val();
 			    var pod = submenuContent.find("#advanced_search #adv_search_pod").val();
+			    var domainId = submenuContent.find("#advanced_search #adv_search_domain").val();
 			    var account = submenuContent.find("#advanced_search #adv_search_account").val();
 			    var moreCriteria = [];								
 				if (name!=null && trim(name).length > 0) 
@@ -1959,7 +2304,9 @@ function showInstancesTab(domainId) {
 			    if (zone!=null && zone.length > 0) 
 					moreCriteria.push("&zoneId="+zone);		
 			    if (pod!=null && pod.length > 0) 
-					moreCriteria.push("&podId="+pod);	
+					moreCriteria.push("&podId="+pod);
+				if (domainId!=null && domainId.length > 0) 
+					moreCriteria.push("&domainid="+domainId);			
 				if (account!=null && account.length > 0) 
 					moreCriteria.push("&account="+account);	
 				commandString = "command=listRouters&page="+currentPage+moreCriteria.join("")+"&response=json";
@@ -1984,52 +2331,40 @@ function showInstancesTab(domainId) {
 				template.addClass("row_even");
 			}
 
+            template.find("#router_zonename").text(json.zonename);
 			template.find("#router_name").text(json.name);
-			template.find("#router_ip").text(json.publicip);
+			template.find("#router_public_ip").text(json.publicip);
+			template.find("#router_private_ip").text(json.privateip);
 			if(json.hostname)
 				template.find("#router_host").text(json.hostname);
 			else
 				template.find("#router_host").text("");
 			template.find("#router_domain").text(json.networkdomain);
 			template.find("#router_owner").text(json.account);
-			var created = new Date();
-			created.setISO8601(json.created);
-			var showDate = created.format("m/d/Y H:i:s");
-			template.find("#router_created").text(showDate);
 			
+			setDateField(json.created, template.find("#router_created"));
+						
 			// State
 			if (json.state == 'Running') {
 				template.find("#router_state_bar").removeClass("yellow_statusbar grey_statusbar red_statusbar").addClass("green_statusbar ");
 				template.find("#router_state").text(json.state).removeClass("grid_celltitles grid_stoppedtitles").addClass("grid_runningtitles");
-				template.find(".grid_links").find("#router_action_start_container").hide();
+				template.find(".grid_links").find("#router_action_start_container").hide();							
+			    // Console Proxy UI
+				template.find("#router_action_view_console").data("proxyUrl", "console?cmd=access&vm=" + json.id + "&t=" + json.displayname).data("vmId",json.id).click(function(event) {
+					event.preventDefault();
+					window.open($(this).data("proxyUrl"),$(this).data("vmId"),"width=820,height=640,resizable=yes,menubar=no,status=no,scrollbars=no,toolbar=no,location=no");
+				});				
 			} else if (json.state == 'Stopped') {
 				template.find("#router_state_bar").removeClass("yellow_statusbar grey_statusbar green_statusbar").addClass("red_statusbar");
 				template.find("#router_state").text(json.state).removeClass("grid_celltitles grid_runningtitles").addClass("grid_stoppedtitles");
-				template.find(".grid_links").find("#router_action_stop_container, #router_action_reboot_container").hide();
+				template.find(".grid_links").find("#router_action_stop_container, #router_action_view_console_container, #router_action_reboot_container").hide();
 			} else {
 				template.find("#router_state_bar").removeClass("yellow_statusbar green_statusbar red_statusbar").addClass("grey_statusbar");
 				template.find("#router_state").text(json.state).removeClass("grid_runningtitles grid_stoppedtitles").addClass("grid_celltitles");
-				template.find(".grid_links").find("#router_action_start_container, #router_action_stop_container, #router_action_reboot_container").hide();
+				template.find(".grid_links").find("#router_action_start_container, #router_action_stop_container, #router_action_view_console_container, #router_action_reboot_container").hide();
 			} 
 		}
-		
-	    function refreshRouterInstance(template, instanceId) {
-            var commandString = "command=listRouters&id=" + instanceId + "&page=1&response=json";
-		    $.ajax({
-			    data: commandString,
-			    dataType: "json",
-			    success: function(json) {
-				    var routers = json.listroutersresponse.router; 	
-				    if (routers != null && routers.length > 0) {
-				    	routerJSONToTemplate(routers[0], template, true);
-				    }
-		    	},
-				error: function(XMLHttpRequest) {									
-					handleError(XMLHttpRequest);
-				}
-		    });
-	    }
-		
+				
 		$("#submenu_routers").bind("click", function(event) {	   
 			event.preventDefault();
 			
@@ -2039,10 +2374,8 @@ function showInstancesTab(domainId) {
 			var submenuContent = $("#submenu_content_routers").show();
 			$("#submenu_content_vms, #submenu_content_console, #submenu_content_snapshots").hide();
 						
-			if (isAdmin()) {				
-				submenuContent.find("#adv_search_pod_li").show();       
-				submenuContent.find("#adv_search_account_li").show();   
-			}					
+			if (isAdmin()) 				
+				submenuContent.find("#adv_search_pod_li, #adv_search_domain_li, #adv_search_account_li").show();   						
 						
 			currentPage = 1;
 			listRouters();
@@ -2061,6 +2394,7 @@ function showInstancesTab(domainId) {
 			    var state = submenuContent.find("#advanced_search #adv_search_state").val();
 			    var zone = submenuContent.find("#advanced_search #adv_search_zone").val();
 			    var pod = submenuContent.find("#advanced_search #adv_search_pod").val();
+			    var domainId = submenuContent.find("#advanced_search #adv_search_domain").val();
 			    var moreCriteria = [];								
 				if (name!=null && trim(name).length > 0) 
 					moreCriteria.push("&name="+encodeURIComponent(trim(name)));				
@@ -2069,37 +2403,22 @@ function showInstancesTab(domainId) {
 			    if (zone!=null && zone.length > 0) 
 					moreCriteria.push("&zoneId="+zone);		
 			    if (pod!=null && pod.length > 0) 
-					moreCriteria.push("&podId="+pod);	
-				commandString = "command=listConsoleProxies&page="+currentPage+moreCriteria.join("")+"&response=json";     
+					moreCriteria.push("&podId="+pod);
+				if (domainId!=null && domainId.length > 0) 
+					moreCriteria.push("&domainid="+domainId);			
+				commandString = "command=listSystemVms&page="+currentPage+moreCriteria.join("")+"&response=json";     
 			} else {                      	
 		        var searchInput = submenuContent.find("#search_input").val();            
                 if (searchInput != null && searchInput.length > 0) 
-                    commandString = "command=listConsoleProxies&page="+currentPage+"&keyword="+searchInput+"&response=json"
+                    commandString = "command=listSystemVms&page="+currentPage+"&keyword="+searchInput+"&response=json"
                 else
-                    commandString = "command=listConsoleProxies&page="+currentPage+"&response=json";      
+                    commandString = "command=listSystemVms&page="+currentPage+"&response=json";      
             }                               
                         
             //listItems(submenuContent, commandString, jsonResponse1, jsonResponse2, template, fnJSONToTemplate);         
-            listItems(submenuContent, commandString, "listconsoleproxiesresponse", "proxy", $("#console_template"), consoleJSONToTemplate);                
+            listItems(submenuContent, commandString, "listsystemvmsresponse", "systemvm", $("#console_template"), consoleJSONToTemplate);                
 		}
 		
-	    function refreshConsoleProxyInstance(template, instanceId) {
-            var commandString = "command=listConsoleProxies&id=" + instanceId + "&page=1&response=json";
-		    $.ajax({
-			    data: commandString,
-			    dataType: "json",
-			    success: function(json) {
-				    var consoleproxies = json.listconsoleproxiesresponse.proxy; 	
-				    if (consoleproxies != null && consoleproxies.length > 0) {				        		        
-					    consoleJSONToTemplate(consoleproxies[0], template, true);					    
-				    }
-		    	},
-				error: function(XMLHttpRequest) {									
-					handleError(XMLHttpRequest);
-				}
-		    });
-	    }
-				
 		function consoleJSONToTemplate(json, template, refresh) {
 			if(!refresh) {
 	            if (index++ % 2 == 0) {
@@ -2109,8 +2428,10 @@ function showInstancesTab(domainId) {
 				}				
 			}
 		    
-		    template.data("consoleId", json.id).data("consoleName", json.name).attr("id", "console"+json.id);		    
+		    template.data("consoleId", json.id).data("consoleName", json.name).attr("id", "console"+json.id);	
+			template.find("#console_type").text(json.systemvmtype);	  
 		    template.find("#console_name").text(json.name);	  
+			template.find("#console_zone").text(json.zonename);
 		    template.find("#console_active_session").text(json.activeviewersessions);	 
 		    template.find("#console_public_ip").text(json.publicip);
 		    if(json.privateip)
@@ -2123,24 +2444,27 @@ function showInstancesTab(domainId) {
 		    	template.find("#console_host").text("");
 		    template.find("#console_gateway").text(json.gateway); 
 		    
-		    var created = new Date();
-			created.setISO8601(json.created);
-			var showDate = created.format("m/d/Y H:i:s");
-			template.find("#console_created").text(showDate);
-			
+		    setDateField(json.created, template.find("#console_created"));
+		   			
 			// State			
 			if (json.state == 'Running') {
 				template.find("#console_state_bar").removeClass("yellow_statusbar grey_statusbar red_statusbar").addClass("green_statusbar ");
 				template.find("#console_state").text(json.state).removeClass("grid_celltitles grid_stoppedtitles").addClass("grid_runningtitles");
-				template.find(".grid_links").find("#console_action_start_container").hide();
+				template.find(".grid_links").find("#console_action_start_container").hide();				
+				// Console Proxy UI
+				template.find("#console_action_view_console").data("proxyUrl", "console?cmd=access&vm=" + json.id + "&t=" + json.displayname).data("vmId", json.id).click(function(event) {
+					event.preventDefault();
+					window.open($(this).data("proxyUrl"),$(this).data("vmId"),"width=820,height=640,resizable=yes,menubar=no,status=no,scrollbars=no,toolbar=no,location=no");
+				});
+				
 			} else if (json.state == 'Stopped') {
 				template.find("#console_state_bar").removeClass("yellow_statusbar grey_statusbar green_statusbar").addClass("red_statusbar");
 				template.find("#console_state").text(json.state).removeClass("grid_celltitles grid_runningtitles").addClass("grid_stoppedtitles");
-				template.find(".grid_links").find("#console_action_stop_container, #console_action_reboot_container").hide();
+				template.find(".grid_links").find("#console_action_stop_container, #console_action_view_console_container, #console_action_reboot_container").hide();
 			} else {
 				template.find("#console_state_bar").removeClass("yellow_statusbar green_statusbar red_statusbar").addClass("grey_statusbar");
 				template.find("#console_state").text(json.state).removeClass("grid_runningtitles grid_stoppedtitles").addClass("grid_celltitles");
-				template.find(".grid_links").find("#console_action_start_container, #console_action_stop_container, #console_action_reboot_container").hide();
+				template.find(".grid_links").find("#console_action_start_container, #console_action_stop_container, #console_action_view_console_container, #console_action_reboot_container").hide();
 			} 
 	    }
 		
@@ -2153,8 +2477,8 @@ function showInstancesTab(domainId) {
 			var submenuContent = $("#submenu_content_console").show();
 			$("#submenu_content_vms, #submenu_content_routers, #submenu_content_snapshots").hide();
 						
-			if (isAdmin()) 				
-				submenuContent.find("#adv_search_pod_li").show();  			
+			if (isAdmin())				
+				submenuContent.find("#adv_search_pod_li #adv_search_domain_li").show();  		
 						
 			currentPage = 1;
 			listConsoleProxies();
@@ -2181,10 +2505,7 @@ function showInstancesTab(domainId) {
 				case "volume_action_detach_disk" :
 					$("#dialog_confirmation")
 					.html("<p>Please confirm you want to detach the volume.  If you are detaching a disk volume from a Windows based virtual machine, you will need to reboot the instance for the settings to take effect.</p>")
-					.dialog('option', 'buttons', { 
-						"Cancel": function() { 
-							$(this).dialog("close"); 
-						},
+					.dialog('option', 'buttons', { 						
 						"Confirm": function() { 
 							$(this).dialog("close"); 
 							template.find(".adding_loading .adding_text").text("Detaching...");
@@ -2214,18 +2535,22 @@ function showInstancesTab(domainId) {
 														// Failed
 														template.find(".adding_loading").hide();
 														template.find("#volume_body").show();
+														$("#dialog_alert").html("<p>" + sanitizeXSS(result.jobresult) + "</p>").dialog("open");
 													}
 												}
 											},
-											error: function(XMLHttpRequest) {
+											error: function(XMLHttpResponse) {
 												$("body").stopTime(timerKey);
-												handleError(XMLHttpRequest);
+												handleError(XMLHttpResponse);
 											}
 										});
 									}, 0);
 								}
 							});			
-						} 
+						}, 
+						"Cancel": function() { 
+							$(this).dialog("close"); 
+						}
 					}).dialog("open");
 					break;
 				case "volume_action_create_template" :
@@ -2236,10 +2561,7 @@ function showInstancesTab(domainId) {
 					}
 					$("#dialog_create_template").find("#volume_name").text(volumeName);
 					$("#dialog_create_template")
-					.dialog('option', 'buttons', { 
-						"Cancel": function() { 
-							$(this).dialog("close"); 
-						},
+					.dialog('option', 'buttons', { 						
 						"Create": function() { 							
 							// validate values
 					        var isValid = true;					
@@ -2283,23 +2605,26 @@ function showInstancesTab(domainId) {
 														}
 													}
 												},
-												error: function(XMLHttpRequest) {
+												error: function(XMLHttpResponse) {
 													template.find(".adding_loading").hide();
 													template.find("#volume_body").show();
 													$("body").stopTime(timerKey);
-													handleError(XMLHttpRequest);
+													handleError(XMLHttpResponse);
 												}
 											});
 										},
 										0
 									);
 								},
-								error: function(XMLHttpRequest) {
+								error: function(XMLHttpResponse) {
 									template.find(".adding_loading").hide();
 									template.find("#volume_body").show();
-									handleError(XMLHttpRequest);
+									handleError(XMLHttpResponse);
 								}
 							});
+						}, 
+						"Cancel": function() { 
+							$(this).dialog("close"); 
 						} 
 					}).dialog("open");
 					break;
@@ -2310,7 +2635,7 @@ function showInstancesTab(domainId) {
 		});   
 	
 		$.ajax({
-			data: "command=listOSTypes&response=json",
+			data: "command=listOsTypes&response=json",
 			dataType: "json",
 			success: function(json) {
 				types = json.listostypesresponse.ostype;

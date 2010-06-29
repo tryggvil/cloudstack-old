@@ -1,4 +1,5 @@
 #!/bin/bash
+# $Id: migratetmplts.sh 9132 2010-06-04 20:17:43Z manuel $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/storage/zfs/iscsi/comstar/filebacked/migratetmplts.sh $
 # set -x
 for dir in $(find /tank/vmops -name template)
 do

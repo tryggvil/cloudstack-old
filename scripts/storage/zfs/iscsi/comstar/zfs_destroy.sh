@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# $Id: zfs_destroy.sh 9132 2010-06-04 20:17:43Z manuel $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/storage/zfs/iscsi/comstar/zfs_destroy.sh $
 # zfs_destroy.sh -- delete a cloned image used for a vm
 #
 # Usage:  zfs_destroy <zfs-path>

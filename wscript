@@ -3,9 +3,10 @@
 
 # the following two variables are used by the target "waf dist"
 # if you change 'em here, you need to change it also in cloud.spec, add a %changelog entry there, and add an entry in debian/changelog
-VERSION = '1.9.12'
+VERSION = '2.0.0'
 APPNAME = 'cloud'
 
+import new
 import shutil,os
 import email,time
 import optparse
@@ -38,7 +39,7 @@ systemjars = {
 	'common':
 	(
 		"commons-collections.jar",
-		"commons-daemon.jar",
+		# "commons-daemon.jar",
 		"commons-dbcp.jar",
 		"commons-logging.jar",
 		"commons-logging-api.jar",
@@ -100,25 +101,23 @@ systemjars = {
 # when adding a package name here, also add to the spec or debian control file
 hard_deps = [
 	('java.io.FileOutputStream',"java-devel","openjdk-6-jdk"),
-	('javax.servlet.http.Cookie',"tomcat6-servlet-2.5-api","libservlet2.5-java"),
-	('org.apache.naming.resources.Constants',"tomcat6-lib","libtomcat6-java"),
+	('javax.servlet.http.Cookie',"tomcat6-servlet-2.5-api","libservlet2.5-java","(if on Windows,did you set TOMCAT_HOME to point to your Tomcat setup?)"),
+	('org.apache.naming.resources.Constants',"tomcat6-lib","libtomcat6-java","(if on Windows,did you set TOMCAT_HOME to point to your Tomcat setup?)"),
 ]
 
 # things not to include in the source tarball
 # exclude by file name or by _glob (wildcard matching)
 for _globber in [
 	["dist",    # does not belong in the source tarball
-	"build",   # semi-obsolete
 	"system",  # for windows
-	"tools",  # not needed
+	#"tools",  # not needed FIXME we need ant!
 	"override",  # not needed
 	"eclipse", # only there to please eclipse
 	"repomanagement",  # internal management stuff
-	"console-viewer",  # internal management stuff
+	"client-api",  # obsolete
+	"cloud-gate",  # not compiled and packaged yet
 	"target",],  # eclipse workdir
-	_glob("*/*.spec"),
-	_glob("*/spec/*.spec"),
-	_glob("./*.xml"),
+	_glob("./*.disabledblahxml"),
 	]:
 	for f in _globber: Scripting.excludes.append(_basename(f)) # _basename() only the filename
 
@@ -133,15 +132,6 @@ def inspect(x):
 def _trm(x,y):
 	if len(x) > y: return x[:y] + "..."
 	return x
-
-def _in_srcdir(directory,f):
-	"""Wrap a function f around a chdir() call, and when the function returns, rewind the directory stack."""
-	def g(*args,**kw):
-		olddir = _getcwd()
-		_chdir(directory)
-		try: return f(*args,**kw)
-		finally: _chdir(olddir)
-	return g
 
 def getrpmdeps():
 	def rpmdeps(fileset):
@@ -203,10 +193,10 @@ def throws_command_errors(f):
 			raise
 	return g
 
-def c(cmdlist):
+def c(cmdlist,cwd=None):
 	# Run a command with _check_call, pretty-printing the cmd list
 	Utils.pprint("BLUE"," ".join(cmdlist))
-	return _check_call(cmdlist)
+	return _check_call(cmdlist,cwd=cwd)
 
 def svninfo(*args):
 	try: p = _Popen(['svn','info']+list(args),stdin=PIPE,stdout=PIPE,stderr=PIPE)
@@ -244,44 +234,7 @@ def _subst_add_destdir(x,bld):
 	a = Utils.subst_vars(a,bld.env)
 	if a.startswith("//"): a = a[1:]
 	return a
-
-def setownership(ctx,path,owner,group,mode=None):
-	def f(bld,path,owner,group,mode):
-		dochown = not Options.options.NOCHOWN \
-				and hasattr(os,"getuid") and os.getuid() == 0 \
-				and _chown \
-				and _chmod \
-				and pwd \
-				and grp \
-				and stat
-		if not dochown: return
-		
-		try: uid = pwd.getpwnam(owner).pw_uid
-		except KeyError,e: raise Utils.WafError("If installing as root, please either create a %s user or use the --nochown parameter of waf install to install the files as root")
-		try: gid = grp.getgrnam(group).gr_gid
-		except KeyError,e: raise Utils.WafError("If installing as root, please either create a %s group or use the --nochown parameter of waf install to install the files as root")
-		
-		path = _subst_add_destdir(path,bld)
-		current_uid,current_gid = os.stat(path).st_uid,os.stat(path).st_gid
-		if current_uid != uid:
-			print os.stat(path)
-			print current_uid, uid
-			Utils.pprint("GREEN","* setting owner of %s to UID %s"%(path,uid))
-			_chown(path,uid,current_gid)
-			current_uid = uid
-		if current_gid != gid:
-			Utils.pprint("GREEN","* setting group of %s to GID %s"%(path,gid))
-			_chown(path,current_uid,gid)
-			current_gid = gid
-		if mode is not None:
-			current_mode = stat.S_IMODE(os.stat(path).st_mode)
-			if current_mode != mode:
-				Utils.pprint("GREEN","* adjusting permissions on %s to mode %o"%(path,mode))
-				_chmod(path,mode)
-				current_mode = mode
-	
-	if Options.is_install:
-		ctx.add_post_fun(lambda ctx: f(ctx,path,owner,group,mode))
+Build.BuildContext.subst_add_destdir = staticmethod(_subst_add_destdir)
 
 def mkdir_p(directory):
 	if not _isdir(directory):
@@ -301,6 +254,8 @@ def process_after(self):
 		for a in obj.tasks:
 			for b in self.tasks:
 				b.set_run_after(a)
+
+Build.BuildContext.process_after = staticmethod(process_after)
 
 def _get_context():
 	ctx = Build.BuildContext()
@@ -324,9 +279,89 @@ def run_java(classname,classpath,options=None,arguments=None):
 	Utils.pprint("BLUE"," ".join([ _trm(x,32) for x in cmd ]))
 	_check_call(cmd)
 
+def _install_files_filtered(self,destdir,listoffiles,**kwargs):
+	if "cwd" in kwargs: cwd = kwargs["cwd"]
+	else: cwd = self.path
+	if isinstance(listoffiles,str) and '**' in listoffiles:
+		listoffiles = cwd.ant_glob(listoffiles,flat=True)
+	elif isinstance(listoffiles,str) and '*' in listoffiles:
+		gl=cwd.abspath() + os.sep + listoffiles
+		listoffiles=_glob(gl)
+	listoffiles = Utils.to_list(listoffiles)[:]
+	listoffiles = [ x for x in listoffiles if not ( x.endswith("~") or x == "override" or "%soverride"%os.sep in x ) ]
+	for n,f in enumerate(listoffiles):
+		f = os.path.abspath(f)
+		f = dev_override(f)
+		if f.endswith(".in"):
+			source = f ; target = f[:-3]
+			self(features='subst', source=source[len(self.path.abspath())+1:], target=target[len(self.path.abspath())+1:])
+		else:
+			source = f ; target = f
+		listoffiles[n] = target[len(cwd.abspath())+1:]
+	ret = self.install_files(destdir,listoffiles,**kwargs)
+	return ret
+Build.BuildContext.install_files_filtered = _install_files_filtered
+
+def _setownership(ctx,path,owner,group,mode=None):
+	def f(bld,path,owner,group,mode):
+		dochown = not Options.options.NOCHOWN \
+				and hasattr(os,"getuid") and os.getuid() == 0 \
+				and _chown \
+				and _chmod \
+				and pwd \
+				and grp \
+				and stat
+		if not dochown: return
+		
+		try: uid = pwd.getpwnam(owner).pw_uid
+		except KeyError,e: raise Utils.WafError("If installing as root, please either create a %s user or use the --nochown parameter of waf install to install the files as root"%owner)
+		try: gid = grp.getgrnam(group).gr_gid
+		except KeyError,e: raise Utils.WafError("If installing as root, please either create a %s group or use the --nochown parameter of waf install to install the files as root"%group)
+		
+		path = _subst_add_destdir(path,bld)
+		current_uid,current_gid = os.stat(path).st_uid,os.stat(path).st_gid
+		if current_uid != uid:
+			print os.stat(path)
+			print current_uid, uid
+			Utils.pprint("GREEN","* setting owner of %s to UID %s"%(path,uid))
+			_chown(path,uid,current_gid)
+			current_uid = uid
+		if current_gid != gid:
+			Utils.pprint("GREEN","* setting group of %s to GID %s"%(path,gid))
+			_chown(path,current_uid,gid)
+			current_gid = gid
+		if mode is not None:
+			current_mode = stat.S_IMODE(os.stat(path).st_mode)
+			if current_mode != mode:
+				Utils.pprint("GREEN","* adjusting permissions on %s to mode %o"%(path,mode))
+				_chmod(path,mode)
+				current_mode = mode
+	
+	if Options.is_install:
+		ctx.add_post_fun(lambda ctx: f(ctx,path,owner,group,mode))
+Build.BuildContext.setownership = _setownership
+
+
 # This is where the real deal starts
 
 def dist_hook():
+	# Clean the GARBAGE that clogs our repo to the tune of 300 MB
+	# so downloaders won't have to cry every time they download a "source"
+	# package over 90 MB in size
+	[ shutil.rmtree(f) for f in _glob(_join("thirdparty","*")) if _isdir(f) ]
+	[ shutil.rmtree(_join("tools",f)) for f in [
+		"bin",
+		"meld",
+		"misc",
+		"tomcat",
+		"pdfdoclet",
+		_join("ant","apache-ant-1.8.0","docs"),
+	] if _exists(_join("tools",f)) ]
+	
+	if Options.options.OSS:
+		[ shutil.rmtree(f) for f in "premium usage thirdparty console-proxy-premium".split() if _exists(f) ]
+		[ shutil.rmtree(f) for f in [ _join("build","premium"), "repomanagement" ] if _exists(f) ]
+		
 	stdout = svninfo("..")
 	if stdout:
 		# SVN available
@@ -351,7 +386,6 @@ def dist_hook():
 			f.write("No revision control information could be detected when the source distribution was built.")
 			f.flush()
 			f.close()
-			
 
 def set_options(opt):
 	"""Register command line options"""
@@ -434,7 +468,16 @@ def set_options(opt):
 		help = 'Branch name to append to the release number (if specified, alter release number to be a prerelease); this option requires --build-number=X [Default: nothing]',
 		default = '',
 		dest = 'PRERELEASE')
-		
+	
+	distopts = optparse.OptionGroup(opt.parser,'dist options')
+	opt.add_option_group(distopts)
+	distopts.add_option('--oss', # add javadir to the group that contains bindir
+		help = 'Only include open source components',
+		action = 'store_true',
+		default = False,
+		dest = 'OSS')
+	
+
 def showconfig(conf):
 	"""prints out the current configure environment configuration"""
 	if not hasattr(conf,"env"):
@@ -576,15 +619,15 @@ def configure(conf):
 	conf.env.DEPSCLASSPATH = pathsep.join(depsclasspath)
 
 	# the MS classpath points to JARs required to run the management server
-	msclasspath = [ in_javadir("%s-%s.jar"%(APPNAME,x)) for x in "utils core server premium".split() ]
+	msclasspath = [ in_javadir("%s-%s.jar"%(APPNAME,x)) for x in "utils core server premium core-extras".split() ]
 	conf.env.MSCLASSPATH = pathsep.join(msclasspath)
 
 	# the agent and simulator classpaths point to JARs required to run these two applications
-	agentclasspath = [ in_javadir("%s-%s.jar"%(APPNAME,x)) for x in "utils core server premium agent console console-proxy".split() ]
+	agentclasspath = [ in_javadir("%s-%s.jar"%(APPNAME,x)) for x in "utils core server premium agent console console-proxy core-extras".split() ]
 	conf.env.AGENTCLASSPATH = pathsep.join(agentclasspath)
 	conf.env.AGENTSIMULATORCLASSPATH = pathsep.join(agentclasspath+[in_javadir("%s-agent-simulator.jar"%APPNAME)])
 
-	usageclasspath = [ in_javadir("%s-%s.jar"%(APPNAME,x)) for x in "utils core server premium usage".split() ]
+	usageclasspath = [ in_javadir("%s-%s.jar"%(APPNAME,x)) for x in "utils core server premium usage core-extras".split() ]
 	conf.env.USAGECLASSPATH = pathsep.join(usageclasspath)
 
 	# the premium classpath points to JARs that are installed in the cloud-premium-deps package
@@ -647,376 +690,28 @@ def configure(conf):
 	
 	Utils.pprint("WHITE","Configure finished.  Use 'python waf showconfig' to show the configure-time environment.")
 
-def build(bld):
-	"""builds the entire stack"""
-	#For every matching build change here, that produces new installable
-	#files, the cloud.spec file and the Debian control files must be
-	#revised and tested.
+def list_targets(ctx):
+        """return the amount of targets"""
 
-	required_env = [
-		"APISERVERLOG",
-		"MSLOG",
-		"PIDDIR",
-		"CPPATH",
-		"AGENTSIMULATORCLASSPATH",
-		"SYSTEMJAVADIR",
-		"USAGELOG",
-	]
-	for e in required_env:
-		if e not in bld.env: raise Utils.WafError("configure required: new variable %s added"%e)
+        bld = Build.BuildContext()
+        proj = Environment.Environment(Options.lockfile)
+        bld.load_dirs(proj['srcdir'], proj['blddir'])
+        bld.load_envs()
 
-	builddir = bld.path.abspath(bld.env)
-	distro = bld.env.DISTRO.lower()
-	
-	tomcatenviron = bld.env.MSENVIRON
-	tomcatconf    = bld.env.MSCONF
-	usageconf    = bld.env.USAGESYSCONFDIR
-	webappdir = _join(tomcatenviron,'webapps','client')
+        bld.add_subdirs([os.path.split(Utils.g_module.root_path)[0]])
 
-	bld.env.append_value("JAVACFLAGS",['-g:source,lines,vars'])
+        names = set([])
+        for x in bld.all_task_gen:
+                try:
+                        names.add(x.name or x.target)
+                except AttributeError:
+                        pass
 
-	# build / install declarations of the daemonization utility - except for Windows
-	if distro not in ['windows','mac']:
-		bld(
-			name='daemonize',
-			features='cc cprogram',
-			source='daemonize/daemonize.c',
-			target='daemonize/cloud-daemonize')
+        lst = list(names)
+        lst.sort()
+        for name in lst:
+                print(name)
 
-	# build / install declarations of premium-deps and deps projects
-
-	bld.install_files('${PREMIUMJAVADIR}','thirdparty/*.jar')
-	bld.install_files('${JAVADIR}','deps/*.jar')
-
-	# inner function to shorten declarations below
-
-	def buildjar(proj,after=''):
-		"""Compile an src/ tree of files, build manifest, make a jar
-		proj: project name (directory name)
-		after: space-separated list of "XXX_javac" tasks that must
-		  be finished first because this task depends on them
-		This is just a convenience to avoid copying and pasting
-		"""
-		#print after
-		# we strip the classpath of jarfiles because those might still be written to
-		# since we do jar and javac in parallel, and parallel javac's will attempt to
-		# load up the "damaged" zip file while it is being built
-		# Alex found this bug.
-		bld(features='subst', name='%s_manifest'%proj,
-		    source='%s/META-INF/MANIFEST.in'%proj, target='%s/META-INF/MANIFEST.MF'%proj)
-		bld(features='javac', name='%s_javac'%proj,
-		    srcdir='%s/src'%proj, compat='1.6', after=after)
-		bld(features='jar', name='%s_jar'%proj,
-		    basedir='%s/src'%proj, jarcreate = 'cfm',
-		    jaropts = ['%s/META-INF/MANIFEST.MF'%_join(builddir,proj)],
-		    destfile='%s-%s.jar'%(APPNAME,proj),
-		    after="%s_javac %s_manifest"%(proj,proj))
-		bld.install_files('${JAVADIR}','%s-%s.jar'%(APPNAME,proj))
-
-	# build / install declarations of utils project
-	proj = 'utils' ;	buildjar(proj)
-	sccsinfo = _join(srcdir,"sccs-info")
-	if _exists(sccsinfo): bld.install_files("${DOCDIR}","sccs-info")
-	
-	# build / install declarations of core project
-	proj = 'core';		buildjar(proj,after='utils_javac')
-
-	# build / install declarations of client-api project
-	proj = 'client-api' ;	buildjar(proj,after='utils_javac')
-
-	# build / install declarations of test project
-	proj = 'test' ;		buildjar(proj,after='utils_javac')
-	start_path = bld.path.find_dir("test/scripts")
-	bld.install_files(_join('${LIBDIR}',APPNAME,'test'),
-		start_path.ant_glob("**",src=True,bld=False,dir=False,flat=True),
-		postpone=False,cwd=start_path,relative_trick=True)
-	bld.install_files(_join('${SHAREDSTATEDIR}',APPNAME,'test'),'%s/metadata/*'%proj) # install metadata
-	bld(features='subst', name='testprogram', source='%s/%s-run-test.in'%(proj,APPNAME), target='%s/%s-run-test'%(proj,APPNAME))
-	bld.install_files('${BINDIR}','%s/%s-run-test'%(proj,APPNAME),chmod=0755) # install binary
-	bld.install_files('${SYSCONFDIR}/%s/%s'%(APPNAME,proj),'%s/conf/*'%proj) # install config
-
-	# build / install declarations of console project
-	proj = 'console' ;	buildjar(proj)
-
-	# build / install declarations of console-proxy project
-	proj = 'console-proxy';	buildjar(proj,after='console_javac')
-	start_path = bld.path.find_dir("console-proxy")
-	patterns = 'css/** images/** js/** ui/**'
-	bld.install_files("${CPLIBDIR}",
-		start_path.ant_glob(patterns,src=True,bld=False,dir=False,flat=True),
-		postpone=False,cwd=start_path,relative_trick=True)
-
-	# HEADS UP: the construction of the console proxy zip (tgz file) is done below, when the agent scripts are done
-
-	# build / install declarations of console-viewer project
-
-	# build / install declarations of premium
-	proj = 'premium' ;	buildjar(proj,after='utils_javac core_javac server_javac console-proxy_javac')
-
-	# build / install declarations of server project
-	proj = 'server' ;       buildjar(proj,after='utils_javac core_javac')
-	bld.install_files(_join(webappdir,'WEB-INF'),'%s/web.xml'%proj) # install web.xml file
-
-	# build / install declarations of agent project
-	proj = 'agent' ;	buildjar(proj,after='utils_javac core_javac')
-	start_path = bld.path.find_dir(proj)
-	bld.install_files("${AGENTLIBDIR}",
-		start_path.ant_glob("storagepatch/**",src=True,bld=False,dir=False,flat=True),
-		postpone=False,cwd=start_path,relative_trick=True)
-	for f in _glob(_join(proj,"conf","*")):
-		if f.endswith("~") or _basename(f) == "override": continue
-		f = dev_override(f)
-		if f.endswith(".in"):
-			source = f ; target = f[:-3]
-			bld(features='subst', source=f, target=f[:-3])
-		else:
-			source = f ; target = f
-		if not Options.options.PRESERVECONFIG:
-			bld.install_files('${AGENTSYSCONFDIR}',target)
-	bld(features='subst', source='%s/libexec/%s-runner.in'%(proj,proj),
-		target='%s/libexec/%s-runner'%(proj,proj))
-	bld.install_files("${LIBEXECDIR}",'%s/libexec/%s-runner'%(proj,proj),chmod=0755)
-	for infile in _glob(_join(proj,"bin","*.in")):
-		source = infile ; target = infile[:-3]
-		bld(features='subst', source=source, target=target)
-		bld.install_files("${BINDIR}",'%s'%(target),chmod=0755)
-
-	# build / install declarations of agent-simulator project
-	proj = 'agent-simulator' ;	buildjar(proj,after='core_javac agent_javac')
-
-	if distro not in ['windows','mac']:
-		proj = 'vnet'
-		files = """vnetd/connection.c vnetd/select.c vnetd/timer.c vnetd/spinlock.c vnetd/skbuff.c
-			vnetd/vnetd.c vnet-module/skb_util.c vnet-module/sxpr_util.c vnet-module/timer_util.c
-			vnet-module/etherip.c vnet-module/vnet.c vnet-module/vnet_eval.c vnet-module/vnet_forward.c
-			vnet-module/vif.c vnet-module/tunnel.c vnet-module/sa.c vnet-module/varp.c
-			libxutil/allocate.c libxutil/enum.c libxutil/file_stream.c libxutil/hash_table.c
-			libxutil/iostream.c libxutil/lexis.c libxutil/socket_stream.c libxutil/string_stream.c
-			libxutil/sxpr.c libxutil/sxpr_parser.c libxutil/sys_net.c libxutil/sys_string.c libxutil/util.c"""
-		files = [ "vnet/src/%s"%s.strip() for s in files.split() if s.strip() ]
-		bld(
-			name='vnetd',
-			features='cc cprogram',
-			source= files,
-			includes="vnet/src/libxutil vnet/src/vnet-module vnet/src/vnetd",
-			lib='dl pthread'.split(),
-			target='vnet/%s-vnetd'%APPNAME,
-			install_path="${SBINDIR}"
-			)
-		bld.install_as("${SBINDIR}/%s-vn"%APPNAME,   "%s/vn"%proj,   chmod=0755)
-		obj = bld(features = 'py',name='vnetpy')
-		obj.find_sources_in_dirs('%s/lib'%proj, exts=['.py'])
-	
-	
-	# initscripts are installed below, in the code that does distro-specific support
-
-	# build / install declarations of client UI project
-	proj = 'ui'
-	start_path = bld.path.find_dir("ui")
-	patterns = '*.html *.ico content/** css/** images/** scripts/** test/**'
-	bld.install_files(webappdir,
-		start_path.ant_glob(patterns,src=True,bld=False,dir=False,flat=True),
-		postpone=False,cwd=start_path,relative_trick=True)
-	
-	# build / install declarations of agent scripts project
-	start_path = bld.path.find_dir("scripts")
-	globs = ["**/*.sh","**/*.py","**/*.exp"]
-	for glb in globs:
-		bld.install_files("${AGENTLIBDIR}/scripts",
-			start_path.ant_glob(glb,src=True,bld=False,dir=False,flat=True),
-			postpone=False,cwd=start_path,relative_trick=True,chmod=0755)
-	def m(x,mode):
-		filez = start_path.ant_glob(x,src=True,bld=False,dir=False,flat=True)
-		bld.install_files("${AGENTLIBDIR}/scripts",filez,postpone=False,
-			cwd=start_path,relative_trick=True,chmod=mode)
-	m("network/domr/id_rsa",0600)
-	setownership(bld,"${AGENTLIBDIR}/scripts/network/domr/id_rsa",bld.env.MSUSER,"root")
-	m("util/qemu-ifup",0755)
-	m("vm/hypervisor/xenserver/patch/**",0755)
-	m("vm/hypervisor/xenserver/patch/patch",0644)
-	m("vm/hypervisor/kvm/patch/patch.tgz",0644)
-	
-		# in this subsection we construct the console-proxy.zip file out of the console proxy sources and jar
-		# this file actually goes into the agent-scripts package so we do it here for clarity
-
-	proj = 'console-proxy'
-	
-	patterns = '%s/css/** %s/images/** %s/js/** %s/ui/** %s/conf/** %s/scripts/*.sh'%(proj,proj,proj,proj,proj,proj)
-	sources = " ".join( [ bld.path.ant_glob(x,src=True,bld=False,dir=False,flat=True) for x in patterns.split() ] )
-	thirdparties = [ s.strip() for s in
-	"""
-	xmlrpc-client-3.1.3.jar
-	xmlrpc-common-3.1.3.jar
-	ws-commons-util-1.0.2.jar
-	log4j-1.2.15.jar
-	gson-1.3.jar
-	apache-log4j-extras-1.0.jar
-	commons-httpclient-3.1.jar
-	commons-logging-1.1.1.jar
-	commons-collections-3.2.1.jar
-	commons-codec-1.4.jar
-	commons-pool-1.4.jar
-	libvirt-0.4.0.jar
-	jna.jar
-	cglib-nodep-2.2.jar
-	""".split() ]
-	sources += " " + " ".join( "thirdparty/%s"%s for s in thirdparties )
-	artifacts = "%s-console-proxy.jar %s-console.jar %s-agent.jar %s-utils.jar %s-core.jar"%(APPNAME,APPNAME,APPNAME,APPNAME,APPNAME)
-
-	def tar_up(task):
-		tgt = task.outputs[0].bldpath(task.env)
-		if _exists(tgt): _unlink(tgt)
-		z = zipfile.ZipFile(tgt,"w")
-		for inp in task.inputs:
-			if inp.id&3==Node.BUILD:
-				src = inp.bldpath(task.env)
-				srcname = "/".join(src.split("/")[1:])
-			else:
-				src = inp.srcpath(task.env)
-				srcname = "/".join(src.split("/")[2:])
-			if srcname.endswith('run.sh'): srcname = 'run.sh'
-			z.write(src,srcname)
-		z.close()
-		return 0
-	tgen = bld(
-		rule   = tar_up,
-		source = sources + " " + artifacts,
-		target = 'console-proxy.zip',
-		name   = 'console-proxy_zip',
-		after  = 'console-proxy_jar console_jar agent_jar core_jar utils_jar',
-	)
-	process_after(tgen)
-
-	bld.install_files("${AGENTLIBDIR}/scripts/vm/hypervisor/xenserver/patch", "console-proxy.zip")
-	bld.install_files("${AGENTLIBDIR}/scripts/vm/hypervisor/kvm/patch", "console-proxy.zip")
-
-	# management server and agent configuration files
-	# client and premium might have something to install into configuration directories
-
-	for proj in ['client','premium']:
-		
-		# 1. substitute and install generic tomcat config
-		for infile in _glob(_join(proj,"tomcatconf","*.in")):
-			source = infile ; target = infile[:-3]
-			bld(features='subst', source=source, target=target)
-			if not Options.options.PRESERVECONFIG:
-				bld.install_files(tomcatconf,'%s'%(target))
-
-		for infile in _glob(_join(proj,"bin","*.in")):
-			source = infile ; target = infile[:-3]
-			bld(features='subst', source=source, target=target)
-			if not Options.options.PRESERVECONFIG:
-				bld.install_files("${BINDIR}",'%s'%(target),chmod=0755)
-
-	bld.install_files(tomcatconf,'client/tomcatconf/db.properties',chmod=0640)
-
-	# build / install declarations of usage
-	proj = 'usage' ;	buildjar(proj,after='utils_javac core_javac server_javac premium_javac')
-	for f in _glob(_join(proj,"conf","*")):
-		if f.endswith("~") or _basename(f) == "override": continue
-		f = dev_override(f)
-		if f.endswith(".in"):
-			source = f ; target = f[:-3]
-			bld(features='subst', source=f, target=f[:-3])
-		else:
-			source = f ; target = f
-		if not Options.options.PRESERVECONFIG:
-			bld.install_files(usageconf,target)
-	bld.install_files(usageconf,'client/tomcatconf/db.properties',chmod=0640)
-	bld(features='subst', source='%s/libexec/%s-runner.in'%(proj,proj), target='%s/libexec/%s-runner'%(proj,proj))
-	bld.install_files("${LIBEXECDIR}",'%s/libexec/%s-runner'%(proj,proj),chmod=0755)
-
-	for proj in ['client','premium','agent','vnet','usage']:
-
-		# apply distro-specific config on top of the 'all' generic cloud-management config
-		distrospecificdirs=_glob(_join(proj,"distro",distro,"*"))
-		for dsdir in distrospecificdirs:
-			start_path = bld.srcnode.find_dir(dsdir)
-			subpath,varname = _split(dsdir)
-			dsdirwithvar = _join("${%s}"%varname)
-			files = bld.srcnode.ant_glob('%s/**/*.in'%dsdir,src=True,bld=False,dir=False,flat=True)
-			for f in Utils.to_list(files):
-				source = f ; target = f[:-3]
-				if stat and _chmod: mode = stat.S_IMODE(os.stat(source).st_mode)
-				else: mode = None
-				bld(features='subst', source=source, target=target, chmod=mode)
-				instdir = _dirname(_join(dsdirwithvar,target[len(dsdir)+1:]))
-				bld.install_files(instdir,target,chmod=mode)
-			nontemplates = start_path.ant_glob('**',src=True,bld=False,dir=False,flat=True,excl="**/*.in\n"+Node.exclude_regs)
-			if nontemplates:
-				bld.install_files(dsdirwithvar, nontemplates, postpone=False, cwd=start_path, relative_trick=True)
-
-	# build / install declarations of setup tool project
-	proj = 'setup'
-	# 1. install db data files
-	for f in _glob(_join(proj,"db","*")):
-		if f.endswith("~") or _basename(f) == "override": continue
-		if os.path.isdir(f): continue
-		f = dev_override(f)
-		if f.endswith(".in"):
-			source = f ; target = f[:-3]
-			bld(features='subst', source=f, target=f[:-3])
-		else:
-			source = f ; target = f
-		bld.install_files("${SETUPDATADIR}",target)
-
-	for infile in _glob(_join(proj,"bin","*.in")):
-		source = infile ; target = infile[:-3]
-		bld(features='subst', source=source, target=target)
-		bld.install_files("${BINDIR}",'%s'%(target),chmod=0755)
-
-	# build / install declarations of management server (client) project
-	proj = 'client'
-
-	# 4. fedora is just a symlink, ubuntu is actually an initscript.  we do the symlinking here.
-	if distro in "fedora centos":
-		symlinks = [ ('${SYSCONFDIR}/rc.d/init.d/%s-management'%APPNAME,'${SYSCONFDIR}/rc.d/init.d/tomcat6'), ]
-		for lnk,dst in symlinks: bld.symlink_as(lnk,Utils.subst_vars(dst,bld.env))
-
-	# 6. install context.xml file
-	bld.install_files(_join(webappdir,'META-INF'),'%s/context.xml'%proj)
-
-	# 7. make log and cache dirs (this actually runs first)
-	if distro in 'windows mac': pass
-	else:
-		if Options.is_install:
-			x = ("root",bld.env.MSUSER)
-			directories = [
-				("${MSLOGDIR}",0770,x),
-				("${AGENTLOGDIR}",0770,x),
-				("${USAGELOGDIR}",0770,x),
-				("${LOCALSTATEDIR}/cache/${MSPATH}",0770,x),
-				("${LOCALSTATEDIR}/cache/${MSPATH}/temp",0770,x),
-				("${LOCALSTATEDIR}/cache/${MSPATH}/work",0770,x),
-				("${SHAREDSTATEDIR}/${MSPATH}",0770,x),
-				("${MSMNTDIR}",0770,x),
-				("${MSCONF}/Catalina",0770,x),
-				("${MSCONF}/Catalina/localhost",0770,x),
-				("${MSCONF}/Catalina/localhost/client",0770,x),
-				("${PIDDIR}",0755,("root","root")),
-				("${LOCKDIR}",0755,("root","root")),
-			]
-			
-			for a,mode,owner in directories:
-				s = _subst_add_destdir(a,bld)
-				Utils.pprint("GREEN","* creating directory %s"%s)
-				mkdir_p(s)
-				setownership(bld,a,owner[0],owner[1],mode)
-
-		# 8. create environment symlinks
-		symlinks = [
-			(_join(tomcatenviron,'bin'), '${TOMCATHOME}/bin'),
-			(_join(tomcatenviron,'lib'),  '${TOMCATHOME}/lib'),
-			(_join(tomcatenviron,'logs'), "${MSLOGDIR}"),
-			(_join(tomcatenviron,'temp'), '${LOCALSTATEDIR}/cache/${MSPATH}/temp'),
-			(_join(tomcatenviron,'work'),'${LOCALSTATEDIR}/cache/${MSPATH}/work'),
-			(_join(tomcatenviron,'conf'), '${SYSCONFDIR}/${MSPATH}'),
-			("${AGENTLIBDIR}/css", '${CPLIBDIR}/css'),
-			("${AGENTLIBDIR}/images", '${CPLIBDIR}/images'),
-			("${AGENTLIBDIR}/js", '${CPLIBDIR}/js'),
-			("${AGENTLIBDIR}/ui", '${CPLIBDIR}/ui'),
-		]
-		for lnk,dst in symlinks: bld.symlink_as(lnk,Utils.subst_vars(dst,bld.env))
 
 @throws_command_errors
 def rpm(context):
@@ -1034,7 +729,7 @@ def rpm(context):
 	if not Options.options.blddir: outputdir = _join(context.curdir,blddir,"rpmbuild")
 	else:			   outputdir = _join(_abspath(Options.options.blddir),"rpmbuild")
 	Utils.pprint("GREEN","Building RPMs")
-	Scripting.dist(appname=APPNAME,version=VERSION)
+	Scripting.dist()
 	
 	#if _isdir(outputdir): shutil.rmtree(outputdir)
 	for a in ["RPMS/noarch","SRPMS","BUILD","SPECS","SOURCES"]: mkdir_p(_join(outputdir,a))
@@ -1042,7 +737,7 @@ def rpm(context):
 	checkdeps = lambda: c(["rpmbuild","--define","_topdir %s"%outputdir,"-tp",tarball])
 	dorpm = lambda: c(["rpmbuild","--define","_topdir %s"%outputdir,"-ta",tarball]+buildnumber+prerelease)
 	try: checkdeps()
-	except Exception:
+	except (CalledProcessError,OSError),e:
 		Utils.pprint("YELLOW","Dependencies might be missing.  Trying to auto-install them...")
 		installrpmdeps(context)
 	dorpm()
@@ -1076,7 +771,8 @@ def deb(context):
 	if not Options.options.blddir: outputdir = _join(context.curdir,blddir,"debbuild")
 	else:			   outputdir = _join(_abspath(Options.options.blddir),"debbuild")
 	Utils.pprint("GREEN","Building DEBs")
-	Scripting.dist(appname=APPNAME,version=VERSION)
+	Scripting.dist()
+
 	
 	#if _isdir(outputdir): shutil.rmtree(outputdir)
 	mkdir_p(outputdir)
@@ -1090,10 +786,10 @@ def deb(context):
 		f.flush()
 		f.close()
 	
-	checkdeps = _in_srcdir(srcdir,lambda: c(["dpkg-checkbuilddeps"]))
-	dodeb = _in_srcdir(srcdir,lambda: c(["debuild"]+buildnumber+["-us","-uc"]))
+	checkdeps = lambda: c(["dpkg-checkbuilddeps"],srcdir)
+	dodeb = lambda: c(["debuild"]+buildnumber+["-us","-uc"],srcdir)
 	try: checkdeps()
-	except Exception:
+	except (CalledProcessError,OSError),e:
 		Utils.pprint("YELLOW","Dependencies might be missing.  Trying to auto-install them...")
 		installdebdeps(context)
 	dodeb()
@@ -1154,7 +850,8 @@ def deploydb(ctx,virttech=None):
 	dbuser = ctx.env.DBUSER
 	dbpw   = ctx.env.DBPW
 	dbdir  = ctx.env.DBDIR
-	classpath = ctx.env.CLASSPATH
+	jars = _glob(_join(ctx.path.abspath(ctx.env), "*.jar"))
+	classpath = ctx.env.CLASSPATH + pathsep.join(jars)
 
 	serversetup = _join("setup","db","server-setup.xml")
 	serversetup = _abspath(dev_override(serversetup))
@@ -1181,13 +878,10 @@ def deploydb(ctx,virttech=None):
 	retcode = p.wait()
 	if retcode: raise CalledProcessError(retcode,cmd)
 
-	pwd = _getcwd()
-	_chdir(configdir)
-	cmd = ["java","-cp",classpath,] + ['-Dlog4j.configuration=log4j-stdout.properties'] + ["com.vmops.test.DatabaseConfig",serversetup]
-	Utils.pprint("GREEN","Configuring database with com.vmops.test.DatabaseConfig in folder %s"%configdir)
+	cmd = ["java","-cp",classpath,] + ['-Dlog4j.configuration=log4j-stdout.properties'] + ["com.cloud.test.DatabaseConfig",serversetup]
+	Utils.pprint("GREEN","Configuring database with com.cloud.test.DatabaseConfig in folder %s"%configdir)
 	Utils.pprint("BLUE"," ".join( [ _trm(x,64) for x in cmd ]))
-	_check_call(cmd,stdin=PIPE,stdout=None,stderr=None)
-	_chdir(pwd)
+	_check_call(cmd,stdin=PIPE,stdout=None,stderr=None,cwd=configdir)
 
 	after = ""
 	for f in ["templates.%s"%virttech,"create-index-fk"]:
@@ -1223,9 +917,11 @@ def bindist(ctx):
 	if _exists(zf): _unlink(zf)
 	Utils.pprint("GREEN","Creating %s"%(zf))
 	z = tarfile.open(zf,"w:bz2")
+	cwd = _getcwd()
 	_chdir(Options.options.destdir)
 	z.add(".")
 	z.close()
+	_chdir(cwd)
 
 def run(args):
 	"""runs the management server, compiling and installing files as needed"""
@@ -1245,11 +941,10 @@ def run(args):
 		Utils.pprint("GREEN","Starting Tomcat in foreground mode")
 		debugargs = []
 
-	tomcatenviron	= conf.env.MSENVIRON
 	options = runverbose + debugargs + [
-		"-Dcatalina.base=" + tomcatenviron,
-		"-Dcatalina.home=" + tomcatenviron,
-		"-Djava.io.tmpdir="+_join(tomcatenviron,"temp"), ]
+		"-Dcatalina.base=" + conf.env.MSENVIRON,
+		"-Dcatalina.home=" + conf.env.MSENVIRON,
+		"-Djava.io.tmpdir="+_join(conf.env.MSENVIRON,"temp"), ]
 
 	cp = [conf.env.MSCONF]
 	cp += _glob(_join(conf.env.MSENVIRON,'bin',"*.jar"))
@@ -1289,7 +984,7 @@ def simulate_agent(args):
 
 	Scripting.install(conf)
 
-	run_java("com.vmops.agent.AgentSimulator",cp,arguments=args)
+	run_java("com.cloud.agent.AgentSimulator",cp,arguments=args)
 
 def debug(ctx):
 	"""runs the management server in debug mode"""

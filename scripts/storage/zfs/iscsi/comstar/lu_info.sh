@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# $Id: lu_info.sh 9132 2010-06-04 20:17:43Z manuel $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/storage/zfs/iscsi/comstar/lu_info.sh $
 # lu_info.sh -- provide info on an LU of the form:
 # 
 # Target: tank/vmops/vm/u000002/r000002/vmi-swap-routing

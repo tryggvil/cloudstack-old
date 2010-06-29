@@ -15,9 +15,12 @@
       <name>ZONE1</name>
       <dns1>72.52.126.11</dns1>
       <dns2>72.52.126.12</dns2>
+      <internalDns1>192.168.10.253</internalDns1>
+      <internalDns2>192.168.10.254</internalDns2>
       <gateway>172.16.0.1</gateway>
       <netmask>255.255.0.0</netmask>
       <ipAddressRange>172.16.1.1-172.16.255.253</ipAddressRange>
+      <guestNetworkCidr>10.1.1.0/24</guestNetworkCidr>
     </zone>
   </zones>
 
@@ -296,6 +299,10 @@
       <name>multicast.throttling.rate</name>
       <value>10</value>
     </configuration>
+    <configuration>
+      <name>secstorage.encrypt.copy</name>
+      <value>false</value>
+    </configuration>
 
     <!--
     usage.aggregation.timezone is the timezone to use for aggregating usage.  This timezone
@@ -321,10 +328,12 @@
       <name>system.vm.local.storage.required</name>
       <value>false</value>
     </configuration>
+    <!--
     <configuration>
       <name>hypervisor.type</name>
-      <value>xenserver</value>
+      <value></value>
     </configuration>
+    -->
     <configuration>
       <name>secondary.storage.vm</name>
       <value>false</value>

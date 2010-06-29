@@ -62,11 +62,13 @@ case "$1" in
 	;;
   restart)
 	stop
+	sleep 3
 	start
 	;;
   condrestart)
 	if status -p ${PIDFILE} $SHORTNAME >&/dev/null; then
 		stop
+		sleep 3
 		start
 	fi
 	;;

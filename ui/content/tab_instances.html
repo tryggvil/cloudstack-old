@@ -6,7 +6,7 @@
     <div class="submenu_links_off" id="submenu_routers">
         Routers</div>
     <div class="submenu_links_off" id="submenu_console">
-        Console Proxies</div>
+        System</div>
 </div>
 <!--VM -->
 <div class="maincontent" style="display: block;" id="submenu_content_vms">
@@ -30,6 +30,7 @@
             <div id="advanced_search" class="adv_searchpopup" style="display: none;">
                 <div class="adv_searchformbox">
                     <h3>Advance Search</h3>
+                    <a id="advanced_search_close" href="#">Close </a>
                     <form action="#" method="post">
                     <ol>
                         <li>
@@ -62,21 +63,27 @@
                             <select class="select" id="adv_search_pod">
                             </select>
                         </li>
+                        <li id="adv_search_domain_li" style="display: none;">
+                            <label for="filter">Domain:</label>
+                            <select class="select" id="adv_search_domain">
+                            </select>
+                        </li>
                         <li id="adv_search_account_li" style="display: none;">
                             <label for="filter">Account:</label>
-                            <select class="select" id="adv_search_account">
-                            </select>
+                            <input class="text" type="text" id="adv_search_account" />                              
                         </li>
                     </ol>
                     </form>
-                    <div id="advanced_search_close" class="adv_search_actionbox">
-                        <a href="#">Close </a>
-                    </div>
+                   <div class="adv_search_actionbox">
+                    	<div class="adv_searchpopup_button" id="adv_search_button"></div>
+					</div>
                 </div>
             </div>            
             
         </div>
     </div>
+	<div class="filter_actionbox">
+	</div>
     <div class="grid_container">
         <div id="loading_gridtable" class="loading_gridtable" style="display: none;">
             <div class="loading_gridanimation">
@@ -172,9 +179,10 @@
                     </div>
                     <div class="admin_vmcontainermid" style="background: url(images/admin_vmblue_mid.gif) repeat-x top left;">
                         <ul class="admin_vmcontainermid_list">
-                            <li id="vm_created"></li>
-                            <li id="vm_host"></li>
-                            <li id="vm_account"></li>
+                            <li style="margin-top:2px;" id="vm_created"></li>                            
+                            <li style="margin-top:2px;" id="vm_account"></li>
+                            <li style="margin-top:2px;" id="vm_domain"></li>
+                            <li style="margin-top:2px;" id="vm_host"></li>
                         </ul>
                     </div>
                 </div>
@@ -278,7 +286,7 @@
                     <li>Others</li>
                     <li>
                         <div id="vm_action_apply_security" class="vmaction_links_on">
-                            Apply Sec. Groups</div>
+                            Apply PF Services</div>
                     </li>
                     <li>
                         <div id="vm_action_ha" class="vmaction_links_on">
@@ -493,18 +501,24 @@
                                 <li>
                                     <label for="zone">
                                         Availability Zone:</label>
-                                    <select class="select" style="width:60px;" id="wizard_zone" name="zone">
+                                    <select class="select" id="wizard_zone" name="zone">
                                     </select>
                                 </li>
                                 <li>
-                                    <label for="name">
-                                        Name (optional):</label>
-                                    <input class="text" type="text" name="name" id="wizard_vm_name" />
+                                    <div>
+                                        <label for="name">
+                                            Name (optional):</label>
+                                        <input class="text" type="text" id="wizard_vm_name" />
+                                    </div>
+                                    <div id="wizard_vm_name_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div>
                                 </li>
                                 <li>
-                                    <label for="group">
-                                        Group (optional):</label>
-                                    <input class="text" type="text" name="group" id="wizard_vm_group" />
+                                    <div>
+                                        <label for="group">
+                                            Group (optional):</label>
+                                        <input class="text" type="text" id="wizard_vm_group" />
+                                    </div>
+                                    <div id="wizard_vm_group_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div>
                                 </li>
                             </ol>
                         </form>
@@ -543,7 +557,7 @@
         	<div class="rev_wizmid_maincontent">
             	<div class="rev_wizmid_titlebox">
                 	<h2><strong>Step 2:</strong> Select a Template</h2>
-                    <p> Please select select a template for your new virtual instance. You can also choose to select a blank template from which an ISO image can be installed onto. </p>
+                    <p> Please select a template for your new virtual instance. You can also choose to select a blank template from which an ISO image can be installed onto. </p>
                 </div>
                 <div class="rev_wizmid_contentbox">
                 	<div class="rev_tempsearchpanel">
@@ -626,7 +640,15 @@
                 </div>
                 <div class="rev_wizmid_contentbox">
                 	<div class="rev_tempsearchpanel"></div>
-                    <div class="rev_wizformarea">
+                    <div class="rev_wizformarea">               
+                       <div class="revwiz_message_container" style="display: none;" id="wiz_message">
+							<div class="revwiz_message_top">
+								<p id="wiz_message_text">Please select an offering to continue</p>
+							</div>
+							<div class="revwiz_message_bottom">
+								 <div class="revwizcontinue_button" id="wiz_message_continue" ></div>
+							</div>
+       			 		</div>                   
                        <form name="step2" method="post" action="#">
                             <div class="revwiz_formcontent_title">
                                 Service Offerings :</div>
@@ -641,8 +663,7 @@
                                 Data Disk Offerings :</div>
                             <ol id="wizard_data_disk_offering">
                             </ol>
-                            </form>
-
+                        </form>
                     </div>
                 </div>
                 <div class="rev_wizmid_actionbox">
@@ -763,7 +784,7 @@
         <form action="#" method="post" id="form_acquire">
         <ol>
             <li>
-                <label for="user_name">
+                <label for="change_group_name">
                     Group Name:</label>
                 <input class="text" type="text" name="change_group_name" id="change_group_name" />
                 <div id="change_group_name_errormsg" class="dialog_formcontent_errormsg" style="display: none;">
@@ -812,11 +833,11 @@
     </div>
 </div>
 <!-- Apply Security Groups Dialog -->
-<div id="dialog_apply_security_groups" title="Apply Security Groups">
+<div id="dialog_apply_security_groups" title="Apply Port Forwarding Services">
     <p>
-        Please choose the security group or groups you would like to apply for <b><span id="security_group_vm_name">
-        </span></b>. To apply new Security, make sure they are moved to the "Applied Security
-        Group" box. When you are satisfied with your security groups, hit 'Apply' to make
+        Please choose the Port Forwarding Services you would like to apply for <b><span id="security_group_vm_name">
+        </span></b>. To apply new a service, make sure they are moved to the "Applied Port Forwarding
+        Service" box. When you are satisfied with your services, hit 'Apply' to make
         the changes permanent.</p>
     <div class="dialog_formcontent">
         <form action="#" method="post" id="form_acquire">
@@ -834,7 +855,7 @@
     <div class="sortable_grouppanel">
         <div class="sortable_group_left">
             <h2>
-                Available Security Groups</h2>
+                Available Services</h2>
             <div class="sortable_groupbox">
                 <ol class="selectable" id="selectable_available">
                 </ol>
@@ -850,7 +871,7 @@
         </div>
         <div class="sortable_group_right">
             <h2>
-                Applied Security Groups</h2>
+                Applied Services</h2>
             <div class="sortable_groupbox">
                 <ol class="selectable" id="selectable_applied">
                 </ol>
@@ -864,7 +885,7 @@
             <div class="selectable_loader">
             </div>
             <p>
-                <strong>Please wait while we apply your Security Groups...</strong></p>
+                <strong>Please wait while we apply your Port Forwarding Services...</strong></p>
         </div>
     </div>
 </div>
@@ -989,7 +1010,7 @@
     </div>
 </div>
 <!-- VM Snapshot template -->
-<div style="height: 25px; display: none" id="vm_snapshot_template">
+<div style="display: none" id="vm_snapshot_template">
     <div class="adding_loading" style="height: 25px; display: none;">
         <div class="adding_animation">
         </div>
@@ -1151,6 +1172,7 @@
             <div id="advanced_search" class="adv_searchpopup" style="display: none;">
                 <div class="adv_searchformbox">
                     <h3>Advance Search</h3>
+                    <a id="advanced_search_close" href="#">Close </a>
                     <form action="#" method="post">
                     <ol>
                         <li>
@@ -1183,16 +1205,20 @@
                             <select class="select" id="adv_search_pod">
                             </select>
                         </li>
+                        <li id="adv_search_domain_li" style="display: none;">
+                            <label for="filter">Domain:</label>
+                            <select class="select" id="adv_search_domain">
+                            </select>
+                        </li>
                          <li id="adv_search_account_li" style="display: none;">
                             <label for="filter">Account:</label>
-                            <select class="select" id="adv_search_account">
-                            </select>
+                            <input class="text" type="text" id="adv_search_account" />                            
                         </li>
                     </ol>
                     </form>
-                    <div id="advanced_search_close" class="adv_search_actionbox">
-                        <a href="#">Close </a>
-                    </div>
+                    <div class="adv_search_actionbox">
+                    	<div class="adv_searchpopup_button" id="adv_search_button"></div>
+					</div>
                 </div>
             </div>
             
@@ -1222,27 +1248,35 @@
                 <div class="grid_headertitles">
                 </div>
             </div>
+            <div class="grid_genheader_cell" style="width: 10%;">
+                <div class="grid_headertitles">
+                    Zone</div>
+            </div>
             <div class="grid_genheader_cell" style="width: 15%;">
                 <div class="grid_headertitles">
                     Name</div>
             </div>
-            <div class="grid_genheader_cell" style="width: 15%;">
+            <div class="grid_genheader_cell" style="width: 10%;">
                 <div class="grid_headertitles">
-                    IP</div>
+                    Public IP</div>
             </div>
-            <div class="grid_genheader_cell" style="width: 18%;">
+             <div class="grid_genheader_cell" style="width: 10%;">
+                <div class="grid_headertitles">
+                    Private IP</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 12%;">
                 <div class="grid_headertitles">
                     Host</div>
             </div>
-            <div class="grid_genheader_cell" style="width: 15%;">
+            <div class="grid_genheader_cell" style="width: 10%;">
                 <div class="grid_headertitles">
                     Network Domain</div>
             </div>
             <div class="grid_genheader_cell" style="width: 15%;">
                 <div class="grid_headertitles">
                     Account</div>
-            </div>
-            <div class="grid_genheader_cell" style="width: 15%;">
+            </div>           
+            <div class="grid_genheader_cell" style="width: 10%;">
                 <div class="grid_headertitles">
                     Created</div>
             </div>
@@ -1280,27 +1314,35 @@
         <div class="grid_runningtitles" id="router_state">
         </div>
     </div>
+    <div class="grid_genrow_cell" style="width: 10%;">
+        <div class="grid_celltitles" id="router_zonename">
+        </div>
+    </div>
     <div class="grid_genrow_cell" style="width: 15%;">
         <div class="grid_celltitles" id="router_name">
         </div>
     </div>
-    <div class="grid_genrow_cell" style="width: 15%;">
-        <div class="grid_celltitles" id="router_ip">
+    <div class="grid_genrow_cell" style="width: 10%;">
+        <div class="grid_celltitles" id="router_public_ip">
         </div>
     </div>
-    <div class="grid_genrow_cell" style="width: 18%;">
+    <div class="grid_genrow_cell" style="width: 10%;">
+        <div class="grid_celltitles" id="router_private_ip">
+        </div>
+    </div>
+    <div class="grid_genrow_cell" style="width: 12%;">
         <div class="grid_celltitles" id="router_host">
         </div>
     </div>
-    <div class="grid_genrow_cell" style="width: 15%;">
+    <div class="grid_genrow_cell" style="width: 10%;">
         <div class="grid_celltitles" id="router_domain">
         </div>
     </div>
     <div class="grid_genrow_cell" style="width: 15%;">
         <div class="grid_celltitles" id="router_owner">
         </div>
-    </div>
-    <div class="grid_genrow_cell" style="width: 15%;">
+    </div>   
+    <div class="grid_genrow_cell" style="width: 10%;">
         <div class="grid_celltitles" id="router_created">
         </div>
     </div>
@@ -1312,9 +1354,11 @@
                 <a id="router_action_stop" href="#">Stop</a> |</div>
             <div id="router_action_reboot_container" style="float: left;">
                 <a id="router_action_reboot" href="#">Reboot</a> |</div>
+            <div id="router_action_view_console_container" style="float: left;">
+                <a id="router_action_view_console" href="#">View Console</a> |</div>
         </div>
     </div>
-    <div class="row_loading" style="display: none;">
+    <div class="row_loading" style="display: none; height:58px;">
     </div>
     <div class="loading_animationcontainer" style="display: none;">
         <div class="loading_animationtext">
@@ -1333,14 +1377,15 @@
     </div>
 </div>
 <!-- END Router Template -->
-<!-- Console Proxy-->
+<!-- System-->
 <div class="maincontent" style="display: none;" id="submenu_content_console">
     <div id="maincontent_title">
         <div class="maintitle_icon">
             <img src="images/cproxytitle_icons.gif" title="routers" />
         </div>
         <h1>
-            Console Proxies</h1>
+            System</h1>
+          
         <div class="search_formarea">
             <form action="#" method="post">
             <ol>
@@ -1354,6 +1399,7 @@
             <div id="advanced_search" class="adv_searchpopup" style="display: none;">
                 <div class="adv_searchformbox">
                     <h3>Advance Search</h3>
+                    <a id="advanced_search_close" href="#">Close </a>
                     <form action="#" method="post">
                     <ol>
                         <li>
@@ -1386,11 +1432,16 @@
                             <select class="select" id="adv_search_pod">
                             </select>
                         </li>
+                        <li id="adv_search_domain_li" style="display: none;">
+                            <label for="filter">Domain:</label>
+                            <select class="select" id="adv_search_domain">
+                            </select>
+                        </li>
                     </ol>
                     </form>
-                    <div id="advanced_search_close" class="adv_search_actionbox">
-                        <a href="#">Close </a>
-                    </div>
+                    <div class="adv_search_actionbox">
+                    	<div class="adv_searchpopup_button" id="adv_search_button"></div>
+					</div>
                 </div>
             </div>
             
@@ -1420,11 +1471,19 @@
                 <div class="grid_headertitles">
                 </div>
             </div>
-            <div class="grid_genheader_cell" style="width: 18%;">
+			<div class="grid_genheader_cell" style="width: 12%;">
+                <div class="grid_headertitles">
+                    Type</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 10%;">
+                <div class="grid_headertitles">
+                    Zone</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 9%;">
                 <div class="grid_headertitles">
                     Name</div>
             </div>
-            <div class="grid_genheader_cell" style="width: 10%;">
+            <div class="grid_genheader_cell" style="width: 9%;">
                 <div class="grid_headertitles">
                     Active Session</div>
             </div>
@@ -1436,15 +1495,15 @@
                 <div class="grid_headertitles">
                     Private IP</div>
             </div>
-            <div class="grid_genheader_cell" style="width: 15%;">
+            <div class="grid_genheader_cell" style="width: 12%;">
                 <div class="grid_headertitles">
                     Host</div>
             </div>
-            <div class="grid_genheader_cell" style="width: 15%;">
+            <div class="grid_genheader_cell" style="width: 10%;">
                 <div class="grid_headertitles">
                     Gateway</div>
             </div>
-            <div class="grid_genheader_cell" style="width: 15%;">
+            <div class="grid_genheader_cell" style="width: 11%;">
                 <div class="grid_headertitles">
                     Created</div>
             </div>
@@ -1474,7 +1533,7 @@
     </div>
 </div>
 <!-- END Content Panel -->
-<!-- Console Proxy Template -->
+<!-- System VM Template (begin) -->
 <div id="console_template" style="display: none">
     <div class="green_statusbar" id="console_state_bar">
     </div>
@@ -1482,10 +1541,16 @@
         <div class="grid_runningtitles" id="console_state">
             State</div>
     </div>
-    <div class="grid_genrow_cell" style="width: 18%;">
-        <div class="grid_celltitles" id="console_name"></div>
+	<div class="grid_genrow_cell" style="width: 12%;">
+        <div class="grid_celltitles" id="console_type"></div>
     </div>
     <div class="grid_genrow_cell" style="width: 10%;">
+        <div class="grid_celltitles" id="console_zone"></div>
+    </div>
+    <div class="grid_genrow_cell" style="width: 9%;">
+        <div class="grid_celltitles" id="console_name"></div>
+    </div>
+    <div class="grid_genrow_cell" style="width: 9%;">
         <div class="grid_celltitles" id="console_active_session"></div>
     </div>
     <div class="grid_genrow_cell" style="width: 10%;">
@@ -1494,13 +1559,13 @@
     <div class="grid_genrow_cell" style="width: 10%;">
         <div class="grid_celltitles" id="console_private_ip"></div>
     </div>
-    <div class="grid_genrow_cell" style="width: 15%;">
+    <div class="grid_genrow_cell" style="width: 12%;">
         <div class="grid_celltitles" id="console_host"></div>
     </div>
-    <div class="grid_genrow_cell" style="width: 15%;">
+    <div class="grid_genrow_cell" style="width: 10%;">
         <div class="grid_celltitles" id="console_gateway"></div>
     </div>
-    <div class="grid_genrow_cell" style="width: 15%;">
+    <div class="grid_genrow_cell" style="width: 11%;">
         <div class="grid_celltitles" id="console_created"></div>
     </div>
     <div id="grid_links_container" style="display: none;">
@@ -1511,9 +1576,11 @@
                 <a id="console_action_stop" href="#">Stop</a> |</div>
             <div id="console_action_reboot_container" style="float: left;">
                 <a id="console_action_reboot" href="#">Reboot</a> |</div>
+            <div id="console_action_view_console_container" style="float: left;">
+                <a id="console_action_view_console" href="#">View Console</a> |</div>
         </div>
     </div>
-    <div class="row_loading" style="display: none;">
+    <div class="row_loading" style="display: none; height:58px;">
     </div>
     <div class="loading_animationcontainer" style="display: none;">
         <div class="loading_animationtext">
@@ -1531,7 +1598,7 @@
         </div>
     </div>
 </div>
-<!-- END console proxy Template -->
+<!-- System VM Template (end) -->
 
 <!--
 	Terms and Conditions Dialog 

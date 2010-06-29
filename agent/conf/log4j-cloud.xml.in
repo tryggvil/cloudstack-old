@@ -11,12 +11,13 @@
    <appender name="FILE" class="org.apache.log4j.rolling.RollingFileAppender">
       <param name="Append" value="true"/>
       <param name="Threshold" value="DEBUG"/>
+      <param name="MaxBackupIndex" value="30"/>
       <rollingPolicy class="org.apache.log4j.rolling.TimeBasedRollingPolicy">
-        <param name="FileNamePattern" value="@AGENTLOG@.%d{yyyy-MM-dd}{PST}.gz"/>
+        <param name="FileNamePattern" value="@AGENTLOG@.%d{yyyy-MM-dd}.gz"/>
         <param name="ActiveFileName" value="@AGENTLOG@"/>
       </rollingPolicy>
       <layout class="org.apache.log4j.EnhancedPatternLayout">
-         <param name="ConversionPattern" value="%d{ISO8601}{PST} %-5p [%c{3}] (%t:%x) %m%n"/>
+         <param name="ConversionPattern" value="%d{ISO8601} %-5p [%c{3}] (%t:%x) %m%n"/>
       </layout>
    </appender>
    
@@ -37,15 +38,15 @@
    <!-- Limit categories -->
    <!-- ================ -->
 
-   <category name="com.vmops">
+   <category name="com.cloud">
      <priority value="DEBUG"/>
    </category>
    
-   <category name="com.vmops.agent.metrics">
+   <category name="com.cloud.agent.metrics">
      <priority value="INFO"/>
    </category>
    
-   <category name="com.vmops.agent.resource.computing.ComputingResource$StorageMonitorTask">
+   <category name="com.cloud.agent.resource.computing.ComputingResource$StorageMonitorTask">
      <priority value="INFO"/>
    </category>
 

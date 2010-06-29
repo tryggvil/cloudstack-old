@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# $Id: listvmdisk.sh 9132 2010-06-04 20:17:43Z manuel $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/storage/zfs/nfs/listvmdisk.sh $
 # listvmdisk.sh -- list disks of a VM
 # Bugs: does not handle hexadecimal numbers. Decimal only!
 

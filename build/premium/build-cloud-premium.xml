@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2008 Cloud, Inc. All Rights Reserved -->
+
+<project name="Cloud Stack Premium" default="help" basedir=".">
+  <description>
+		Cloud Stack ant build file
+    </description>
+
+  <!--
+ 	Always use this variable to refer to the base directory because this
+	variable is changeable
+    -->
+  <dirname property="base.dir" file="${ant.file.Cloud Stack Premium}/../.." />
+  <property name="build.dir" location="${base.dir}/build" />
+ 
+  <import file="${build.dir}/build-cloud.xml" optional="false"/>
+
+  <!-- directories for premium code compilation -->
+  <property name="premium.dir" location="${base.dir}/premium" />
+  <property name="premium.test.dir" location="${premium.dir}/test/" />
+  
+  <property name="core-premium.dir" location="${base.dir}/core-premium" />
+  <property name="core-premium.test.dir" location="${core-premium.dir}/test/" />
+  
+  <property name="usage.dir" location="${base.dir}/usage" />
+  <property name="usage.dist.dir" location="${dist.dir}/usage" />
+
+  <property name="console-proxy-premium.dir" location="${base.dir}/console-proxy-premium" />
+
+  <!-- directories for branding -->
+  <property name="branding.dir" location="${build.dir}/deploy/branding/${branding.name}" />
+
+  <property name="premium.jar" value="cloud-server-extras.jar" />
+  <property name="usage.jar" value="cloud-usage.jar" />
+  <property name="console-proxy-premium.jar" value="cloud-console-proxy-premium.jar" />
+  <property name="core-premium.jar" value="cloud-core-extras.jar"/>
+  
+  <!-- ===================== core-extras.Jar ===================== -->
+  <path id="core-premium.classpath">
+    <path refid="thirdparty.classpath" />
+    <path refid="dist.classpath" />
+  </path>
+  <target name="compile-core-premium" depends="-init, compile-utils, compile-core" description="Compile the premium business logic.">
+    <compile-java jar.name="${core-premium.jar}" top.dir="${core-premium.dir}" classpath="core-premium.classpath" />
+  </target>
+
+  <!-- ===================== Premium.Jar ===================== -->
+  <path id="premium.classpath">
+    <path refid="thirdparty.classpath" />
+    <path refid="dist.classpath" />
+  </path>
+  <target name="compile-premium" depends="-init, compile-utils, compile-core-premium, compile-server, compile-console-proxy" description="Compile the premium business logic.">
+    <compile-java jar.name="${premium.jar}" top.dir="${premium.dir}" classpath="premium.classpath" />
+  </target>
+
+  <target name="build-premium" depends="compile-premium">
+    <copy overwrite="true" todir="${server.dist.dir}/conf">
+      <mappedresources>
+        <fileset dir="${base.dir}/premium/tomcatconf">
+          <include name="*.in" />
+        </fileset>
+        <globmapper from="*.in" to="*" />
+      </mappedresources>
+      <filterchain>
+        <filterreader classname="org.apache.tools.ant.filters.ReplaceTokens">
+          <param type="propertiesfile" value="build/${override.file}" />
+        </filterreader>
+      </filterchain>
+    </copy>
+  </target>
+
+  <!-- ===================== Usage.Jar ===================== -->
+  <path id="usage.classpath">
+    <path refid="thirdparty.classpath" />
+    <path refid="dist.classpath" />
+  </path>
+  <target name="compile-usage" depends="-init, compile-utils, compile-core, compile-server, compile-premium" description="Compile the usage server">
+    <compile-java jar.name="${usage.jar}" top.dir="${usage.dir}" classpath="usage.classpath" />
+  </target>
+
+  <target name="build-usage" depends="build-premium, compile-usage">
+    <mkdir dir="${usage.dist.dir}/bin" />
+    <mkdir dir="${usage.dist.dir}/conf" />
+
+    <copy todir="${usage.dist.dir}/bin">
+      <fileset dir="${usage.dir}/scripts">
+        <include name="usageserver.sh" />
+      </fileset>
+    </copy>
+    <copy overwrite="true" todir="${usage.dist.dir}/conf">
+      <mappedresources>
+        <fileset dir="${usage.dir}/conf">
+          <include name="*.in" />
+        </fileset>
+        <globmapper from="*.in" to="*" />
+      </mappedresources>
+      <filterchain>
+        <filterreader classname="org.apache.tools.ant.filters.ReplaceTokens">
+          <param type="propertiesfile" value="build/${override.file}" />
+        </filterreader>
+      </filterchain>
+    </copy>
+    <copy overwrite="true" todir="${usage.dist.dir}/lib">
+      <fileset dir="${jar.dir}">
+        <include name="${usage.jar}" />
+      </fileset>
+    </copy>
+  </target>
+
+  <!-- ===================== Console-Proxy-Premium.Jar ===================== -->
+  <path id="console-proxy-premium.classpath">
+    <path refid="thirdparty.classpath" />
+    <path refid="dist.classpath" />
+  </path>
+  <target name="compile-console-proxy-premium" depends="compile-console-proxy" description="Compile the console proxy security extenstion.">
+    <compile-java jar.name="${console-proxy-premium.jar}" top.dir="${console-proxy-premium.dir}" classpath="console-proxy-premium.classpath">
+      <include-files>
+        <fileset dir="${console-proxy-premium.dir}/certs">
+          <include name="*.keystore" />
+          <include name="*.crt" />
+          <include name="*.key" />
+        </fileset>
+      </include-files>
+    </compile-java>
+  </target>
+
+  <target name="build-console-proxy-premium" depends="compile-console-proxy-premium, copy-console-proxy">
+    <copy todir="${console-proxy.dist.dir}">
+      <fileset dir="${jar.dir}">
+        <include name="cloud-console-proxy-premium.jar" />
+      </fileset>
+    </copy>
+    <mkdir dir="${console-proxy.dist.dir}/certs" />
+    <copy todir="${console-proxy.dist.dir}/certs">
+      <fileset dir="${console-proxy-premium.dir}/certs">
+          <include name="*.keystore" />
+          <include name="*.crt" />
+          <include name="*.key" />
+      </fileset>
+    </copy>
+  </target>
+
+  <target name="build-war-premium" depends="-init, build-opensource, build-usage, build-premium, build-ui" description="Compile the GWT client UI and builds WAR file.">
+     <mkdir dir="${client.dist.dir}" />
+     <chmod file="${scripts.dir}/start.sh" perm="700"/>
+ 
+     <war destfile="${client.dist.dir}/client.war" webxml="${server.dir}/web.xml">
+       <fileset dir="${client.dist.dir}/ui">
+         <include name="**/*" />
+       </fileset>
+      <lib dir="${jar.dir}">
+        <include name="${core.jar}" />
+        <include name="${utils.jar}" />
+        <include name="${server.jar}" />
+        <include name="${usage.jar}" />
+        <include name="${premium.jar}" />
+        <include name="${core-premium.jar}"/>
+      </lib>
+      <zipfileset dir="${scripts.dir}" prefix="WEB-INF/lib/scripts" filemode="555">
+        <include name="**/*" />
+        <exclude name="**/.classpath" />
+        <exclude name="**/.project" />
+        <exclude name="**/id_rsa"/>
+      </zipfileset>
+      <zipfileset dir="${scripts.dir}" prefix="WEB-INF/lib/scripts" filemode="600">
+        <include name="**/id_rsa"/>
+      </zipfileset>
+    </war>
+  </target>
+
+
+  <target name="build-all" depends="build-opensource, build-usage, build-premium, build-war-premium, build-console-proxy-premium, build-agent-simulator, build-xenserver-domr-patch">
+  </target>
+
+</project>
+
+

@@ -1,0 +1,6 @@
+#!/bin/bash
+# chkconfig: 345 98 02
+# description: Web server that sends passwords to User VMs
+#   This file exists in /etc/init.d/ in the routing domain
+
+bash /root/run_domr_webserver&

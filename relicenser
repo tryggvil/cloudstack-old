@@ -4,87 +4,87 @@ import re
 import os
 
 
-expressions = [
-	("c1",
-		(
-			re.compile(r"/\*\*.*Copyright \(C\) 20(.+?)Cloud.com(.*?) \*/",re.DOTALL),
-			"""/**
- *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
- * 
- * This software is licensed under the GNU General Public License v3 or later.  
- * 
- * It is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or any later version.
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
- */"""
-		)),
-	("c2",
-		(
-			re.compile(r"//.*Copyright \(C\) 20[0-9][0-9] Cloud.com.  All Rights Reserved\.",re.DOTALL),
-			"""/**
- *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
- * 
- * This software is licensed under the GNU General Public License v3 or later.  
- * 
- * It is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or any later version.
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
- */"""
-		)),
-	("gpl3+",
-		(
-			re.compile("(This software is licensed under the GNU General Public License v3 or later)",re.DOTALL),
-			r"\1"
-		)),
-	("gpl2cddlcpexcept",
-		(
-			re.compile("(Sun designates this particular file as subject to the \"Classpath\" exception)",re.DOTALL),
-			r"\1"
-		)),
-	("gpl2cddl",
-		(
-			re.compile("(General Public License Version 2 only \(\"GPL\"\) or the Common Development)",re.DOTALL),
-			r"\1"
-		)),
-	("gpl2orlater",
-		(
-			re.compile(r"(either version 2 of the License, or(.+?)\(at your option\) any later version)",re.DOTALL),
-			r"\1"
-		)),
-	("gpl",
-		(
-			re.compile(r"(GNU General Public License)",re.DOTALL),
-			r"\1"
-		)),
-	("lgpl",
-		(
-			re.compile(r"(GNU Lesser General Public License)",re.DOTALL),
-			r"\1"
-		)),
-	("copyright",
-		(
-			re.compile(r"(Copyright)",re.DOTALL|re.IGNORECASE),
-			r"\1"
-		)),
-]
-
 def java_analyzer(path):
+	license = """/**
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
+ * 
+ * This software is licensed under the GNU General Public License v3 or later.
+ * 
+ * It is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ */"""
+	expressions = [
+		("c1",
+			(
+				re.compile(r"/\*\*.*Copyright \(C\) 20(.+?)Cloud.com(.*?)\*/",re.DOTALL),
+				license
+			)),
+		("c2",
+			(
+				re.compile(r"//.*Copyright \(C\) 20[0-9][0-9] Cloud.com.  All Rights Reserved\.",re.DOTALL),
+				license
+			)),
+		("gpl3+",
+			(
+				re.compile("(This software is licensed under the GNU General Public License v3 or later)",re.DOTALL),
+				r"\1"
+			)),
+		("gpl2cddlcpexcept",
+			(
+				re.compile("(Sun designates this particular file as subject to the \"Classpath\" exception)",re.DOTALL),
+				r"\1"
+			)),
+		("gpl2cddl",
+			(
+				re.compile("(General Public License Version 2 only \(\"GPL\"\) or the Common Development)",re.DOTALL),
+				r"\1"
+			)),
+		("gpl2orlater",
+			(
+				re.compile(r"(either version 2 of the License, or(.+?)\(at your option\) any later version)",re.DOTALL),
+				r"\1"
+			)),
+		("gpl+mit",
+			(
+				re.compile(r"(Dual licensed under the MIT .MIT-LICENSE.txt.*and GPL .GPL-LICENSE.txt. licenses|Dual licensed under the MIT and GPL licenses)",re.DOTALL),
+				r"\1"
+			)),
+		("gpl",
+			(
+				re.compile(r"(GNU General Public License)",re.DOTALL),
+				r"\1"
+			)),
+		("lgpl",
+			(
+				re.compile(r"(GNU Lesser General Public License)",re.DOTALL),
+				r"\1"
+			)),
+		("wtfpl",
+			(
+				re.compile(r"(Licensed under the WTFPL)",re.DOTALL),
+				r"\1"
+			)),
+		("auto-generated",
+			(
+				re.compile("(This file was auto-generated from WSDL)",re.DOTALL),
+				r"\1"
+			)),
+		("copyright",
+			(
+				re.compile(r"(Copyright)",re.DOTALL|re.IGNORECASE),
+				r"\1"
+			)),
+	]
+
 	text = file(path).read(-1)
 	newtext = text
 	repl = False
@@ -100,35 +100,21 @@ def java_analyzer(path):
 		file(path,"w").write(newtext)
 	else:
 		print "%90s"%path,"no license detected"
-		newtext = """/**
- *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
- * 
- * This software is licensed under the GNU General Public License v3 or later.  
- * 
- * It is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or any later version.
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
- */""" + "\n\n" + text
+		newtext = license + "\n\n" + text
 		file(path,"w").write(newtext)
 	
 analyzers = {
 	".java":java_analyzer,
+	".js":java_analyzer,
 }
 
 for cwd,dirs,files in os.walk("."):
-	skip = [".svn","thirdparty","plugins","tools","premium","usage",".waf-javatest"]
+	skip = [".svn","thirdparty","plugins","tools","premium","usage","cloud-gate",".waf-javatest","AmazonEC2Stub.java","AmazonS3Stub.java"]
 	areweindir = lambda x: x in cwd.split(os.path.sep)
 	areindirs = map(areweindir,skip)
 	if any(areindirs): continue
 	for f in files:
+		if f in skip: continue
 		name,ext = os.path.splitext(f)
 		if ext in analyzers:
 			path = os.path.join(cwd,f)

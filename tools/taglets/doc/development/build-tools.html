@@ -1,0 +1,663 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Generated for taglets on 2008/03/30 14:47:34, do not modify!
+-->
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><style type="text/css">
+    /* <![CDATA[ */
+    @import "../css/tigris.css";
+    @import "../css/inst.css";
+    /* ]]> */
+   </style><link rel="shortcut icon" href="../favicon.ico"/><link media="print" href="../css/print.css" type="text/css" rel="stylesheet"/><title>Taglets: Development: Build-time Tools Used</title><meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/><meta http-equiv="Content-style-type" content="text/css"/><meta name="Generator" content="MuliFex WebDoc"/>      <link rel="alternate"       type="application/rss+xml"       title="Taglets"       href="http://taglets.sourceforge.net/rss.xml"/>      </head>
+<body class="composite" style="margin:0px;">     <div id="banner">     <div class="banner-latest-release">     <a href="http://taglets.sourceforge.net/download.html">     Taglets Collection 2.0.3<br/>     2008/03/30 13:49:50</a></div><h1><a id="sc" href="http://taglets.sourceforge.net/"><span class="alt">Taglets Collection</span></a></h1></div><div id="toptabs" class="tabs"><table border="0" cellspacing="0" cellpadding="4"><tr><td><a href="../index.html">Home</a></td><td><a href="../download.html">Downloads</a></td><td><a href="../userguide/index.html">User Guide</a></td><th><a href="../development/index.html">Development</a></th><td><a href="../legal.html">Legal</a></td></tr></table></div><div id="breadcrumbs"><a href="../index.html">Taglets</a> &gt; <a href="../development/index.html">Development</a> &gt; <a href="../development/tools.html">Tools Used</a> &gt; Build Tools</div><table id="main" width="100%" cellpadding="4" cellspacing="0" border="0"><tr valign="top"><td id="leftcol"><div id="navcolumn"><div class="toolgroup" id="projecttools"><div class="label"><strong>Taglets</strong></div><div class="body"><div><a href="../index.html">Home</a><div><a href="../news.html">News</a></div><div><a href="../screenshots.html">Screenshots</a></div><div><a href="../download.html">Downloads</a></div><div><a href="../legal.html">Legal</a></div></div><div><a href="../userguide/index.html">User Guide</a><div><a href="../userguide/simple.html">Simple Usage</a></div><div><a href="../userguide/extended.html">Extended Usage</a></div><div><a href="../userguide/custom.html">Custom Taglets</a></div><div><a href="../userguide/configuration.html">Configuration</a></div><div><a href="../userguide/tags.html">Predefined Tags</a></div><div><a href="../userguide/shutdown.html">Shutdown Taglets</a></div><div><a href="../userguide/knownbugs.html">Known Bugs</a></div><div><a href="../userguide/todo.html">ToDo List</a></div></div><div><a href="../development/index.html">Development</a><div><a href="../development/setup.html">Setup</a></div><div><a href="../development/primers.html">Primers</a></div><div><a href="../development/build.html">Build System</a></div><div><a href="../development/tools.html">Tools Used</a><div><strong>Build Tools</strong><div><a href="#overview">Overview</a></div><div><a href="#details">Details</a><div><a href="#ant">Ant</a></div><div><a href="#ant-contrib">Ant-contrib</a></div><div><a href="#ant-tools">Ant-tools</a></div><div><a href="#dom4j">Dom4j</a></div><div><a href="#J2SE Tools">J2SE Tools</a></div><div><a href="#lightbox">Lightbox</a></div><div><a href="#murimages">Murimages</a></div><div><a href="#prettify">Prettify</a></div><div><a href="#tigris-style">Tigris-style</a></div><div><a href="#tooldoc">Tooldoc</a></div></div></div><div><a href="../development/audit-tools.html">Audit Tools</a></div><div><a href="../development/tag-tools.html">Tag Tools</a></div></div><div><a href="../development/audit.html">Auditing Reports</a></div><div><a href="../development/changelog.html">ChangeLog</a></div></div></div></div><div class="toolgroup" id="apitools"><div class="label"><strong>Taglets API</strong></div><div class="body"><div><a href="../api/simple/api-index.html">Simple</a></div><div><a href="../api/complete/api-index.html">Complete</a></div><div><a href="../api/demo/api-index.html">Demo</a></div></div></div><div class="toolgroup" id="linktools"><div class="label"><strong>Quick Links</strong></div><div class="body"><div><a href="http://www.sourceforge.net/">SourceForge</a><div><a href="http://sourceforge.net/projects/taglets/">Taglets Project</a></div><div><a href="http://sourceforge.net/project/showfiles.php?group_id=95947">Project Downloads</a></div></div><div><a href="http://www.sun.com/">Sun Microsystems</a><div><a href="http://java.sun.com/">Java Homepage</a></div><div><a href="http://java.sun.com/j2se/javadoc/">JavaDoc Tool</a></div></div><div><a href="http://www.codehaus.org/">CodeHaus</a></div><div><a href="http://www.java.net/">Java.net</a></div><div><a href="http://jakarta.apache.org/">Jakarta</a><div><a href="http://ant.apache.org/manual/index.html">Ant Manual</a></div></div></div></div><div class="toolgroup" id="feedtools"><div class="label"><strong>News Feed</strong></div><div class="body"><div><a href="../rss.xml">Taglets</a></div></div></div><div class="strut">&nbsp;</div></div></td><td><div id="bodycol"><div id="apphead"><h2>Development:  <em>Build-time Tools Used</em></h2></div><div class="app" id="projecthome"><h3>
+<a name="overview">
+		Build Tools
+	 Overview
+							</a>
+</h3><p>
+			This project makes use of a number of build-time tools.
+		</p><p>
+			The following table lists these tools along with the versions, 
+			homepages and licensing information.
+		</p><table border="1" cellspacing="2" cellpadding="3" width="100%">
+<tr>
+<th style="width:8em;">
+		Build Tools
+	</th>
+<th style="width:5em;">Version</th>
+<th>Homepage</th>
+</tr>
+<tr class="a">
+<td>
+<a href="#ant">ant</a>
+</td>
+<td style="text-align: right;">
+		1.6.5
+	</td>
+<td>
+<a href="http://ant.apache.org/">http://ant.apache.org/</a>
+</td>
+</tr>
+<tr class="b">
+<td>
+<a href="#ant-contrib">ant-contrib</a>
+</td>
+<td style="text-align: right;">
+		1.0b2
+	</td>
+<td>
+<a href="http://ant-contrib.sourceforge.net/">http://ant-contrib.sourceforge.net/</a>
+</td>
+</tr>
+<tr class="a">
+<td>
+<a href="#ant-tools">ant-tools</a>
+</td>
+<td style="text-align: right;">
+		1.2.0
+	</td>
+<td>
+<a href="http://mulifex.sourceforge.net/">http://mulifex.sourceforge.net/</a>
+</td>
+</tr>
+<tr class="b">
+<td>
+<a href="#dom4j">dom4j</a>
+</td>
+<td style="text-align: right;">
+		1.4
+	</td>
+<td>
+<a href="http://dom4j.org/">http://dom4j.org/</a>
+</td>
+</tr>
+<tr class="a">
+<td>
+<a href="#J2SE Tools">J2SE Tools</a>
+</td>
+<td style="text-align: right;">
+						-
+					</td>
+<td>
+<a href="http://java.sun.com/">http://java.sun.com/</a>
+</td>
+</tr>
+<tr class="b">
+<td>
+<a href="#lightbox">lightbox</a>
+</td>
+<td style="text-align: right;">
+		2.03.1
+	</td>
+<td>
+<a href="http://www.huddletogether.com/projects/lightbox2/">http://www.huddletogether.com/projects/lightbox2/</a>
+</td>
+</tr>
+<tr class="a">
+<td>
+<a href="#murimages">murimages</a>
+</td>
+<td style="text-align: right;">
+		2.0
+	</td>
+<td>
+<a href="http://www.orchaid.com/">http://www.orchaid.com/</a>
+</td>
+</tr>
+<tr class="b">
+<td>
+<a href="#prettify">prettify</a>
+</td>
+<td style="text-align: right;">
+		20070329
+	</td>
+<td>
+<a href="http://code.google.com/p/google-code-prettify/">http://code.google.com/p/google-code-prettify/</a>
+</td>
+</tr>
+<tr class="a">
+<td>
+<a href="#tigris-style">tigris-style</a>
+</td>
+<td style="text-align: right;">
+		1.1
+	</td>
+<td>
+<a href="http://style.tigris.org/">http://style.tigris.org/</a>
+</td>
+</tr>
+<tr class="b">
+<td>
+<a href="#tooldoc">tooldoc</a>
+</td>
+<td style="text-align: right;">
+		1.0.3
+	</td>
+<td>
+<a href="http://mulifex.sourceforge.net/">http://mulifex.sourceforge.net/</a>
+</td>
+</tr>
+</table><h3>
+<a name="details">
+		Build Tools
+	 Details
+							</a>
+</h3><p>
+			The following section lists detail information for each of the 
+			libraries.
+		</p><p>
+			Please refer to the corresponding 
+      <code>tool.xml</code>
+			description in the tool directory for further information.
+		
+    </p><h4>
+<a name="ant">ant</a>
+</h4><div class="axial">
+<table width="100%" border="0" cellspacing="2" cellpadding="3">
+<tr>
+<td colspan="2">
+<p>
+			Java-based build tool similar to the Unix make tool.
+		</p>
+</td>
+</tr>
+<tr>
+<th>Version:</th>
+<td>
+		1.6.5
+	</td>
+</tr>
+<tr>
+<th>Homepage:</th>
+<td>
+<a href="http://ant.apache.org/">http://ant.apache.org/</a>
+</td>
+</tr>
+<tr>
+<th>License:</th>
+<td>
+		Apache Software License, Version 1.1
+	</td>
+</tr>
+</table>
+</div><h4>
+<a name="ant-contrib">ant-contrib</a>
+</h4><div class="axial">
+<table width="100%" border="0" cellspacing="2" cellpadding="3">
+<tr>
+<td colspan="2">
+<p>A collection of tasks and utilities for Apache Ant.</p>
+</td>
+</tr>
+<tr>
+<th>Version:</th>
+<td>
+		1.0b2
+	</td>
+</tr>
+<tr>
+<th>Homepage:</th>
+<td>
+<a href="http://ant-contrib.sourceforge.net/">http://ant-contrib.sourceforge.net/</a>
+</td>
+</tr>
+<tr>
+<th>License:</th>
+<td>
+		Apache Software License, Version 1.1
+	</td>
+</tr>
+<tr>
+<th>Requires:</th>
+<td>
+<a href="build-tools.html#ant">ant 1.6.5</a>
+</td>
+</tr>
+</table>
+</div><h4>
+<a name="ant-tools">ant-tools</a>
+</h4><div class="axial">
+<table width="100%" border="0" cellspacing="2" cellpadding="3">
+<tr>
+<td colspan="2">
+<p>Custom 
+        <em>MuliFex</em> Ant Tool Tasks.
+      </p>
+<p>Currently the following tasks are included:</p>
+<dl>
+			
+        <dt>toollist</dt>
+			
+        <dd>Helper task for the 
+          <a href="#tooldoc">tooldoc</a> project tool.
+        </dd>
+			
+        <dt>xsltdoc</dt>
+			
+        <dd>Extended xslt task that automatically passes in some parameters
+				(like generation source, timestamp, etc.). This task is mainly to
+				prevent cluttered build files that have the same copy/pasted lines
+				all over the place.</dd>
+			
+        <dt>webdoc</dt>
+			
+        <dd>Documentation build task that builds webpages for the 
+				
+          <a href="#tigris-style">tigris-style</a>. It takes a couple of
+				HTML files as well as a site description file as input and creates
+				the whole webpage including navigation, breadcrumbs, etc. pp.
+				Take a look at 
+          <tt>build.xml</tt> on how it is used for 
+				
+          <em>MuliFex</em>.
+			
+        </dd>
+		
+      </dl>
+</td>
+</tr>
+<tr>
+<th>Version:</th>
+<td>
+		1.2.0
+	</td>
+</tr>
+<tr>
+<th>Homepage:</th>
+<td>
+<a href="http://mulifex.sourceforge.net/">http://mulifex.sourceforge.net/</a>
+</td>
+</tr>
+<tr>
+<th>License:</th>
+<td>
+		BSD Style License
+	</td>
+</tr>
+<tr>
+<th>Requires:</th>
+<td>
+<a href="build-tools.html#ant">ant 1.6.5</a>
+<br/>
+<a href="build-tools.html#dom4j">dom4j 1.4</a>
+</td>
+</tr>
+</table>
+</div><h4>
+<a name="dom4j">dom4j</a>
+</h4><div class="axial">
+<table width="100%" border="0" cellspacing="2" cellpadding="3">
+<tr>
+<td colspan="2">
+<p>
+			dom4j is an Open Source XML framework for Java.
+		</p>
+<p>
+			dom4j allows you to read, write, navigate, create and modify XML 
+			documents. It integrates with DOM and SAX and is seamlessly integrated 
+			with full XPath support.
+		</p>
+</td>
+</tr>
+<tr>
+<th>Version:</th>
+<td>
+		1.4
+	</td>
+</tr>
+<tr>
+<th>Homepage:</th>
+<td>
+<a href="http://dom4j.org/">http://dom4j.org/</a>
+</td>
+</tr>
+<tr>
+<th>License:</th>
+<td>
+		BSD Style License
+	</td>
+</tr>
+</table>
+</div><h4>
+<a name="J2SE Tools">J2SE Tools</a>
+</h4><div class="axial">
+<table width="100%" border="0" cellspacing="2" cellpadding="3">
+<tr>
+<td colspan="2">
+<p>
+			This tool provides a wrapper for the 
+        <code>tools.jar</code> shipped with 
+			the 
+        <abbr title="JavaTM 2 Platform Standard Edition Development Kit">
+			JDK</abbr>.
+		
+      </p>
+<p>
+			According to the build settings in your 
+        <tt>env/site.xml</tt> or
+			
+        <tt>env/user.xml</tt> this wrapper copies the 
+        <tt>tools.jar</tt>s
+			of your J2SE 1.4 and J2SE 1.5 installation as well as its sources 
+			to the project environment.
+		
+      </p>
+</td>
+</tr>
+<tr>
+<th>Version:</th>
+<td>
+							-
+						</td>
+</tr>
+<tr>
+<th>Homepage:</th>
+<td>
+<a href="http://java.sun.com/">http://java.sun.com/</a>
+</td>
+</tr>
+<tr>
+<th>License:</th>
+<td>
+		Copyright (c) 2006 Sun Microsystems, Inc.
+	</td>
+</tr>
+</table>
+</div><h4>
+<a name="lightbox">lightbox</a>
+</h4><div class="axial">
+<table width="100%" border="0" cellspacing="2" cellpadding="3">
+<tr>
+<td colspan="2">
+<p>
+			Lightbox is a simple, unobtrusive script used to overlay images on the 
+			current page. It's a snap to setup and works on all modern browsers.
+		</p>
+<p>
+			Fantastic tool and works perfect in combination with
+			
+        <a href="#murimages">MurImages</a>.
+		
+      </p>
+</td>
+</tr>
+<tr>
+<th>Version:</th>
+<td>
+		2.03.1
+	</td>
+</tr>
+<tr>
+<th>Homepage:</th>
+<td>
+<a href="http://www.huddletogether.com/projects/lightbox2/">http://www.huddletogether.com/projects/lightbox2/</a>
+</td>
+</tr>
+<tr>
+<th>License:</th>
+<td>
+		Creative Commons Attribution 2.5 License
+	</td>
+</tr>
+</table>
+</div><h4>
+<a name="murimages">murimages</a>
+</h4><div class="axial">
+<table width="100%" border="0" cellspacing="2" cellpadding="3">
+<tr>
+<td colspan="2">
+<p>
+			Photo Collage II aka Mur d'Images, collage and image map generator by 
+			Hervé Perez.
+		</p>
+<p>
+			This is an enhanced version of Romain Guy's 
+        <a href="http://www.jroller.com/page/gfx/?anchor=drag_and_drop_effects_part">
+			Photo Collage
+			</a>.
+		
+      </p>
+<p>
+			Includes a modified version of the 
+        <a href="http://www.walterzorn.com">
+			High Performance JavaScript Vector Graphics Library</a> by Walter Zorn.
+		
+      </p>
+<p>
+			The version included is a modified WebStart version that allows
+			local execution using 
+        <tt>java -jar murimages.jar</tt>.
+		
+      </p>
+</td>
+</tr>
+<tr>
+<th>Version:</th>
+<td>
+		2.0
+	</td>
+</tr>
+<tr>
+<th>Homepage:</th>
+<td>
+<a href="http://www.orchaid.com/">http://www.orchaid.com/</a>
+</td>
+</tr>
+<tr>
+<th>License:</th>
+<td>
+		Unknown
+	</td>
+</tr>
+</table>
+</div><h4>
+<a name="prettify">prettify</a>
+</h4><div class="axial">
+<table width="100%" border="0" cellspacing="2" cellpadding="3">
+<tr>
+<td colspan="2">
+<p>
+			Prettify is embedded in JavaDoc generated to pretty print code tags
+			such as 
+        <code>{@source}</code> or 
+        <code>{@example}</code>.
+		
+      </p>
+<h5>Google Code Prettify</h5>
+<p>
+			Some functions for browser-side pretty printing of code 
+			contained in html.
+		</p>
+<p>
+			The lexer should work on a number of languages including C and friends,
+			Java, Python, Bash, SQL, HTML, XML, CSS, Javascript, and Makefiles.
+			It works passably on Ruby, PHP and Awk and a decent subset of Perl, but,
+			because of commenting conventions, doesn't work on Smalltalk, Lisp-like, 
+			or CAML-like languages.
+		</p>
+<p>
+			If there's a language not mentioned here, then I don't know it, and don't
+			know whether it works.  If it has a C-like, Bash-like, or XML-like syntax
+			then it should work passably.
+		</p>
+<p>Usage:</p>
+<ol>
+			
+        <li>
+				Include this source file in an html page via &lt;script 
+				type="text/javascript" 
+				src="/path/to/prettify.js"&gt;&lt;/script&gt;
+			</li>
+			
+        <li>
+				Add 
+          <tt>onload="prettyPrint();"</tt> to the document body tag.
+			
+        </li>
+			
+        <li>
+				Define style rules. See the example page for examples.
+			</li>
+			
+        <li>
+				Mark the 
+          <code>&lt;pre&gt;</code> and 
+          <code>&lt;code&gt;</code> tags 
+				in your source with 
+          <code>class=prettyprint</code>.
+			
+        </li>
+		
+      </ol>
+</td>
+</tr>
+<tr>
+<th>Version:</th>
+<td>
+		20070329
+	</td>
+</tr>
+<tr>
+<th>Homepage:</th>
+<td>
+<a href="http://code.google.com/p/google-code-prettify/">http://code.google.com/p/google-code-prettify/</a>
+</td>
+</tr>
+<tr>
+<th>License:</th>
+<td>
+		Apache Software License, Version 2.0
+	</td>
+</tr>
+</table>
+</div><h4>
+<a name="tigris-style">tigris-style</a>
+</h4><div class="axial">
+<table width="100%" border="0" cellspacing="2" cellpadding="3">
+<tr>
+<td colspan="2">
+<p>
+			Cascading stylesheets for web applications.
+		</p>
+<p>
+			The project webpage as well as the user guide and
+			the developer documentation make use of the tigris style.
+		</p>
+<p>
+			This "build tool" therefore consists of resources
+			used unmodified as well as some driver scripts to generate
+			the documentation.
+		</p>
+<p>
+			Customizations to the tigris style are stored in the 
+			documentation resource folder of the project.
+		</p>
+</td>
+</tr>
+<tr>
+<th>Version:</th>
+<td>
+		1.1
+	</td>
+</tr>
+<tr>
+<th>Homepage:</th>
+<td>
+<a href="http://style.tigris.org/">http://style.tigris.org/</a>
+</td>
+</tr>
+<tr>
+<th>License:</th>
+<td>
+		Apache Software License, Version 1.1
+	</td>
+</tr>
+</table>
+</div><h4>
+<a name="tooldoc">tooldoc</a>
+</h4><div class="axial">
+<table width="100%" border="0" cellspacing="2" cellpadding="3">
+<tr>
+<td colspan="2">
+<p>
+			Ant task and XSLT documentation drivers for tool descriptions.
+		</p>
+<p>
+			Each tool used resides in its own folder and is described
+			by a simple XML file (take a look at some of the 
+        <tt>tool.xml</tt>
+			files in the 
+        <tt>/tool/&lt;toolgroup&gt;/&lt;toolname&gt;</tt> subfolders.
+		
+      </p>
+<p>
+			Groups of tools (such as build tools, libraries, etc.) are
+			also grouped in a folder and there is an overview description
+			file called 
+        <tt>tools.xml</tt> which describes the tool group.
+			Take a look e.g. at 
+        <tt>/tool/build/tools.xml</tt>.
+		
+      </p>
+<p>
+			Generation of tool information webpages is a two-step process:
+		</p>
+<ol>
+			
+        <li>Generation of a unified tool information XML file using the
+				
+          <em>toollist</em> ant task (have a look at the ant driver file
+				
+          <tt>/tool/build/toodoc/ant.xml</tt> on how to invoke 
+				
+          <em>toollist</em>).
+        </li>
+			
+        <li>Generation of the a single webpage for each tool group using
+				the 
+          <em>tooldoc</em> style sheets (used in 
+          <tt>build.xml</tt>
+				to build pages like the one you're currently viewing).
+        </li>
+		
+      </ol>
+<p>
+			There is not much documentation about 
+        <em>tooldoc</em> but most
+			of what's here should be self-explanatory -- and of course there's
+			also the source 
+        <tt>:-)</tt>.
+		
+      </p>
+</td>
+</tr>
+<tr>
+<th>Version:</th>
+<td>
+		1.0.3
+	</td>
+</tr>
+<tr>
+<th>Homepage:</th>
+<td>
+<a href="http://mulifex.sourceforge.net/">http://mulifex.sourceforge.net/</a>
+</td>
+</tr>
+<tr>
+<th>License:</th>
+<td>
+		BSD Style License
+	</td>
+</tr>
+<tr>
+<th>Requires:</th>
+<td>
+<a href="build-tools.html#ant">ant 1.6.5</a>
+<br/>
+<a href="build-tools.html#ant-tools">ant-tools 1.2.0</a>
+</td>
+</tr>
+</table>
+</div></div></div></td></tr></table><div id="footer"><table cellpadding="4" cellspacing="0" border="0" style="width:100%;"><tr><td style="width:84px;"><a id="poweredby" href="http://www.sourceforge.net/"><span class="alt">Powered by SourceForge</span></a></td><td><a href="http://www.sourceforge.net/">SourceForge</a>  | <a href="http://taglets.sourceforge.net/">Taglets Collection</a>  | <a href="http://sourceforge.net/projects/taglets">Project Home</a>  | <a href="http://taglets.sourceforge.net/legal.html">Legal</a><br/>Copyright © 2002-2008  <a href="mailto:essmann@sourceforge.net">Bruno Essmann</a></td><td style="text-align:right;"><abbr title="Source: build/doc/tooldoc/doc/development/build-tools.html">Page generated on:</abbr><br/><!-- timestamp -->2008/03/30 14:47:34 </td></tr></table></div></body>
+</html>

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # chkconfig: 35 99 05
-# description: VMOps Virtual Network Daemon
+# description: CloudStack Virtual Network Daemon
 
 # WARNING: if this script is changed, then all other initscripts MUST BE changed to match it as well
 
@@ -15,7 +15,7 @@ SHORTNAME="$whatami"
 PIDFILE=@PIDDIR@/"$whatami".pid
 LOCKFILE=@LOCKDIR@/"$SHORTNAME"
 LOGFILE=@LOCALSTATEDIR@/log/cloud/vnetd.log
-PROGNAME="VMOps Virtual Network Daemon"
+PROGNAME="CloudStack Virtual Network Daemon"
 
 unset OPTIONS
 [ -r @SYSCONFDIR@/sysconfig/"$SHORTNAME" ] && source @SYSCONFDIR@/sysconfig/"$SHORTNAME"

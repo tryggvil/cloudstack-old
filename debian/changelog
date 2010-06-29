@@ -1,3 +1,15 @@
+cloud (2.0.0) unstable; urgency=low
+
+  * Bumping version number for next Cloud.com release
+
+ -- Rudd-O <manuel@cloud.com>  Tue, 15 Jun 2010 12:10:05 -0700
+
+cloud (1.9.14) unstable; urgency=low
+
+  * Bumping version number for next Cloud.com release
+
+ -- Rudd-O <manuel@cloud.com>  Tue, 11 May 2010 14:46:14 -0700
+
 cloud (1.9.12) unstable; urgency=low
 
   * Bumping version number for Cloud.com RC4 release

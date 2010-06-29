@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# $Id: ipassoc_vlan.sh 9373 2010-06-09 01:57:36Z edison $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/network/domr/ipassoc_vlan.sh $
 # ipassoc.sh -- associate/disassociate a public ip with an instance
 #
 #
@@ -10,7 +11,7 @@ usage() {
   printf "If associating first IP in vlan or disassociating last IP in vlan, the following are required: -v <vlan id> -g <vlan gateway> -n <vlan netmask> \n" $(basename $0) >&2
 }
 
-cert="$(dirname $0)/id_rsa"
+cert="/root/.ssh/id_rsa.cloud"
 
 get_value() {
   local filename=$1

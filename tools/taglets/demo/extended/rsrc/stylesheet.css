@@ -1,0 +1,338 @@
+/* $Id: stylesheet.css,v 1.1 2007/05/01 10:18:10 essmann Exp $
+ *
+ * Taglets Collection Extended JavaDoc Demo Style Sheet
+ * Chocolate Style JavaDoc...
+ */
+
+/* --- Basic Definitions ---------------------------------------------------- */
+
+body {
+	background-image: url(resources/beans.gif);
+	background-color: #ecdbc3;
+}
+
+h1, h2, h3 {
+	font-family: Helvetica, Arial, sans-serif;
+}
+
+hr {
+	color: #000; 
+	background-color: #000; 
+	border: 0; 
+	height: 1px;
+}
+
+a:link, a:visited {
+	color: #4b2f01;
+}
+
+a:active, a:hover, #leftcol a:active, #leftcol a:hover {
+	color: #c17d11 !important;
+}
+
+a:link.selfref, a:visited.selfref {
+	color: #555 !important;
+}
+
+.a td {
+	background: #c17d11;
+	color: #000;
+}
+
+/* --- Table Customization -------------------------------------------------- */
+
+.TableHeadingColor {
+	font-family: Helvetica, Arial, sans-serif; 
+	background: #c17d11;
+	color: #000;
+}
+
+.TableSubHeadingColor {
+	font-family: Helvetica, Arial, sans-serif; 
+	font-size: 80%;
+	background: #e9b96e; 
+	color: #000;
+}
+.TableRowColor {
+	background: #ecdbc3;
+}
+
+/* --- Frames Customization ------------------------------------------------- */
+
+.FrameTitleFont {
+	font-size: 90%;
+	font-weight: bold;
+	font-family: Helvetica, Arial, sans-serif;
+	color: #000;
+}
+
+.FrameHeadingFont {
+	font-size: 90%;
+	font-weight: bold; 
+	font-family: Helvetica, Arial, sans-serif;
+	color: #000;
+}
+
+.FrameItemFont {
+	font-size: 10pt; 
+	font-family: Helvetica, Arial, sans-serif
+} 
+
+/* --- Navigation Bar Customization ----------------------------------------- */
+
+.NavBarCell1 {
+	background-color: #c17d11;
+}
+
+.NavBarCell1Rev {
+	background-color: #dca44c;
+}
+
+.NavBarFont1 {
+	font-family: Arial, Helvetica, sans-serif;
+	color: #000;
+}
+
+.NavBarFont1Rev {
+	font-family: Arial, Helvetica, sans-serif;
+	color: #fff;
+}
+
+.NavBarCell2 {
+	font-family: Arial, Helvetica, sans-serif; 
+	background-color: #ecdbc3;
+}
+
+.NavBarCell3 {
+	font-family: Arial, Helvetica, sans-serif; 
+	background-color: #ecdbc3;
+}
+
+/* --- Simple Taglets Customization ----------------------------------------- */
+
+dt.tagletsTodo, dt.tagletsImpl, dt.tagletsEquivalence, dt.tagletsNote,
+dt.tagletsInfo, dt.tagletsDone, dt.tagletsWarning, dt.tagletsError {
+	background-repeat: no-repeat;
+	background-position: 0 center;
+	padding-left: 19px;
+	font-weight: bold;
+}
+
+dt.tagletsTodo b {
+	background: #ff9;
+	font-weight: bold;
+}
+
+dt.tagletsTodo {
+	background-image: url(resources/icon_note_small.gif);
+	margin-top: 1em;
+}
+
+dd.tagletsTodo {
+	margin-bottom: 1em;
+}
+
+dt.tagletsNote {
+	background-image: url(resources/icon_note_small.gif);
+}
+
+dt.tagletsInfo {
+	background-image: url(resources/icon_info_small.gif);
+}
+
+dt.tagletsDone {
+	background-image: url(resources/icon_done_small.gif);
+}
+
+dt.tagletsWarning {
+	background-image: url(resources/icon_warning_small.gif);
+}
+
+dt.tagletsError {
+	background-image: url(resources/icon_error_small.gif);
+}
+
+dt.tagletsImpl {
+	background-image: url(resources/icon_code_small.gif);
+	margin-top: 1em;
+}
+
+dd.tagletsImpl {
+	margin-bottom: 1em;
+}
+
+dt.tagletsEquivalence {
+	background-image: url(resources/icon_equivalence_small.gif);
+}
+
+dd.tagletsEquivalence {
+	border-color: #dca44c;
+	border-style: dotted;
+	border-width: 1px;
+}
+
+.tagletsEquivalence pre {
+	padding: 0.33em;
+	margin: 0;
+}
+
+.tagletsTestCase pre {
+	padding: 0;
+	margin: 0;
+}
+
+.tagletsSource {
+	border-color: #dca44c;
+	border-style: dotted;
+	border-width: 1px;
+	margin: .67em 0;
+	padding: 0.33em;
+}
+
+.tagletsSource p {
+	margin-top: 0;
+	margin-bottom: .33em;
+}
+
+.tagletsSource pre {
+	margin: 0;
+	padding: 0;
+}
+
+.tagletsStickyInfo, .tagletsStickyNote, .tagletsStickyWarning, 
+.tagletsStickyError, .tagletsStickyDone, .tagletsExample {
+	border-top: 5px solid #900;
+	border-left: 1px solid #900;
+	background-repeat: no-repeat;
+	background-position: 5px 1.33em;
+	background-color: #ecdbc3;
+	margin: .67em 0;
+	padding-left: 42px;
+	min-height: 64px;
+}
+
+.tagletsStickyInfo p, .tagletsStickyNote p, .tagletsStickyWarning p, 
+.tagletsStickyError p, .tagletsStickyDone p, .tagletsExample p {
+	margin-top: .33em;
+	margin-bottom: .33em;
+}
+
+.tagletsExample {
+	background-image: url(resources/icon_code_large.gif);
+	border-color: #888;
+}
+
+.tagletsStickyNote {
+	background-image: url(resources/icon_note_large.gif);
+	border-color: #c1a040;
+}
+
+.tagletsStickyWarning {
+	background-image: url(resources/icon_warning_large.gif);
+	border-color: #c60;
+}
+
+.tagletsStickyError {
+	background-image: url(resources/icon_error_large.gif);
+	border-color: #900;
+}
+
+.tagletsStickyDone {
+	background-image: url(resources/icon_done_large.gif);
+	border-color: #090;
+}
+
+.tagletsStickyInfo {
+	background-image: url(resources/icon_info_large.gif);
+	border-color: #069;
+}
+
+table.section {
+	border-width: 1px;
+	border-spacing: 2px;
+	border-style: outset;
+	border-color: black;
+	border-collapse: collapse;
+}
+
+table.section th {
+	border-width: 1px;
+	padding: 3px;
+	border-style: inset;
+	border-color: black;
+}
+
+table.section td {
+	border-width: 1px;
+	padding: 3px;
+	border-style: inset;
+	border-color: black;
+}
+
+table.doc {
+	border: none;
+}
+
+.doc th {
+	background: #c17d11;
+	border: none;
+	text-align: left;
+	vertical-align: top;
+	padding-left: 4px;
+	padding-right: 4px;
+}
+
+.doc td {
+	border: none;
+	border-width: 1px;
+	vertical-align: top;
+	padding-left: 4px;
+	padding-right: 4px;
+}
+
+.doca td {
+	background: #c17d11;
+	border: none;
+	border-width: 1px;
+	vertical-align: top;
+	padding-left: 4px;
+	padding-right: 4px;
+}
+
+.docb td {
+	background: #e9b96e;
+	border: none;
+	border-width: 1px;
+	vertical-align: top;
+	padding-left: 4px;
+	padding-right: 4px;
+}
+
+/* --- Pretty Printing Styles ----------------------------------------------- */
+
+.str { color: #080; }
+.kwd { color: #008; }
+.com { color: #800; }
+.typ { color: #606; }
+.lit { color: #066; }
+.pun { color: #660; }
+.pln { color: #000; }
+.tag { color: #008; }
+.atn { color: #606; }
+.atv { color: #080; }
+.dec { color: #606; }
+
+@media print {
+  .str { color: #060; }
+  .kwd { color: #006; font-weight: bold; }
+  .com { color: #600; font-style: italic; }
+  .typ { color: #404; font-weight: bold; }
+  .lit { color: #044; }
+  .pun { color: #440; }
+  .pln { color: #000; }
+  .tag { color: #006; font-weight: bold; }
+  .atn { color: #404; }
+  .atv { color: #060; }
+}
+
+/* --- The End -------------------------------------------------------------- */

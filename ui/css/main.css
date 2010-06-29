@@ -505,52 +505,42 @@ a:hover.logo {
 	width:80%;	
 	height:auto;
 	float:left;
-	margin:-20px 0 0 10px;
+	margin:-25px 0 0 10px;
 	padding:0;
 }
 
 .submenu_links_off{
-	cursor:pointer;
-	cursor:hand;
-	width:auto;	
-	height:auto;
+	width:150px;	
+	height:18px;
 	float:left;
 	color:#2c8bbc;
 	text-decoration:none;
-	font-size:12px;
 	font-weight:normal;
-	margin-right:10px;
-	margin-left:10px;
-	padding:0;
+	font-size:12px;
+	margin-left:4px;
+	text-align:center;
+	padding:4px 0 0 0;
+	cursor:pointer;
+	cursor:hand;
+	border-right: 1px solid #c7c7c7;
 }
 
 .submenu_links_off:hover {
-	cursor:pointer;
-	cursor:hand;
-	width:auto;	
-	height:auto;
-	float:left;
-	color:#333;
 	text-decoration:underline;
-	font-size:12px;
-	font-weight:normal;
-	margin-right:10px;
-	margin-left:10px;
-	padding:0;
 }
 
 .submenu_links_on{
-	width:auto;	
-	height:auto;
+	width:150px;	
+	height:20px;
 	float:left;
-	color:#333;
-	text-decoration:none;
-	font-weight:bold;
-	font-size:12px;
+	color:#FFF;
+	background:url(../images/submenu_linkbg.gif) no-repeat top left;
 	font-weight:normal;
-	margin-right:10px;
-	margin-left:10px;
-	padding:0;
+	font-size:12px;
+	margin-left:4px;
+	text-align:center;
+	padding:2px 0 0 0;
+	border-right: 1px solid #c7c7c7;
 }
 
 
@@ -595,12 +585,13 @@ a:hover.vm_create_open {
 	top: 0%;
 	left: 0%;
 	width: 100%;
+	min-height: 805px;
 	height: 100%;
 	background-color: black;
 	z-index:1001;
 	-moz-opacity: 0.8;
 	opacity:.60;
-	filter: alpha(opacity=80);
+	filter: alpha(opacity=60);
 	overflow:hidden;
 }
 
@@ -1258,7 +1249,7 @@ a:hover.vm_create_close {
 }
 
 .adv_searchpopup {
-	width:266px;
+	width:299px;
 	height:auto;
 	position:absolute;
 	background:#edf0f2 repeat top left;
@@ -1272,7 +1263,7 @@ a:hover.vm_create_close {
 }
 
 .adv_searchformbox {
-	width:250px;
+	width:280px;
 	height:auto;
 	float:left;
 	margin:0px 5px 10px 10px;
@@ -1280,13 +1271,27 @@ a:hover.vm_create_close {
 }
 
 .adv_search_actionbox {
-	width:250px;
+	width:280px;
 	height:20px;
 	float:left;
 	margin:10px 0 0 0;
 	padding:0;
 }
+.adv_searchpopup_button {
+	width:49px;
+	height:16px;
+	float:right;
+	background:url(../images/adv_searchbutton.gif) no-repeat top left;
+	margin:0 10px 0 0;
+	display:inline;
+	padding:0;
+	cursor:pointer;
+	cursor:hand;
+}
 
+.adv_searchpopup_button:hover {
+	background:url(../images/adv_searchbutton_hover.gif) no-repeat top left;
+}
 .adv_searchbutton {
 	width:60px;
 	height:17px;
@@ -1305,41 +1310,41 @@ a:hover.vm_create_close {
 	cursor:hand;
 }
 
-.adv_search_actionbox a:link {
+.adv_searchformbox a:link {
 	width:auto;
 	height:auto;
 	float:right;
 	text-align:left;
 	text-decoration:underline;
-	font-size:11px;
+	font-size:10px;
 	font-weight:normal;
 	color: #2c8bbc;
-	margin: 0 5px 0 0;
+	margin: 7px 5px 0 0;
 	padding:0;
 }
 
-.adv_search_actionbox a:visited {
+.adv_searchformbox a:visited {
 	width:auto;
 	height:auto;
 	float:right;
 	text-align:left;
 	text-decoration:underline;
-	font-size:11px;
+	font-size:10px;
 	font-weight:normal;
 	color: #2c8bbc;
-	margin: 0 5px 0 0;
+	margin: 7px 5px 0 0;
 	padding:0;
 }
-.adv_search_actionbox a:hover {
+.adv_searchformbox a:hover {
 	width:auto;
 	height:auto;
 	float:right;
 	text-align:left;
 	text-decoration:none;
-	font-size:11px;
+	font-size:10px;
 	font-weight:normal;
 	color: #2c8bbc;
-	margin: 0 5px 0 0;
+	margin: 7px 5px 0 0;
 	padding:0;
 }
 
@@ -3324,7 +3329,7 @@ a:hover.add_publicipbutton {
 }
 
 .loading_animation {
-	width:260px;
+	width:243px;
 	height:24px;
 	float:left;
 	background:url(../images/loading.gif) no-repeat top left;
@@ -3342,7 +3347,7 @@ a:hover.add_publicipbutton {
 	position:absolute;
 	background:url(../images/loading_messagebg.gif) #d3d3d3 repeat-x top left;
 	border:1px solid #CCC;
-	top:4px;
+	top:0;
 	left:38%;
 	display:inline;
 }
@@ -3985,7 +3990,7 @@ a:hover.windows_consoleicons {
 } 
 
 .alert_box_mid span{
-	width:auto;	
+	width:100%;	
 	height:auto;
 	float:left;
 	text-align:left;
@@ -5661,7 +5666,7 @@ a:hover.add_newtemplatebutton {
 }
 
 .zone_detailsbox_content span {
-	width:70px;
+	width:100px;
 	height:auto;
 	float:left;
 	margin:0 0 5px 0;
@@ -6558,7 +6563,7 @@ a.add_domainbutton {
 
 .rev_wiztemplistbox {
 	width:709px;
-	height:22px;
+	height:auto;
 	float:left;
 	border-bottom:1px solid #666;
 	margin:0;
@@ -6568,14 +6573,39 @@ a.add_domainbutton {
 	cursor:hand;
 }
 .rev_wiztemp_listtext {
-	width:670px;
+	width:520px;
 	height:auto;
 	float:left;
 	color:#021a28;
 	font-size:11px;
 	font-weight:normal;
 	text-align:left;
-	margin:5px 0 0 0;
+	margin:5px 0 5px 0;
+	padding:0;
+}
+
+.rev_wiztemp_ownertext {
+	width:80px;
+	height:auto;
+	float:left;
+	color:#021a28;
+	font-size:11px;
+	font-weight:bold;
+	text-align:left;
+	margin:5px 0 5px 0;
+	padding:0;
+}
+
+
+.rev_wiztemp_text {
+	width:520px;
+	height:auto;
+	float:left;
+	color:#021a28;
+	font-size:11px;
+	font-weight:normal;
+	text-align:left;
+	margin:5px 0 5px 0;
 	padding:0;
 }
 
@@ -6585,12 +6615,12 @@ a.add_domainbutton {
 
 .rev_wiztemplistbox_selected {
 	width:709px;
-	height:22px;
+	height:auto;
 	float:left;
 	border-bottom:1px solid #666;
 	margin:0;
 	padding:0;
-	background:#def6ff repeat top left;
+	background:#8fe0f4 repeat top left;
 	cursor:pointer;
 	cursor:hand;
 }

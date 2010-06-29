@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# $Id: createvm.sh 9132 2010-06-04 20:17:43Z manuel $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/storage/qcow2/createvm.sh $
 # createvm.sh -- create a vm image 
 #
 
@@ -262,24 +263,31 @@ else
   # Create a datadisk for domr/domp
     create_datadisk $rootdiskfolder datadisk 10M raw
     exit_if_error $? "Failed to create datadisk"
-    losetup -f $rootdiskfolder/datadisk &>/dev/null
-    exit_if_error $? "Failed to losetup the $rootdiskfolder/datadisk"
-    loopdev=$(losetup -j $rootdiskfolder/datadisk 2>/dev/null|cut -d: -f 1)
-    mke2fs -t ext3 $loopdev &>/dev/null
-    exit_if_error $? "Failed to mke2fs $loopdev"
+    loopdev=$(losetup -f)
+    losetup $loopdev $rootdiskfolder/datadisk
     retry=10
     while [ $retry -gt 0 ]
-    do 
-        losetup -d $loopdev &>/dev/null
-        if [ $? -gt 0 ]
-        then
-            sleep 5
-        else
-            break
-        fi
+    do
+	success=$(losetup -a |grep $loopdev)		
+	if [ $? -eq 0 ]
+	then
+		break
+	fi
         retry=$(($retry-1))
+	sleep 1
     done
-    exit_if_error $? "Failed to losetup -d $loopdev"
+    mkfs -t ext3 $loopdev &>/dev/null
+    retry=10
+    while [ $retry -gt 0 ]
+    do
+    	losetup -d $loopdev
+        if [ $? -eq 0 ]
+	then
+       		break 
+	fi
+        retry=$(($retry-1))
+	sleep 1
+    done
 fi
 
 exit 0

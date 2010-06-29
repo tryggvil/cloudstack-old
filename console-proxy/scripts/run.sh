@@ -4,7 +4,7 @@
 # make sure we delete the old files from the original template 
 rm console-proxy.jar
 rm console-common.jar
-rm conf/vmops.properties
+rm conf/cloud.properties
 
 set -x
 
@@ -32,4 +32,20 @@ for i in $CMDLINE
      esac
   done
    
-java -mx700m -cp $CP com.vmops.agent.AgentShell $keyvalues $@
+tot_mem_k=$(cat /proc/meminfo | grep MemTotal | awk '{print $2}')
+let "tot_mem_m=tot_mem_k>>10"
+let "eightypcnt=$tot_mem_m*8/10"
+let "maxmem=$tot_mem_m-80"
+
+if [ $maxmem -gt $eightypcnt ]
+then
+  maxmem=$eightypcnt
+fi
+
+EXTRA=
+if [ -f certs/realhostip.keystore ]
+then
+  EXTRA="-Djavax.net.ssl.trustStore=$(dirname $0)/certs/realhostip.keystore -Djavax.net.ssl.trustStorePassword=vmops.com"
+fi
+
+java -mx${maxmem}m ${EXTRA} -cp $CP com.cloud.agent.AgentShell $keyvalues $@

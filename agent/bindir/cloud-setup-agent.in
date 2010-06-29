@@ -1,0 +1,562 @@
+#!/usr/bin/env python
+
+import sys, os, subprocess, errno, re
+
+E_GENERIC= 1
+E_NOKVM = 2
+E_NODEFROUTE = 3
+E_DHCP = 4
+E_NOPERSISTENTNET = 5
+E_NETRECONFIGFAILED = 6
+E_VIRTRECONFIGFAILED = 7
+E_FWRECONFIGFAILED = 8
+E_AGENTRECONFIGFAILED = 9
+E_AGENTFAILEDTOSTART = 10
+E_NOFQDN = 11
+
+
+def stderr(msgfmt,*args):
+	msgfmt += "\n"
+	if args: sys.stderr.write(msgfmt%args)
+	else: sys.stderr.write(msgfmt)
+	sys.stderr.flush()
+
+def bail(errno=E_GENERIC,message=None,*args):
+	if message: stderr(message,*args)
+	stderr("Cloud Agent setup aborted")
+	sys.exit(errno)
+
+
+#---------------- boilerplate for python 2.4 support 
+
+
+# CENTOS does not have this -- we have to put this here
+try:
+	from subprocess import check_call
+	from subprocess import CalledProcessError
+except ImportError:
+	def check_call(*popenargs, **kwargs):
+		import subprocess
+		retcode = subprocess.call(*popenargs, **kwargs)
+		cmd = kwargs.get("args")
+		if cmd is None: cmd = popenargs[0]
+		if retcode: raise CalledProcessError(retcode, cmd)
+		return retcode
+
+	class CalledProcessError(Exception):
+		def __init__(self, returncode, cmd):
+			self.returncode = returncode ; self.cmd = cmd
+		def __str__(self): return "Command '%s' returned non-zero exit status %d" % (self.cmd, self.returncode)
+
+# ------------ end boilerplate -------------------------
+
+
+def check_kvm(): return check_call(["kvm-ok"])
+def check_hostname(): return check_call(["hostname",'--fqdn'])
+
+class Command:
+	def __init__(self,name,parent=None):
+		self.__name = name
+		self.__parent = parent
+	def __getattr__(self,name):
+		if name == "_print": name = "print"
+		return Command(name,self)
+	def __call__(self,*args):
+		cmd = self.__get_recursive_name() + list(args)
+		#print "	",cmd
+		popen = subprocess.Popen(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+		m = popen.communicate()
+		ret = popen.wait()
+		if ret:
+			e = CalledProcessError(ret,cmd)
+			e.stdout,e.stderr = m
+			raise e
+		class CommandOutput:
+			def __init__(self,stdout,stderr):
+				self.stdout = stdout
+				self.stderr = stderr
+		return CommandOutput(*m)
+	def __lt__(self,other):
+		cmd = self.__get_recursive_name()
+		#print "	",cmd,"<",other
+		popen = subprocess.Popen(cmd,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+		m = popen.communicate(other)
+		ret = popen.wait()
+		if ret:
+			e = CalledProcessError(ret,cmd)
+			e.stdout,e.stderr = m
+			raise e
+		class CommandOutput:
+			def __init__(self,stdout,stderr):
+				self.stdout = stdout
+				self.stderr = stderr
+		return CommandOutput(*m)
+		
+	def __get_recursive_name(self,sep=None):
+		m = self
+		l = []
+		while m is not None:
+			l.append(m.__name)
+			m = m.__parent
+		l.reverse()
+		if sep: return sep.join(l)
+		else: return l
+	def __str__(self):
+		return '<Command %r>'%self.__get_recursive_name(sep=" ")
+		
+	def __repr__(self): return self.__str__()
+
+def checkselinux():
+	enforcing = False
+	try:
+		output = subprocess.Popen(["/usr/sbin/getenforce"], stdout=subprocess.PIPE).communicate()[0].strip()
+		if "nforcing" in output:
+			enforcing = True
+		if "SELINUX=enforcing" in file("/etc/selinux/config").read():
+			enforcing = True
+	except (IOError,OSError),e:
+		if e.errno == 2: pass
+		else: raise
+	if enforcing:
+		bail(E_SELINUXENABLED,"SELINUX is set to enforcing, please set it to permissive in /etc/selinux/config, then reboot the machine or type setenforce Permissive, after which you can run this program again.")
+
+
+ip = Command("ip")
+service = Command("service")
+chkconfig = Command("chkconfig")
+ufw = Command("ufw")
+iptables = Command("iptables")
+augtool = Command("augtool")
+kvmok = Command("kvm-ok")
+ifconfig = Command("ifconfig")
+uuidgen = Command("uuidgen")
+
+Fedora = os.path.exists("/etc/fedora-release")
+CentOS = os.path.exists("/etc/centos-release") or ( os.path.exists("/etc/redhat-release") and not os.path.exists("/etc/fedora-release") )
+
+#--------------- procedure starts here ------------
+
+stderr("Welcome to the Cloud Agent setup")
+stderr("")
+
+try:
+	check_hostname()
+	stderr("The hostname of this machine is properly set up")
+except CalledProcessError,e:
+	bail(E_NOFQDN,"This machine does not have an FQDN (fully-qualified domain name) for a hostname")
+
+if Fedora or CentOS:
+	stderr("Checking for KVM")
+	if os.path.exists("/dev/kvm"):
+		stderr("KVM appears to be enabled")
+	else:
+		bail(E_NOKVM,"KVM appears not to be enabled.  You need to turn on VT/SVM in your BIOS, and load kvm modules manually. For detail instructions, please refer to the troubleshooting section in installation guide.")
+else:
+	stderr("Checking for KVM")
+	try:
+		kvmok()
+		stderr("KVM is properly set up")
+	except OSError,e:
+		if e.errno is errno.ENOENT: bail(E_NOKVM,"KVM is not correctly installed on this system")
+		raise
+	except CalledProcessError,e:
+		stderr(e.stdout + e.stderr)
+		bail(E_NOKVM,"KVM is not supported on this system")
+
+if Fedora or CentOS:
+	checkselinux()
+
+try:
+	service("@PACKAGE@-agent","status")
+except CalledProcessError,e:
+	stderr("Stopping the Cloud Agent")
+	m = service("@PACKAGE@-agent","stop")
+	print m.stdout + m.stderr
+	stderr("Cloud Agent stopped")
+
+brname = "@PACKAGE@br0"
+
+if Fedora or CentOS:
+	alreadysetup = augtool._print("/files/etc/sysconfig/network-scripts/ifcfg-%s"%brname).stdout.strip()
+else:
+	alreadysetup = augtool.match("/files/etc/network/interfaces/iface",brname).stdout.strip()
+if not alreadysetup:
+
+	stderr("Determining default route")
+	routes = ip.route().stdout.splitlines()
+	defaultroute = [ x for x in routes if x.startswith("default") ]
+	if not defaultroute: bail(E_NODEFROUTE,"Your network configuration does not have a default route")
+	
+	dev = defaultroute[0].split()[4]
+	stderr("Default route assigned to device %s"%dev)
+
+	if Fedora or CentOS:
+		inconfigfile = "/".join(augtool.match("/files/etc/sysconfig/network-scripts/*/DEVICE",dev).stdout.strip().split("/")[:-1])
+		if not inconfigfile: bail(E_NOPERSISTENTNET,"Device %s has not been set up in /etc/sysconfig/network-scripts",dev)
+		pathtoconfigfile = inconfigfile[6:]
+
+	if Fedora or CentOS:
+		automatic = augtool.match("%s/ONBOOT"%inconfigfile,"yes").stdout.strip()
+	else:
+		automatic = augtool.match("/files/etc/network/interfaces/auto/*/",dev).stdout.strip()
+	if not automatic:
+		if Fedora: bail(E_NOPERSISTENTNET,"Device %s has not been set up in %s as automatic on boot",dev,pathtoconfigfile)
+		else: bail(E_NOPERSISTENTNET,"Device %s has not been set up in /etc/network/interfaces as automatic on boot",dev)
+		
+	if not Fedora and not CentOS:
+		inconfigfile = augtool.match("/files/etc/network/interfaces/iface",dev).stdout.strip()
+		if not inconfigfile: bail(E_NOPERSISTENTNET,"Device %s has not been set up in /etc/network/interfaces",dev)
+
+	if Fedora or CentOS:
+		isstatic = augtool.match(inconfigfile + "/BOOTPROTO","none").stdout.strip()
+		if not isstatic: isstatic = augtool.match(inconfigfile + "/BOOTPROTO","static").stdout.strip()
+	else:
+		isstatic = augtool.match(inconfigfile + "/method","static").stdout.strip()
+	if not isstatic:
+		if Fedora or CentOS: bail(E_NOPERSISTENTNET,"Device %s has not been set up as a static device in %s",dev,pathtoconfigfile)
+		else: bail(E_NOPERSISTENTNET,"Device %s has not been set up as a static device in /etc/network/interfaces",dev)
+
+        try:
+                o = service.NetworkManager.status()
+                # if this FAILS, then NM is not running
+                stderr("Stopping NetworkManager to avoid automatic network reconfiguration")
+                service.NetworkManager.stop()
+        except CalledProcessError,e:
+                # we are good to go
+                pass   
+
+	stderr("Creating Cloud bridging device and making device %s member of this bridge",dev)
+
+	if Fedora or CentOS:
+		ifcfgtext = file(pathtoconfigfile).read()
+		newf = "/etc/sysconfig/network-scripts/ifcfg-%s"%brname
+		def restore():
+			try: os.unlink(newf)
+			except OSError,e:
+				if errno == 2: pass
+				raise
+			try: file(pathtoconfigfile,"w").write(ifcfgtext)
+			except OSError,e: raise
+
+		f = file(newf,"w") ; f.write(ifcfgtext) ; f.flush() ; f.close()
+		innewconfigfile = "/files" + newf
+
+		script = """set %s/DEVICE %s
+set %s/NAME %s
+set %s/BRIDGE_PORTS %s
+set %s/TYPE Bridge
+rm %s/HWADDR
+rm %s/UUID
+rm %s/HWADDR
+rm %s/IPADDR
+rm %s/DEFROUTE
+rm %s/NETMASK
+rm %s/GATEWAY
+rm %s/BROADCAST
+rm %s/NETWORK
+set %s/BRIDGE %s
+save"""%(innewconfigfile,brname,innewconfigfile,brname,innewconfigfile,dev,
+	innewconfigfile,innewconfigfile,innewconfigfile,innewconfigfile,
+	inconfigfile,inconfigfile,inconfigfile,inconfigfile,inconfigfile,inconfigfile,
+	inconfigfile,brname)
+		
+		stderr("Executing the following reconfiguration script:\n%s",script)
+		
+		try:
+			returned = augtool < script
+			if "Saved 2 file" not in returned.stdout:
+				print returned.stdout + returned.stderr
+				restore()
+				bail(E_NETRECONFIGFAILED,"Network reconfiguration failed.")
+			else:
+				stderr("Network reconfiguration complete")
+		except CalledProcessError,e:
+			restore()
+			print e.stdout + e.stderr
+			bail(E_NETRECONFIGFAILED,"Network reconfiguration failed")
+	else: # Not fedora
+		backup = file("/etc/network/interfaces").read(-1)
+		restore = lambda: file("/etc/network/interfaces","w").write(backup)
+
+		script = """set %s %s
+set %s %s
+set %s/bridge_ports %s
+save"""%(automatic,brname,inconfigfile,brname,inconfigfile,dev)
+		
+		stderr("Executing the following reconfiguration script:\n%s",script)
+		
+		try:
+			returned = augtool < script
+			if "Saved 1 file" not in returned.stdout:
+				restore()
+				bail(E_NETRECONFIGFAILED,"Network reconfiguration failed.")
+			else:
+				stderr("Network reconfiguration complete")
+		except CalledProcessError,e:
+			restore()
+			print e.stdout + e.stderr
+			bail(E_NETRECONFIGFAILED,"Network reconfiguration failed")
+
+else:
+	stderr("Network configuration appears to be already correctly setup")
+
+stderr("We are going to restart the network now, to make the network changes take effect.  Hit ENTER when you are ready.")
+raw_input()
+
+stderr("Stopping NetworkManager")
+try:
+	if Fedora or CentOS:
+		o = chkconfig("--level","35","network","on") ; print o.stdout + o.stderr
+		o = service("NetworkManager","stop") ; print o.stdout + o.stderr
+		o = chkconfig("--del","NetworkManager") ; print o.stdout + o.stderr
+	else:
+		o = service("network-manager","stop") ; print o.stdout + o.stderr
+except CalledProcessError,e: print e.stdout + e.stderr
+
+stderr("Starting networking")
+try:
+	if Fedora or CentOS:
+		try: o = service.network.stop() ; print o.stdout + o.stderr
+		except CalledProcessError,e: print e.stdout + e.stderr
+		o = service.network.start(); print o.stdout + o.stderr
+	else:
+		o = service.networking.start() ; print o.stdout + o.stderr
+except CalledProcessError,e:
+	print e.stdout + e.stderr
+	bail(E_NETRECONFIGFAILED,"The networking service did not start properly")
+
+stderr("Verifying that the bridge is up")
+try:
+	o = ifconfig(brname) ; print o.stdout + o.stderr
+except CalledProcessError,e:
+	print e.stdout + e.stderr
+	bail(E_NETRECONFIGFAILED,"The bridge could not be set up properly")
+
+stderr("Networking restart done")
+
+if not CentOS:
+	cgconfig = file("/etc/cgconfig.conf","r").read(-1)
+	if "group virt" in cgconfig:
+		stderr("Control groups configuration appears to be already correctly setup")
+	else:
+		stderr("Configuring control groups")
+		cgconfig = cgconfig + """
+	group virt {
+		cpu {
+			cpu.shares = 9216;
+		}
+	}
+	"""
+		file("/etc/cgconfig.conf","w").write(cgconfig)
+		stderr("Control groups configuration done")
+
+
+	line = "root:/usr/sbin/libvirtd	cpu	virt/"
+	cgrules = file("/etc/cgrules.conf","r").read(-1)
+	if line in cgrules:
+		stderr("Control rules configuration appears to be already correctly setup")
+	else:
+		stderr("Configuring control rules")
+		cgrules = cgrules + "\n" + line + "\n"
+		file("/etc/cgrules.conf","w").write(cgrules)
+		stderr("Control rules configuration done")
+
+
+	line = "export CGROUP_DAEMON='cpu:/virt'"
+	if Fedora:
+		libvirtfile = "/etc/sysconfig/libvirtd"
+	else:
+		libvirtfile = "/etc/default/libvirt-bin"
+	libvirtbin = file(libvirtfile,"r").read(-1)
+	if line in libvirtbin:
+		stderr("libvirt configuration appears to be already correctly setup")
+	else:
+		stderr("Configuring libvirt")
+		libvirtbin = libvirtbin + "\n" + line + "\n"
+		file(libvirtfile,"w").write(libvirtbin)
+		stderr("libvirt configuration done")
+
+
+	line = "cgroup_controllers = [ \"cpu\" ]"
+	libvirtqemu = file("/etc/libvirt/qemu.conf","r").read(-1)
+	if line in libvirtqemu:
+		stderr("qemu configuration appears to be already correctly setup")
+	else:
+		stderr("Configuring qemu")
+		libvirtqemu = libvirtqemu + "\n" + line + "\n"
+		file("/etc/libvirt/qemu.conf","w").write(libvirtqemu)
+		stderr("qemu configuration done")
+
+
+	line = "security_driver = \"none\""
+	libvirtqemu = file("/etc/libvirt/qemu.conf","r").read(-1)
+	if line in libvirtqemu:
+		stderr("qemu security configuration appears to be already correctly setup")
+	else:
+		stderr("Configuring qemu security")
+		libvirtqemu = libvirtqemu + "\n" + line + "\n"
+		file("/etc/libvirt/qemu.conf","w").write(libvirtqemu)
+		stderr("qemu security configuration done")
+
+
+	stderr("We are going to restart the virtualization services now, to make the configuration changes take effect.  Hit ENTER when you are ready.")
+	raw_input()
+
+	stderr("Stopping libvirt")
+	if Fedora or CentOS:
+		svc = "libvirtd"
+	else:
+		svc = "libvirt-bin"
+	try:
+		o = service(svc,"stop") ; print o.stdout + o.stderr
+	except CalledProcessError,e:
+		print e.stdout + e.stderr
+		bail(E_VIRTRECONFIGFAILED,"%s failed to stop"%svc)
+
+	stderr("Stopping control rules")
+	svc = "cgred"
+	try:
+		o = service(svc,"stop") ; print o.stdout + o.stderr
+	except CalledProcessError,e:
+		if not Fedora:
+			print e.stdout + e.stderr
+			bail(E_VIRTRECONFIGFAILED,"%s failed to stop"%svc)
+
+	stderr("Stopping control groups")
+	svc = "cgconfig"
+	try:
+		o = service(svc,"stop") ; print o.stdout + o.stderr
+	except CalledProcessError,e:
+		print e.stdout + e.stderr
+		bail(E_VIRTRECONFIGFAILED,"%s failed to stop"%svc)
+
+	stderr("Starting control groups")
+	svc = "cgconfig"
+	try:
+		o = service(svc,"start") ; print o.stdout + o.stderr
+		if Fedora:
+			o = chkconfig("--add",svc) ; print o.stdout + o.stderr
+			o = chkconfig("--level","35",svc,"on") ; print o.stdout + o.stderr
+	except CalledProcessError,e:
+		print e.stdout + e.stderr
+		bail(E_VIRTRECONFIGFAILED,"%s failed to start"%svc)
+
+	stderr("Starting control rules")
+	svc = "cgred"
+	try:
+		o = service(svc,"start") ; print o.stdout + o.stderr
+		if Fedora:
+			o = chkconfig("--add",svc) ; print o.stdout + o.stderr
+			o = chkconfig("--level","35",svc,"on") ; print o.stdout + o.stderr
+	except CalledProcessError,e:
+		print e.stdout + e.stderr
+		bail(E_VIRTRECONFIGFAILED,"%s failed to start"%svc)
+
+	stderr("Starting libvirt")
+	if Fedora:
+		svc = "libvirtd"
+	else:
+		svc = "libvirt-bin"
+	try:
+		o = service(svc,"start") ; print o.stdout + o.stderr
+		if Fedora:
+			o = chkconfig("--add",svc) ; print o.stdout + o.stderr
+			o = chkconfig("--level","35",svc,"on") ; print o.stdout + o.stderr
+	except CalledProcessError,e:
+		print e.stdout + e.stderr
+		bail(E_VIRTRECONFIGFAILED,"%s failed to start"%svc)
+
+if CentOS:
+	svc = "libvirtd"
+	try:
+		o = service(svc, "start"); print o.stdout + o.stderr
+		o = chkconfig("--add", svc); print o.stdout + o.stderr
+		o = chkconfig("--level", "35", svc, "on"); print o.stdout + o.stderr
+	except CalledProcessError,e:
+		print e.stdout + e.stderr
+		bail(E_VIRTRECONFIGFAILED,"%s failed to start"%svc)
+
+if Fedora:  nfsrelated = "rpcbind nfslock"
+if CentOS: nfsrelated = "portmap nfslock"
+if Fedora or CentOS:
+	stderr("Starting NFS-related services")
+	for svc in nfsrelated.split():
+		try:
+			o = chkconfig(svc,"on") ; print o.stdout + o.stderr
+			o = service(svc,"restart") ; print o.stdout + o.stderr
+		except CalledProcessError,e:
+			print e.stdout + e.stderr
+			bail(E_VIRTRECONFIGFAILED,"%s failed to start"%svc)
+
+
+ports = "22 1798 16509".split()
+if Fedora or CentOS:
+	try:
+		o = chkconfig("--list","iptables")
+		if ":on" in o.stdout and os.path.exists("/etc/sysconfig/iptables"):
+			stderr("Setting up firewall rules to permit traffic to Cloud services")
+			service.iptables.start() ; print o.stdout + o.stderr
+			for p in ports: iptables("-I","INPUT","1","-p","tcp","--dport",p,'-j','ACCEPT')
+			o = service.iptables.save() ; print o.stdout + o.stderr
+	except CalledProcessError,e:
+		print e.stdout+e.stderr
+		bail(E_FWRECONFIGFAILED,"Firewall rules could not be set")
+else:
+	stderr("Setting up firewall rules to permit traffic to Cloud services")
+	try:
+		for p in ports: ufw.allow(p)
+		stderr("Rules set")
+	except CalledProcessError,e:
+		print e.stdout+e.stderr
+		bail(E_FWRECONFIGFAILED,"Firewall rules could not be set")
+
+	stderr("We are going to enable ufw now.  This may disrupt network connectivity and service availability.  See the ufw documentation for information on how to manage ufw firewall policies.")
+	try:
+		o = ufw.enable < "y\n" ; print o.stdout + o.stderr
+	except CalledProcessError,e:
+		print e.stdout+e.stderr
+		bail(E_FWRECONFIGFAILED,"Firewall could not be enabled")
+
+stderr("Examining agent configuration")
+fn = "@AGENTSYSCONFDIR@/agent.properties"
+text = file(fn).read(-1)
+lines = [ s.strip() for s in text.splitlines() ]
+confopts = dict([ m.split("=",1) for m in lines if "=" in m and not m.startswith("#") ])
+confposes = dict([ (m.split("=",1)[0],n) for n,m in enumerate(lines) if "=" in m and not m.startswith("#") ])
+
+if not "guid" in confopts:
+	stderr("Generating GUID for this agent")
+	confopts['guid'] = uuidgen().stdout.strip()
+
+try: host = confopts["host"]
+except KeyError: host = "localhost"
+stderr("Please enter the host name of the management server that this agent will connect to: (just hit ENTER to go with %s)",host)
+newhost = raw_input().strip()
+if newhost: host = newhost
+confopts["host"] = host
+
+confopts["private.network.device"] = brname
+confopts["public.network.device"] = brname
+
+for opt,val in confopts.items():
+	line = "=".join([opt,val])
+	if opt not in confposes: lines.append(line)
+	else: lines[confposes[opt]] = line
+
+text = "\n".join(lines)
+try:	file(fn,"w").write(text)
+except Exception: bail(E_AGENTRECONFIGFAILED,"Agent configuration failed")
+
+stderr("")
+stderr("Cloud Agent setup completed successfully")
+
+stderr("Starting the Cloud Agent")
+try:
+	m = service("@PACKAGE@-agent","start")
+	print m.stdout + m.stderr
+except CalledProcessError,e:
+	print e.stdout + e.stderr
+	bail(E_AGENTFAILEDTOSTART,"@PACKAGE@-agent failed to start")
+
+
+# FIXMES: 1) nullify networkmanager on ubuntu (asking the user first) and enable the networking service permanently

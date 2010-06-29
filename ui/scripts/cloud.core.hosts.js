@@ -1,3 +1,23 @@
+ /**
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
+ * 
+ * This software is licensed under the GNU General Public License v3 or later.
+ * 
+ * It is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ */
+
+// Version: @VERSION@
+
 function showHostsTab() {
 	mainContainer.load("content/tab_hosts.html", function() {		
 	    var rIndex = 0;	
@@ -20,7 +40,7 @@ function showHostsTab() {
 					var zoneSelect = $("#dialog_add_routing #host_zone").empty();								
 					if (zones != null && zones.length > 0) {
 						for (var i = 0; i < zones.length; i++) 
-							zoneSelect.append("<option value='" + zones[i].id + "'>" + zones[i].name + "</option>"); 				    
+							zoneSelect.append("<option value='" + zones[i].id + "'>" + sanitizeXSS(zones[i].name) + "</option>"); 				    
 					}
 					$("#dialog_add_routing #host_zone").change();
 				}
@@ -36,7 +56,7 @@ function showHostsTab() {
 						var podSelect = $("#dialog_add_routing #host_pod").empty();	
 						if (pods != null && pods.length > 0) {
 							for (var i = 0; i < pods.length; i++) {
-								podSelect.append("<option value='" + pods[i].id + "'>" + pods[i].name + "</option>"); 
+								podSelect.append("<option value='" + pods[i].id + "'>" + sanitizeXSS(pods[i].name) + "</option>"); 
 							}
 						}
 						$("#dialog_add_routing #host_pod").change();
@@ -50,7 +70,7 @@ function showHostsTab() {
 			zIndex: 2000
 		}));
 		$.ajax({
-			data: "command=listOSCategories&response=json",
+			data: "command=listOsCategories&response=json",
 			dataType: "json",
 			success: function(json) {
 				var categories = json.listoscategoriesresponse.oscategory;
@@ -73,52 +93,97 @@ function showHostsTab() {
 			return false;
 		});
 		
+		function vmJSONToTemplate(json, template, type) {
+            var template = template.attr("id","vm"+json.id);
+	        if (index++ % 2 == 0) {
+		        template.addClass("hostadmin_showdetails_row_even");
+	        } else {
+		        template.addClass("hostadmin_showdetails_row_odd");
+	        }
+	        template.find("#detail_type").text(type);
+	        template.find("#detail_name").text(getVmName(json.name, json.displayname));
+	        template.find("#detail_ip").text(json.ipaddress);
+	        template.find("#detail_service").text(json.serviceofferingname);
+	        template.find("#detail_owner").text(json.account);
+	        setDateField(json.created, template.find("#detail_created"));	
+        }
+		
 		routingTemplate.bind("click", function(event) {
 			var template = $(this);
 			var link = $(event.target);
 			var linkAction = link.attr("id");
 			var hostId = template.data("hostId");
 			var hostName = template.data("hostName");
+			var submenuContent = $("#submenu_content_routing");
 			switch (linkAction) {
 				case "host_action_details" :
 					var expanded = link.data("expanded");
-					if (expanded == null || expanded == false) {
-						var index = 0;
+					if (expanded == null || expanded == false) {																	                                         
+                        var itemTotal = 0;                        
+                        var vms, routers, systemVms;
+                        $.ajax({
+							cache: false,
+							data: "command=listVirtualMachines&hostid="+hostId+"&response=json",
+							dataType: "json",
+							async: false,
+							success: function(json) {							    					    
+								vms = json.listvirtualmachinesresponse.virtualmachine;
+								if(vms != null)
+								    itemTotal += vms.length;																					
+							}
+						});								
+                        $.ajax({
+							cache: false,
+							data: "command=listRouters&hostid="+hostId+"&response=json",
+							dataType: "json",
+							async: false,
+							success: function(json) {								    					    					    
+								routers = json.listroutersresponse.router;
+								if(routers != null)
+								    itemTotal += routers.length;																					
+							}
+						});												
 						$.ajax({
 							cache: false,
-							data: "command=listVirtualMachines&hostId="+hostId+"&response=json",
+							data: "command=listSystemVms&hostid="+hostId+"&response=json",
 							dataType: "json",
-							success: function(json) {
-								var instances = json.listvirtualmachinesresponse.virtualmachine;
-								if (instances != null && instances.length > 0) {
-									var grid = template.find("#detail_container").empty();
-									var detailTemplate = $("#routing_detail_template");
-									for (var i = 0; i < instances.length; i++) {
-										var detail = detailTemplate.clone(true).attr("id","vm"+instances[i].id);
-										if (index++ % 2 == 0) {
-											detail.addClass("hostadmin_showdetails_row_even");
-										} else {
-											detail.addClass("hostadmin_showdetails_row_odd");
-										}
-										detail.find("#detail_type").text("VM");
-										detail.find("#detail_name").text(instances[i].name);
-										detail.find("#detail_ip").text(instances[i].ipaddress);
-										detail.find("#detail_service").text(instances[i].serviceofferingname);
-										detail.find("#detail_owner").text(instances[i].account);
-										
-										var created = new Date();
-										created.setISO8601(instances[i].created);
-										var showDate = created.format("m/d/Y H:i:s");
-										detail.find("#detail_created").text(showDate);
-										grid.append(detail.show());
-									}
-								}
-								template.find("#host_action_details_container img").attr("src", "images/details_uparrow.jpg");
-								template.find("#host_action_details_container a").text("Hide Details");
-								template.find("#host_detail_panel").slideDown("slow");
-								link.data("expanded", true);
+							async: false,
+							success: function(json) {								    					    					    					    
+								systemVms = json.listsystemvmsresponse.systemvm;
+								if(systemVms != null)
+								    itemTotal += systemVms.length;																					
 							}
-						});
+						});	
+																																				
+						if(itemTotal > 0) {
+						    var detailGrid = template.find("#detail_container").empty();
+						    var detailTemplate = $("#routing_detail_template");  							    
+						    if (vms != null && vms.length > 0) {						
+								for (var i = 0; i < vms.length; i++) {									    
+								    var newDetailTemplate = detailTemplate.clone(true);
+			                        vmJSONToTemplate(vms[i], newDetailTemplate, "Instance"); 
+			                        detailGrid.append(newDetailTemplate.show());											
+								}
+							}				
+							if (routers != null && routers.length > 0) {				
+								for (var i = 0; i < routers.length; i++) {									    
+								    var newDetailTemplate = detailTemplate.clone(true);
+			                        vmJSONToTemplate(routers[i], newDetailTemplate, "Router"); 
+			                        detailGrid.append(newDetailTemplate.show());											
+								}
+							}								
+							if (systemVms != null && systemVms.length > 0) {						
+								for (var i = 0; i < systemVms.length; i++) {									    
+								    var newDetailTemplate = detailTemplate.clone(true);
+			                        vmJSONToTemplate(systemVms[i], newDetailTemplate, "System"); 
+			                        detailGrid.append(newDetailTemplate.show());											
+								}
+							}												    
+						}							
+					    template.find("#host_action_details_container img").attr("src", "images/details_uparrow.jpg");
+						template.find("#host_action_details_container a").text("Hide Details");
+						template.find("#host_detail_panel").slideDown("slow");
+						link.data("expanded", true);	
 					} else {
 						template.find("#host_action_details_container img").attr("src", "images/details_downarrow.jpg");
 						template.find("#host_action_details_container a").text("Show Details");
@@ -128,11 +193,8 @@ function showHostsTab() {
 					break;
 				case "host_action_enable_maint" :
 					$("#dialog_confirmation")
-					.html("<p>Please confirm you enable maintenance for host: <b>"+hostName+"</b>.  Enabling maintenance mode will cause a live migration of all running instances on this host to any available host.  An alert will be sent to the admin when this process has been completed.</p>")
-					.dialog('option', 'buttons', { 
-						"Cancel": function() { 
-							$(this).dialog("close"); 
-						},
+					.html("<p>Please confirm you enable maintenance for host: <b>"+sanitizeXSS(hostName)+"</b>.  Enabling maintenance mode will cause a live migration of all running instances on this host to any available host.  An alert will be sent to the admin when this process has been completed.</p>")
+					.dialog('option', 'buttons', { 						
 						"Confirm": function() { 
 							var dialogBox = $(this);
 							$.ajax({
@@ -145,12 +207,21 @@ function showHostsTab() {
 									template.find(".loading_animationcontainer .loading_animationtext").text("Preparing...");
 									template.find(".loading_animationcontainer").show();
 									template.fadeIn("slow");
-									template.find(".continue_button").data("hostId", hostId).unbind("click").bind("click", function(event) {
-										event.preventDefault();
-										var template = $("#host"+$(this).data("hostId"));
-										template.find(".loading_animationcontainer").hide();
-										template.find(".loadingmessage_container").fadeOut("slow");
-										template.find(".row_loading").fadeOut("slow");
+									var that = template;
+									template.find(".continue_button").data("hostId", hostId).unbind("click").bind("click", function(event) {										
+										that.find(".loading_animationcontainer").hide();
+										that.find(".loadingmessage_container").fadeOut("slow");
+										that.find(".row_loading").fadeOut("slow");										
+										
+										// Host status is likely to change at this point. So, refresh the row now.
+										$.ajax({
+				                            data: "command=listHosts&id="+hostId+"&response=json",
+				                            dataType: "json",
+				                            success: function(json) {                            				   
+                            				    routingJSONToTemplate(json.listhostsresponse.host[0], that);                            				    
+				                            }
+			                            });				                            
+			                            return false;										
 									});
 									var timerKey = "host"+hostId;
 									$("body").everyTime(
@@ -168,26 +239,21 @@ function showHostsTab() {
 														$("body").stopTime(timerKey);
 														if (result.jobstatus == 1) {
 															// Succeeded
-															template.find("#host_state_bar").removeClass("yellow_statusbar green_statusbar red_statusbar").addClass("grey_statusbar");
-															template.find("#routing_state").text("Maintenance").removeClass("grid_runningtitles grid_stoppedtitles").addClass("grid_celltitles ");
-															template.find(".loadingmessage_container .loadingmessage_top p").html("Your host has been successfully prepared for maintenance.");
-															template.find(".loadingmessage_container").fadeIn("slow");
-															template.find(".grid_links").find("#host_action_reconnect_container, #host_action_enable_maint_container").hide();
-															template.find(".grid_links").find("#host_action_remove_container, #host_action_cancel_maint_container").show();
+															routingStateToTemplate(result.host[0].state, template);																
+															template.find("#routing_disconnected").text(result.host[0].disconnected);
+															template.find(".loadingmessage_container .loadingmessage_top p").html("We are actively enabling maintenance on your host.  Please refresh periodically for an updated status.");
+															template.find(".loadingmessage_container").fadeIn("slow");															
 														} else if (result.jobstatus == 2) {
 															// Failed
-															template.find("#host_state_bar").removeClass("yellow_statusbar green_statusbar red_statusbar").addClass("grey_statusbar");
-															template.find("#routing_state").text("ErrorInMaintenance").removeClass("grid_runningtitles grid_stoppedtitles").addClass("grid_celltitles ");
+															routingStateToTemplate(result.host[0].state, template);																
 															template.find(".loadingmessage_container .loadingmessage_top p").text("We were unable to successfully prepare your host for maintenance.  Please check your logs for more info.");
-															template.find(".loadingmessage_container").fadeIn("slow");
-															template.find(".grid_links").find("#host_action_reconnect_container, #host_action_remove_container").hide();
-															template.find(".grid_links").find("#host_action_enable_maint_container, #host_action_cancel_maint_container").show();
+															template.find(".loadingmessage_container").fadeIn("slow");															
 														}
 													}
 												},
-												error: function(XMLHttpRequest) {
+												error: function(XMLHttpResponse) {
 													$("body").stopTime(timerKey);
-													handleError(XMLHttpRequest);
+													handleError(XMLHttpResponse);
 												}
 											});
 										},
@@ -195,16 +261,16 @@ function showHostsTab() {
 									);
 								}
 							});
+						}, 
+						"Cancel": function() { 
+							$(this).dialog("close"); 
 						} 
 					}).dialog("open");
 					break;
 				case "host_action_cancel_maint" :
 					$("#dialog_confirmation")
-					.html("<p>Please confirm you want to cancel maintenance for host: <b>"+hostName+"</b>. </p>")
-					.dialog('option', 'buttons', { 
-						"Cancel": function() { 
-							$(this).dialog("close"); 
-						},
+					.html("<p>Please confirm you want to cancel maintenance for host: <b>"+sanitizeXSS(hostName)+"</b>. </p>")
+					.dialog('option', 'buttons', { 						
 						"Confirm": function() { 
 							var dialogBox = $(this);
 							$.ajax({
@@ -217,12 +283,21 @@ function showHostsTab() {
 									template.find(".loading_animationcontainer .loading_animationtext").text("Cancelling...");
 									template.find(".loading_animationcontainer").show();
 									template.fadeIn("slow");
-									template.find(".continue_button").data("hostId", hostId).unbind("click").bind("click", function(event) {
-										event.preventDefault();
-										var template = $("#host"+$(this).data("hostId"));
-										template.find(".loading_animationcontainer").hide();
-										template.find(".loadingmessage_container").fadeOut("slow");
-										template.find(".row_loading").fadeOut("slow");
+									var that = template;
+									template.find(".continue_button").data("hostId", hostId).unbind("click").bind("click", function(event) {																			
+										that.find(".loading_animationcontainer").hide();
+										that.find(".loadingmessage_container").fadeOut("slow");
+										that.find(".row_loading").fadeOut("slow");
+										
+										// Host status is likely to change at this point. So, refresh the row now.
+										$.ajax({
+				                            data: "command=listHosts&id="+hostId+"&response=json",
+				                            dataType: "json",
+				                            success: function(json) {                            				   
+                            				    routingJSONToTemplate(json.listhostsresponse.host[0], that);                            				    
+				                            }
+			                            });											
+										return false;
 									});
 									var timerKey = "host"+hostId;
 									$("body").everyTime(
@@ -240,23 +315,22 @@ function showHostsTab() {
 														$("body").stopTime(timerKey);
 														if (result.jobstatus == 1) {
 															// Succeeded
-															template.find("#host_state_bar").removeClass("yellow_statusbar green_statusbar red_statusbar").addClass("grey_statusbar");
-															template.find("#routing_state").text("Disconnected").removeClass("grid_runningtitles grid_stoppedtitles").addClass("grid_celltitles ");
-															template.find(".loadingmessage_container .loadingmessage_top p").html("The maintenance process for this host has been successfully cancelled.");
+															routingStateToTemplate(result.host[0].state, template);	//result.host[0].status == "ErrorInMaintenance"														
+															template.find("#routing_disconnected").text(result.host[0].disconnected);
+															template.find(".loadingmessage_container .loadingmessage_top p").html("We are actively cancelling your scheduled maintenance.  Please refresh periodically for an updated status.");
 															template.find(".loadingmessage_container").fadeIn("slow");
 														} else if (result.jobstatus == 2) {
 															// Failed
-															template.find("#host_state_bar").removeClass("yellow_statusbar green_statusbar red_statusbar").addClass("grey_statusbar");
-															template.find("#routing_state").text("Disconnected").removeClass("grid_runningtitles grid_stoppedtitles").addClass("grid_celltitles ");
+															routingStateToTemplate(result.host[0].state, template);															
 															template.find(".loadingmessage_container .loadingmessage_top p").text("We were unable to cancel your maintenance process.  Please try again.");
 															template.find(".loadingmessage_container").fadeIn("slow");
-														}
-														template.find(".grid_links").find("#host_action_reconnect_container, #host_action_enable_maint_container, #host_action_cancel_maint_container, #host_action_remove_container").hide();
+														}														
 													}
 												},
-												error: function(XMLHttpRequest) {
+												error: function(XMLHttpResponse) {
 													$("body").stopTime(timerKey);
-													handleError(XMLHttpRequest);
+													template.find(".loading_animationcontainer").hide();
+													handleError(XMLHttpResponse);
 												}
 											});
 										},
@@ -264,16 +338,16 @@ function showHostsTab() {
 									);
 								}
 							});
+						}, 
+						"Cancel": function() { 
+							$(this).dialog("close"); 
 						} 
 					}).dialog("open");
 					break;
 				case "host_action_reconnect" :
 					$("#dialog_confirmation")
-					.html("<p>Please confirm you want to force a reconnection for host: <b>"+hostName+"</b>. </p>")
-					.dialog('option', 'buttons', { 
-						"Cancel": function() { 
-							$(this).dialog("close"); 
-						},
+					.html("<p>Please confirm you want to force a reconnection for host: <b>"+sanitizeXSS(hostName)+"</b>. </p>")
+					.dialog('option', 'buttons', { 						
 						"Confirm": function() { 
 							var dialogBox = $(this);
 							$.ajax({
@@ -286,12 +360,21 @@ function showHostsTab() {
 									template.find(".loading_animationcontainer .loading_animationtext").text("Reconnecting...");
 									template.find(".loading_animationcontainer").show();
 									template.fadeIn("slow");
-									template.find(".continue_button").data("hostId", hostId).unbind("click").bind("click", function(event) {
-										event.preventDefault();
-										var template = $("#host"+$(this).data("hostId"));
-										template.find(".loading_animationcontainer").hide();
-										template.find(".loadingmessage_container").fadeOut("slow");
-										template.find(".row_loading").fadeOut("slow");
+									var that = template;
+									template.find(".continue_button").data("hostId", hostId).unbind("click").bind("click", function(event) {										
+										that.find(".loading_animationcontainer").hide();
+										that.find(".loadingmessage_container").fadeOut("slow");
+										that.find(".row_loading").fadeOut("slow");
+										
+									    // Host status is likely to change at this point. So, refresh the row now.
+										$.ajax({
+				                            data: "command=listHosts&id="+hostId+"&response=json",
+				                            dataType: "json",
+				                            success: function(json) {                            				   
+                            				    routingJSONToTemplate(json.listhostsresponse.host[0], that);                            				    
+				                            }
+			                            });	
+			                            return false;	
 									});
 									var timerKey = "host"+hostId;
 									$("body").everyTime(
@@ -309,25 +392,22 @@ function showHostsTab() {
 														$("body").stopTime(timerKey);
 														if (result.jobstatus == 1) {
 															// Succeeded
-															template.find("#host_state_bar").removeClass("yellow_statusbar grey_statusbar red_statusbar").addClass("green_statusbar");
-															template.find("#routing_state").text("Up").removeClass("grid_celltitles grid_stoppedtitles").addClass("grid_runningtitles");
-															template.find(".loadingmessage_container .loadingmessage_top p").html("Your host has been successfully reconnected.");
-															template.find(".loadingmessage_container").fadeIn("slow");
-															template.find(".grid_links").find("#host_action_reconnect_container, #host_action_enable_maint_container").show();
-															template.find(".grid_links").find("#host_action_remove_container, #host_action_cancel_maint_container").hide();
+															routingStateToTemplate(result.host[0].state, template);										
+															template.find("#routing_disconnected").text(result.host[0].disconnected);
+															template.find(".loadingmessage_container .loadingmessage_top p").html("We are actively reconnecting your host.  Please refresh periodically for an updated status.");
+															template.find(".loadingmessage_container").fadeIn("slow");						
+															
 														} else if (result.jobstatus == 2) {
 															// Failed
-															template.find("#host_state_bar").removeClass("yellow_statusbar grey_statusbar red_statusbar").addClass("green_statusbar");
-															template.find("#routing_state").text("Disconnected").removeClass("grid_celltitles grid_stoppedtitles").addClass("grid_runningtitles");
+															routingStateToTemplate(result.host[0].state, template);								
 															template.find(".loadingmessage_container .loadingmessage_top p").text("We were unable to reconnect your host.  Please try again.");
-															template.find(".loadingmessage_container").fadeIn("slow");
-															template.find(".grid_links").find("#host_action_reconnect_container, #host_action_enable_maint_container, #host_action_cancel_maint_container, #host_action_remove_container").hide();
+															template.find(".loadingmessage_container").fadeIn("slow");		
 														}
 													}
 												},
-												error: function(XMLHttpRequest) {
+												error: function(XMLHttpResponse) {
 													$("body").stopTime(timerKey);
-													handleError(XMLHttpRequest);
+													handleError(XMLHttpResponse);
 												}
 											});
 										},
@@ -335,38 +415,38 @@ function showHostsTab() {
 									);
 								}
 							});
+						}, 
+						"Cancel": function() { 
+							$(this).dialog("close"); 
 						} 
 					}).dialog("open");
 					break;
 				case "host_action_remove" :
 					$("#dialog_confirmation")
-					.html("<p>Please confirm you want to remove this host: <b>"+hostName+"</b> from the management server. </p>")
-					.dialog('option', 'buttons', { 
-						"Cancel": function() { 
-							$(this).dialog("close"); 
-						},
+					.html("<p>Please confirm you want to remove this host: <b>"+sanitizeXSS(hostName)+"</b> from the management server. </p>")
+					.dialog('option', 'buttons', { 						
 						"Confirm": function() { 
-							var dialogBox = $(this);
+							$(this).dialog("close"); 
 							$.ajax({
 								data: "command=deleteHost&id="+hostId+"&response=json",
 								dataType: "json",
-								success: function(json) {
-									dialogBox.dialog("close");
+								success: function(json) {									
 									template.slideUp("slow", function() {
-										$(this).remove();
+										$(this).remove();										
+										changeGridRowsTotal(submenuContent.find("#grid_rows_total"), -1);
 									});
 								}
 							});
+						}, 
+						"Cancel": function() { 
+							$(this).dialog("close"); 
 						} 
 					}).dialog("open");
 					break;
 				case "host_action_update_os" :
 					$("#dialog_update_os #host_os").val(template.data("osId"));
 					$("#dialog_update_os")
-					.dialog('option', 'buttons', { 
-						"Cancel": function() { 
-							$(this).dialog("close"); 
-						},
+					.dialog('option', 'buttons', { 						
 						"Update": function() { 
 							var dialogBox = $(this);
 							var osId = $("#dialog_update_os #host_os").val();
@@ -384,6 +464,9 @@ function showHostsTab() {
 									dialogBox.dialog("close");
 								}
 							});
+						}, 
+						"Cancel": function() { 
+							$(this).dialog("close"); 
 						} 
 					}).dialog("open");
 					break;
@@ -402,85 +485,87 @@ function showHostsTab() {
 			} else {
 				template.find("#row_container").addClass("row_odd");
 			}
-			template.data("hostId", json.id).data("hostName", json.name);
+			template.data("hostId", json.id).data("hostName", sanitizeXSS(json.name));
 			if (json.hypervisor == "KVM") {
 				template.find("#routing_hypervisor img").attr("src", "images/KVM_icon.gif");
 			} else {
 				// default to XEN for now
 				template.find("#routing_hypervisor img").attr("src", "images/XEN_icon.gif");
 			}
-			template.find("#routing_id").text(json.id);
+			template.find("#routing_zone").text(json.zonename);
+			template.find("#routing_pod").text(json.podname);
 			template.find("#routing_name").text(json.name);
-			template.find("#routing_ip").text(json.ipaddress);
+			template.find("#routing_ipaddress").text(json.ipaddress);
 			template.find("#routing_version").text(json.version);
-			template.find("#routing_mgmt").text(json.managementserverid);
 			template.find("#routing_os").text(json.oscategoryname);
 			template.data("osId", json.oscategoryid);
-			if (json.disconnected != null && json.disconnected.length > 0) {
-				var disconnected = new Date();
-				disconnected.setISO8601(json.disconnected);
-				var showDate = disconnected.format("m/d/Y H:i:s");
-				template.find("#routing_disconnected").text(showDate);
-			}
-			
+						
+			setDateField(json.disconnected, template.find("#routing_disconnected"));
+						
 			var statHtml = "<div class='hostcpu_icon'></div><p><strong> CPU Total:</strong> " +json.cpunumber+ " x " + convertHz(json.cpuspeed)+" | <strong>CPU Allocated:</strong> " + json.cpuallocated + " | <span class='host_statisticspanel_green'> <strong>CPU Used:</strong> " + json.cpuused + "</span></p>";
 			template.find("#host_cpu_stat").html(statHtml);
 			statHtml = "<div class='hostmemory_icon'></div><p><strong> MEM Total:</strong> " +convertBytes(json.memorytotal)+" | <strong>MEM Allocated:</strong> " + convertBytes(json.memoryallocated) + " | <span class='host_statisticspanel_green'> <strong>MEM Used:</strong> " + json.memoryused + "</span></p>";
 			template.find("#host_mem_stat").html(statHtml);
 			
-			// State
-			if (json.state == 'Up' || json.state == "Connecting") {
+			routingStateToTemplate(json.state, template);
+		}
+		
+        function routingStateToTemplate(state, template) {	
+            template.find(".grid_links").find("#host_action_reconnect_container, #host_action_enable_maint_container, #host_action_cancel_maint_container, #host_action_remove_container, #host_action_update_os_container").show();
+        	    
+			if (state == 'Up' || state == "Connecting") {
 				template.find("#host_state_bar").removeClass("yellow_statusbar grey_statusbar red_statusbar").addClass("green_statusbar ");
-				template.find("#routing_state").text(json.state).removeClass("grid_celltitles grid_stoppedtitles").addClass("grid_runningtitles");
+				template.find("#routing_state").text(state).removeClass("grid_celltitles grid_stoppedtitles").addClass("grid_runningtitles");
 				template.find(".grid_links").find("#host_action_cancel_maint_container, #host_action_remove_container").hide();
-			} else if (json.state == 'Down' || json.state == "Alert") {
+			} else if (state == 'Down' || state == "Alert") {
 				template.find("#host_state_bar").removeClass("yellow_statusbar grey_statusbar green_statusbar").addClass("red_statusbar");
-				template.find("#routing_state").text(json.state).removeClass("grid_celltitles grid_runningtitles").addClass("grid_stoppedtitles");
+				template.find("#routing_state").text(state).removeClass("grid_celltitles grid_runningtitles").addClass("grid_stoppedtitles");
 				
-				if (json.state == "Alert") {
+				if (state == "Alert") {
 					template.find(".grid_links").find("#host_action_reconnect_container, #host_action_enable_maint_container, #host_action_cancel_maint_container, #host_action_remove_container").hide();
 				} else {
 					template.find(".grid_links").find("#host_action_reconnect_container, #host_action_cancel_maint_container").hide();
 				}
 			} else {
 				template.find("#host_state_bar").removeClass("yellow_statusbar green_statusbar red_statusbar").addClass("grey_statusbar");
-				template.find("#routing_state").text(json.state).removeClass("grid_runningtitles grid_stoppedtitles").addClass("grid_celltitles ");
+				template.find("#routing_state").text(state).removeClass("grid_runningtitles grid_stoppedtitles").addClass("grid_celltitles ");
 				
-				if (json.state == "ErrorInMaintenance") {
+				if (state == "ErrorInMaintenance") {
 					template.find(".grid_links").find("#host_action_reconnect_container, #host_action_remove_container").hide();
-				} else if (json.state == "PrepareForMaintenance") {
+				} else if (state == "PrepareForMaintenance") {
 					template.find(".grid_links").find("#host_action_reconnect_container, #host_action_enable_maint_container, #host_action_remove_container").hide();
-				} else if (json.state == "Maintenance") {
+				} else if (state == "Maintenance") {
 					template.find(".grid_links").find("#host_action_reconnect_container, #host_action_enable_maint_container").hide();
-				} else if (json.state == "Disconnected") {
+				} else if (state == "Disconnected") {
 					template.find(".grid_links").find("#host_action_reconnect_container, #host_action_enable_maint_container, #host_action_cancel_maint_container, #host_action_remove_container").hide();
 				} else {
-					alert("Unsupported Host State: " + json.state);
+					alert("Unsupported Host State: " + state);
 				}
 			} 
 		}
+		
+		var submenuContent = $("#submenu_content_routing");
 		
 		// Add New Routing Host
 		if (getHypervisorType() != "kvm") {
 			$("#host_action_new_routing").bind("click", function(event) {
 			$("#dialog_add_routing")
-			.dialog('option', 'buttons', { 
-				"Cancel": function() { 
-					$(this).dialog("close"); 
-				},
+			.dialog('option', 'buttons', { 				
 				"Add": function() { 
+				    var dialogBox = $(this);
+				
 					// validate values
 					var isValid = true;									
-					isValid &= validateString("Host name", $("#host_hostname"), $("#host_hostname_errormsg"));
-					isValid &= validateString("User name", $("#host_username"), $("#host_username_errormsg"));
-					isValid &= validateString("Password", $("#host_password"), $("#host_password_errormsg"));		
+					isValid &= validateString("Host name", dialogBox.find("#host_hostname"), dialogBox.find("#host_hostname_errormsg"));
+					isValid &= validateString("User name", dialogBox.find("#host_username"), dialogBox.find("#host_username_errormsg"));
+					isValid &= validateString("Password", dialogBox.find("#host_password"), dialogBox.find("#host_password_errormsg"));		
 					if (!isValid) return;
 								
-			        var hostname = trim($("#host_hostname").val());
-					var username = trim($("#host_username").val());
-					var password = trim($("#host_password").val());
-					var zoneId = $("#dialog_add_routing #host_zone").val();
-					var podId = $("#dialog_add_routing #host_pod").val();
+			        var hostname = trim(dialogBox.find("#host_hostname").val());
+					var username = trim(dialogBox.find("#host_username").val());
+					var password = trim(dialogBox.find("#host_password").val());
+					var zoneId = dialogBox.find("#host_zone").val();
+					var podId = dialogBox.find("#host_pod").val();
 					
 					var url;					
 					if(hostname.indexOf("http://")==-1)
@@ -488,7 +573,16 @@ function showHostsTab() {
 					else
 					    url = hostname;
 										
-					var dialogBox = $(this);
+					var template = $("#routing_template").clone(true);		
+					var loadingImg = template.find(".adding_loading");		
+                    var rowContainer = template.find("#row_container");    	                               
+                    loadingImg.find(".adding_text").text("Adding....");	
+                    loadingImg.show();  
+                    rowContainer.hide();        
+                                 
+                    //submenuContent.find("#grid_content").prepend(template.fadeIn("slow"));	  //change to use prepend() when AddHost API is able to return an embedded object.                        					
+					submenuContent.find("#grid_content").append(template.fadeIn("slow")); //use append() for now since we refresh page after AddHost API returns success (without en embedded object) 
+					
 					dialogBox.dialog("close");
 					$.ajax({
 						data: "command=addHost&zoneId="+zoneId+"&podId="+podId+"&url="+encodeURIComponent(url)+"&username="+encodeURIComponent(username)+"&password="+encodeURIComponent(password)+"&response=json",
@@ -497,8 +591,18 @@ function showHostsTab() {
 							var hosts = json.addhostresponse.host;
 							// For now, we'll just refresh since this call doesn't return any hosts for me to append.							
 							listHosts();
-						}
+							
+							loadingImg.hide();  
+                            rowContainer.show();    
+						},			
+	                    error: function(XMLHttpResponse) {		                   
+		                    handleError(XMLHttpResponse);	
+		                    template.slideUp("slow", function(){ $(this).remove(); } );							    
+	                    }				
 					});
+				}, 
+				"Cancel": function() { 
+					$(this).dialog("close"); 
 				} 
 			}).dialog("open");
 			return false;

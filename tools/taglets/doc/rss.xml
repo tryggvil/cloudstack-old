@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF xmlns:admin="http://webns.net/mvcb/" xmlns:syn="http://purl.org/rss/1.0/modules/syndication/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:taxo="http://purl.org/rss/1.0/modules/taxonomy/" xmlns="http://purl.org/rss/1.0/">
+<channel rdf:about="http://taglets.sourceforge.net">
+<title>Taglets Collection News</title>
+<link>http://taglets.sourceforge.net</link>
+<description>Taglets Collection Changelog</description>
+<items>
+<rdf:Seq>
+<rdf:li rdf:resource="news.html#_30"/>
+<rdf:li rdf:resource="news.html#_29"/>
+<rdf:li rdf:resource="news.html#_28 (beta)"/>
+<rdf:li rdf:resource="news.html#_27"/>
+<rdf:li rdf:resource="news.html#_26 (alpha)"/>
+<rdf:li rdf:resource="news.html#_25 (alpha)"/>
+<rdf:li rdf:resource="news.html#_24 (alpha)"/>
+<rdf:li rdf:resource="news.html#_23 (alpha)"/>
+<rdf:li rdf:resource="news.html#_22 (alpha)"/>
+<rdf:li rdf:resource="news.html#_21 (alpha)"/>
+<rdf:li rdf:resource="news.html#_20 (alpha)"/>
+<rdf:li rdf:resource="news.html#_19 (alpha)"/>
+<rdf:li rdf:resource="news.html#_18 (alpha)"/>
+<rdf:li rdf:resource="news.html#_17 (alpha)"/>
+<rdf:li rdf:resource="news.html#_16 (alpha)"/>
+<rdf:li rdf:resource="news.html#_15 (alpha)"/>
+<rdf:li rdf:resource="news.html#_14 (alpha)"/>
+<rdf:li rdf:resource="news.html#_13 (alpha)"/>
+<rdf:li rdf:resource="news.html#_12 (alpha)"/>
+<rdf:li rdf:resource="news.html#_11 (alpha)"/>
+<rdf:li rdf:resource="news.html#_10 (alpha)"/>
+<rdf:li rdf:resource="news.html#_9 (alpha)"/>
+<rdf:li rdf:resource="news.html#_8"/>
+<rdf:li rdf:resource="news.html#_7"/>
+<rdf:li rdf:resource="news.html#_6"/>
+<rdf:li rdf:resource="news.html#_5 (alpha)"/>
+<rdf:li rdf:resource="news.html#_4"/>
+<rdf:li rdf:resource="news.html#_3"/>
+<rdf:li rdf:resource="news.html#_2"/>
+<rdf:li rdf:resource="news.html#_1"/>
+</rdf:Seq>
+</items>
+</channel>
+<item rdf:about="news.html#_30">
+<title>Taglets 2.0.3 Released.</title>
+<link>http://taglets.sourceforge.net/news.html#_30</link>
+<description>Added inline tags {@at} and {@annotation}.
+      	Use those inline tags as embedded inline tags if you need to use
+      	an at sign or want to mark an annotation.
+      Added meta tag for newsfeed to web pages.Moved &lt;fileset&gt; definitions in build file to toplevel to
+      	prevent Ant warnings about future versions that might not 
+      	support this feature.</description>
+<dc:date>2008-03-30</dc:date>
+</item>
+<item rdf:about="news.html#_29">
+<title>Taglets 2.0.2 Released.</title>
+<link>http://taglets.sourceforge.net/news.html#_29</link>
+<description>Correctly read tags which contain an underscore character ('_').Added missing hibernate tags 
+        @hibernate.any-column, 
+        @hibernate.generator-param, 
+        @hibernate.collection-key, 
+        @hibernate.collection-one-to-many.</description>
+<dc:date>2007-10-23</dc:date>
+</item>
+<item rdf:about="news.html#_28 (beta)">
+<title>Taglets 2.0.1 (Beta) Available.</title>
+<link>http://taglets.sourceforge.net/news.html#_28 (beta)</link>
+<description>Updated ant-tools to version 1.2.0.</description>
+<dc:date>2007-05-27</dc:date>
+</item>
+<item rdf:about="news.html#_27">
+<title>Taglets 2.0.0 Released.</title>
+<link>http://taglets.sourceforge.net/news.html#_27</link>
+<description>First public release of the Taglets Collection. Completed documentation for release 2. Added demos to userguide and distribution. Added to do list and known bugs information. </description>
+<dc:date>2007-05-07</dc:date>
+</item>
+<item rdf:about="news.html#_26 (alpha)">
+<title>Taglets 1.9.2 Available.</title>
+<link>http://taglets.sourceforge.net/news.html#_26 (alpha)</link>
+<description>Added new implementation of former @table tag. Added a lot of the original etaglet block tags like @todo, @info, @note, @warning and @error. Added block implementation tags @impl, @equivalence and @testcase. Revamped demo documentation. The regex application no longer serves as demo, but is still included to fiddle with regex replacements. Functionally complete for 2.0 except for documentation. </description>
+<dc:date>2007-04-27</dc:date>
+</item>
+<item rdf:about="news.html#_25 (alpha)">
+<title>Taglets 1.9.1 Available.</title>
+<link>http://taglets.sourceforge.net/news.html#_25 (alpha)</link>
+<description>Added new implementation of anonymous @constant tag. All parameter tags can now be configured to run in literal mode (escaping all HTML entities) and/or in preformatted mode (acting like the HTML pre tag). Added regular expression replacer as shutdown taglet. Added file copier as shutdown taglet. Default stylesheet and images are now part of the standard taglets configuration and are automatically added to the documentation generated. </description>
+<dc:date>2007-04-15</dc:date>
+</item>
+<item rdf:about="news.html#_24 (alpha)">
+<title>Taglets 1.9.0 Available.</title>
+<link>http://taglets.sourceforge.net/news.html#_24 (alpha)</link>
+<description>Added shutdown hooks and support for shutdown taglets. Added checkstyle report to auditing reports. The @since tag now also accepts @new when running in mandatory mode. Added further unit tests. Added wildcard file matcher to shutdown package. </description>
+<dc:date>2007-04-09</dc:date>
+</item>
+<item rdf:about="news.html#_23 (alpha)">
+<title>Taglets 1.8.2 Available.</title>
+<link>http://taglets.sourceforge.net/news.html#_23 (alpha)</link>
+<description>Added parameter to simple doclet commands to retrieve context information. Added support to recognize undefined mandatory tags. Full support for the former @since tag. Changed @note and @warning to inline tags to increase usability. </description>
+<dc:date>2007-04-07</dc:date>
+</item>
+<item rdf:about="news.html#_22 (alpha)">
+<title>Taglets 1.8.1 Available.</title>
+<link>http://taglets.sourceforge.net/news.html#_22 (alpha)</link>
+<description>Simplified checkout and configuration for use with Eclipse. Added more documentation. Added better auditing information. Adjusted copyright headers to include 2007. </description>
+<dc:date>2007-03-20</dc:date>
+</item>
+<item rdf:about="news.html#_21 (alpha)">
+<title>Taglets 1.7.1 Available.</title>
+<link>http://taglets.sourceforge.net/news.html#_21 (alpha)</link>
+<description>Revamped and simplified main taglets entry point. Include versioning information in taglets.jar. Added generated tag list of all tag tools to taglets.jar. </description>
+<dc:date>2006-05-05</dc:date>
+</item>
+<item rdf:about="news.html#_20 (alpha)">
+<title>Taglets 1.7.0 Available.</title>
+<link>http://taglets.sourceforge.net/news.html#_20 (alpha)</link>
+<description>Added support to generate tool configuration files for 3rd party tools. Added tag list for EJBGen. Added scripts to generate tag list for XDoclet. </description>
+<dc:date>2006-05-04</dc:date>
+</item>
+<item rdf:about="news.html#_19 (alpha)">
+<title>Taglets 1.6.1 Available.</title>
+<link>http://taglets.sourceforge.net/news.html#_19 (alpha)</link>
+<description>Configuration support import of other configuration files. Added unit tests to verify precendence of default and user configuration files loaded. Fixed issues related to CVS keyword expansion in default configuration. </description>
+<dc:date>2006-05-03</dc:date>
+</item>
+<item rdf:about="news.html#_18 (alpha)">
+<title>Taglets 1.6.0 Available.</title>
+<link>http://taglets.sourceforge.net/news.html#_18 (alpha)</link>
+<description>Added lots of unit tests. Updated site documentation for the next major release. Adjusted developer documentation. Added default implementations for most tags supported by Taglets-1.2.1. Except for user documentation and the former {@table} and @version tags this release is functionally complete for next major release. </description>
+<dc:date>2006-05-01</dc:date>
+</item>
+<item rdf:about="news.html#_17 (alpha)">
+<title>Taglets 1.5.3 Available.</title>
+<link>http://taglets.sourceforge.net/news.html#_17 (alpha)</link>
+<description>Adjusted documentation. Prepared a release for integration in a local project. </description>
+<dc:date>2006-04-26</dc:date>
+</item>
+<item rdf:about="news.html#_16 (alpha)">
+<title>Taglets 1.5.2 Available.</title>
+<link>http://taglets.sourceforge.net/news.html#_16 (alpha)</link>
+<description>Added various auditing tools. Revamped build process. Added demo application. Created parameter and regex filter. </description>
+<dc:date>2006-04-23</dc:date>
+</item>
+<item rdf:about="news.html#_15 (alpha)">
+<title>Taglets 1.5.1 Available.</title>
+<link>http://taglets.sourceforge.net/news.html#_15 (alpha)</link>
+<description>Added more legacy taglets. Added filter interface for simple taglets. </description>
+<dc:date>2006-04-19</dc:date>
+</item>
+<item rdf:about="news.html#_14 (alpha)">
+<title>Taglets 1.5.0 Available.</title>
+<link>http://taglets.sourceforge.net/news.html#_14 (alpha)</link>
+<description>Added implementations for various legacy taglets. Added regex-based taglet implementation. </description>
+<dc:date>2006-04-17</dc:date>
+</item>
+<item rdf:about="news.html#_13 (alpha)">
+<title>Taglets 1.4.1 Available.</title>
+<link>http://taglets.sourceforge.net/news.html#_13 (alpha)</link>
+<description>Revamped driver plug-in interface to support memory-based URLs. </description>
+<dc:date>2006-04-16</dc:date>
+</item>
+<item rdf:about="news.html#_12 (alpha)">
+<title>Taglets 1.4.0 Available.</title>
+<link>http://taglets.sourceforge.net/news.html#_12 (alpha)</link>
+<description>Core driver for J2SE 1.5. </description>
+<dc:date>2006-04-14</dc:date>
+</item>
+<item rdf:about="news.html#_11 (alpha)">
+<title>Taglets 1.3.2 Available.</title>
+<link>http://taglets.sourceforge.net/news.html#_11 (alpha)</link>
+<description>URL based plug-in interface for drivers. Core driver for J2SE 1.4. </description>
+<dc:date>2006-04-11</dc:date>
+</item>
+<item rdf:about="news.html#_10 (alpha)">
+<title>Taglets 1.3.1 Available.</title>
+<link>http://taglets.sourceforge.net/news.html#_10 (alpha)</link>
+<description>Adjusted JavaDoc driver interfaces. Use of 
+        MuliFex build scripts.
+       </description>
+<dc:date>2006-04-06</dc:date>
+</item>
+<item rdf:about="news.html#_9 (alpha)">
+<title>Taglets 1.3.0 Available.</title>
+<link>http://taglets.sourceforge.net/news.html#_9 (alpha)</link>
+<description>Core implementation for the next major release. Complete rewrite of the initial taglets implementation. Use of BSD-style license for the rewritten implementation. Built-in support for J2SE 1.4 and J2SE 1.5 JavaDoc. Moved repository to SourceForge, as of release 1.3.0 the Taglets Collection is OpenSource, thanks to Ergon Informatik AG. </description>
+<dc:date>2006-04-05</dc:date>
+</item>
+<item rdf:about="news.html#_8">
+<title>Taglets 1.2.1 Released.</title>
+<link>http://taglets.sourceforge.net/news.html#_8</link>
+<description>Added soap, axis and struts to default properties. More robust properties parsing. Improved documentation. </description>
+<dc:date>2004-07-13</dc:date>
+</item>
+<item rdf:about="news.html#_7">
+<title>Taglets 1.2.0 Released.</title>
+<link>http://taglets.sourceforge.net/news.html#_7</link>
+<description>Added configuration file support. Added support for conigurable includes and ignores. </description>
+<dc:date>2004-07-08</dc:date>
+</item>
+<item rdf:about="news.html#_6">
+<title>Taglets 1.1.2 Released.</title>
+<link>http://taglets.sourceforge.net/news.html#_6</link>
+<description>New tag @table. Improved documentation. </description>
+<dc:date>2004-07-08</dc:date>
+</item>
+<item rdf:about="news.html#_5 (alpha)">
+<title>Taglets 1.1.1 Released.</title>
+<link>http://taglets.sourceforge.net/news.html#_5 (alpha)</link>
+<description>Bugfix, @adm tag now correctly emits mailto or warns if the emails have not been configured. </description>
+<dc:date>2003-10-07</dc:date>
+</item>
+<item rdf:about="news.html#_4">
+<title>Taglets 1.1.0 Released.</title>
+<link>http://taglets.sourceforge.net/news.html#_4</link>
+<description>New tag @adm for projects other than javalib. The tags @note and @warning now only produce icons if configured to do so. </description>
+<dc:date>2003-09-22</dc:date>
+</item>
+<item rdf:about="news.html#_3">
+<title>Taglets 1.0.2 Released.</title>
+<link>http://taglets.sourceforge.net/news.html#_3</link>
+<description>To simplify use of etaglets in projects warnings for missing @since tags are disabled by default, check out the documentation on how to enable them again. </description>
+<dc:date>2002-11-20</dc:date>
+</item>
+<item rdf:about="news.html#_2">
+<title>Taglets 1.0.1 Released.</title>
+<link>http://taglets.sourceforge.net/news.html#_2</link>
+<description>Ported etaglet-1.0 to CVS master. </description>
+<dc:date>2002-09-26</dc:date>
+</item>
+<item rdf:about="news.html#_1">
+<title>Taglets 1.0.0 Released.</title>
+<link>http://taglets.sourceforge.net/news.html#_1</link>
+<description>Initial release of the taglets collection. This release was created at Ergon Informatik AG and is not available to the public. </description>
+<dc:date>2002-08-06</dc:date>
+</item>
+</rdf:RDF>

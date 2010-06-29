@@ -16,6 +16,7 @@
           <div id="advanced_search" class="adv_searchpopup" style="display:none;">
             <div class="adv_searchformbox">
             	<h3>Advance Search</h3>
+                <a id="advanced_search_close" href="#">Close </a>
                 <form action="#" method="post">
                 	<ol>
                     	<li><label for="filter">Name:</label>
@@ -44,9 +45,9 @@
                         </li>
                     </ol>
                 </form>
-                <div id="advanced_search_close" class="adv_search_actionbox">
-                    <a href="#">Close </a>
-                </div>
+               <div class="adv_search_actionbox">
+                    	<div class="adv_searchpopup_button" id="adv_search_button"></div>
+				</div>
             </div>
           </div>
 		</div>
@@ -82,20 +83,20 @@
 			<div class="gridadmin_hostheader_cell1">
 				<div class="grid_headertitles">Type</div>
 			</div>
-			<div class="gridadmin_hostheader_cell_s">
-				<div class="grid_headertitles">ID</div>
-			</div>
-			<div class="gridadmin_hostheader_cell2">
-				<div class="grid_headertitles">Name</div>
+			<div class="gridadmin_hostheader_cell1">
+				<div class="grid_headertitles">Zone</div>
 			</div>
 			<div class="gridadmin_hostheader_cell1">
-				<div class="grid_headertitles">IP</div>
+				<div class="grid_headertitles">Pod</div>
+			</div>
+			<div class="gridadmin_hostheader_cell2" style="width:10%;">
+					<div class="grid_headertitles">Hostname</div>
+			</div>
+			<div class="gridadmin_hostheader_cell2" style="width:10%;">
+					<div class="grid_headertitles">IP</div>
 			</div>
 			<div class="gridadmin_hostheader_cell1">
 				<div class="grid_headertitles">Version</div>
-			</div>
-			<div class="gridadmin_hostheader_cell2">
-				<div class="grid_headertitles">Management Server ID</div>
 			</div>
 			<div class="gridadmin_hostheader_cell1">
 				<div class="grid_headertitles">OS Preference</div>
@@ -128,6 +129,13 @@
 </div>
 
 <div id="routing_template" style="display:none">
+    <div class="adding_loading" style="height: 58px; display: none;">
+        <div class="adding_animation">
+        </div>
+        <div class="adding_text">
+            Waiting &hellip;
+        </div>
+    </div>
 	<div id="row_container">
 		<div class="green_statusbar" id="host_state_bar"></div>
 		<div class="gridadmin_hostrow_cell4">
@@ -136,23 +144,23 @@
 		<div class="gridadmin_hostrow_cell1">
 			<div class="grid_celltitles" id="routing_hypervisor"><div class="tempbiticons"><img src="images/XEN_icon.gif" /></div></div>
 		</div>
-		<div class="gridadmin_hostrow_cell_s">
-			<div class="grid_celltitles" id="routing_id"></div>
-		</div>
-		<div class="gridadmin_hostrow_cell2">
-			<div class="grid_celltitles" id="routing_name"></div>
+		<div class="gridadmin_hostrow_cell1">
+			<div class="grid_celltitles" id="routing_zone"></div>
 		</div>
 		<div class="gridadmin_hostrow_cell1">
-			<div class="grid_celltitles" id="routing_ip"></div>
+			<div class="grid_celltitles" id="routing_pod"></div>
+		</div>
+		<div class="gridadmin_hostrow_cell2" style="width:10%;">
+			<div class="grid_celltitles" id="routing_name"></div>
+		</div>
+		<div class="gridadmin_hostrow_cell2" style="width:10%;">
+			<div class="grid_celltitles" id="routing_ipaddress"></div>
 		</div>
 		<div class="gridadmin_hostrow_cell1">
 			<div class="grid_celltitles" id="routing_version"></div>
 		</div>
-		<div class="gridadmin_hostrow_cell2">
-			<div class="grid_celltitles" id="routing_mgmt"></div>
-		</div>
 		<div class="gridadmin_hostrow_cell1">
-			<div class="grid_celltitles" id="routing_os"></div>
+			<div class="grid_celltitles" id="routing_os">None</div>
 		</div>
 		<div class="gridadmin_hostrow_cell2">
 			<div class="grid_celltitles" id="routing_disconnected"></div>
@@ -162,7 +170,7 @@
 				<div id="host_action_details_container" style="float:left"><a id="host_action_details" href="#" style="float:left; margin:0 0 0 8px; padding:0">Show Details</a><div class="details_arrow"><img src="images/details_downarrow.jpg" alt="Show Details" /></div> |</div> <div id="host_action_enable_maint_container" style="float:left"><a id="host_action_enable_maint" href="#">Enable Maintenance Mode</a> |</div> <div id="host_action_cancel_maint_container" style="float:left"><a id="host_action_cancel_maint" href="#">Cancel Maintenance Mode</a> |</div> <div id="host_action_reconnect_container" style="float:left"><a id="host_action_reconnect" href="#">Force Reconnect</a> |</div> <div id="host_action_update_os_container" style="float:left"><a id="host_action_update_os" href="#">Update OS Preference</a> | </div> <div id="host_action_remove_container" style="float:left"><a id="host_action_remove" href="#">Remove</a> | </div> 
 			</div>
 		</div>
-		<div class="row_loading" style="display:none"></div>
+		<div class="row_loading" style="display:none; height:58px;"></div>
 		<div class="loading_animationcontainer" style="display:none">
 			<div class="loading_animationtext"></div>
 			<div class="loading_animation"></div>

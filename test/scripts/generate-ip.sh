@@ -1,1 +1,0 @@
-java -cp testclient.jar com.vmops.test.IpSqlGenerator $*

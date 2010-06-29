@@ -42,8 +42,6 @@
             <param name="cache.size">50</param>
             <param name="cache.time.to.live">-1</param>
         </dao>
-        <dao name="host vlan map" class="com.vmops.dc.dao.HostVlanMapDaoImpl">
-        </dao>
         <dao name="vlan" class="com.vmops.dc.dao.VlanDaoImpl">
         </dao>
         <dao name="Volume" class="com.vmops.storage.dao.VolumeDaoImpl"/>

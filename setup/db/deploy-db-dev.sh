@@ -71,7 +71,7 @@ elif [ $mysqlout -ne 0 ]; then
   exit 11
 fi
 
-mysql --user=vmops --password=vmops vmops < create-schema.sql
+mysql --user=cloud --password=cloud cloud < create-schema.sql
 if [ $? -ne 0 ]; then
   printf "Error: Cannot execute create-schema.sql\n"
   exit 11
@@ -90,7 +90,7 @@ done
 
 #echo CP is $CP
 
-java -cp $CP com.vmops.test.DatabaseConfig $*
+java -cp $CP com.cloud.test.DatabaseConfig $*
 
 if [ $? -ne 0 ]
 then
@@ -98,7 +98,7 @@ then
 fi
 
 if [ "$2" != "" ]; then
-  mysql --user=vmops --password=vmops vmops < $2
+  mysql --user=cloud --password=cloud cloud < $2
   if [ $? -ne 0 ]; then
     printf "Error: Cannot execute $2\n"
     exit 12
@@ -107,7 +107,7 @@ fi
   
 
 echo "Creating Indice and Foreign Keys"
-mysql --user=vmops --password=vmops vmops < create-index-fk.sql
+mysql --user=cloud --password=cloud cloud < create-index-fk.sql
 if [ $? -ne 0 ]; then
   printf "Error: Cannot execute create-index-fk.sql\n"
   exit 13

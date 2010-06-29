@@ -1,3 +1,23 @@
+ /**
+ *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
+ * 
+ * This software is licensed under the GNU General Public License v3 or later.
+ * 
+ * It is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ */
+
+// Version: @VERSION@
+
 function showConfigurationTab() {
 	var forceLogout = true;  // We force a logout only if the user has first added a POD for the very first time
 
@@ -20,46 +40,39 @@ function showConfigurationTab() {
 				case "global_action_edit" :
 					$("#edit_global_name").text(name);
 					$("#edit_global_value").val(template.find("#global_value").text());
-					
-					var confirmEditGlobalDialog = function() { 					    
-						// validate values
-				        var isValid = true;					
-				        isValid &= validateString("Value", dialogBox2.find("#edit_global_value"), dialogBox2.find("#edit_global_value_errormsg"));					
-				        if (!isValid) return;
-						
-						var value = trim(dialogBox2.find("#edit_global_value").val());
-						
-						dialogBox2.dialog("close");
-						$.ajax({
-							data: "command=updateConfiguration&name="+encodeURIComponent(name)+"&value="+encodeURIComponent(value)+"&response=json",
-							dataType: "json",
-							success: function(json) {
-								template.find("#global_value").text(value);
-								$("#dialog_alert").html("<p><b>PLEASE RESTART YOUR MGMT SERVER!!</b><br/><b>PLEASE RESTART YOUR MGMT SERVER!!</b><br/><br/>You have successfully change a global configuration value.  Please <b>RESTART</b> your management server for your new settings to take effect.  Refer to the install guide for instructions on how to restart the mgmt server.</p>").dialog("open");
-							}
-						});
-			        }
-					
-					var dialogBox2 = $("#dialog_edit_global")
-					.dialog('option', 'buttons', { 
+										
+					$("#dialog_edit_global")
+					.dialog('option', 'buttons', { 						
+						"Confirm": function() {		
+						    var thisDialog = $(this);
+										
+						    // validate values
+				            var isValid = true;					
+				            isValid &= validateString("Value", thisDialog.find("#edit_global_value"), thisDialog.find("#edit_global_value_errormsg"));					
+				            if (!isValid) return;
+    						
+						    var value = trim(thisDialog.find("#edit_global_value").val());
+    						
+						    thisDialog.dialog("close");
+						    $.ajax({
+							    data: "command=updateConfiguration&name="+encodeURIComponent(name)+"&value="+encodeURIComponent(value)+"&response=json",
+							    dataType: "json",
+							    success: function(json) {
+								    template.find("#global_value").text(value);
+								    $("#dialog_alert").html("<p><b>PLEASE RESTART YOUR MGMT SERVER!!</b><br/><b>PLEASE RESTART YOUR MGMT SERVER!!</b><br/><br/>You have successfully change a global configuration value.  Please <b>RESTART</b> your management server for your new settings to take effect.  Refer to the install guide for instructions on how to restart the mgmt server.</p>").dialog("open");
+							    }
+						    });		
+						},
 						"Cancel": function() { 
 							$(this).dialog("close"); 
-						},
-						"Confirm": confirmEditGlobalDialog						
-					}).dialog("open");
-					
-				   $("#dialog_edit_global").bind("keypress", function(event) {	
-				       if(event.keyCode == 13) {			       
-				           confirmEditGlobalDialog();				           
-				           return false;
-				       }
-				   });
+						}						
+					}).dialog("open");									   
 			}
 			return false;
 		});
 		
 		function globalJSONToTemplate(json, template) {
-		    template.data("name", json.name).attr("id", "global_"+json.name);
+		    template.data("name", sanitizeXSS(json.name)).attr("id", "global_"+json.name);
 		    (index++ % 2 == 0)? template.addClass("smallrow_even"): template.addClass("smallrow_odd");		
 			template.find("#global_name").text(json.name);
 			template.find("#global_value").text(json.value);
@@ -110,14 +123,17 @@ function showConfigurationTab() {
 		var rightContent = $("#submenu_content_zones #right_panel_detail_content");
 					
 		function zoneObjectToRightPanel(obj) {
-	        rightPanel.html("<strong>Zone:</strong> "+obj.name);					
+	        rightPanel.html("<strong>Zone:</strong> "+sanitizeXSS(obj.name));					
 			var rightContentHtml = 
-				"<p><span>ZONE:</span> "+obj.name+"</p>"
+				"<p><span>ZONE:</span> "+sanitizeXSS(obj.name)+"</p>"
 				+ "<p><span>DNS 1:</span> "+obj.dns1+"</p>"
-				+ "<p><span>DNS 2:</span> "+((obj.dns2 == null) ? "" : obj.dns2) +"</p>";
-			if (getNetworkType() != "vnet") {
-				rightContentHtml += "<p><span>VLAN:</span> "+((obj.vlan == null) ? "" : obj.vlan) +"</p>";
-			}
+				+ "<p><span>DNS 2:</span> "+((obj.dns2 == null) ? "" : obj.dns2) +"</p>"
+				+ "<p><span>Internal DNS 1:</span> "+obj.internaldns1+"</p>"
+				+ "<p><span>Internal DNS 2:</span> "+((obj.internaldns2 == null) ? "" : obj.internaldns2) +"</p>";			
+			if (getNetworkType() != "vnet") 
+				rightContentHtml += "<p><span>VLAN:</span> "+((obj.vlan == null) ? "" : obj.vlan) +"</p>";			
+			rightContentHtml += "<p><span>Guest CIDR:</span> "+obj.guestcidraddress+"</p>";
+			
 			
 			rightContent.data("id", obj.id).html(rightContentHtml);		
 			
@@ -128,13 +144,16 @@ function showConfigurationTab() {
 			buttons.data("name", obj.name);		    
 		    buttons.data("dns1", obj.dns1);
 		    buttons.data("dns2", obj.dns2);
-		    buttons.data("vlan", obj.vlan);			   
+		    buttons.data("internaldns1", obj.internaldns1);
+		    buttons.data("internaldns2", obj.internaldns2);
+		    buttons.data("vlan", obj.vlan);		
+		    buttons.data("guestcidraddress", obj.guestcidraddress);		   
 		}	
 		
 		function podObjectToRightPanel(obj) {		    
-			rightPanel.html("<strong>Pod:</strong> " + obj.name);
+			rightPanel.html("<strong>Pod:</strong> " + sanitizeXSS(obj.name));
 			var rightContentHtml = 
-				"<p><span>POD:</span> "+obj.name+"</p>"
+				"<p><span>POD:</span> "+sanitizeXSS(obj.name)+"</p>"
 				+ "<p><span>CIDR:</span> "+obj.cidr+"</p>"
 				+ "<p><span>IP Range:</span> "+obj.ipRange+"</p>";
 			rightContent.data("id", obj.id).html(rightContentHtml);
@@ -162,16 +181,13 @@ function showConfigurationTab() {
 				confirmMessage = "Please confirm you want to delete the pod : <b>" + deleteButton.data("name") + "</b>";
 				command = "deletePod"
 			} else {
-				confirmMessage = "Please confirm you want to delete the public vlan ip range : <b>" + deleteButton.data("name") + "</b>";
+				confirmMessage = "Please confirm you want to delete the public vlan IP range : <b>" + deleteButton.data("name") + "</b>";
 				command = "deleteVlanIpRange";
 			}
 		
 			$("#dialog_confirmation")
 			.html(confirmMessage)
-			.dialog('option', 'buttons', { 
-				"Cancel": function() { 
-					$(this).dialog("close"); 
-				},
+			.dialog('option', 'buttons', { 				
 				"Confirm": function() { 
 					$(this).dialog("close"); 
 					
@@ -196,6 +212,9 @@ function showConfigurationTab() {
 						}
 					});
 					
+				}, 
+				"Cancel": function() { 
+					$(this).dialog("close"); 
 				} 
 			}).dialog("open");
 		});
@@ -207,6 +226,10 @@ function showConfigurationTab() {
 			dialogEditZone.find("#edit_zone_name").val($(this).data("name"));
 			dialogEditZone.find("#edit_zone_dns1").val($(this).data("dns1"));
 			dialogEditZone.find("#edit_zone_dns2").val($(this).data("dns2"));
+			dialogEditZone.find("#edit_zone_internaldns1").val($(this).data("internaldns1"));
+			dialogEditZone.find("#edit_zone_internaldns2").val($(this).data("internaldns2"));
+			dialogEditZone.find("#edit_zone_guestcidraddress").val($(this).data("guestcidraddress"));
+			var guestcidraddress = $(this).data("guestcidraddress");
 			
 			// If the network type is vnet, don't show any vlan stuff.
 			if (getNetworkType() != "vnet") {
@@ -227,76 +250,92 @@ function showConfigurationTab() {
 			}
 			
 			dialogEditZone
-			.dialog('option', 'buttons', { 
-				"Cancel": function() { 
-					$(this).dialog("close"); 
-				},
-				"Change": function() { 					
+			.dialog('option', 'buttons', { 				
+				"Change": function() { 		
+				    var thisDialog = $(this);
+				 			
 					// validate values
 					var isValid = true;					
-					isValid &= validateString("Name", dialogEditZone.find("#edit_zone_name"), dialogEditZone.find("#edit_zone_name_errormsg"));
-					isValid &= validateIp("DNS 1", dialogEditZone.find("#edit_zone_dns1"), dialogEditZone.find("#edit_zone_dns1_errormsg"));	    //DNS 1 is required
-					isValid &= validateIp("DNS 2", dialogEditZone.find("#edit_zone_dns2"), dialogEditZone.find("#edit_zone_dns2_errormsg"), true);	//DNS 2 is optional	
+					isValid &= validateString("Name", thisDialog.find("#edit_zone_name"), thisDialog.find("#edit_zone_name_errormsg"));
+					isValid &= validateIp("DNS 1", thisDialog.find("#edit_zone_dns1"), thisDialog.find("#edit_zone_dns1_errormsg"), false);	//required
+					isValid &= validateIp("DNS 2", thisDialog.find("#edit_zone_dns2"), thisDialog.find("#edit_zone_dns2_errormsg"), true);	//optional	
+					isValid &= validateIp("Internal DNS 1", thisDialog.find("#edit_zone_internaldns1"), thisDialog.find("#edit_zone_internaldns1_errormsg"), false);	//required
+					isValid &= validateIp("Internal DNS 2", thisDialog.find("#edit_zone_internaldns2"), thisDialog.find("#edit_zone_internaldns2_errormsg"), true);	//optional						
 					if (getNetworkType() != "vnet") {
-						isValid &= validateString("Zone VLAN Range", dialogEditZone.find("#edit_zone_startvlan"), dialogEditZone.find("#edit_zone_startvlan_errormsg"));
+						isValid &= validateString("Zone - Start VLAN Range", thisDialog.find("#edit_zone_startvlan"), thisDialog.find("#edit_zone_startvlan_errormsg"), false); //required
+						isValid &= validateString("Zone - End VLAN Range", thisDialog.find("#edit_zone_endvlan"), thisDialog.find("#edit_zone_endvlan_errormsg"), true);  //optional
 					}
+					isValid &= validateCIDR("Guest CIDR", thisDialog.find("#edit_zone_guestcidraddress"), thisDialog.find("#edit_zone_guestcidraddress_errormsg"), false);	//required					
 					if (!isValid) return;							
 					
-					var name = trim(dialogEditZone.find("#edit_zone_name").val());
-					var dns1 = trim(dialogEditZone.find("#edit_zone_dns1").val());
-					var dns2 = trim(dialogEditZone.find("#edit_zone_dns2").val());
-					
-					var vlan = "";
-					var vlanParam = "";
-					if (getNetworkType() != "vnet") {
-						var vlanStart = trim(dialogEditZone.find("#edit_zone_startvlan").val());
-						var vlanEnd = trim(dialogEditZone.find("#edit_zone_endvlan").val());
-						vlan = vlanStart;
-						if (vlanEnd != null && vlanEnd.length > 0) {
-							vlan = encodeURIComponent(vlan + "-" + vlanEnd);
-							vlanParam = "&vlan=" + vlan;
-						} else {
-							vlanParam = "&vlan=" + encodeURIComponent(vlan);
-						}
-					}
-					
 					var moreCriteria = [];	
-					if (dns2 != "") 
-						moreCriteria.push("&dns2="+encodeURIComponent(dns2));					 
 					
-					$(this).dialog("close"); 
+					var name = trim(thisDialog.find("#edit_zone_name").val());
+					moreCriteria.push("&name="+encodeURIComponent(name));
+					
+					var dns1 = trim(thisDialog.find("#edit_zone_dns1").val());
+					moreCriteria.push("&dns1="+encodeURIComponent(dns1));
+					
+					var dns2 = trim(thisDialog.find("#edit_zone_dns2").val());
+					if (dns2 != null & dns2.length > 0) 
+						moreCriteria.push("&dns2="+encodeURIComponent(dns2));	
+					
+					var internaldns1 = trim(thisDialog.find("#edit_zone_internaldns1").val());
+					moreCriteria.push("&internaldns1="+encodeURIComponent(internaldns1));
+					
+					var internaldns2 = trim(thisDialog.find("#edit_zone_internaldns2").val());	
+					if (internaldns2 != null & internaldns2.length > 0) 
+						moreCriteria.push("&internaldns2="+encodeURIComponent(internaldns2));						
+					
+					var vlan;				
+					if (getNetworkType() != "vnet") {
+						var vlanStart = trim(thisDialog.find("#edit_zone_startvlan").val());	
+						var vlanEnd = trim(thisDialog.find("#edit_zone_endvlan").val());						
+						if (vlanEnd != null && vlanEnd.length > 0) 
+						    vlan = vlanStart + "-" + vlanEnd;						    							
+						else 	
+						    vlan = vlanStart;							
+				       moreCriteria.push("&vlan=" + encodeURIComponent(vlan));	
+					}				
+					
+					var guestcidraddress = trim(thisDialog.find("#edit_zone_guestcidraddress").val());
+					moreCriteria.push("&guestcidraddress="+encodeURIComponent(guestcidraddress));				    		 
+					
+					thisDialog.dialog("close"); 
 					
 					var template = $("#zone_"+id); 
 					var loadingImg = template.find(".adding_loading").find(".adding_text").text("Updating zone....");										
 					var row_container = template.find("#row_container");									            
 		            loadingImg.show();  
                     row_container.hide();             
-			        template.fadeIn("slow");				        		
 					
 					$.ajax({
-						data: "command=updateZone&id="+id+"&name="+encodeURIComponent(name)+"&dns1="+encodeURIComponent(dns1)+moreCriteria.join("")+vlanParam+"&response=json",
+						data: "command=updateZone&id="+id+moreCriteria.join("")+"&response=json",
 						dataType: "json",
 						success: function(json) {	
-						    var obj = {"id": id, "name": name, "dns1": dns1, "dns2": dns2, "vlan": vlan};
+						    var obj = {"id": id, "name": name, "dns1": dns1, "dns2": dns2, "internaldns1": internaldns1, "internaldns2": internaldns2, "vlan": vlan, "guestcidraddress": guestcidraddress };
 					        zoneObjectToRightPanel(obj);						
 							var zoneName = $("#zone_"+id).find("#zone_name").text(name);		
-							zoneName.data("id", id).data("name", name).data("dns1", dns1);
-							if (dns2 != undefined) {
+							zoneName.data("id", id).data("name", sanitizeXSS(name)).data("dns1", dns1).data("internaldns1", internaldns1).data("guestcidraddress", guestcidraddress);							
+							if (dns2 != "") 
 								zoneName.data("dns2", dns2);
-							}
-							if (vlan != undefined) {
+							if (internaldns2 != "") 
+								zoneName.data("internaldns2", internaldns2);
+							if (vlan != "") 
 								zoneName.data("vlan", vlan);
-							}	
+								
 							loadingImg.hide(); 								                            
                             row_container.show();      
 						},
-					    error: function(XMLHttpRequest) {
-					        handleError(XMLHttpRequest);				    
-						    template.slideUp("slow", function() {
-								$(this).remove();
-							});
+					    error: function(XMLHttpResponse) {
+					        handleError(XMLHttpResponse);
+							loadingImg.hide(); 								                            
+                            row_container.show();
 					    }
 					});
+				}, 
+				"Cancel": function() { 
+					$(this).dialog("close"); 
 				} 
 			}).dialog("open");			
 			
@@ -305,14 +344,11 @@ function showConfigurationTab() {
 		$("#submenu_content_zones #action_add_pod").bind("click", function(event) {
 			var id = $(this).data("id");
 			
-			$("#dialog_add_pod").find("#add_pod_zone_name").text(name);
+			$("#dialog_add_pod").find("#add_pod_zone_name").text($(this).data("name"));
 			$("#dialog_add_pod #add_pod_name, #dialog_add_pod #add_pod_cidr, #dialog_add_pod #add_pod_startip, #dialog_add_pod #add_pod_endip").val("");
 			
 			$("#dialog_add_pod")
-			.dialog('option', 'buttons', { 
-				"Cancel": function() { 
-					$(this).dialog("close"); 
-				},
+			.dialog('option', 'buttons', { 				
 				"Add": function() {					
 					// validate values
 					var isValid = true;					
@@ -357,7 +393,7 @@ function showConfigurationTab() {
                             row_container.show();
 							if (forceLogout) {
 								$("#dialog_confirmation")
-									.html("<p>You have successfully added your first Zone and Pod.  After clicking 'Ok', this UI will automatically refresh to give you access to the rest of cloud features.</p>")
+									.html("<p>You have successfully added your first Zone and Pod.  After clicking 'OK', this UI will automatically refresh to give you access to the rest of cloud features.</p>")
 									.dialog('option', 'buttons', { 
 										"OK": function() { 
 											var dialogBox = $(this);
@@ -367,13 +403,16 @@ function showConfigurationTab() {
 									}).dialog("open");
 							}
 						},
-					    error: function(XMLHttpRequest) {	
-					        handleError(XMLHttpRequest);			    
+					    error: function(XMLHttpResponse) {	
+					        handleError(XMLHttpResponse);			    
 						    template.slideUp("slow", function() {
 								$(this).remove();
 							});
 					    }
 					});					
+				}, 
+				"Cancel": function() { 
+					$(this).dialog("close"); 
 				} 
 			}).dialog("open");
 		});
@@ -387,10 +426,7 @@ function showConfigurationTab() {
 			dialogEditPod.find("#edit_pod_endip").val($(this).data("endip"));   
 						
 			dialogEditPod
-			.dialog('option', 'buttons', { 
-				"Cancel": function() { 
-					$(this).dialog("close"); 
-				},
+			.dialog('option', 'buttons', { 				
 				"Change": function() { 					    				
 				    // validate values
 					var isValid = true;					
@@ -412,8 +448,9 @@ function showConfigurationTab() {
 					
 					$(this).dialog("close"); 
 					
-					var template = $("#pod_"+id); //?????
-					var loadingImg = template.find(".adding_loading");										
+					var template = $("#pod_"+id); 
+					var loadingImg = template.find(".adding_loading");	
+					loadingImg.find(".adding_text").text("Updating a pod....");									
 					var row_container = template.find("#row_container");
 													            
 		            loadingImg.show();  
@@ -425,20 +462,22 @@ function showConfigurationTab() {
 						dataType: "json",
 						success: function(json) {						    
 						    var ipRange = getIpRange(startip, endip);							   
-							var obj = {"id": id, "name": name, "cidr": cidr, "startip": startip, "endip": endip, "ipRange": ipRange};  //???
+							var obj = {"id": id, "name": name, "cidr": cidr, "startip": startip, "endip": endip, "ipRange": ipRange};  
 					        podObjectToRightPanel(obj);					
 							var podName = $("#pod_"+id).find("#pod_name").text(name);
-							podName.data("id", id).data("name", name).data("cidr", cidr).data("startip", startip).data("endip", endip).data("ipRange", ipRange);	
+							podName.data("id", id).data("name", sanitizeXSS(name)).data("cidr", cidr).data("startip", startip).data("endip", endip).data("ipRange", ipRange);	
 							loadingImg.hide(); 								                            
                             row_container.show();							
 						},
-					    error: function(XMLHttpRequest) {	
-					        handleError(XMLHttpRequest);			    
-						    template.slideUp("slow", function() {
-								$(this).remove();
-							});
+					    error: function(XMLHttpResponse) {	
+					        loadingImg.hide();  
+                            row_container.show();   
+					        handleError(XMLHttpResponse);							    
 					    }
 					});	
+				}, 
+				"Cancel": function() { 
+					$(this).dialog("close"); 
 				}
 			}).dialog("open");			
 		});
@@ -447,13 +486,10 @@ function showConfigurationTab() {
 			var id = $(this).data("id");
 			$("#dialog_add_publicip_vlan #add_publicip_vlan_vlan_container").hide();
 			$("#dialog_add_publicip_vlan #add_publicip_vlan_tagged, #dialog_add_publicip_vlan #add_publicip_vlan_vlan, #dialog_add_publicip_vlan #add_publicip_vlan_gateway, #dialog_add_publicip_vlan #add_publicip_vlan_netmask, #dialog_add_publicip_vlan #add_publicip_vlan_startip, #dialog_add_publicip_vlan #add_publicip_vlan_endip").val("");
-			$("#dialog_add_publicip_vlan").find("#add_publicip_vlan_zone_name").text(name);
+			$("#dialog_add_publicip_vlan").find("#add_publicip_vlan_zone_name").text($(this).data("name"));
 			
 			$("#dialog_add_publicip_vlan")
-			.dialog('option', 'buttons', { 
-				"Cancel": function() { 
-					$(this).dialog("close"); 
-				},
+			.dialog('option', 'buttons', { 				
 				"Add": function() { 					
 					// validate values
 					var isValid = true;					
@@ -501,14 +537,17 @@ function showConfigurationTab() {
 							loadingImg.hide(); 								                            
                             row_container.show();    
 						},
-					    error: function(XMLHttpRequest) {	
-					        handleError(XMLHttpRequest);			    
+					    error: function(XMLHttpResponse) {	
+					        handleError(XMLHttpResponse);			    
 						    template.slideUp("slow", function() {
 								$(this).remove();
 							});
 					    }
 					});
 					
+				}, 
+				"Cancel": function() { 
+					$(this).dialog("close"); 
 				} 
 			}).dialog("open");
 		});
@@ -535,7 +574,7 @@ function showConfigurationTab() {
 					$("#submenu_content_zones .zonetree_secondlevel_selected").removeClass().addClass("zonetree_secondlevel");
 					template.find(".zonetree_firstlevel").removeClass().addClass("zonetree_firstlevel_selected");
 										
-					var obj = {"id": target.data("id"), "name": target.data("name"), "dns1": target.data("dns1"), "dns2": target.data("dns2"), "vlan": target.data("vlan")};
+					var obj = {"id": target.data("id"), "name": target.data("name"), "dns1": target.data("dns1"), "dns2": target.data("dns2"), "internaldns1": target.data("internaldns1"), "internaldns2": target.data("internaldns2"), "vlan": target.data("vlan"), "guestcidraddress": target.data("guestcidraddress")};
 					zoneObjectToRightPanel(obj);					
 					
 					break;
@@ -560,7 +599,7 @@ function showConfigurationTab() {
 						+ "<p><span>Netmask:</span> "+target.data("netmask")+"</p>"
 						+ "<p><span>IP Range:</span> "+target.data("name")+"</p>";
 					rightContent.data("id", target.data("id")).html(rightContentHtml);
-					$("#submenu_content_zones #action_edit_zone, #submenu_content_zones #action_add_pod, #submenu_content_zones #action_add_publicip_vlan").hide();
+					$("#submenu_content_zones #action_edit_zone, #submenu_content_zones #action_add_pod, #submenu_content_zones #action_edit_pod, #submenu_content_zones #action_add_publicip_vlan").hide();
 					$("#submenu_content_zones #action_delete").data("id", target.data("id")).data("name", target.data("name")).data("type", "publicip_range").show();
 					
 					break;
@@ -618,14 +657,19 @@ function showConfigurationTab() {
 		}
 		
 		function zoneJSONToTemplate(json, template) {
-			template.data("id", json.id).data("name", json.name);
+			template.data("id", json.id).data("name", sanitizeXSS(json.name));
 			template.find("#zone_name")
 				.text(json.name)
 				.data("id", json.id)
-				.data("name", json.name)
-				.data("dns1", json.dns1);
+				.data("name", sanitizeXSS(json.name))
+				.data("dns1", json.dns1)
+				.data("internaldns1", json.internaldns1)
+				.data("guestcidraddress", json.guestcidraddress);
 			if (json.dns2 != undefined) {
 				template.find("#zone_name").data("dns2", json.dns2);
+			}
+			if (json.internaldns2 != undefined) {
+				template.find("#zone_name").data("internaldns2", json.internaldns2);
 			}
 			if (json.vlan != undefined) {
 				template.find("#zone_name").data("vlan", json.vlan);
@@ -712,47 +756,61 @@ function showConfigurationTab() {
 			$("#dialog_add_publicip_vlan #add_publicip_vlan_container").hide();
 		}
 		
-		$("#action_add_zone").bind("click", function(event) {
-			$("#dialog_add_zone #add_zone_name, #dialog_add_zone #add_zone_dns1, #dialog_add_zone #add_zone_dns2, #dialog_add_zone #add_zone_startvlan, #dialog_add_zone #add_zone_endvlan").val("");
+		$("#action_add_zone").bind("click", function(event) {		    
+		    var thisDialog = $(this);
+			thisDialog.find("#add_zone_name, #add_zone_dns1, #add_zone_dns2, #add_zone_internaldns1, #add_zone_internaldns2, #add_zone_startvlan, #add_zone_endvlan, #add_zone_guestcidraddress").val("");
 			
 			$("#dialog_add_zone")
-			.dialog('option', 'buttons', { 
-				"Cancel": function() { 
-					$(this).dialog("close"); 
-				},
-				"Add": function() { 					
+			.dialog('option', 'buttons', { 				
+				"Add": function() { 
+				    var thisDialog = $(this);
+									
 					// validate values
 					var isValid = true;					
-					isValid &= validateString("Name", $(this).find("#add_zone_name"), $(this).find("#add_zone_name_errormsg"));
-					isValid &= validateIp("DNS 1", $(this).find("#add_zone_dns1"), $(this).find("#add_zone_dns1_errormsg"));	    //DNS 1 is required
-					isValid &= validateIp("DNS 2", $(this).find("#add_zone_dns2"), $(this).find("#add_zone_dns2_errormsg"), true);	//DNS 2 is optional	
+					isValid &= validateString("Name", thisDialog.find("#add_zone_name"), thisDialog.find("#add_zone_name_errormsg"));
+					isValid &= validateIp("DNS 1", thisDialog.find("#add_zone_dns1"), thisDialog.find("#add_zone_dns1_errormsg"), false); //required
+					isValid &= validateIp("DNS 2", thisDialog.find("#add_zone_dns2"), thisDialog.find("#add_zone_dns2_errormsg"), true);  //optional	
+					isValid &= validateIp("Internal DNS 1", thisDialog.find("#add_zone_internaldns1"), thisDialog.find("#add_zone_internaldns1_errormsg"), false); //required
+					isValid &= validateIp("Internal DNS 2", thisDialog.find("#add_zone_internaldns2"), thisDialog.find("#add_zone_internaldns2_errormsg"), true);  //optional	
 					if (getNetworkType() != "vnet") {
-						isValid &= validateString("Zone VLAN Range", $(this).find("#add_zone_startvlan"), $(this).find("#add_zone_startvlan_errormsg"));
+						isValid &= validateString("Zone - Start VLAN Range", thisDialog.find("#add_zone_startvlan"), thisDialog.find("#add_zone_startvlan_errormsg"), false); //required
+						isValid &= validateString("Zone - End VLAN Range", thisDialog.find("#add_zone_endvlan"), thisDialog.find("#add_zone_endvlan_errormsg"), true);        //optional
 					}
+					isValid &= validateCIDR("Guest CIDR", thisDialog.find("#add_zone_guestcidraddress"), thisDialog.find("#add_zone_guestcidraddress_errormsg"), false); //required
 					if (!isValid) return;							
 					
-					var name = trim($(this).find("#add_zone_name").val());
-					var dns1 = trim($(this).find("#add_zone_dns1").val());
-					var dns2 = trim($(this).find("#add_zone_dns2").val());
-					var vlan = "";
+					var moreCriteria = [];	
+					
+					var name = trim(thisDialog.find("#add_zone_name").val());
+					moreCriteria.push("&name="+encodeURIComponent(name));
+					
+					var dns1 = trim(thisDialog.find("#add_zone_dns1").val());
+					moreCriteria.push("&dns1="+encodeURIComponent(dns1));
+					
+					var dns2 = trim(thisDialog.find("#add_zone_dns2").val());
+					if (dns2 != null && dns2.length > 0) 
+					    moreCriteria.push("&dns2="+encodeURIComponent(dns2));						
+										
+					var internaldns1 = trim(thisDialog.find("#add_zone_internaldns1").val());
+					moreCriteria.push("&internaldns1="+encodeURIComponent(internaldns1));
+					
+					var internaldns2 = trim(thisDialog.find("#add_zone_internaldns2").val());
+					if (internaldns2 != null && internaldns2.length > 0) 
+					    moreCriteria.push("&internaldns2="+encodeURIComponent(internaldns2));						
+					 											
 					if (getNetworkType() != "vnet") {
-						var vlanStart = trim($(this).find("#add_zone_startvlan").val());	
-						var vlanEnd = trim($(this).find("#add_zone_endvlan").val());
-						vlan = vlanStart;
-						if (vlanEnd != null && vlanEnd.length > 0) {
-							vlan = "&vlan=" + encodeURIComponent(vlan + "-" + vlanEnd);
-						} else {
-							vlan = "&vlan=" + encodeURIComponent(vlan);
-						}
-					}
+						var vlanStart = trim(thisDialog.find("#add_zone_startvlan").val());	
+						var vlanEnd = trim(thisDialog.find("#add_zone_endvlan").val());						
+						if (vlanEnd != null && vlanEnd.length > 0) 
+						    moreCriteria.push("&vlan=" + encodeURIComponent(vlanStart + "-" + vlanEnd));									
+						else 							
+							moreCriteria.push("&vlan=" + encodeURIComponent(vlanStart));		
+					}					
 					
-					if (dns2 != "") {
-						dns2 = "&dns2="+encodeURIComponent(dns2);
-					} else {
-						dns2 = "";
-					}
+					var guestcidraddress = trim(thisDialog.find("#add_zone_guestcidraddress").val());
+					moreCriteria.push("&guestcidraddress="+encodeURIComponent(guestcidraddress));	
 					
-					$(this).dialog("close"); 
+					thisDialog.dialog("close"); 
 					
 					var template = $("#zone_template").clone(true);
 					var loadingImg = template.find(".adding_loading");										
@@ -764,7 +822,7 @@ function showConfigurationTab() {
 			        template.fadeIn("slow");				        		
 					
 					$.ajax({
-						data: "command=createZone&name="+encodeURIComponent(name)+"&dns1="+encodeURIComponent(dns1)+dns2+vlan+"&response=json",
+						data: "command=createZone"+moreCriteria.join("")+"&response=json",
 						dataType: "json",
 						success: function(json) {
 							var zone = json.createzoneresponse;
@@ -773,13 +831,24 @@ function showConfigurationTab() {
 							loadingImg.hide(); 								                            
                             row_container.show();      
 						},
-					    error: function(XMLHttpRequest) {
-					        handleError(XMLHttpRequest);				    
+					    error: function(XMLHttpResponse) {
+					        handleError(XMLHttpResponse);				    
 						    template.slideUp("slow", function() {
-								$(this).remove();
+								thisDialog.remove();
 							});
 					    }
 					});
+				}, 
+				"Cancel": function() { 
+				    var thisDialog = $(this);
+					thisDialog.dialog("close"); 
+					cleanErrMsg(thisDialog.find("#add_zone_name"), thisDialog.find("#add_zone_name_errormsg"));
+					cleanErrMsg(thisDialog.find("#add_zone_dns1"), thisDialog.find("#add_zone_dns1_errormsg"));
+					cleanErrMsg(thisDialog.find("#add_zone_dns2"), thisDialog.find("#add_zone_dns2_errormsg"));
+					cleanErrMsg(thisDialog.find("#add_zone_internaldns1"), thisDialog.find("#add_zone_internaldns1_errormsg"));
+					cleanErrMsg(thisDialog.find("#add_zone_internaldns2"), thisDialog.find("#add_zone_internaldns2_errormsg"));
+					cleanErrMsg(thisDialog.find("#add_zone_startvlan"), thisDialog.find("#add_zone_startvlan_errormsg"));
+					cleanErrMsg(thisDialog.find("#add_zone_guestcidraddress"), thisDialog.find("#add_zone_guestcidraddress_errormsg"));
 				} 
 			}).dialog("open");
 		});
@@ -819,45 +888,52 @@ function showConfigurationTab() {
 				case "service_action_edit" :
 					var dialogEditService = $("#dialog_edit_service");
 					
+					dialogEditService.find("#service_name").text(svcName);
 					dialogEditService.find("#edit_service_name").val(svcName);
 					dialogEditService.find("#edit_service_display").val(template.find("#service_display").text());
-					dialogEditService.find("#edit_service_name_display").text(svcName);
+					dialogEditService.find("#edit_service_offerha").val(toBooleanValue(template.find("#service_offerha").text()));					
 					
 					dialogEditService
-					.dialog('option', 'buttons', { 
-						"Cancel": function() { 
-							$(this).dialog("close"); 
-						},
-						"Confirm": function() { 							
+					.dialog('option', 'buttons', { 						
+						"Confirm": function() { 
+						    var thisDialog = $(this);	
+													
 							// validate values
 					        var isValid = true;					
-					        isValid &= validateString("Name", dialogEditService.find("#edit_service_name"), dialogEditService.find("#edit_service_name_errormsg"));
-					        isValid &= validateString("Display Text", dialogEditService.find("#edit_service_display"), dialogEditService.find("#edit_service_display_errormsg"));											
+					        isValid &= validateString("Name", thisDialog.find("#edit_service_name"), thisDialog.find("#edit_service_name_errormsg"));
+					        isValid &= validateString("Display Text", thisDialog.find("#edit_service_display"), thisDialog.find("#edit_service_display_errormsg"));											
 					        if (!isValid) return;	
 					
-					        var name = trim(dialogEditService.find("#edit_service_name").val());
-							var display = trim(dialogEditService.find("#edit_service_display").val());
+					        var moreCriteria = [];	
+					        var name = trim(thisDialog.find("#edit_service_name").val());
+					        moreCriteria.push("&name="+encodeURIComponent(name));						        
+							var display = trim(thisDialog.find("#edit_service_display").val());
+							moreCriteria.push("&displayText="+encodeURIComponent(display));								
+							var offerha = trim(thisDialog.find("#edit_service_offerha").val());
+							moreCriteria.push("&offerha="+offerha);								
+											
+							thisDialog.dialog("close");
 							
-							var dialogBox = $(this);					
-							dialogBox.dialog("close");
 							$.ajax({
-								data: "command=updateServiceOffering&name="+encodeURIComponent(name)+"&displayText="+encodeURIComponent(display)+"&id="+svcId+"&response=json",
+								data: "command=updateServiceOffering&id="+svcId+moreCriteria.join("")+"&response=json",
 								dataType: "json",
 								success: function(json) {
 									template.find("#service_display").text(display);
 									template.find("#service_name").text(name);
+									template.find("#service_offerha").text(toBooleanText(offerha));
+									template.data("svcName", name);
 								}
 							});
+						}, 
+						"Cancel": function() { 
+							$(this).dialog("close"); 
 						} 
 					}).dialog("open");
 					break;
 				case "service_action_delete" :
 					$("#dialog_confirmation")
 					.html("<p>Please confirm you want to remove the service offering: <b>"+svcName+"</b> from the management server. </p>")
-					.dialog('option', 'buttons', { 
-						"Cancel": function() { 
-							$(this).dialog("close"); 
-						},
+					.dialog('option', 'buttons', { 						
 						"Confirm": function() { 
 							var dialogBox = $(this);
 							$.ajax({
@@ -871,6 +947,9 @@ function showConfigurationTab() {
 									});
 								}
 							});
+						}, 
+						"Cancel": function() { 
+							$(this).dialog("close"); 
 						} 
 					}).dialog("open");
 					break;
@@ -883,18 +962,17 @@ function showConfigurationTab() {
 		function serviceJSONToTemplate(json, template) {	
 		    template.attr("id", "service_"+json.id);	   
 			(index++ % 2 == 0)? template.addClass("smallrow_even"): template.addClass("smallrow_odd");	
-			template.data("svcId", json.id).data("svcName", json.name);
+			template.data("svcId", json.id).data("svcName", sanitizeXSS(json.name));
+			
 			template.find("#service_id").text(json.id);
 			template.find("#service_name").text(json.name);
 			template.find("#service_display").text(json.displaytext);
 			template.find("#service_storagetype").text(json.storagetype);
 			template.find("#service_cpu").text(json.cpunumber + " x " + convertHz(json.cpuspeed));
-			template.find("#service_memory").text(convertBytes(parseInt(json.memory)*1024*1024));
+			template.find("#service_memory").text(convertBytes(parseInt(json.memory)*1024*1024));			
+			template.find("#service_offerha").text(toBooleanText(json.offerha));
 			
-			var created = new Date();
-			created.setISO8601(json.created);
-			var showDate = created.format("m/d/Y H:i:s");
-			template.find("#service_created").text(showDate);
+			setDateField(json.created, template.find("#service_created"));			
 		}
 		
 		activateDialog($("#dialog_add_service").dialog({ 
@@ -918,48 +996,81 @@ function showConfigurationTab() {
 		$("#service_add_service").bind("click", function(event) {
 			var dialogAddService = $("#dialog_add_service");
 			
-			dialogAddService.find("#service_name").val("");
-			dialogAddService.find("#service_display").val("");
-			dialogAddService.find("#service_cpucore").val("");
-			dialogAddService.find("#service_cpu").val("");
-			dialogAddService.find("#service_memory").val("");
+			dialogAddService.find("#add_service_name").val("");
+			dialogAddService.find("#add_service_display").val("");
+			dialogAddService.find("#add_service_cpucore").val("");
+			dialogAddService.find("#add_service_cpu").val("");
+			dialogAddService.find("#add_service_memory").val("");
+			dialogAddService.find("#add_service_offerha").val("false");
+				
+			(g_hypervisorType == "kvm")? dialogAddService.find("#add_service_offerha_container").hide():dialogAddService.find("#add_service_offerha_container").show();            
+			
 			var submenuContent = $("#submenu_content_service");
 			
 			dialogAddService
-			.dialog('option', 'buttons', { 
-				"Cancel": function() { 
-					$(this).dialog("close"); 
-				},
-				"Add": function() { 					
+			.dialog('option', 'buttons', { 				
+				"Add": function() { 	
+				    var thisDialog = $(this);
+								
 					// validate values
 					var isValid = true;					
-					isValid &= validateString("Name", dialogAddService.find("#add_service_name"), dialogAddService.find("#add_service_name_errormsg"));
-					isValid &= validateString("Display Text", dialogAddService.find("#add_service_display"), dialogAddService.find("#add_service_display_errormsg"));
-					isValid &= validateNumber("# of CPU Core", dialogAddService.find("#add_service_cpucore"), dialogAddService.find("#add_service_cpucore_errormsg"), 1, 1000);		
-					isValid &= validateNumber("CPU", dialogAddService.find("#add_service_cpu"), dialogAddService.find("#add_service_cpu_errormsg"), 100, 100000);		
-					isValid &= validateNumber("Memory", dialogAddService.find("#add_service_memory"), dialogAddService.find("#add_service_memory_errormsg"), 64, 1000000);							
+					isValid &= validateString("Name", thisDialog.find("#add_service_name"), thisDialog.find("#add_service_name_errormsg"));
+					isValid &= validateString("Display Text", thisDialog.find("#add_service_display"), thisDialog.find("#add_service_display_errormsg"));
+					isValid &= validateNumber("# of CPU Core", thisDialog.find("#add_service_cpucore"), thisDialog.find("#add_service_cpucore_errormsg"), 1, 1000);		
+					isValid &= validateNumber("CPU", thisDialog.find("#add_service_cpu"), thisDialog.find("#add_service_cpu_errormsg"), 100, 100000);		
+					isValid &= validateNumber("Memory", thisDialog.find("#add_service_memory"), thisDialog.find("#add_service_memory_errormsg"), 64, 1000000);							
 					if (!isValid) return;										
+										
+					var submenuContent = $("#submenu_content_service");                  
+                    var template = $("#service_template").clone(true);		
+					var loadingImg = template.find(".adding_loading");		
+                    var rowContainer = template.find("#row_container");    	                               
+                    loadingImg.find(".adding_text").text("Adding....");	
+                    loadingImg.show();  
+                    rowContainer.hide();                                   
+                    submenuContent.find("#grid_content").prepend(template.fadeIn("slow"));    
+										
+					var moreCriteria = [];						
+					var name = trim(thisDialog.find("#add_service_name").val());
+					moreCriteria.push("&name="+encodeURIComponent(name));	
 					
-					var name = trim(dialogAddService.find("#add_service_name").val());
-					var display = trim(dialogAddService.find("#add_service_display").val());
-					var storagetype = trim(dialogAddService.find("#add_service_storagetype").val());
-					var core = trim(dialogAddService.find("#add_service_cpucore").val());
-					var cpu = trim(dialogAddService.find("#add_service_cpu").val());
-					var memory = trim(dialogAddService.find("#add_service_memory").val());
+					var display = trim(thisDialog.find("#add_service_display").val());
+					moreCriteria.push("&displayText="+encodeURIComponent(display));	
 					
-					var dialogBox = $(this);
-					dialogBox.dialog("close");
+					var storagetype = trim(thisDialog.find("#add_service_storagetype").val());
+					moreCriteria.push("&storageType="+storagetype);	
+					
+					var core = trim(thisDialog.find("#add_service_cpucore").val());
+					moreCriteria.push("&cpuNumber="+core);	
+					
+					var cpu = trim(thisDialog.find("#add_service_cpu").val());
+					moreCriteria.push("&cpuSpeed="+cpu);	
+					
+					var memory = trim(thisDialog.find("#add_service_memory").val());
+					moreCriteria.push("&memory="+memory);	
+						
+					var offerha = thisDialog.find("#add_service_offerha").val();	
+					moreCriteria.push("&offerha="+offerha);								
+					
+					thisDialog.dialog("close");
 					$.ajax({
-						data: "command=createServiceOffering&name="+encodeURIComponent(name)+"&displayText="+encodeURIComponent(display)+"&storageType="+storagetype+"&cpuNumber="+core+"&cpuSpeed="+cpu+"&memory="+memory+"&response=json",
+						data: "command=createServiceOffering"+moreCriteria.join("")+"&response=json",
 						dataType: "json",
 						success: function(json) {
-							var offering = json.createserviceofferingresponse;
-							var template = $("#service_template").clone(true).attr("id", "service_"+offering.id);
-							serviceJSONToTemplate(offering, template);
-							$("#submenu_content_service #grid_content").append(template.fadeIn("slow"));
+							var offering = json.createserviceofferingresponse;							
+							serviceJSONToTemplate(offering, template);							
 							changeGridRowsTotal(submenuContent.find("#grid_rows_total"), 1); 
-						}
+							loadingImg.hide();  
+                            rowContainer.show();    
+						},			
+	                    error: function(XMLHttpResponse) {		                   
+		                    handleError(XMLHttpResponse);	
+		                    template.slideUp("slow", function(){ $(this).remove(); } );							    
+	                    }							
 					});
+				}, 
+				"Cancel": function() { 
+					$(this).dialog("close"); 
 				} 
 			}).dialog("open");
 			return false;
@@ -980,36 +1091,49 @@ function showConfigurationTab() {
 			var submenuContent = $("#submenu_content_disk");
 					
 			dialogAddDisk
-			.dialog('option', 'buttons', { 
-				"Cancel": function() { 
-					$(this).dialog("close"); 
-				},
-				"Add": function() { 					    		
+			.dialog('option', 'buttons', { 				
+				"Add": function() { 
+				    var thisDialog = $(this);
+									    		
 					// validate values
 					var isValid = true;					
-					isValid &= validateString("Name", dialogAddDisk.find("#add_disk_name"), dialogAddDisk.find("#add_disk_name_errormsg"));
-					isValid &= validateString("Description", dialogAddDisk.find("#add_disk_description"), dialogAddDisk.find("#add_disk_description_errormsg"));
-					isValid &= validateNumber("Disk size", dialogAddDisk.find("#add_disk_disksize"), dialogAddDisk.find("#add_disk_disksize_errormsg"), 1, null); 	
-					if (!isValid) return;										
+					isValid &= validateString("Name", thisDialog.find("#add_disk_name"), thisDialog.find("#add_disk_name_errormsg"));
+					isValid &= validateString("Description", thisDialog.find("#add_disk_description"), thisDialog.find("#add_disk_description_errormsg"));
+					isValid &= validateNumber("Disk size", thisDialog.find("#add_disk_disksize"), thisDialog.find("#add_disk_disksize_errormsg"), 1, null); 	
+					if (!isValid) return;		
+					
+					var submenuContent = $("#submenu_content_disk");                  
+                    var template = $("#disk_template").clone(true);		
+					var loadingImg = template.find(".adding_loading");		
+                    var rowContainer = template.find("#row_container");    	                               
+                    loadingImg.find(".adding_text").text("Adding....");	
+                    loadingImg.show();  
+                    rowContainer.hide();                                   
+                    submenuContent.find("#grid_content").prepend(template.fadeIn("slow"));    		
 										
-					var name = trim(dialogAddDisk.find("#add_disk_name").val());
-					var description = trim(dialogAddDisk.find("#add_disk_description").val());				
-					var disksize = trim(dialogAddDisk.find("#add_disk_disksize").val());
-					//var mirrored = trim(dialogAddDisk.find("#dialog_add_disk #add_disk_mirrored").val());
-														
-					var dialogBox = $(this);
-					dialogBox.dialog("close");
+					var name = trim(thisDialog.find("#add_disk_name").val());
+					var description = trim(thisDialog.find("#add_disk_description").val());				
+					var disksize = trim(thisDialog.find("#add_disk_disksize").val());
+							
+					thisDialog.dialog("close");
 					$.ajax({
 						data: "command=createDiskOffering&name="+encodeURIComponent(name)+"&displaytext="+encodeURIComponent(description)+"&disksize="+disksize+"&isMirrored=false&response=json",
 						dataType: "json",
 						success: function(json) {						   
-							var offering = json.creatediskofferingresponse;
-							var template = $("#disk_template").clone(true).attr("id", "disk_"+offering.id);
-							diskJSONToTemplate(offering, template);
-							$("#submenu_content_disk #grid_content").append(template.fadeIn("slow"));
+							var offering = json.creatediskofferingresponse;							
+							diskJSONToTemplate(offering, template);							
 							changeGridRowsTotal(submenuContent.find("#grid_rows_total"), 1);
-						}
+							loadingImg.hide();  
+                            rowContainer.show();    
+						},			
+	                    error: function(XMLHttpResponse) {		                   
+		                    handleError(XMLHttpResponse);	
+		                    template.slideUp("slow", function(){ $(this).remove(); } );							    
+	                    }	
 					});
+				}, 
+				"Cancel": function() { 
+					$(this).dialog("close"); 
 				} 
 			}).dialog("open");			
 			return false;
@@ -1070,10 +1194,7 @@ function showConfigurationTab() {
 					dialogEditDisk.find("#edit_disk_display").val(template.find("#disk_description").text());		
 								
 					dialogEditDisk
-					.dialog('option', 'buttons', { 
-						"Cancel": function() { 
-							$(this).dialog("close"); 
-						},
+					.dialog('option', 'buttons', { 						
 						"Confirm": function() { 							
 							// validate values
 					        var isValid = true;						        			
@@ -1094,16 +1215,16 @@ function showConfigurationTab() {
 									template.find("#disk_name").text(name);
 								}
 							});
+						}, 
+						"Cancel": function() { 
+							$(this).dialog("close"); 
 						} 
 					}).dialog("open");
 					break;	
 				case "disk_action_delete" :
 					$("#dialog_confirmation")
 					.html("<p>Please confirm you want to remove the disk offering: <b>"+diskName+"</b> from the management server. </p>")
-					.dialog('option', 'buttons', { 
-						"Cancel": function() { 
-							$(this).dialog("close"); 
-						},
+					.dialog('option', 'buttons', { 						
 						"Confirm": function() { 
 							var dialogBox = $(this);
 							$.ajax({
@@ -1117,6 +1238,9 @@ function showConfigurationTab() {
 									});
 								}
 							});
+						},
+						"Cancel": function() { 
+							$(this).dialog("close"); 
 						} 
 					}).dialog("open");
 					break;
@@ -1133,7 +1257,8 @@ function showConfigurationTab() {
 			} else {
 				template.addClass("smallrow_odd");
 			}
-			template.data("diskId", json.id).data("diskName", json.name);			
+			template.data("diskId", json.id).data("diskName", sanitizeXSS(json.name));	
+					
 			template.find("#disk_id").text(json.id);			
 			template.find("#disk_name").text(json.name);
 			template.find("#disk_description").text(json.displaytext);
@@ -1162,7 +1287,7 @@ function showConfigurationTab() {
             }
         	  
         	//listItems(submenuContent, commandString, jsonResponse1, jsonResponse2, template, fnJSONToTemplate);         
-            listItems(submenuContent, commandString, "listdiskofferingsresponse", "diskOffering", $("#disk_template"), diskJSONToTemplate);              	
+            listItems(submenuContent, commandString, "listdiskofferingsresponse", "diskoffering", $("#disk_template"), diskJSONToTemplate);              	
 		}		
 		
 		submenuContentEventBinder($("#submenu_content_disk"), listDiskOfferings);	

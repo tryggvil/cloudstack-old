@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<!--
+	ANT build file to create the JavaDoc of the custom demo.
+-->
+
+<project basedir="." default="doc" name="Extended">
+	
+	<target 
+		name="custom" 
+		description="Builds the Custom Taglet"
+	>
+		<mkdir dir="classes"/>
+		<!-- Only compile the custom taglet classes -->
+		<javac 
+			srcdir="src" 
+			destdir="classes" 
+			excludes="**/demo/**"
+			classpath="../../taglets.jar"
+		/>
+		<!-- Package classes and resource files -->
+		<jar jarfile="custom.jar">
+			<fileset dir="classes"/>
+			<fileset dir="rsrc"/>
+		</jar>
+	</target>
+	
+	<target 
+		name="doc" 
+		description="Builds the Custom Demo JavaDoc" 
+		depends="clean, custom"
+	>
+		<tstamp>
+			<format property="timestamp" pattern="yyyy/MM/dd HH:mm:ss"/>
+		</tstamp>		
+		<javadoc
+			destdir="doc"
+			classpath="../../taglets.jar"
+			overview="src/overview.html"
+			private="true"
+			windowtitle="Taglets Collection Extended Demo API Specification"
+		>
+			<!-- Use a nice documentation title -->
+			<doctitle>
+				Taglets Collection&lt;br&gt;
+				Extended Demo API Specification
+			</doctitle>
+			<!-- Create a header that contains the taglets logo -->
+			<!-- Note the use of the {@docRoot} tag to link to the logo -->
+			<header>
+				&lt;img
+					src=&quot;{@docRoot}/resources/logo.gif&quot; 
+					width=&quot;88&quot; height=&quot;40&quot; border=&quot;0&quot;
+				&gt;
+			</header>
+			<!-- Same for the footer -->
+			<footer>
+				&lt;img 
+					src=&quot;{@docRoot}/resources/logo.gif&quot; 
+					width=&quot;88&quot; height=&quot;40&quot;
+				&gt;
+			</footer>
+			<!-- Include a timestamp at the bottom of the docu generated -->
+			<!-- Note the use of ${timestamp} which was created by the -->
+			<!-- <tstamp> task at the start of this target -->
+			<bottom>
+				&lt;p align=&quot;right&quot;&gt;
+					&lt;font class=&quot;NavBarFont1&quot; size=&quot;-2&quot;&gt;
+						Taglets Collection&lt;br&gt;
+						Extended JavaDoc Demo&lt;br&gt;
+						${timestamp}
+					&lt;/font&gt;
+				&lt;/p&gt;
+			</bottom>
+			<!-- Include the custom archive (containing our custom taglet as well -->
+			<!-- as our custom resources plus the taglets collection -->
+			<taglet
+				name="net.sourceforge.taglets.Taglets"
+				path="custom.jar:../../taglets.jar"
+			/>
+			<fileset dir="src" includes="**/*.java"/>
+		</javadoc>
+	</target>
+	
+	<target
+		name="clean" 
+		description="Removes all generated files"
+	>
+		<delete quiet="true" includeEmptyDirs="true">
+			<fileset dir="doc"/>
+			<fileset dir="classes"/>
+			<fileset dir="custom.jar"/>
+		</delete>
+	</target>
+	
+</project>

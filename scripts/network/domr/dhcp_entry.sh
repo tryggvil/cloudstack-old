@@ -1,4 +1,5 @@
 #!/bin/bash
+# $Id: dhcp_entry.sh 9373 2010-06-09 01:57:36Z edison $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/network/domr/dhcp_entry.sh $
 # dhcp_entry.sh -- add dhcp entry on domr
 #
 
@@ -7,7 +8,7 @@ usage() {
   exit 2
 }
 
-cert="$(dirname $0)/id_rsa"
+cert="/root/.ssh/id_rsa.cloud"
 
 add_dhcp_entry() {
   local domr=$1

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Copyright 2010 Cloud.com, Inc. All Rights Reserved -->
+
+<project name="Cloud.com Developer Premium Targets" basedir=".">
+  <description>
+        This is a developer.xml with tools to start and stop tomcat and 
+        generally developer targets that has nothing to do with compiling.
+    </description>
+
+
+  <import file="${build.dir}/developer.xml" optional="false"/>
+
+
+  <target name="deploy-server" depends="build-all, package-systemvm-premium, deploy-common" />
+
+
+</project>
+

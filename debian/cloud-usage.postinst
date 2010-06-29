@@ -21,6 +21,10 @@ case "$1" in
 		chgrp cloud $i
 	done
 	
+	if [ "$2" = "" ] ; then # no recently configured version, this is a first install
+		/usr/sbin/update-rc.d cloud-usage defaults || true
+	fi
+	
     ;;
 esac
 

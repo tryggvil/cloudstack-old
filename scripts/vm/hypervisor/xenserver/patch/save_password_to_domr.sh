@@ -1,4 +1,5 @@
 #!/bin/bash
+# $Id: save_password_to_domr.sh 9132 2010-06-04 20:17:43Z manuel $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/vm/hypervisor/xenserver/patch/save_password_to_domr.sh $
 
 #replace a line in a file of the form key=value
 #   $1 filename

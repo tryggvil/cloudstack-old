@@ -4,7 +4,7 @@
 # DISABLE the post-percentinstall java repacking and line number stripping
 # we need to find a way to just disable the java repacking and line number stripping, but not the autodeps
 
-%define _ver 1.9.12
+%define _ver 2.0.0
 %define _rel 1
 
 Name:      cloud
@@ -34,6 +34,8 @@ BuildRequires: commons-httpclient
 BuildRequires: jpackage-utils
 BuildRequires: gcc
 BuildRequires: glibc-devel
+
+%define _premium %(tar jtvmf %{SOURCE0} | grep 'premium/$' | head -1 | wc -l)
 
 %description
 This is the Cloud.com Stack, a highly-scalable elastic, open source,
@@ -89,6 +91,9 @@ Requires: bash
 Requires: bzip2
 Requires: gzip
 Requires: unzip
+Requires: /sbin/mount.nfs
+Requires: openssh-clients
+Requires: nfs-utils
 Obsoletes: vmops-agent-scripts < %{version}-%{release}
 Group:     System Environment/Libraries
 %description agent-scripts
@@ -116,16 +121,6 @@ This package contains a program that daemonizes the specified
 process.  The Cloud.com Cloud Stack uses this to start the agent
 as a service.
 
-%package premium-deps
-Summary:   Cloud.com premium library dependencies
-Requires: java >= 1.6.0
-Provides: %{name}-deps = %{version}-%{release}
-Group:     System Environment/Libraries
-Obsoletes: vmops-premium-deps < %{version}-%{release}
-%description premium-deps
-This package contains the certified software components required to run
-the premium edition of the Cloud.com Stack.
-
 %package core
 Summary:   Cloud.com core library
 Requires: java >= 1.6.0
@@ -135,16 +130,6 @@ Obsoletes: vmops-core < %{version}-%{release}
 %description core
 The Cloud.com core libraries provide a set of Java classes used
 in the Cloud.com Stack.
-
-%package console
-Summary:   Cloud.com console
-Requires: java >= 1.6.0
-Group:     System Environment/Libraries
-Obsoletes: vmops-console < %{version}-%{release}
-%description console
-The Cloud.com console package contains a set of shared classes
-used by the remote management console system in the Cloud.com
-Stack.
 
 %package test
 Summary:   Cloud.com test suite
@@ -156,17 +141,6 @@ Obsoletes: vmops-test < %{version}-%{release}
 The Cloud.com test package contains a suite of automated tests
 that the very much appreciated QA team at Cloud.com constantly
 uses to help increase the quality of the Cloud.com Stack.
-
-%package console-proxy
-Summary:   Cloud.com console proxy
-Requires: java >= 1.6.0
-Requires: %{name}-deps = %{version}-%{release}, %{name}-console = %{version}-%{release}
-Group:     System Environment/Libraries
-Obsoletes: vmops-console-proxy < %{version}-%{release}
-%description console-proxy
-The Cloud.com console proxy contains an implementation of an
-AJAX-based remote console viewer for virtual machines created
-within a Cloud.com Cloud Stack-powered cloud.
 
 %package client
 Summary:   Cloud.com management server
@@ -192,6 +166,9 @@ Requires: sudo
 Requires: /sbin/service
 Requires: /sbin/chkconfig
 Requires: /usr/bin/ssh-keygen
+Requires: MySQL-python
+Requires: python-paramiko
+Requires: /usr/bin/augtool
 Group:     System Environment/Libraries
 %description client
 The Cloud.com management server is the central point of coordination,
@@ -211,24 +188,16 @@ Group:     System Environment/Libraries
 %description setup
 The Cloud.com setup tools let you set up your Management Server and Usage Server.
 
-%package client-api
-Summary:   Cloud.com client API library
-Obsoletes: vmops-client-api < %{version}-%{release}
-Requires: java >= 1.6.0
-Requires: %{name}-utils = %{version}-%{release}
-Group:     System Environment/Libraries
-%description client-api
-The Cloud.com client API provides a generic client API for the
-Cloud.com Stack components and third parties to use.
-
 %package agent
 Summary:   Cloud.com agent
 Obsoletes: vmops-agent < %{version}-%{release}
+Obsoletes: vmops-console-proxy < %{version}-%{release}
+Obsoletes: cloud-console-proxy < %{version}-%{release}
+Obsoletes: vmops-console < %{version}-%{release}
+Obsoletes: cloud-console < %{version}-%{release}
 Requires: java >= 1.6.0
 Requires: %{name}-utils = %{version}-%{release}, %{name}-core = %{version}-%{release}, %{name}-deps = %{version}-%{release}
 Requires: %{name}-agent-scripts = %{version}-%{release}
-# Requires: %{name}-console = %{version}-%{release}
-# Requires: %{name}-console-proxy = %{version}-%{release}
 Requires: %{name}-vnet = %{version}-%{release}
 Requires: commons-httpclient
 #Requires: commons-codec
@@ -242,10 +211,8 @@ Requires: jpackage-utils
 Requires: %{name}-daemonize
 Requires: /sbin/service
 Requires: /sbin/chkconfig
-Requires: /usr/bin/qemu-nbd
-Requires: /usr/bin/qemu-kvm
-Requires: /bin/cgcreate
-Requires: /sbin/mount.nfs
+Requires: kvm
+Requires: libcgroup
 Requires: /usr/bin/uuidgen
 Requires: /usr/bin/augtool
 Group:     System Environment/Libraries
@@ -254,12 +221,23 @@ The Cloud.com agent is in charge of managing shared computing resources in
 a Cloud.com Stack-powered cloud.  Install this package if this computer
 will participate in your cloud.
 
+%if %{_premium}
+
+%package premium-deps
+Summary:   Cloud.com premium library dependencies
+Requires: java >= 1.6.0
+Provides: %{name}-deps = %{version}-%{release}
+Group:     System Environment/Libraries
+Obsoletes: vmops-premium-deps < %{version}-%{release}
+%description premium-deps
+This package contains the certified software components required to run
+the premium edition of the Cloud.com Stack.
+
 %package premium
 Summary:   Cloud.com premium components
 Obsoletes: vmops-premium < %{version}-%{release}
 Requires: java >= 1.6.0
-Requires: %{name}-utils = %{version}-%{release}, %{name}-core = %{version}-%{release}, %{name}-deps = %{version}-%{release}, %{name}-server = %{version}-%{release}
-# , %{name}-console-proxy
+Requires: %{name}-utils = %{version}-%{release}
 Requires: %{name}-premium-deps
 License:   CSL 1.1
 Group:     System Environment/Libraries
@@ -278,11 +256,19 @@ Group:     System Environment/Libraries
 The Cloud.com usage monitor provides usage accounting across the entire cloud for
 cloud operators to charge based on usage parameters.
 
+%endif
+
 %prep
 
 %setup -q -n %{name}-%{_ver}
 
 %build
+
+%if %{_premium}
+echo Doing premium build
+%else
+echo Doing open source build
+%endif
 
 # this fixes the /usr/com bug on centos5
 %define _localstatedir /var
@@ -292,7 +278,6 @@ cloud operators to charge based on usage parameters.
 ./waf build
 
 %install
-
 [ ${RPM_BUILD_ROOT} != "/" ] && rm -rf ${RPM_BUILD_ROOT}
 ./waf install --destdir=$RPM_BUILD_ROOT --nochown
 
@@ -323,6 +308,8 @@ test -f %{_sharedstatedir}/%{name}/management/.ssh/id_rsa || su - %{name} -c 'ye
 
 
 
+%if %{_premium}
+
 %preun usage
 if [ "$1" == "0" ] ; then
     /sbin/chkconfig --del %{name}-usage  > /dev/null 2>&1 || true
@@ -342,6 +329,7 @@ else
     /sbin/service %{name}-usage condrestart >/dev/null 2>&1 || true
 fi
 
+%endif
 
 %pre agent-scripts
 id %{name} > /dev/null 2>&1 || /usr/sbin/useradd -M -c "Cloud.com unprivileged user" \
@@ -396,6 +384,20 @@ fi
 %doc README
 %doc debian/copyright
 
+%if %{_premium}
+
+%files agent-scripts
+%defattr(-,root,root,-)
+%{_libdir}/%{name}/agent/scripts/*
+%exclude %{_libdir}/%{name}/agent/scripts/vm/hypervisor/systemvm-premium.zip
+%exclude %{_libdir}/%{name}/agent/scripts/vm/hypervisor/xenserver/patch/systemvm-premium.zip
+%exclude %{_libdir}/%{name}/agent/scripts/vm/hypervisor/kvm/patch/systemvm-premium.zip
+%attr(0600,%{name},root) %{_libdir}/%{name}/agent/scripts/network/domr/id_rsa
+%doc README
+%doc debian/copyright
+
+%else
+
 %files agent-scripts
 %defattr(-,root,root,-)
 %{_libdir}/%{name}/agent/scripts/*
@@ -403,9 +405,11 @@ fi
 %doc README
 %doc debian/copyright
 
+%endif
+
 %files daemonize
 %defattr(-,root,root,-)
-%{_bindir}/%{name}-daemonize
+%attr(755,root,root) %{_bindir}/%{name}-daemonize
 %doc README
 %doc debian/copyright
 
@@ -420,7 +424,7 @@ fi
 %{_javadir}/%{name}-httpcore-4.0.jar
 %{_javadir}/%{name}-jna.jar
 %{_javadir}/%{name}-junit-4.8.1.jar
-%{_javadir}/%{name}-libvirt-0.4.0.jar
+%{_javadir}/%{name}-libvirt-0.4.5.jar
 %{_javadir}/%{name}-log4j.jar
 %{_javadir}/%{name}-trilead-ssh2-build213.jar
 %{_javadir}/%{name}-cglib.jar
@@ -431,21 +435,9 @@ fi
 %doc README
 %doc debian/copyright
 
-%files premium-deps
-%defattr(0644,root,root,0755)
-%{_javadir}/%{name}-premium/*.jar
-%doc README
-%doc debian/copyright
-
 %files core
 %defattr(0644,root,root,0755)
 %{_javadir}/%{name}-core.jar
-%doc README
-%doc debian/copyright
-
-%files console
-%defattr(0644,root,root,0755)
-%{_javadir}/%{name}-console.jar
 %doc README
 %doc debian/copyright
 
@@ -456,13 +448,6 @@ fi
 %{_sharedstatedir}/%{name}/test/*
 %{_libdir}/%{name}/test/*
 %{_sysconfdir}/%{name}/test/*
-%doc README
-%doc debian/copyright
-
-%files console-proxy
-%defattr(0644,root,root,0755)
-%{_javadir}/%{name}-console-proxy.jar
-%{_libdir}/%{name}/console-proxy/*
 %doc README
 %doc debian/copyright
 
@@ -477,8 +462,15 @@ fi
 
 %files setup
 %attr(0755,root,root) %{_bindir}/%{name}-setup-databases
-%{_datadir}/%{name}/setup
-# FIXME need to go in its own setup dir!
+%dir %{_datadir}/%{name}/setup
+%{_datadir}/%{name}/setup/create-database.sql
+%{_datadir}/%{name}/setup/create-index-fk.sql
+%{_datadir}/%{name}/setup/create-schema.sql
+%{_datadir}/%{name}/setup/server-setup.sql
+%{_datadir}/%{name}/setup/templates.kvm.sql
+%{_datadir}/%{name}/setup/templates.xenserver.sql
+%{_datadir}/%{name}/setup/deploy-db-dev.sh
+%{_datadir}/%{name}/setup/server-setup.xml
 %doc README
 %doc debian/copyright
 
@@ -503,7 +495,7 @@ fi
 %dir %attr(770,root,%{name}) %{_sysconfdir}/%{name}/management/Catalina/localhost
 %dir %attr(770,root,%{name}) %{_sysconfdir}/%{name}/management/Catalina/localhost/client
 %config %{_sysconfdir}/sysconfig/%{name}-management
-%{_initrddir}/%{name}-management
+%attr(0755,root,root) %{_initrddir}/%{name}-management
 %dir %{_datadir}/%{name}/management
 %{_datadir}/%{name}/management/bin
 %{_datadir}/%{name}/management/conf
@@ -511,6 +503,8 @@ fi
 %{_datadir}/%{name}/management/logs
 %{_datadir}/%{name}/management/temp
 %{_datadir}/%{name}/management/work
+%attr(755,root,root) %{_bindir}/%{name}-setup-management
+%attr(755,root,root) %{_bindir}/%{name}-update-xenserver-licenses
 %dir %attr(770,root,%{name}) %{_sharedstatedir}/%{name}/mnt
 %dir %attr(770,%{name},%{name}) %{_sharedstatedir}/%{name}/management
 %dir %attr(770,root,%{name}) %{_localstatedir}/cache/%{name}/management
@@ -518,12 +512,6 @@ fi
 %dir %attr(770,root,%{name}) %{_localstatedir}/cache/%{name}/management/temp
 %dir %attr(770,root,%{name}) %{_localstatedir}/log/%{name}/management
 %dir %attr(770,root,%{name}) %{_localstatedir}/log/%{name}/agent
-%doc README
-%doc debian/copyright
-
-%files client-api
-%defattr(0644,root,root,0755)
-%{_javadir}/%{name}-client-api.jar
 %doc README
 %doc debian/copyright
 
@@ -546,11 +534,25 @@ fi
 %doc README
 %doc debian/copyright
 
+%if %{_premium}
+
+%files premium-deps
+%defattr(0644,root,root,0755)
+%{_javadir}/%{name}-premium/*.jar
+%doc README
+%doc debian/copyright
+
 %files premium
 %defattr(0644,root,root,0755)
 %{_javadir}/%{name}-premium.jar
+%{_javadir}/%{name}-core-extras.jar
 %{_sysconfdir}/%{name}/management/commands-ext.properties
 %{_sysconfdir}/%{name}/management/components-premium.xml
+%{_libdir}/%{name}/agent/scripts/vm/hypervisor/systemvm-premium.zip
+%{_libdir}/%{name}/agent/scripts/vm/hypervisor/xenserver/patch/systemvm-premium.zip
+%{_libdir}/%{name}/agent/scripts/vm/hypervisor/kvm/patch/systemvm-premium.zip
+%{_datadir}/%{name}/setup/create-database-premium.sql
+%{_datadir}/%{name}/setup/create-schema-premium.sql
 %doc README
 %doc debian/copyright
 
@@ -566,7 +568,7 @@ fi
 %doc README
 %doc debian/copyright
 
-
+%endif
 
 %changelog
 * Mon May 3 2010 Manuel Amador (Rudd-O) <manuel@vmops.com> 1.9.12

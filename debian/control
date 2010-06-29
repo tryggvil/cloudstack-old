@@ -60,11 +60,11 @@ Description: Cloud.com-specific virtual network daemon
  Cloud.com Cloud Stack.
 
 Package: cloud-agent-scripts
-Provides: vmops-agent-scripts
-Conflicts: vmops-agent-scripts
-Replaces: vmops-agent-scripts
+Provides: vmops-agent-scripts, vmops-console, cloud-console, vmops-console-proxy, cloud-console-proxy
+Conflicts: vmops-agent-scripts, vmops-console, cloud-console, vmops-console-proxy, cloud-console-proxy
+Replaces: vmops-agent-scripts, vmops-console, cloud-console, vmops-console-proxy, cloud-console-proxy
 Architecture: any
-Depends: openjdk-6-jre, python, bash, bzip2, gzip, unzip
+Depends: openjdk-6-jre, python, bash, bzip2, gzip, unzip, nfs-common, openssh-client
 Description: Cloud.com agent scripts
  The Cloud.com agent is in charge of managing shared computing resources in
  a Cloud.com Cloud Stack-powered cloud.  Install this package if this computer
@@ -101,17 +101,6 @@ Description: Cloud.com core library
  The Cloud.com core libraries provide a set of Java classes used
  in the Cloud.com Cloud Stack.
 
-Package: cloud-console
-Provides: vmops-console
-Conflicts: vmops-console
-Replaces: vmops-console
-Architecture: any
-Depends: openjdk-6-jre
-Description: Cloud.com console
- The Cloud.com console package contains a set of shared classes
- used by the remote management console system in the Cloud.com
- Cloud Stack.
-
 Package: cloud-test
 Provides: vmops-test
 Conflicts: vmops-test
@@ -123,23 +112,12 @@ Description: Cloud.com test suite
  that the very much appreciated QA team at Cloud.com constantly
  uses to help increase the quality of the Cloud Stack.
 
-Package: cloud-console-proxy
-Provides: vmops-console-proxy
-Conflicts: vmops-console-proxy
-Replaces: vmops-console-proxy
-Architecture: any
-Depends: openjdk-6-jre, cloud-deps (= ${source:Version}), cloud-console (= ${source:Version})
-Description: Cloud.com console proxy
- The Cloud.com console proxy contains an implementation of an
- AJAX-based remote console viewer for virtual machines created
- within a Cloud.com Cloud Stack-powered cloud.
-
 Package: cloud-client
 Provides: vmops-client
 Conflicts: vmops-client
 Replaces: vmops-client
 Architecture: any
-Depends: openjdk-6-jre, cloud-deps (= ${source:Version}), cloud-utils (= ${source:Version}), cloud-server (= ${source:Version}), cloud-client-ui (= ${source:Version}), cloud-setup (= ${source:Version}), cloud-agent-scripts (= ${source:Version}), tomcat6, libws-commons-util-java, libcommons-dbcp-java, libcommons-collections-java, libcommons-httpclient-java, sysvinit-utils, chkconfig, sudo, openssh-client, jsvc
+Depends: openjdk-6-jre, cloud-deps (= ${source:Version}), cloud-utils (= ${source:Version}), cloud-server (= ${source:Version}), cloud-client-ui (= ${source:Version}), cloud-setup (= ${source:Version}), cloud-agent-scripts (= ${source:Version}), tomcat6, libws-commons-util-java, libcommons-dbcp-java, libcommons-collections-java, libcommons-httpclient-java, sysvinit-utils, chkconfig, sudo, jsvc, python-mysqldb, python-paramiko, augeas-tools
 Description: Cloud.com client
  The Cloud.com management server is the central point of coordination,
  management, and intelligence in the Cloud.com Cloud Stack.  This package
@@ -154,22 +132,12 @@ Depends: openjdk-6-jre, python, cloud-utils (= ${source:Version}), mysql-client,
 Description: Cloud.com client
  The Cloud.com setup tools let you set up your Management Server and Usage Server.
 
-Package: cloud-client-api
-Provides: vmops-client-api
-Conflicts: vmops-client-api
-Replaces: vmops-client-api
-Architecture: any
-Depends: openjdk-6-jre
-Description: Cloud.com client API library
- The Cloud.com client API provides a generic client API for the
- Cloud.com Cloud Stack components and third parties to use.
-
 Package: cloud-agent
 Provides: vmops-agent
 Conflicts: vmops-agent
 Replaces: vmops-agent
 Architecture: any
-Depends: openjdk-6-jre, cloud-utils (= ${source:Version}), cloud-core (= ${source:Version}), cloud-deps (= ${source:Version}), cloud-agent-scripts (= ${source:Version}), cloud-vnet (= ${source:Version}), libcommons-httpclient-java, libcommons-collections-java, libcommons-dbcp-java, libcommons-pool-java, libcommons-logging-java, libvirt0, cloud-daemonize, sysvinit-utils, chkconfig, qemu-kvm, libvirt-bin, cgroup-bin, nfs-common, augeas-tools, uuid-runtime
+Depends: openjdk-6-jre, cloud-utils (= ${source:Version}), cloud-core (= ${source:Version}), cloud-deps (= ${source:Version}), cloud-agent-scripts (= ${source:Version}), cloud-vnet (= ${source:Version}), libcommons-httpclient-java, libcommons-collections-java, libcommons-dbcp-java, libcommons-pool-java, libcommons-logging-java, libvirt0, cloud-daemonize, sysvinit-utils, chkconfig, qemu-kvm, libvirt-bin, cgroup-bin, augeas-tools, uuid-runtime
 Description: Cloud.com agent
  The Cloud.com agent is in charge of managing shared computing resources in
  a Cloud.com Cloud Stack-powered cloud.  Install this package if this computer
@@ -180,7 +148,7 @@ Provides: vmops-premium
 Conflicts: vmops-premium
 Replaces: vmops-premium
 Architecture: any
-Depends: openjdk-6-jre, cloud-utils (= ${source:Version}), cloud-core (= ${source:Version}), cloud-deps (= ${source:Version}), cloud-server (= ${source:Version}), cloud-premium-deps (= ${source:Version})
+Depends: openjdk-6-jre, cloud-utils (= ${source:Version}), cloud-premium-deps (= ${source:Version})
 Description: Cloud.com premium components
  The Cloud.com premium components expand the range of features on your cloud stack.
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# $Id: createtmplt.sh 9132 2010-06-04 20:17:43Z manuel $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/storage/secondary/createtmplt.sh $
 # createtmplt.sh -- install a template
 
 usage() {
@@ -7,6 +8,8 @@ usage() {
 
 
 #set -x
+ulimit -f 41943040 #40GiB in blocks
+ulimit -c 0
 
 rollback_if_needed() {
   if [ $2 -gt 0 ]
@@ -30,15 +33,13 @@ verify_cksum() {
 
 untar() {
   local ft=$(file $1| awk -F" " '{print $2}')
-  local basedir=$(dirname $1)
   case $ft in
-  USTAR)  local rootimg=$(tar tf $1 | grep $3)
-          (cd $2; tar xf $1)
-          rm -f $1
-          printf "$2/$rootimg"
+  USTAR) 
+     printf "tar archives not supported\n"  >&2
+     return 1
           ;;
-      *)  printf "$1"
-          return 0
+  *) printf "$1"
+     return 0
 	  ;;
   esac
 
@@ -50,11 +51,11 @@ uncompress() {
   local tmpfile=${imgfile}.tmp
 
   case $ft in
-  gzip)  gunzip -c $1 > $tmpfile
+  gzip)  gunzip -q -c $1 > $tmpfile
          ;;
-  bzip2)  bunzip2 -c $1 > $tmpfile
+  bzip2)  bunzip2 -q -c $1 > $tmpfile
          ;;
-  ZIP)  unzip -p $1 | cat > $tmpfile
+  ZIP)  unzip -q -p $1 | cat > $tmpfile
         ;;
   *)	printf "$1"
         return 0
@@ -63,8 +64,8 @@ uncompress() {
 
   if [ $? -gt 0 ] 
   then
-    printf "Failed to uncompress file, exiting "
-    exit 1 
+    printf "Failed to uncompress file (filetype=$ft), exiting "
+    return 1 
   fi
  
   mv $tmpfile $imgfile
@@ -82,19 +83,6 @@ create_from_file() {
 
   #copy the file to the disk
   mv $tmpltimg /$tmpltfs/$tmpltname
-  #create symbolic link if it is *.vhd
- 
-  file=$tmpltname
-  if [ "${file%.vhd}" != "$file" ]
-  then
-    tmpltfs=/$tmpltfs/$file
-    mp=${tmpltfs%/template/*}
-    mp=$mp/template
-    path=${tmpltfs##*/template/}
-    pushd $mp
-    ln -s $path $file
-    popd
-  fi
 
 #  if [ "$cleanup" == "true" ]
 #  then
@@ -112,7 +100,7 @@ cleanup=false
 dflag=
 cflag=
 
-while getopts 'uht:n:f:s:c:d:' OPTION
+while getopts 'uht:n:f:s:c:d:S:' OPTION
 do
   case $OPTION in
   t)	tflag=1
@@ -132,6 +120,11 @@ do
 		;;
   d)	dflag=1
 		descr="$OPTARG"
+		;;
+  S)	Sflag=1
+		size=$OPTARG
+                let "size>>=10"
+		ulimit -f $size
 		;;
   h)	hflag=1
 		hvm="true"
@@ -166,7 +159,16 @@ fi
 #fi
 
 tmpltimg2=$(uncompress $tmpltimg)
+if [ $? -ne 0 ]
+then
+  rollback_if_needed $tmpltfs 2 "failed to uncompress $tmpltimg\n"
+fi
+
 tmpltimg2=$(untar $tmpltimg2 /$tmpltfs vmi-root)
+if [ $? -ne 0 ]
+then
+  rollback_if_needed $tmpltfs 2 "tar archives not supported\n"
+fi
 
 if [ ! -f $tmpltimg2 ] 
 then

@@ -1,4 +1,5 @@
 # Copyright (c) 2005-2007 XenSource, Inc. All use and distribution of this
+# $Id: scsiutil.py 9132 2010-06-04 20:17:43Z manuel $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/vm/hypervisor/xenserver/patch/scsiutil.py $
 # copyrighted material is governed by and subject to terms and conditions
 # as licensed by XenSource, Inc. All other rights reserved.
 # Xen, XenSource and XenEnterprise are either registered trademarks or
@@ -337,7 +338,7 @@ def _genReverseSCSIidmap(SCSIid):
     util.SMlog("map_by_scsibus: sid=%s" % SCSIid)
 
     devices = []
-    for link in glob.glob('/dev/disk/by-scsibus/%s-*' % SCSIid):
+    for link in glob.glob('/dev/disk/by-id/scsi-%s' % SCSIid):
         devices.append(os.path.realpath(link))
     return devices
 

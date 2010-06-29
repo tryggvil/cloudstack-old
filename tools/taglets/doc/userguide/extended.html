@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Generated for taglets on 2008/03/30 14:47:34, do not modify!
+-->
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+	<head>     <link rel="stylesheet"      href="../css/lightbox.css"       type="text/css" media="screen" />     <script src="../scripts/prototype.js"       type="text/javascript"></script>     <script src="../scripts/scriptaculous.js?load=effects"       type="text/javascript"></script>     <script src="../scripts/uglightbox.js"       type="text/javascript"></script>      <script type="text/javascript"        src="../scripts/add-on.js"></script>      <script type="text/javascript"        src="../scripts/wz_jsgraphics.js"></script><style type="text/css">
+    /* <![CDATA[ */
+    @import "../css/tigris.css";
+    @import "../css/inst.css";
+    /* ]]> */
+   </style><link rel="shortcut icon" href="../favicon.ico"/><link media="print" href="../css/print.css" type="text/css" rel="stylesheet"/><title>Taglets: User Guide: Extended Usage</title><meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/><meta http-equiv="Content-style-type" content="text/css"/><meta name="Generator" content="MuliFex WebDoc"/>      <link rel="alternate"       type="application/rss+xml"       title="Taglets"       href="http://taglets.sourceforge.net/rss.xml"/>      </head>
+	<body class="composite" style="margin:0px;">     <div id="banner">     <div class="banner-latest-release">     <a href="http://taglets.sourceforge.net/download.html">     Taglets Collection 2.0.3<br/>     2008/03/30 13:49:50</a></div><h1><a id="sc" href="http://taglets.sourceforge.net/"><span class="alt">Taglets Collection</span></a></h1></div><div id="toptabs" class="tabs"><table border="0" cellspacing="0" cellpadding="4"><tr><td><a href="../index.html">Home</a></td><td><a href="../download.html">Downloads</a></td><th><a href="../userguide/index.html">User Guide</a></th><td><a href="../development/index.html">Development</a></td><td><a href="../legal.html">Legal</a></td></tr></table></div><div id="breadcrumbs"><a href="../index.html">Taglets</a> &gt; <a href="../userguide/index.html">User Guide</a> &gt; Extended Usage</div><table id="main" width="100%" cellpadding="4" cellspacing="0" border="0"><tr valign="top"><td id="leftcol"><div id="navcolumn"><div class="toolgroup" id="projecttools"><div class="label"><strong>Taglets</strong></div><div class="body"><div><a href="../index.html">Home</a><div><a href="../news.html">News</a></div><div><a href="../screenshots.html">Screenshots</a></div><div><a href="../download.html">Downloads</a></div><div><a href="../legal.html">Legal</a></div></div><div><a href="../userguide/index.html">User Guide</a><div><a href="../userguide/simple.html">Simple Usage</a></div><div><strong>Extended Usage</strong><div><a href="#ant_Configuration">Ant Configuration</a></div><div><a href="#taglets_Configuration">Taglets Configuration</a></div><div><a href="#custom_Taglets">Custom Taglets</a></div></div><div><a href="../userguide/custom.html">Custom Taglets</a></div><div><a href="../userguide/configuration.html">Configuration</a></div><div><a href="../userguide/tags.html">Predefined Tags</a></div><div><a href="../userguide/shutdown.html">Shutdown Taglets</a></div><div><a href="../userguide/knownbugs.html">Known Bugs</a></div><div><a href="../userguide/todo.html">ToDo List</a></div></div><div><a href="../development/index.html">Development</a><div><a href="../development/setup.html">Setup</a></div><div><a href="../development/primers.html">Primers</a></div><div><a href="../development/build.html">Build System</a></div><div><a href="../development/tools.html">Tools Used</a></div><div><a href="../development/audit.html">Auditing Reports</a></div><div><a href="../development/changelog.html">ChangeLog</a></div></div></div></div><div class="toolgroup" id="apitools"><div class="label"><strong>Taglets API</strong></div><div class="body"><div><a href="../api/simple/api-index.html">Simple</a></div><div><a href="../api/complete/api-index.html">Complete</a></div><div><a href="../api/demo/api-index.html">Demo</a></div></div></div><div class="toolgroup" id="linktools"><div class="label"><strong>Quick Links</strong></div><div class="body"><div><a href="http://www.sourceforge.net/">SourceForge</a><div><a href="http://sourceforge.net/projects/taglets/">Taglets Project</a></div><div><a href="http://sourceforge.net/project/showfiles.php?group_id=95947">Project Downloads</a></div></div><div><a href="http://www.sun.com/">Sun Microsystems</a><div><a href="http://java.sun.com/">Java Homepage</a></div><div><a href="http://java.sun.com/j2se/javadoc/">JavaDoc Tool</a></div></div><div><a href="http://www.codehaus.org/">CodeHaus</a></div><div><a href="http://www.java.net/">Java.net</a></div><div><a href="http://jakarta.apache.org/">Jakarta</a><div><a href="http://ant.apache.org/manual/index.html">Ant Manual</a></div></div></div></div><div class="toolgroup" id="feedtools"><div class="label"><strong>News Feed</strong></div><div class="body"><div><a href="../rss.xml">Taglets</a></div></div></div><div class="strut">&nbsp;</div></div></td><td><div id="bodycol"><div id="apphead"><h2>User Guide:  <em>Extended Usage</em></h2></div><div class="app" id="projecthome"><p>
+			This user guide section deals with the a more advanced usage of the
+			<em>Taglets Collection</em>.<br/>
+			You will shortly see how to tweak JavaDoc output and how to
+			configure some of the taglets properties.
+		</p><div class="infomessage">
+			<p><strong>Demo Folder</strong></p>
+			<p>
+				The examples used in this user guide section are stored in 
+				folder <tt>demo/extended</tt> of the binary distribution.
+			</p>
+		</div><h3>Configuration</h3><p>
+			What follows is a short overview of some of the configuration options
+			of the <em>Taglets Collection</em>.
+		</p><p>
+			To simplify build it uses Apache Ant, to see a sample that also lists 
+			commandline options for JavaDoc please check out the 
+			<a href="simple.html">Simple Usage</a> section.
+		</p><p>
+			In contrast to the simple demo this extended demo makes use of:
+		</p><ul>
+			<li>Configuration of the predefined <tt>@adm</tt> tag.</li>
+			<li>Mandatory use of <tt>@since</tt> (if omitted a warning is generated).</li>
+			<li>Custom headers and footers that include a logo.</li>
+			<li>Inclusion of a favourites icon in the docu generated.</li>
+		</ul><h4>Output</h4><p>
+			Before starting out with the configuration you might want to have a 
+			look at what we are going to create in the extended demo:
+		</p><p class="warningmark">
+			Do not be surprised if you look at the JavaDoc generated, I tried to make 
+			some Java/Chocolate theme. Well, ... you'll at least get the idea on how 
+			to customize the output of JavaDoc like this ...
+		</p><div id="mapExtendedCanvas" style="position:relative; width:100%;">
+			<img src="../images/userguide/ExtendedMap.png" usemap="#mapExtended" border="0"/>
+		</div><map id="mapExtended" name="mapExtended">
+			<area href="../images/userguide/ExtendedOverview.png" title="Extended Demo: Overview" rel="lightbox[extended]" alt="ExtendedOverview" shape="poly" coords="64,69,47,148,169,174,187,95,64,69" onMouseout="clearPoly('mapExtendedCanvas')" onMouseover="DrawPolygon('mapExtendedCanvas', new Array(64,47,169,187,64) , new Array(69,148,174,95,69))"/>
+			<area href="../images/userguide/ExtendedDemo.png" title="Extended Demo: Demo Class (with @since tag warning)" rel="lightbox[extended]" alt="ExtendedDemo" shape="poly" coords="308,26,186,52,202,131,266,117,267,106,301,110,325,105,308,26" onMouseout="clearPoly('mapExtendedCanvas')" onMouseover="DrawPolygon('mapExtendedCanvas', new Array(308,186,202,266,267,301,325,308) , new Array(26,52,131,117,106,110,105,26))"/>
+			<area href="../images/userguide/ExtendedImplementation.png" title="Extended Demo: Implementation Class" rel="lightbox[extended]" alt="ExtendedImplementation" shape="poly" coords="274,114,265,195,390,208,397,141,394,127,274,114" onMouseout="clearPoly('mapExtendedCanvas')" onMouseover="DrawPolygon('mapExtendedCanvas', new Array(274,265,390,397,394,274) , new Array(114,195,208,141,127,114))"/>
+			<area href="../images/userguide/ExtendedTable.png" title="Extended Demo: Table Class" rel="lightbox[extended]" alt="ExtendedTable" shape="poly" coords="512,40,389,62,404,142,527,119,512,40" onMouseout="clearPoly('mapExtendedCanvas')" onMouseover="DrawPolygon('mapExtendedCanvas', new Array(512,389,404,527,512) , new Array(40,62,142,119,40))"/>
+			<area href="#" shape="default" onMouseout="clearPoly('mapExtendedCanvas')" onMouseover="clearPoly('mapExtendedCanvas')"/>
+		</map><h3><a name="ant_Configuration">Apache Ant Configuration</a></h3><p>
+			Let's first configure the build file <tt>build.xml</tt>. We will
+			change the <tt>javadoc</tt> call from the simple demo to include
+			additional features:
+		</p><ul>
+			<li>Include an overview page (line 3).</li>
+			<li>Set a window title for the generated JavaDoc (line 5).</li>
+			<li>Show how to set commandline arguments for the
+				<em>Taglets Collection</em> (line 6, set it to 'true' to
+				obtain some verbose output).</li>
+			<li>Set the title of the JavaDoc generated (lines 8-12).</li>
+			<li>Add a page header that includes the taglets logo (lines 13-20,
+				note that the HTML is escaped, {@docRoot} gets expanded to the root
+				directory of the documentation generated).</li>
+			<li>Add a page footer that includes the taglets logo (lines 21-27,
+				HTML is escaped again, {@docRoot} gets expanded to the root
+				directory of the documentation generated).</li>
+			<li>At the bottom we add information blurp that includes the
+				generation timestamp (lines 28-39, HTML is escaped again, the
+				Ant property ${timestamp} is used in the usual manner).</li>
+			<li>Add the <tt>rsrc</tt> directory as an additional taglet path
+				entry (lines 40-46, this enables the <em>Taglets Collection</em>
+				to load additional configuration files from this directory).</li>
+		</ul><div style="float: left; width: 4em; background: #ddd;">
+<pre class="source"> 001 
+ 002 
+ 003 
+ 004 
+ 005 
+ 006 
+ 007 
+ 008 
+ 009 
+ 010 
+ 011 
+ 012 
+ 013 
+ 014 
+ 015 
+ 016 
+ 017 
+ 018 
+ 019 
+ 020 
+ 021 
+ 022 
+ 023 
+ 024 
+ 025 
+ 026 
+ 027 
+ 028 
+ 029 
+ 030 
+ 031 
+ 032 
+ 033 
+ 034 
+ 035 
+ 036 
+ 037 
+ 038 
+ 039 
+ 040 
+ 041 
+ 042 
+ 043 
+ 044 
+ 045 
+ 046 
+ 047 
+ 048 </pre></div><pre class="source"> &lt;javadoc
+   destdir="doc"
+   overview="src/overview.html"
+   private="true"
+   windowtitle="Taglets Collection Extended Demo API Specification"
+   additionalparam="-J-DTaglets.verbose=false"
+ &gt;
+   &lt;!-- Use a nice documentation title --&gt;
+   &lt;doctitle&gt;
+     Taglets Collection&lt;br&gt;
+     Extended Demo API Specification
+   &lt;/doctitle&gt;
+   &lt;!-- Create a header that contains the taglets logo --&gt;
+   &lt;!-- Note the use of the {@docRoot} tag to link to the logo --&gt;
+   &lt;header&gt;
+     &amp;lt;img
+       src=&amp;quot;{@docRoot}/resources/logo.gif&amp;quot; 
+       width=&amp;quot;88&amp;quot; height=&amp;quot;40&amp;quot; border=&amp;quot;0&amp;quot;
+     &amp;gt;
+   &lt;/header&gt;
+   &lt;!-- Same for the footer --&gt;
+   &lt;footer&gt;
+     &amp;lt;img 
+       src=&amp;quot;{@docRoot}/resources/logo.gif&amp;quot; 
+       width=&amp;quot;88&amp;quot; height=&amp;quot;40&amp;quot;
+     &amp;gt;
+   &lt;/footer&gt;
+   &lt;!-- Include a timestamp at the bottom of the docu generated --&gt;
+   &lt;!-- Note the use of ${timestamp} which was created by the --&gt;
+   &lt;!-- &lt;tstamp&gt; task at the start of this target --&gt;
+   &lt;bottom&gt;
+     &amp;lt;p align=&amp;quot;right&amp;quot;&amp;gt;
+       &amp;lt;font class=&amp;quot;NavBarFont1&amp;quot; size=&amp;quot;-2&amp;quot;&amp;gt;
+         Taglets Collection&amp;lt;br&amp;gt;
+         Extended JavaDoc Demo&amp;lt;br&amp;gt;
+         ${timestamp}
+       &amp;lt;/font&amp;gt;
+     &amp;lt;/p&amp;gt;
+   &lt;/bottom&gt;
+   &lt;!-- Include the 'rsrc' directory on the taglets path to include --&gt;
+   &lt;!-- the 'taglets.properties' configuration as well as all binaries --&gt;
+   &lt;!-- used by the configuration in the shutdown tasks --&gt;
+   &lt;taglet
+     name="net.sourceforge.taglets.Taglets"
+     path="rsrc:../../taglets.jar"
+   /&gt;
+   &lt;fileset dir="src" includes="**/*.java"/&gt;
+ &lt;/javadoc&gt;</pre><p>
+			The taglets configuration directory <tt>rsrc</tt> that was added
+			to the classpath of the taglet contains the extended taglets
+			configuration as well as binary files that are used by this
+			configuration:
+		</p><table class="filebrowse">
+			<tr>
+				<td><div class="tier1"><span class="expanded">
+					<tt>rsrc</tt></span></div></td>
+				<td/>
+			</tr>
+			<tr>
+				<td><div class="tier3"><span class="leaf">
+					<tt>taglets.properties</tt></span></div></td>
+				<td><small>The extended taglets configuration file.</small></td>
+			</tr>
+			<tr>
+				<td><div class="tier3"><span class="leaf">
+					<tt>stylesheet.css</tt></span></div></td>
+				<td><small>The stylesheet used for our chocolate look.</small></td>
+			</tr>
+			<tr>
+				<td><div class="tier3"><span class="leaf">
+					<tt>*.gif</tt></span></div></td>
+				<td><small>Additional images to copy to the JavaDoc.</small></td>
+			</tr>
+		</table><h3><a name="taglets_Configuration">Taglets Configuration</a></h3><p>
+			The <em>Taglets Collection</em> supports several configuration files
+			and merges them together. In this example we make use of the fact
+			that the <em>Taglets Collection</em> merges the configuration found
+			in file <tt>/taglets.properties</tt> on the classpath with the
+			default uration.
+		</p><p class="infomark">
+			Anything defined in the <tt>/taglets.properties</tt> configuration
+			file on the classpath supercedes the settings in the default
+			configuration.
+		</p><p>
+			For more information about nested configuration files check out 
+			the <a href="configuration.html">Configuration</a> subsection
+			of the description of the default configuration in the user guide.
+		</p><p>
+			The configuration file for the extended demo looks defines the
+			following features and overrides:
+		</p><ul>
+			<li>Configuration of the predefined <tt>@adm</tt> tag (lines 8-11).</li>
+			<li>All executable member documentation generated should have
+				a mandatory <tt>@since</tt> tag, if it is missing a warning
+				is generated (lines 13-14, override of default configuration).</li>
+			<li>Use of a custom stylesheet (lines 20-21, override of default 
+				configuration).</li>
+			<li>Adds additional resources to be copied to the documentation
+				generated (lines 23-29).</li>
+			<li>Modification of the documentation generated to include a 
+				favourites icon using a regular expression file replacer (lines 
+				31-36, note that <tt>${docRoot}</tt> gets replaced by the
+				output directory).</li>
+		</ul><div style="float: left; width: 4em; background: #ddd;">
+<pre class="source"> 001 
+ 002 
+ 003 
+ 004 
+ 005 
+ 006 
+ 007 
+ 008 
+ 009 
+ 010 
+ 011 
+ 012 
+ 013 
+ 014 
+ 015 
+ 016 
+ 017 
+ 018 
+ 019 
+ 020 
+ 021 
+ 022 
+ 023 
+ 024 
+ 025 
+ 026 
+ 027 
+ 028 
+ 029 
+ 030 
+ 031 
+ 032 
+ 033 
+ 034 
+ 035 
+ 036 </pre></div><pre class="source"> # Taglets Configuration for the extended JavaDoc demo.
+ # ====================================================
+
+
+ # Default Tag Configuration
+ # -------------------------
+
+ # Parameters for the @adm tag.
+ Taglets.taglet.adm.params.maintainer.name= Some Body
+ Taglets.taglet.adm.params.maintainer.mail= some.body@some.where.org
+ Taglets.taglet.adm.params.maintainer.project= Taglets Demo
+
+ # All Taglets sources should make use of @since.
+ Taglets.taglet.since.mandatory= true
+
+
+ # Shutdown Taglets
+ # ----------------
+
+ # We are using a custom stylesheet to make things fancy.
+ Taglets.shutdown.javadoc-stylesheet-copy.files= stylesheet.css
+
+ # Copy the demo logo to the resource directory, this is used in the
+ # header and footer of the documentation generated.
+ # (The todir listed below is relative to the JavaDoc output directory.)
+ Taglets.shutdown.logo-copy= net.sourceforge.taglets.simple.shutdown.FileCopier
+ Taglets.shutdown.logo-copy.todir= resources
+ Taglets.shutdown.logo-copy.files= \
+   logo.gif, show-off.gif, favicon.ico, beans.gif, inherit.gif
+
+ # Fixup the favourites icon in the docu generated.
+ Taglets.shutdown.favicon-fixup= net.sourceforge.taglets.simple.shutdown.RegexReplacer
+ Taglets.shutdown.favicon-fixup.files= **/*.html
+ Taglets.shutdown.favicon-fixup.token.0= &lt;/TITLE&gt;
+ Taglets.shutdown.favicon-fixup.value.0= &lt;/TITLE&gt;\
+   &lt;link rel="shortcut icon" href="${docRoot}/resources/favicon.ico"/&gt;
+</pre><p>
+			For a description of the predefined tags as well as more information
+			on how to configure them please refer to the <a href="tags.html">
+			Predefined Tags</a> subsection of the default configuration.
+		</p><p>
+			The "shutdown taglets" are described in the
+			<a href="shutdown.html">Shutdown Taglets</a> subsection 
+			of the user guide that describes the default configuration.
+		</p><div class="warningmessage">
+			<p><strong>Note:</strong></p>
+			<p>
+				If you create the documentation from the extended sample files
+				provided with the binary distribution you will get a single
+				warning that indicates that the <tt>@since</tt> tag is missing
+				for class <tt>net.sourceforge.taglets.demo.Demo</tt>. We have
+				included this "error" on purpose to show off the
+				<tt>@since</tt> warning feature. Once you have seen it simply
+				edit the class comment of the Demo source and add a <tt>@since</tt>
+				tag to see the warning go away...
+			</p>
+		</div><h3><a name="custom_Taglets">Custom Taglets</a></h3><p>
+			Now that we have seen a sneak preview on how to configure the
+			<em>Taglets Collection</em> and how to tweak JavaDoc using Ant
+			to produce an enhanced documentation it is time to move on
+			and define some custom tags and create a "Simple Taglet"
+			in Java source.
+		</p><p>
+			The next section <a href="custom.html">Custom Taglets</a> gives
+			a short introduction to creating custom taglets and adding new tags 
+			using the taglets configuration files.
+		</p></div></div></td></tr></table><div id="footer"><table cellpadding="4" cellspacing="0" border="0" style="width:100%;"><tr><td style="width:84px;"><a id="poweredby" href="http://www.sourceforge.net/"><span class="alt">Powered by SourceForge</span></a></td><td><a href="http://www.sourceforge.net/">SourceForge</a>  | <a href="http://taglets.sourceforge.net/">Taglets Collection</a>  | <a href="http://sourceforge.net/projects/taglets">Project Home</a>  | <a href="http://taglets.sourceforge.net/legal.html">Legal</a><br/>Copyright © 2002-2008  <a href="mailto:essmann@sourceforge.net">Bruno Essmann</a></td><td style="text-align:right;"><abbr title="Source: doc/userguide/extended.html">Page generated on:</abbr><br/><!-- timestamp -->2008/03/30 14:47:34 </td></tr></table></div></body>
+</html>

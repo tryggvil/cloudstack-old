@@ -29,3 +29,5 @@
 /var/log/cloud/management
 /var/lib/cloud/mnt
 /var/lib/cloud/management
+/usr/bin/cloud-setup-management
+/usr/bin/cloud-update-xenserver-licenses

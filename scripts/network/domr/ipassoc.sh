@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# $Id: ipassoc.sh 9373 2010-06-09 01:57:36Z edison $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/network/domr/ipassoc.sh $
 # ipassoc.sh -- associate/disassociate a public ip with an instance
 #
 #
@@ -7,8 +8,7 @@ usage() {
   printf " %s -D -i <domR eth1 ip> -l <public-ip-address> -r <domr name> [-f] \n" $(basename $0) >&2
 }
 
-
-cert="$(dirname $0)/id_rsa"
+cert="/root/.ssh/id_rsa.cloud"
 
 #verify if supplied ip is indeed in the public domain
 check_public_ip() {

@@ -2,54 +2,48 @@ SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ANSI';
 
 USE `mysql`;
 
-DROP PROCEDURE IF EXISTS `mysql`.`vmops_drop_user_if_exists` ;
+DROP PROCEDURE IF EXISTS `mysql`.`cloud_drop_user_if_exists` ;
 DELIMITER $$
-CREATE PROCEDURE `mysql`.`vmops_drop_user_if_exists`()
+CREATE PROCEDURE `mysql`.`cloud_drop_user_if_exists`()
 BEGIN
   DECLARE foo BIGINT DEFAULT 0 ;
   SELECT COUNT(*)
   INTO foo
     FROM `mysql`.`user`
-      WHERE `User` = 'vmops' and host = 'localhost';
+      WHERE `User` = 'cloud' and host = 'localhost';
   
   IF foo > 0 THEN 
-         DROP USER 'vmops'@'localhost' ;
+         DROP USER 'cloud'@'localhost' ;
   END IF;
   
   SELECT COUNT(*)
   INTO foo
     FROM `mysql`.`user`
-      WHERE `User` = 'vmops' and host = '%';
+      WHERE `User` = 'cloud' and host = '%';
   
   IF foo > 0 THEN 
-         DROP USER 'vmops'@'%' ;
+         DROP USER 'cloud'@'%' ;
   END IF;
 END ;$$
 DELIMITER ;
 
-CALL `mysql`.`vmops_drop_user_if_exists`() ;
+CALL `mysql`.`cloud_drop_user_if_exists`() ;
 
-DROP PROCEDURE IF EXISTS `mysql`.`vmops_drop_users_if_exists` ;
+DROP PROCEDURE IF EXISTS `mysql`.`cloud_drop_users_if_exists` ;
 
 SET SQL_MODE=@OLD_SQL_MODE ;
 
 DROP DATABASE IF EXISTS `billing`;
-DROP DATABASE IF EXISTS `vmops_usage`;
-DROP DATABASE IF EXISTS `vmops`;
+DROP DATABASE IF EXISTS `cloud`;
 
-CREATE DATABASE `vmops`;
-CREATE DATABASE `vmops_usage`;
+CREATE DATABASE `cloud`;
 
-CREATE USER vmops identified by 'vmops';
+CREATE USER cloud identified by 'cloud';
 
-GRANT ALL ON vmops.* to vmops@`localhost` identified by 'vmops';
-GRANT ALL ON vmops.* to vmops@`%` identified by 'vmops';
+GRANT ALL ON cloud.* to cloud@`localhost` identified by 'cloud';
+GRANT ALL ON cloud.* to cloud@`%` identified by 'cloud';
 
-GRANT ALL ON vmops_usage.* to vmops@`localhost`;
-GRANT ALL ON vmops_usage.* to vmops@`%`;
-
-GRANT process ON *.* TO vmops@`localhost`;
-GRANT process ON *.* TO vmops@`%`;
-
+GRANT process ON *.* TO cloud@`localhost`;
+GRANT process ON *.* TO cloud@`%`;
 
 commit;

@@ -1,4 +1,5 @@
 #/bin/bash
+# $Id: rundomrpre.sh 9132 2010-06-04 20:17:43Z manuel $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/vm/hypervisor/xen/rundomrpre.sh $
 
 # set -x
 
@@ -222,12 +223,18 @@ then
   fi
 fi
 
-if [[ "$template" == "domP" &&  -f $(dirname $0)/../../console-proxy.zip ]]
+cpfile=$(dirname $0)/../../../../console-proxy-premium.zip
+[ -f $cpfile ] || $(dirname $0)/../../../../console-proxy.zip
+[ -f $cpfile ] || $(dirname $0)/../../console-proxy-premium.zip
+[ -f $cpfile ] || $(dirname $0)/../../console-proxy.zip
+[ -f $cpfile ] || $(dirname $0)/console-proxy-premium.zip
+[ -f $cpfile ] || $(dirname $0)/console-proxy.zip
+if [[ "$template" == "domP" &&  -f $cpfile ]]
 then
-  patch_console_proxy $vmname $(dirname $0)/../../console-proxy.zip
+  patch_console_proxy $vmname $cpfile
   if [ $? -gt 0 ]
   then
-    printf "Failed to apply patch $patch to $vmname\n" >&2
+    printf "Failed to apply patch $cpfile to $vmname\n" >&2
     umount_local $vmname
     exit 4
   fi

@@ -7,6 +7,11 @@ case "$1" in
 	do
 		chmod 0770 $i
 	done
+	
+	if [ "$2" = "" ] ; then # no recently configured version, this is a first install
+		/usr/sbin/update-rc.d cloud-agent defaults || true
+	fi
+	
     ;;
 esac
 

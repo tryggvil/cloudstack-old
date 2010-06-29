@@ -1,94 +1,84 @@
 SET foreign_key_checks = 0;
-DROP TABLE IF EXISTS `vmops`.`configuration`;
-DROP TABLE IF EXISTS `vmops`.`ip_forwarding`;
-DROP TABLE IF EXISTS `vmops`.`management_agent`;
-DROP TABLE IF EXISTS `vmops`.`host`;
-DROP TABLE IF EXISTS `vmops`.`mshost`;
-DROP TABLE IF EXISTS `vmops`.`service_offering`;
-DROP TABLE IF EXISTS `vmops`.`user`;
-DROP TABLE IF EXISTS `vmops`.`user_ip_address`;
-DROP TABLE IF EXISTS `vmops`.`user_statistics`;
-DROP TABLE IF EXISTS `vmops`.`vm_template`;
-DROP TABLE IF EXISTS `vmops`.`vm_instance`;
-DROP TABLE IF EXISTS `vmops`.`domain_router`;
-DROP TABLE IF EXISTS `vmops`.`event`;
-DROP TABLE IF EXISTS `vmops`.`host_details`;
-DROP TABLE IF EXISTS `vmops`.`host_pod_ref`;
-DROP TABLE IF EXISTS `vmops`.`host_zone_ref`;
-DROP TABLE IF EXISTS `vmops`.`data_ceneter`;
-DROP TABLE IF EXISTS `vmops`.`volumes`;
-DROP TABLE IF EXISTS `vmops`.`storage`;
-DROP TABLE IF EXISTS `vmops`.`disk_template_ref`;
-DROP TABLE IF EXISTS `vmops`.`data_center`;
-DROP TABLE IF EXISTS `vmops`.`pricing`;
-DROP TABLE IF EXISTS `vmops`.`sequence`;
-DROP TABLE IF EXISTS `vmops`.`user_vm`;
-DROP TABLE IF EXISTS `vmops`.`template_host_ref`;
-DROP TABLE IF EXISTS `vmops`.`ha_work`;
-DROP TABLE IF EXISTS `vmops`.`dc_vnet_alloc`;
-DROP TABLE IF EXISTS `vmops`.`dc_ip_address_alloc`;
-DROP TABLE IF EXISTS `vmops`.`vlan`;
-DROP TABLE IF EXISTS `vmops`.`host_vlan_map`;
-DROP TABLE IF EXISTS `vmops`.`pod_vlan_map`;
-DROP TABLE IF EXISTS `vmops`.`vm_host`;
-DROP TABLE IF EXISTS `vmops`.`op_ha_work`;
-DROP TABLE IF EXISTS `vmops`.`op_dc_vnet_alloc`;
-DROP TABLE IF EXISTS `vmops`.`op_dc_ip_address_alloc`;
-DROP TABLE IF EXISTS `vmops`.`op_vm_host`;
-DROP TABLE IF EXISTS `vmops`.`op_host_queue`;
-DROP TABLE IF EXISTS `vmops`.`console_proxy`;
-DROP TABLE IF EXISTS `vmops`.`secondary_storage_vm`;
-DROP TABLE IF EXISTS `vmops`.`domain`;
-DROP TABLE IF EXISTS `vmops`.`account`;
-DROP TABLE IF EXISTS `vmops`.`limit`;
-DROP TABLE IF EXISTS `vmops`.`op_host_capacity`;
-DROP TABLE IF EXISTS `vmops`.`alert`;
-DROP TABLE IF EXISTS `vmops_usage`.`event`;
-DROP TABLE IF EXISTS `vmops_usage`.`vmops_usage`;
-DROP TABLE IF EXISTS `vmops_usage`.`usage_vm_instance`;
-DROP TABLE IF EXISTS `vmops_usage`.`usage_ip_address`;
-DROP TABLE IF EXISTS `vmops_usage`.`usage_network`;
-DROP TABLE IF EXISTS `vmops_usage`.`usage_job`;
-DROP TABLE IF EXISTS `vmops_usage`.`account`;
-DROP TABLE IF EXISTS `vmops_usage`.`user_statistics`;
-DROP TABLE IF EXISTS `vmops_usage`.`usage_volume`;
-DROP TABLE IF EXISTS `vmops_usage`.`usage_storage`;
-DROP TABLE IF EXISTS `vmops_usage`.`usage_security_group`;
-DROP TABLE IF EXISTS `vmops_usage`.`usage_load_balancer_policy`;
-DROP TABLE IF EXISTS `vmops`.`op_lock`;
-DROP TABLE IF EXISTS `vmops`.`op_host_upgrade`;
-DROP TABLE IF EXISTS `vmops`.`snapshots`;
-DROP TABLE IF EXISTS `vmops`.`scheduled_volume_backups`;
-DROP TABLE IF EXISTS `vmops`.`vm_disk`;
-DROP TABLE IF EXISTS `vmops`.`disk_offering`;
-DROP TABLE IF EXISTS `vmops`.`security_group`;
-DROP TABLE IF EXISTS `vmops`.`network_rule_config`;
-DROP TABLE IF EXISTS `vmops`.`host_details`;
-DROP TABLE IF EXISTS `vmops`.`launch_permission`;
-DROP TABLE IF EXISTS `vmops`.`resource_limit`;
-DROP TABLE IF EXISTS `vmops`.`async_job`;
-DROP TABLE IF EXISTS `vmops`.`sync_queue`;
-DROP TABLE IF EXISTS `vmops`.`sync_queue_item`;
-DROP TABLE IF EXISTS `vmops`.`security_group_vm_map`;
-DROP TABLE IF EXISTS `vmops`.`load_balancer_vm_map`;
-DROP TABLE IF EXISTS `vmops`.`load_balancer`;
-DROP TABLE IF EXISTS `vmops`.`storage_pool`;
-DROP TABLE IF EXISTS `vmops`.`storage_pool_host_ref`;
-DROP TABLE IF EXISTS `vmops`.`template_spool_ref`;
-DROP TABLE IF EXISTS `vmops`.`guest_os`;
-DROP TABLE IF EXISTS `vmops`.`snapshot_policy`;
-DROP TABLE IF EXISTS `vmops`.`snapshot_policy_ref`;
-DROP TABLE IF EXISTS `vmops`.`snapshot_schedule`;
+DROP TABLE IF EXISTS `cloud`.`configuration`;
+DROP TABLE IF EXISTS `cloud`.`ip_forwarding`;
+DROP TABLE IF EXISTS `cloud`.`management_agent`;
+DROP TABLE IF EXISTS `cloud`.`host`;
+DROP TABLE IF EXISTS `cloud`.`mshost`;
+DROP TABLE IF EXISTS `cloud`.`service_offering`;
+DROP TABLE IF EXISTS `cloud`.`user`;
+DROP TABLE IF EXISTS `cloud`.`user_ip_address`;
+DROP TABLE IF EXISTS `cloud`.`user_statistics`;
+DROP TABLE IF EXISTS `cloud`.`vm_template`;
+DROP TABLE IF EXISTS `cloud`.`vm_instance`;
+DROP TABLE IF EXISTS `cloud`.`domain_router`;
+DROP TABLE IF EXISTS `cloud`.`event`;
+DROP TABLE IF EXISTS `cloud`.`host_details`;
+DROP TABLE IF EXISTS `cloud`.`host_pod_ref`;
+DROP TABLE IF EXISTS `cloud`.`host_zone_ref`;
+DROP TABLE IF EXISTS `cloud`.`data_ceneter`;
+DROP TABLE IF EXISTS `cloud`.`volumes`;
+DROP TABLE IF EXISTS `cloud`.`storage`;
+DROP TABLE IF EXISTS `cloud`.`disk_template_ref`;
+DROP TABLE IF EXISTS `cloud`.`data_center`;
+DROP TABLE IF EXISTS `cloud`.`pricing`;
+DROP TABLE IF EXISTS `cloud`.`sequence`;
+DROP TABLE IF EXISTS `cloud`.`user_vm`;
+DROP TABLE IF EXISTS `cloud`.`template_host_ref`;
+DROP TABLE IF EXISTS `cloud`.`template_zone_ref`;
+DROP TABLE IF EXISTS `cloud`.`ha_work`;
+DROP TABLE IF EXISTS `cloud`.`dc_vnet_alloc`;
+DROP TABLE IF EXISTS `cloud`.`dc_ip_address_alloc`;
+DROP TABLE IF EXISTS `cloud`.`vlan`;
+DROP TABLE IF EXISTS `cloud`.`host_vlan_map`;
+DROP TABLE IF EXISTS `cloud`.`pod_vlan_map`;
+DROP TABLE IF EXISTS `cloud`.`vm_host`;
+DROP TABLE IF EXISTS `cloud`.`op_ha_work`;
+DROP TABLE IF EXISTS `cloud`.`op_dc_vnet_alloc`;
+DROP TABLE IF EXISTS `cloud`.`op_dc_ip_address_alloc`;
+DROP TABLE IF EXISTS `cloud`.`op_vm_host`;
+DROP TABLE IF EXISTS `cloud`.`op_host_queue`;
+DROP TABLE IF EXISTS `cloud`.`console_proxy`;
+DROP TABLE IF EXISTS `cloud`.`secondary_storage_vm`;
+DROP TABLE IF EXISTS `cloud`.`domain`;
+DROP TABLE IF EXISTS `cloud`.`account`;
+DROP TABLE IF EXISTS `cloud`.`limit`;
+DROP TABLE IF EXISTS `cloud`.`op_host_capacity`;
+DROP TABLE IF EXISTS `cloud`.`alert`;
+DROP TABLE IF EXISTS `cloud`.`op_lock`;
+DROP TABLE IF EXISTS `cloud`.`op_host_upgrade`;
+DROP TABLE IF EXISTS `cloud`.`snapshots`;
+DROP TABLE IF EXISTS `cloud`.`scheduled_volume_backups`;
+DROP TABLE IF EXISTS `cloud`.`vm_disk`;
+DROP TABLE IF EXISTS `cloud`.`disk_offering`;
+DROP TABLE IF EXISTS `cloud`.`security_group`;
+DROP TABLE IF EXISTS `cloud`.`network_rule_config`;
+DROP TABLE IF EXISTS `cloud`.`host_details`;
+DROP TABLE IF EXISTS `cloud`.`launch_permission`;
+DROP TABLE IF EXISTS `cloud`.`resource_limit`;
+DROP TABLE IF EXISTS `cloud`.`async_job`;
+DROP TABLE IF EXISTS `cloud`.`sync_queue`;
+DROP TABLE IF EXISTS `cloud`.`sync_queue_item`;
+DROP TABLE IF EXISTS `cloud`.`security_group_vm_map`;
+DROP TABLE IF EXISTS `cloud`.`load_balancer_vm_map`;
+DROP TABLE IF EXISTS `cloud`.`load_balancer`;
+DROP TABLE IF EXISTS `cloud`.`storage_pool`;
+DROP TABLE IF EXISTS `cloud`.`storage_pool_host_ref`;
+DROP TABLE IF EXISTS `cloud`.`template_spool_ref`;
+DROP TABLE IF EXISTS `cloud`.`guest_os`;
+DROP TABLE IF EXISTS `cloud`.`snapshot_policy`;
+DROP TABLE IF EXISTS `cloud`.`snapshot_policy_ref`;
+DROP TABLE IF EXISTS `cloud`.`snapshot_schedule`;
+DROP TABLE IF EXISTS `cloud`.`op_pod_vlan_alloc`;
 
 
-CREATE TABLE `vmops`.`op_host_upgrade` (
+CREATE TABLE `cloud`.`op_host_upgrade` (
   `host_id` bigint unsigned NOT NULL UNIQUE COMMENT 'host id',
   `version` varchar(20) NOT NULL COMMENT 'version',
   `state` varchar(20) NOT NULL COMMENT 'state',
   PRIMARY KEY (`host_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`op_lock` (
+CREATE TABLE `cloud`.`op_lock` (
   `key` varchar(128) NOT NULL COMMENT 'primary key of the table',
   `mac` varchar(17) NOT NULL COMMENT 'mac address of who acquired this lock',
   `ip` varchar(15) NOT NULL COMMENT 'ip address of who acquired this lock',
@@ -98,7 +88,7 @@ CREATE TABLE `vmops`.`op_lock` (
   PRIMARY KEY (`key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`op_host_queue` (
+CREATE TABLE `cloud`.`op_host_queue` (
   `id` bigint unsigned UNIQUE NOT NULL AUTO_INCREMENT COMMENT 'id',
   `host_id` bigint unsigned NOT NULL COMMENT 'id of the host',
   `command` varchar(256) NOT NULL COMMENT 'command sending to the host',
@@ -110,17 +100,17 @@ CREATE TABLE `vmops`.`op_host_queue` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB Default CHARSET=utf8;
   
-CREATE TABLE  `vmops`.`configuration` (
+CREATE TABLE  `cloud`.`configuration` (
   `category` varchar(255) NOT NULL DEFAULT 'Advanced',
   `instance` varchar(255) NOT NULL,
   `component` varchar(255) NOT NULL DEFAULT 'management-server',
   `name` varchar(255) NOT NULL,
-  `value` varchar(1024),
+  `value` varchar(4095),
   `description` varchar(1024),
   PRIMARY KEY (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`op_ha_work` (
+CREATE TABLE `cloud`.`op_ha_work` (
   `id` bigint unsigned UNIQUE NOT NULL AUTO_INCREMENT COMMENT 'id',
   `instance_id` bigint unsigned NOT NULL COMMENT 'vm instance that needs to be ha.',
   `type` varchar(32) NOT NULL COMMENT 'type of work',
@@ -137,19 +127,19 @@ CREATE TABLE `vmops`.`op_ha_work` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`sequence` (
+CREATE TABLE `cloud`.`sequence` (
   `name` varchar(64) UNIQUE NOT NULL COMMENT 'name of the sequence',
   `value` bigint unsigned NOT NULL COMMENT 'sequence value',
   PRIMARY KEY (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-INSERT INTO `vmops`.`sequence` (name, value) VALUES ('vm_instance_seq', 1);
-INSERT INTO `vmops`.`sequence` (name, value) VALUES ('vm_template_seq', 200);
-INSERT INTO `vmops`.`sequence` (name, value) VALUES ('public_mac_address_seq', 1);
-INSERT INTO `vmops`.`sequence` (name, value) VALUES ('private_mac_address_seq', 1);
-INSERT INTO `vmops`.`sequence` (name, value) VALUES ('storage_pool_seq', 200);
+INSERT INTO `cloud`.`sequence` (name, value) VALUES ('vm_instance_seq', 1);
+INSERT INTO `cloud`.`sequence` (name, value) VALUES ('vm_template_seq', 200);
+INSERT INTO `cloud`.`sequence` (name, value) VALUES ('public_mac_address_seq', 1);
+INSERT INTO `cloud`.`sequence` (name, value) VALUES ('private_mac_address_seq', 1);
+INSERT INTO `cloud`.`sequence` (name, value) VALUES ('storage_pool_seq', 200);
 
-CREATE TABLE  `vmops`.`disk_template_ref` (
+CREATE TABLE  `cloud`.`disk_template_ref` (
   `id` bigint unsigned NOT NULL auto_increment,
   `description` varchar(255) NOT NULL,
   `host` varchar(255) NOT NULL COMMENT 'host on which the server exists',
@@ -162,11 +152,10 @@ CREATE TABLE  `vmops`.`disk_template_ref` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`volumes` (
+CREATE TABLE `cloud`.`volumes` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT 'Primary Key',
   `account_id` bigint unsigned NOT NULL COMMENT 'owner.  foreign key to account table',
   `domain_id` bigint unsigned NOT NULL COMMENT 'the domain that the owner belongs to',
-  `host_id` bigint unsigned  COMMENT 'server it belongs to. foreign key to host table',
   `pool_id` bigint unsigned  COMMENT 'pool it belongs to. foreign key to storage_pool table',
   `instance_id` bigint unsigned NULL COMMENT 'vm instance it belongs to. foreign key to vm_instance table',
   `name` varchar(255) COMMENT 'A user specified name for the volume',
@@ -185,24 +174,24 @@ CREATE TABLE `vmops`.`volumes` (
   `disk_offering_id` bigint unsigned COMMENT 'can be null for system VMs',
   `template_name` varchar (255) COMMENT 'fk to vm_template.unique_name',
   `template_id` bigint unsigned COMMENT 'fk to vm_template.id',
+  `first_snapshot_backup_uuid` varchar (255) COMMENT 'The first snapshot that was ever taken for this volume',
   `destroyed` tinyint(1) COMMENT 'indicates whether the volume was destroyed by the user or not',
   `created` datetime COMMENT 'Date Created',
+  `updated` datetime COMMENT 'Date updated for attach/detach',
   `removed` datetime COMMENT 'Date removed.  not null if removed',
   `status` varchar(32) COMMENT 'Async API volume creation status',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`snapshots` (
+CREATE TABLE `cloud`.`snapshots` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT 'Primary Key',
   `account_id` bigint unsigned NOT NULL COMMENT 'owner.  foreign key to account table',
-  `host_id` bigint unsigned  COMMENT 'server it belongs to. foreign key to host table',
-  `pool_id` bigint unsigned COMMENT 'server it belongs to. foreign key to storage pool table',
   `volume_id` bigint unsigned NOT NULL COMMENT 'volume it belongs to. foreign key to volume table',
   `status` varchar(32) COMMENT 'snapshot creation status',
   `path` varchar(255) COMMENT 'Path',
   `name` varchar(255) NOT NULL COMMENT 'snapshot name',
-  `snapshot_type` int(4) NOT NULL COMMENT 'type of snapshot, e.g. hourly, daily, one-off',
-  `type_description` varchar(25) COMMENT 'description of the type of snapshot, e.g. hourly, daily, one-off',
+  `snapshot_type` int(4) NOT NULL COMMENT 'type of snapshot, e.g. manual, recurring',
+  `type_description` varchar(25) COMMENT 'description of the type of snapshot, e.g. manual, recurring',
   `created` datetime COMMENT 'Date Created',
   `removed` datetime COMMENT 'Date removed.  not null if removed',
   `backup_snap_id` varchar(255) COMMENT 'Back up uuid of the snapshot',
@@ -210,7 +199,7 @@ CREATE TABLE `vmops`.`snapshots` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`vlan` (
+CREATE TABLE `cloud`.`vlan` (
   `id` bigint unsigned NOT NULL UNIQUE AUTO_INCREMENT,
   `vlan_id` varchar(255),
   `vlan_gateway` varchar(255),
@@ -222,44 +211,38 @@ CREATE TABLE `vmops`.`vlan` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`host_vlan_map` (
-  `id` bigint unsigned NOT NULL UNIQUE AUTO_INCREMENT,
-  `host_id` bigint unsigned NOT NULL COMMENT 'database id of host. foreign key to host table',
-  `vlan_id` varchar(255),
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-CREATE TABLE `vmops`.`pod_vlan_map` (
+CREATE TABLE `cloud`.`pod_vlan_map` (
   `id` bigint unsigned NOT NULL UNIQUE AUTO_INCREMENT,
   `pod_id` bigint unsigned NOT NULL COMMENT 'database id of host. foreign key to host table',
   `vlan_db_id` bigint unsigned NOT NULL COMMENT 'database id of vlan. foreign key to vlan table',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE  `vmops`.`data_center` (
+CREATE TABLE  `cloud`.`data_center` (
   `id` bigint unsigned NOT NULL UNIQUE AUTO_INCREMENT,
   `name` varchar(255),
   `description` varchar(255),
   `dns1` varchar(255) NOT NULL,
   `dns2` varchar(255),
-  `dns3` varchar(255),
-  `dns4` varchar(255),
+  `internal_dns1` varchar(255) NOT NULL,
+  `internal_dns2` varchar(255),
   `gateway` varchar(15),
   `netmask` varchar(15),
   `vnet` varchar(255),
   `router_mac_address` varchar(17) NOT NULL DEFAULT '02:00:00:00:00:01' COMMENT 'mac address for the router within the domain',
   `mac_address` bigint unsigned NOT NULL DEFAULT '1' COMMENT 'Next available mac address for the ethernet card interacting with public internet',
+  `guest_network_cidr` varchar(15),
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`xen_server_pool` (
+CREATE TABLE `cloud`.`xen_server_pool` (
   `pool_uuid` varchar(255) NOT NULL UNIQUE,
   `name` varchar(255),
   `pod_id` bigint unsigned NOT NULL,
   PRIMARY KEY (`pool_uuid`)  
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`op_dc_ip_address_alloc` (
+CREATE TABLE `cloud`.`op_dc_ip_address_alloc` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
   `ip_address` varchar(15) NOT NULL COMMENT 'ip address',
   `data_center_id` bigint unsigned NOT NULL COMMENT 'data center it belongs to',
@@ -269,7 +252,7 @@ CREATE TABLE `vmops`.`op_dc_ip_address_alloc` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE  `vmops`.`host_pod_ref` (
+CREATE TABLE  `cloud`.`host_pod_ref` (
   `id` bigint unsigned NOT NULL UNIQUE auto_increment,
   `name` varchar(255) NOT NULL,
   `data_center_id` bigint unsigned NOT NULL,
@@ -280,7 +263,7 @@ CREATE TABLE  `vmops`.`host_pod_ref` (
   UNIQUE KEY (`name`, `data_center_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`op_dc_vnet_alloc` (
+CREATE TABLE `cloud`.`op_dc_vnet_alloc` (
     `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary id',
     `vnet` varchar(18) NOT NULL COMMENT 'vnet',
     `data_center_id` bigint unsigned NOT NULL COMMENT 'data center the vnet belongs to',
@@ -289,9 +272,9 @@ CREATE TABLE `vmops`.`op_dc_vnet_alloc` (
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE  `vmops`.`ip_forwarding` (
+CREATE TABLE  `cloud`.`ip_forwarding` (
   `id` bigint unsigned NOT NULL auto_increment,
-  `group_id` bigint unsigned NOT NULL,
+  `group_id` bigint unsigned default NULL,
   `public_ip_address` varchar(15) NOT NULL,
   `public_port` varchar(10) default NULL,
   `private_ip_address` varchar(15) NOT NULL,
@@ -303,7 +286,7 @@ CREATE TABLE  `vmops`.`ip_forwarding` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
-CREATE TABLE  `vmops`.`host` (
+CREATE TABLE  `cloud`.`host` (
   `id` bigint unsigned NOT NULL auto_increment,
   `name` varchar(255) NOT NULL,
   `status` varchar(32) NOT NULL,
@@ -336,6 +319,8 @@ CREATE TABLE  `vmops`.`host` (
   `total_size` bigint unsigned COMMENT 'TotalSize',
   `capabilities` varchar(255) COMMENT 'host capabilities in comma separated list',
   `guid` varchar(255) UNIQUE,
+  `available` int(1) unsigned NOT NULL DEFAULT 1 COMMENT 'Is this host ready for more resources?',
+  `setup` int(1) unsigned NOT NULL DEFAULT 0 COMMENT 'Is this host already setup?',
   `dom0_memory` bigint unsigned NOT NULL COMMENT 'memory used by dom0 for computing and routing servers',
   `last_ping` int(10) unsigned NOT NULL COMMENT 'time in seconds from the start of machine of the last ping',
   `mgmt_server_id` bigint unsigned COMMENT 'ManagementServer this host is connected to.',
@@ -345,15 +330,15 @@ CREATE TABLE  `vmops`.`host` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`host_details` (
+CREATE TABLE `cloud`.`host_details` (
   `id` bigint unsigned NOT NULL auto_increment,
-  `host_id` bigint NOT NULL COMMENT 'host id',
+  `host_id` bigint unsigned NOT NULL COMMENT 'host id',
   `name` varchar(255) NOT NULL,
   `value` varchar(255) NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE  `vmops`.`mshost` (
+CREATE TABLE  `cloud`.`mshost` (
   `id` bigint unsigned NOT NULL auto_increment,
   `msid` bigint  NOT NULL UNIQUE COMMENT 'management server id derived from MAC address',
   `name` varchar(255),
@@ -366,14 +351,14 @@ CREATE TABLE  `vmops`.`mshost` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`op_vm_host` (
+CREATE TABLE `cloud`.`op_vm_host` (
   `id` bigint unsigned NOT NULL UNIQUE COMMENT 'foreign key to host_id',
   `vnc_ports` bigint unsigned NOT NULL DEFAULT '0' COMMENT 'vnc ports open on the host',
   `start_at` int(5) unsigned  NOT NULL DEFAULT '0' COMMENT 'Start the vnc port look up at this bit',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE  `vmops`.`service_offering` (
+CREATE TABLE  `cloud`.`service_offering` (
   `id` bigint unsigned NOT NULL auto_increment,
   `name` varchar(255) NOT NULL,
   `cpu` int(10) unsigned NOT NULL COMMENT '# of cores',
@@ -391,7 +376,7 @@ CREATE TABLE  `vmops`.`service_offering` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
-CREATE TABLE  `vmops`.`user` (
+CREATE TABLE  `cloud`.`user` (
   `id` bigint unsigned NOT NULL auto_increment,
   `username` varchar(255) NOT NULL,
   `password` varchar(255) NOT NULL,
@@ -404,10 +389,11 @@ CREATE TABLE  `vmops`.`user` (
   `secret_key` varchar(255) default NULL,
   `created` datetime NOT NULL COMMENT 'date created',
   `removed` datetime COMMENT 'date removed',
+  `timezone` varchar(30) default NULL,
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
-CREATE TABLE  `vmops`.`event` (
+CREATE TABLE  `cloud`.`event` (
   `id` bigint unsigned NOT NULL auto_increment,
   `type` varchar(32) NOT NULL,
   `description` varchar(1024) NOT NULL,
@@ -419,7 +405,7 @@ CREATE TABLE  `vmops`.`event` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE  `vmops`.`user_ip_address` (
+CREATE TABLE  `cloud`.`user_ip_address` (
   `account_id` bigint unsigned NULL,
   `domain_id` bigint unsigned NULL,
   `public_ip_address` varchar(15) unique NOT NULL,
@@ -430,7 +416,7 @@ CREATE TABLE  `vmops`.`user_ip_address` (
   PRIMARY KEY (`public_ip_address`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE  `vmops`.`user_statistics` (
+CREATE TABLE  `cloud`.`user_statistics` (
   `id` bigint unsigned UNIQUE NOT NULL AUTO_INCREMENT,
   `data_center_id` bigint unsigned NOT NULL,
   `account_id` bigint unsigned NOT NULL,
@@ -441,7 +427,7 @@ CREATE TABLE  `vmops`.`user_statistics` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE  `vmops`.`vm_template` (
+CREATE TABLE  `cloud`.`vm_template` (
   `id` bigint unsigned NOT NULL auto_increment,
   `unique_name` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
@@ -456,8 +442,6 @@ CREATE TABLE  `vmops`.`vm_template` (
   `removed` datetime COMMENT 'Date removed if not null',
   `account_id` bigint unsigned NOT NULL COMMENT 'id of the account that created this template',
   `checksum` varchar(255) COMMENT 'checksum for the template root disk',
-  `ready` int(1) unsigned NOT NULL COMMENT 'ready to be used',
-  `create_status` varchar(32) COMMENT 'template creation status',
   `display_text` varchar(4096) NULL COMMENT 'Description text set by the admin for display purpose only',
   `enable_password` int(1) unsigned NOT NULL default 1 COMMENT 'true if this template supports password reset',
   `guest_os_id` bigint unsigned NOT NULL COMMENT 'the OS of the template',
@@ -467,7 +451,7 @@ CREATE TABLE  `vmops`.`vm_template` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE  `vmops`.`vm_instance` (
+CREATE TABLE  `cloud`.`vm_instance` (
   `id` bigint unsigned UNIQUE NOT NULL,
   `name` varchar(255) NOT NULL,
   `display_name` varchar(255),
@@ -485,6 +469,9 @@ CREATE TABLE  `vmops`.`vm_instance` (
   `storage_ip` varchar(15),
   `data_center_id` bigint unsigned NOT NULL COMMENT 'Data Center the instance belongs to',
   `host_id` bigint unsigned,
+  `proxy_id` bigint unsigned NULL COMMENT 'console proxy allocated in previous session',
+  `proxy_assign_time` DATETIME NULL COMMENT 'time when console proxy was assigned',
+  `vnc_password` varchar(255) NOT NULL COMMENT 'vnc password',
   `ha_enabled` tinyint(1) NOT NULL DEFAULT 0 COMMENT 'Should HA be enabled for this VM',
   `mirrored_vols` tinyint(1) NOT NULL DEFAULT 0 COMMENT 'Are the volumes mirrored',
   `update_count` bigint unsigned NOT NULL DEFAULT 0 COMMENT 'date state was updated',
@@ -495,7 +482,7 @@ CREATE TABLE  `vmops`.`vm_instance` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`pricing` (
+CREATE TABLE `cloud`.`pricing` (
   `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
   `price` FLOAT UNSIGNED NOT NULL,
   `price_unit` VARCHAR(45) NOT NULL,
@@ -505,20 +492,17 @@ CREATE TABLE `vmops`.`pricing` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`user_vm` (
+CREATE TABLE `cloud`.`user_vm` (
   `id` bigint unsigned UNIQUE NOT NULL,
   `domain_router_id` bigint unsigned NOT NULL COMMENT 'router id',
-  `vnc_port` integer unsigned COMMENT 'vnc port of the vm',
-  `vnc_password` varchar(255) NOT NULL COMMENT 'vnc password',
   `service_offering_id` bigint unsigned NOT NULL COMMENT 'service offering id',
   `vnet` varchar(18) COMMENT 'vnet',
+  `dc_vlan` varchar(18) COMMENT 'zone vlan',
   `account_id` bigint unsigned NOT NULL COMMENT 'user id of owner',
   `domain_id` bigint unsigned NOT NULL,
-  `proxy_id` bigint unsigned NULL COMMENT 'console proxy allocated in previous session',
-  `proxy_assign_time` DATETIME NULL COMMENT 'time when console proxy was assigned',
-  `guest_ip_address` varchar(15) NOT NULL COMMENT 'ip address within the guest network',
-  `guest_mac_address` varchar(17) NOT NULL COMMENT 'mac address within the guest network',
-  `guest_netmask` varchar(15) NOT NULL COMMENT 'netmask within the guest network',
+  `guest_ip_address` varchar(15) COMMENT 'ip address within the guest network',
+  `guest_mac_address` varchar(17) COMMENT 'mac address within the guest network',
+  `guest_netmask` varchar(15) COMMENT 'netmask within the guest network',
   `external_ip_address` varchar(15)  COMMENT 'ip address within the external network',
   `external_mac_address` varchar(17)  COMMENT 'mac address within the external network',
   `external_vlan_db_id` bigint unsigned  COMMENT 'foreign key into vlan table',
@@ -526,7 +510,7 @@ CREATE TABLE `vmops`.`user_vm` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`domain_router` (
+CREATE TABLE `cloud`.`domain_router` (
   `id` bigint unsigned UNIQUE NOT NULL COMMENT 'Primary Key',
   `gateway` varchar(15)  NOT NULL COMMENT 'ip address of the gateway to this domR',
   `ram_size` int(10) unsigned NOT NULL DEFAULT 128 COMMENT 'memory to use in mb',
@@ -536,10 +520,12 @@ CREATE TABLE `vmops`.`domain_router` (
   `public_mac_address` varchar(17)   COMMENT 'mac address of the public facing network card',
   `public_ip_address` varchar(15)  COMMENT 'public ip address used for source net',
   `public_netmask` varchar(15)  COMMENT 'netmask used for the domR',
-  `guest_mac_address` varchar(17) NOT NULL COMMENT 'mac address of the data center facing network card',
+  `guest_mac_address` varchar(17) NOT NULL COMMENT 'mac address of the pod facing network card',
+  `guest_dc_mac_address` varchar(17) COMMENT 'mac address of the data center facing network card',
   `guest_netmask` varchar(15) NOT NULL COMMENT 'netmask used for the guest network',
-  `guest_ip_address` varchar(15) NOT NULL COMMENT ' ip address in the guest network',
+  `guest_ip_address` varchar(15) NOT NULL COMMENT ' ip address in the guest network',   
   `vnet` varchar(18) COMMENT 'vnet',
+  `dc_vlan` varchar(18) COMMENT 'vnet',
   `vlan_db_id` bigint unsigned COMMENT 'Foreign key into vlan id table',
   `vlan_id` varchar(255) COMMENT 'optional VLAN ID for DomainRouter that can be used in rundomr.sh',
   `account_id` bigint unsigned NOT NULL COMMENT 'account id of owner',
@@ -549,7 +535,7 @@ CREATE TABLE `vmops`.`domain_router` (
   PRIMARY KEY (`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET=utf8 COMMENT = 'information about the domR instance';
 
-CREATE TABLE  `vmops`.`template_host_ref` (
+CREATE TABLE  `cloud`.`template_host_ref` (
   `id` bigint unsigned NOT NULL auto_increment,
   `host_id` bigint unsigned NOT NULL,
   `pool_id` bigint unsigned,
@@ -563,155 +549,23 @@ CREATE TABLE  `vmops`.`template_host_ref` (
   `error_str` varchar(255),
   `local_path` varchar(255),
   `install_path` varchar(255),
+  `url` varchar(255),
+  `destroyed` tinyint(1) COMMENT 'indicates whether the template_host entry was destroyed by the user or not',
+  `is_copy` tinyint(1) NOT NULL DEFAULT 0 COMMENT 'indicates whether this was copied ',
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
-CREATE TABLE  `vmops_usage`.`event` (
-  `id` bigint unsigned NOT NULL auto_increment,
-  `type` varchar(32) NOT NULL,
-  `description` varchar(1024) NOT NULL,
-  `user_id` bigint unsigned NOT NULL,
-  `account_id` bigint unsigned NOT NULL,
-  `created` datetime NOT NULL,
-  `level` varchar(16) NOT NULL,
-  `parameters` varchar(1024) NULL,
-  PRIMARY KEY  (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-CREATE TABLE  `vmops_usage`.`vmops_usage` (
+CREATE TABLE  `cloud`.`template_zone_ref` (
   `id` bigint unsigned NOT NULL auto_increment,
   `zone_id` bigint unsigned NOT NULL,
-  `account_id` bigint unsigned NOT NULL,
-  `domain_id` bigint unsigned NOT NULL,
-  `description` varchar(1024) NOT NULL,
-  `usage_display` varchar(255) NOT NULL,
-  `usage_type` int(1) unsigned,
-  `raw_usage` FLOAT UNSIGNED NOT NULL,
-  `vm_instance_id` bigint unsigned,
-  `vm_name` varchar(255),
-  `offering_id` bigint unsigned,
-  `template_id` bigint unsigned,
-  `size` bigint unsigned,
-  `start_date` DATETIME NOT NULL,
-  `end_date` DATETIME NOT NULL,
-  PRIMARY KEY  (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-CREATE TABLE  `vmops_usage`.`usage_vm_instance` (
-  `usage_type` int(1) unsigned,
-  `zone_id` bigint unsigned NOT NULL,
-  `account_id` bigint unsigned NOT NULL,
-  `vm_instance_id` bigint unsigned NOT NULL,
-  `vm_name` varchar(255) NOT NULL,
-  `service_offering_id` bigint unsigned NOT NULL,
   `template_id` bigint unsigned NOT NULL,
-  `start_date` DATETIME NOT NULL,
-  `end_date` DATETIME NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-CREATE TABLE  `vmops_usage`.`usage_network` (
-  `account_id` bigint unsigned NOT NULL,
-  `zone_id` bigint unsigned NOT NULL,
-  `bytes_sent` bigint unsigned NOT NULL default '0',
-  `bytes_received` bigint unsigned NOT NULL default '0',
-  `net_bytes_received` bigint unsigned NOT NULL default '0',
-  `net_bytes_sent` bigint unsigned NOT NULL default '0',
-  `current_bytes_received` bigint unsigned NOT NULL default '0',
-  `current_bytes_sent` bigint unsigned NOT NULL default '0',
-  `event_time_millis` bigint unsigned NOT NULL default '0',
-  PRIMARY KEY (`account_id`, `zone_id`, `event_time_millis`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-CREATE TABLE  `vmops_usage`.`usage_ip_address` (
-  `account_id` bigint unsigned NOT NULL,
-  `domain_id` bigint unsigned NOT NULL,
-  `zone_id` bigint unsigned NOT NULL,
-  `public_ip_address` varchar(15) NOT NULL,
-  `assigned` DATETIME NOT NULL,
-  `released` DATETIME NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-CREATE TABLE  `vmops_usage`.`usage_job` (
-  `id` bigint unsigned NOT NULL auto_increment,
-  `host` varchar(255),
-  `pid` int(5),
-  `job_type` int(1),
-  `scheduled` int(1),
-  `start_millis` bigint unsigned NOT NULL default '0' COMMENT 'start time in milliseconds of the aggregation range used by this job',
-  `end_millis` bigint unsigned NOT NULL default '0' COMMENT 'end time in milliseconds of the aggregation range used by this job',
-  `exec_time` bigint unsigned NOT NULL default '0' COMMENT 'how long in milliseconds it took for the job to execute',
-  `start_date` DATETIME COMMENT 'start date of the aggregation range used by this job',
-  `end_date` DATETIME COMMENT 'end date of the aggregation range used by this job',
-  `success` int(1),
-  `heartbeat` DATETIME NOT NULL,
+  `created` DATETIME NOT NULL,
+  `last_updated` DATETIME,
+  `removed` datetime COMMENT 'date removed if not null',
   PRIMARY KEY  (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
-CREATE TABLE  `vmops_usage`.`account` (
-  `id` bigint unsigned NOT NULL,
-  `account_name` varchar(100) COMMENT 'an account name set by the creator of the account, defaults to username for single accounts',
-  `type` int(1) unsigned NOT NULL,
-  `domain_id` bigint unsigned,
-  `state` varchar(10) NOT NULL default 'enabled',
-  `removed` datetime COMMENT 'date removed',
-  `cleanup_needed` tinyint(1) NOT NULL default '0',
-  PRIMARY KEY  (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-CREATE TABLE  `vmops_usage`.`user_statistics` (
-  `id` bigint unsigned UNIQUE NOT NULL,
-  `data_center_id` bigint unsigned NOT NULL,
-  `account_id` bigint unsigned NOT NULL,
-  `net_bytes_received` bigint unsigned NOT NULL default '0',
-  `net_bytes_sent` bigint unsigned NOT NULL default '0',
-  `current_bytes_received` bigint unsigned NOT NULL default '0',
-  `current_bytes_sent` bigint unsigned NOT NULL default '0',
-  PRIMARY KEY  (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-CREATE TABLE  `vmops_usage`.`usage_volume` (
-  `id` bigint unsigned NOT NULL,
-  `zone_id` bigint unsigned NOT NULL,
-  `account_id` bigint unsigned NOT NULL,
-  `domain_id` bigint unsigned NOT NULL,
-  `disk_offering_id` bigint unsigned,
-  `template_id` bigint unsigned,
-  `created` DATETIME NOT NULL,
-  `deleted` DATETIME NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-CREATE TABLE  `vmops_usage`.`usage_storage` (
-  `id` bigint unsigned NOT NULL,
-  `zone_id` bigint unsigned NOT NULL,
-  `account_id` bigint unsigned NOT NULL,
-  `domain_id` bigint unsigned NOT NULL,
-  `storage_type` int(1) unsigned NOT NULL,
-  `size` bigint unsigned NOT NULL,
-  `created` DATETIME NOT NULL,
-  `deleted` DATETIME NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-CREATE TABLE  `vmops_usage`.`usage_security_group` (
-  `id` bigint unsigned NOT NULL,
-  `zone_id` bigint unsigned NOT NULL,
-  `account_id` bigint unsigned NOT NULL,
-  `domain_id` bigint unsigned NOT NULL,
-  `vm_id` bigint unsigned NOT NULL,
-  `num_rules` bigint unsigned NOT NULL,
-  `created` DATETIME NOT NULL,
-  `deleted` DATETIME NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-CREATE TABLE  `vmops_usage`.`usage_load_balancer_policy` (
-  `id` bigint unsigned NOT NULL,
-  `zone_id` bigint unsigned NOT NULL,
-  `account_id` bigint unsigned NOT NULL,
-  `domain_id` bigint unsigned NOT NULL,
-  `created` DATETIME NOT NULL,
-  `deleted` DATETIME NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-CREATE TABLE  `vmops`.`console_proxy` (
+CREATE TABLE  `cloud`.`console_proxy` (
   `id` bigint unsigned NOT NULL auto_increment,
   `gateway` varchar(15)  NOT NULL COMMENT 'gateway info for this console proxy towards public network interface',
   `dns1` varchar(15) COMMENT 'dns1',
@@ -729,7 +583,7 @@ CREATE TABLE  `vmops`.`console_proxy` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
-CREATE TABLE  `vmops`.`secondary_storage_vm` (
+CREATE TABLE  `cloud`.`secondary_storage_vm` (
   `id` bigint unsigned NOT NULL auto_increment,
   `gateway` varchar(15)  NOT NULL COMMENT 'gateway info for this sec storage vm towards public network interface',
   `dns1` varchar(15) COMMENT 'dns1',
@@ -747,7 +601,7 @@ CREATE TABLE  `vmops`.`secondary_storage_vm` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
-CREATE TABLE  `vmops`.`domain` (
+CREATE TABLE  `cloud`.`domain` (
   `id` bigint unsigned NOT NULL auto_increment,
   `parent` bigint unsigned,
   `name` varchar(255),
@@ -761,7 +615,7 @@ CREATE TABLE  `vmops`.`domain` (
   UNIQUE (parent, name, removed)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE  `vmops`.`account` (
+CREATE TABLE  `cloud`.`account` (
   `id` bigint unsigned NOT NULL auto_increment,
   `account_name` varchar(100) COMMENT 'an account name set by the creator of the account, defaults to username for single accounts',
   `type` int(1) unsigned NOT NULL,
@@ -772,7 +626,7 @@ CREATE TABLE  `vmops`.`account` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`resource_limit` (
+CREATE TABLE `cloud`.`resource_limit` (
   `id` bigint unsigned NOT NULL auto_increment,
   `domain_id` bigint unsigned,
   `account_id` bigint unsigned,
@@ -781,7 +635,7 @@ CREATE TABLE `vmops`.`resource_limit` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`resource_count` (
+CREATE TABLE `cloud`.`resource_count` (
   `id` bigint unsigned NOT NULL auto_increment,
   `account_id` bigint unsigned NOT NULL,
   `type` varchar(255),
@@ -789,7 +643,7 @@ CREATE TABLE `vmops`.`resource_count` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`op_host_capacity` (
+CREATE TABLE `cloud`.`op_host_capacity` (
   `id` bigint unsigned NOT NULL auto_increment,
   `host_id` bigint unsigned,
   `data_center_id` bigint unsigned NOT NULL,
@@ -800,7 +654,7 @@ CREATE TABLE `vmops`.`op_host_capacity` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`alert` (
+CREATE TABLE `cloud`.`alert` (
   `id` bigint unsigned NOT NULL auto_increment,
   `type` int(1) unsigned NOT NULL,
   `pod_id` bigint unsigned,
@@ -813,24 +667,13 @@ CREATE TABLE `vmops`.`alert` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`scheduled_volume_backups` (
-  `id` bigint unsigned NOT NULL auto_increment,
-  `volume_id` bigint unsigned NOT NULL COMMENT 'volume id',
-  `interval` int(4) NOT NULL COMMENT 'backup schedule, e.g. hourly, daily, etc.',
-  `max_hourly` int(8) NOT NULL default '0' COMMENT 'maximum number of hourly backups to maintain',
-  `max_daily` int(8) NOT NULL default '0' COMMENT 'maximum number of daily backups to maintain',
-  `max_weekly` int(8) NOT NULL default '0' COMMENT 'maximum number of weekly backups to maintain',
-  `max_monthly` int(8) NOT NULL default '0' COMMENT 'maximum number of monthly backups to maintain',
-  PRIMARY KEY  (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-CREATE TABLE `vmops`.`async_job` (
+CREATE TABLE `cloud`.`async_job` (
   `id` bigint unsigned NOT NULL auto_increment,
   `user_id` bigint unsigned NOT NULL,
   `account_id` bigint unsigned NOT NULL,
   `session_key` varchar(64) COMMENT 'all async-job manage to apply session based security enforcement',
   `instance_type` varchar(64) COMMENT 'instance_type and instance_id work together to allow attaching an instance object to a job',			
-  `instance_id` bigint unsigned, 
+  `instance_id` bigint unsigned,
   `job_cmd` varchar(64) NOT NULL COMMENT 'command name',
   `job_cmd_originator` varchar(64) COMMENT 'command originator',
   `job_cmd_info` text COMMENT 'command parameter info',
@@ -850,7 +693,7 @@ CREATE TABLE `vmops`.`async_job` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`sync_queue` (
+CREATE TABLE `cloud`.`sync_queue` (
   `id` bigint unsigned NOT NULL auto_increment,
   `sync_objtype` varchar(64) NOT NULL, 
   `sync_objid` bigint unsigned NOT NULL,
@@ -862,7 +705,18 @@ CREATE TABLE `vmops`.`sync_queue` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`sync_queue_item` (
+CREATE TABLE `cloud`.`stack_maid` (
+  `id` bigint unsigned NOT NULL auto_increment,
+  `msid` bigint unsigned NOT NULL,
+  `thread_id` bigint unsigned NOT NULL,
+  `seq` int unsigned NOT NULL,
+  `cleanup_delegate` varchar(128),
+  `cleanup_context` text,
+  `created` datetime,
+  PRIMARY KEY  (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `cloud`.`sync_queue_item` (
   `id` bigint unsigned NOT NULL auto_increment,
   `queue_id` bigint unsigned NOT NULL,
   `content_type` varchar(64),
@@ -873,7 +727,7 @@ CREATE TABLE `vmops`.`sync_queue_item` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`vm_disk` (
+CREATE TABLE `cloud`.`vm_disk` (
   `id` bigint unsigned NOT NULL auto_increment,
   `instance_id` bigint unsigned NOT NULL,
   `disk_offering_id` bigint unsigned NOT NULL,
@@ -881,7 +735,7 @@ CREATE TABLE `vmops`.`vm_disk` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`disk_offering` (
+CREATE TABLE `cloud`.`disk_offering` (
   `id` bigint unsigned NOT NULL auto_increment,
   `domain_id` bigint unsigned NOT NULL,
   `name` varchar(255) NOT NULL,
@@ -892,7 +746,7 @@ CREATE TABLE `vmops`.`disk_offering` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`security_group` (
+CREATE TABLE `cloud`.`security_group` (
   `id` bigint unsigned NOT NULL auto_increment,
   `name` varchar(255) NOT NULL,
   `description` varchar(4096) NULL,
@@ -901,7 +755,7 @@ CREATE TABLE `vmops`.`security_group` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`network_rule_config` (
+CREATE TABLE `cloud`.`network_rule_config` (
   `id` bigint unsigned NOT NULL auto_increment,
   `security_group_id` bigint unsigned NOT NULL,
   `public_port` varchar(10) default NULL,
@@ -911,7 +765,7 @@ CREATE TABLE `vmops`.`network_rule_config` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`security_group_vm_map` (
+CREATE TABLE `cloud`.`security_group_vm_map` (
   `id` bigint unsigned NOT NULL auto_increment,
   `security_group_id` bigint unsigned NOT NULL,
   `ip_address` varchar(15) NOT NULL,
@@ -919,14 +773,15 @@ CREATE TABLE `vmops`.`security_group_vm_map` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`load_balancer_vm_map` (
+CREATE TABLE `cloud`.`load_balancer_vm_map` (
   `id` bigint unsigned NOT NULL auto_increment,
   `load_balancer_id` bigint unsigned NOT NULL,
   `instance_id` bigint unsigned NOT NULL,
+  `pending` tinyint(1) unsigned NOT NULL DEFAULT 0 COMMENT 'whether the vm is being applied to the load balancer (pending=1) or has already been applied (pending=0)',
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`load_balancer` (
+CREATE TABLE `cloud`.`load_balancer` (
   `id` bigint unsigned NOT NULL auto_increment,
   `name` varchar(255) NOT NULL,
   `description` varchar(4096) NULL,
@@ -938,7 +793,7 @@ CREATE TABLE `vmops`.`load_balancer` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE  `vmops`.`storage_pool` (
+CREATE TABLE  `cloud`.`storage_pool` (
   `id` bigint unsigned UNIQUE NOT NULL,
   `name` varchar(255) COMMENT 'should be NOT NULL',
   `uuid` varchar(255) UNIQUE NOT NULL,
@@ -956,7 +811,7 @@ CREATE TABLE  `vmops`.`storage_pool` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE  `vmops`.`storage_pool_host_ref` (
+CREATE TABLE  `cloud`.`storage_pool_host_ref` (
   `id` bigint unsigned NOT NULL auto_increment,
   `host_id` bigint unsigned NOT NULL,
   `pool_id` bigint unsigned NOT NULL,
@@ -966,7 +821,7 @@ CREATE TABLE  `vmops`.`storage_pool_host_ref` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
-CREATE TABLE  `vmops`.`template_spool_ref` (
+CREATE TABLE  `cloud`.`template_spool_ref` (
   `id` bigint unsigned NOT NULL auto_increment,
   `pool_id` bigint unsigned NOT NULL,
   `template_id` bigint unsigned NOT NULL,
@@ -983,7 +838,7 @@ CREATE TABLE  `vmops`.`template_spool_ref` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`guest_os` (
+CREATE TABLE `cloud`.`guest_os` (
   `id` bigint unsigned NOT NULL auto_increment,
   `category_id` bigint unsigned NOT NULL,
   `name` varchar(255) NOT NULL,
@@ -991,41 +846,56 @@ CREATE TABLE `vmops`.`guest_os` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`guest_os_category` (
+CREATE TABLE `cloud`.`guest_os_category` (
   `id` bigint unsigned NOT NULL auto_increment,
   `name` varchar(255) NOT NULL,
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
-CREATE TABLE  `vmops`.`launch_permission` (
+CREATE TABLE  `cloud`.`launch_permission` (
   `id` bigint unsigned NOT NULL auto_increment,
   `template_id` bigint unsigned NOT NULL,
   `account_id` bigint unsigned NOT NULL,
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
-CREATE TABLE `vmops`.`snapshot_policy` (
+CREATE TABLE `cloud`.`snapshot_policy` (
   `id` bigint unsigned NOT NULL auto_increment,
   `volume_id` bigint unsigned NOT NULL,
   `schedule` varchar(100) NOT NULL COMMENT 'schedule time of execution',
-  `interval` int(4) NOT NULL COMMENT 'backup schedule, e.g. hourly, daily, etc.',
-  `max_snaps` int(8) NOT NULL default '0' COMMENT 'maximum number of snapshots to maintain',
+  `timezone` varchar(100) NOT NULL COMMENT 'the timezone in which the schedule time is specified',
+  `interval` int(4) NOT NULL default 4 COMMENT 'backup schedule, e.g. hourly, daily, etc.',
+  `max_snaps` int(8) NOT NULL default 0 COMMENT 'maximum number of snapshots to maintain',
+  `active` tinyint(1) unsigned NOT NULL COMMENT 'Is the policy active',
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE  `vmops`.`snapshot_policy_ref` (
+CREATE TABLE  `cloud`.`snapshot_policy_ref` (
   `snap_id` bigint unsigned NOT NULL,
   `volume_id` bigint unsigned NOT NULL,
   `policy_id` bigint unsigned NOT NULL,
   UNIQUE (snap_id, policy_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE  `vmops`.`snapshot_schedule` (
+CREATE TABLE  `cloud`.`snapshot_schedule` (
   `id` bigint unsigned NOT NULL auto_increment,
   `volume_id` bigint unsigned NOT NULL COMMENT 'The volume for which this snapshot is being taken',
   `policy_id` bigint unsigned NOT NULL COMMENT 'One of the policyIds for which this snapshot was taken',
   `scheduled_timestamp` datetime NOT NULL COMMENT 'Time at which the snapshot was scheduled for execution',
+  `async_job_id` bigint unsigned COMMENT 'If this schedule is being executed, it is the id of the create aysnc_job. Before that it is null',
+  `snapshot_id` bigint unsigned COMMENT 'If this schedule is being executed, then the corresponding snapshot has this id. Before that it is null',
+  UNIQUE (volume_id, policy_id),
   PRIMARY KEY  (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `cloud`.`op_pod_vlan_alloc` (
+    `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary id',
+    `vlan` varchar(18) NOT NULL COMMENT 'vlan id',
+    `data_center_id` bigint unsigned NOT NULL COMMENT 'data center the pod belongs to',
+    `pod_id` bigint unsigned NOT NULL COMMENT 'pod the vlan belongs to',
+    `account_id` bigint unsigned NULL COMMENT 'account the vlan belongs to right now',
+    `taken` datetime COMMENT 'Date taken',
+    PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 SET foreign_key_checks = 1;
