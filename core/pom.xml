@@ -1,0 +1,88 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.cloud.cloudstack</groupId>
+  <artifactId>core</artifactId>
+  <version>2.0.0-SNAPSHOT</version>
+  <name>CloudStack Core</name>
+<build>
+  <!--nagEmailAddress>tryggvi@greenqloud.com</nagEmailAddress-->
+    <sourceDirectory>${project.basedir}/src</sourceDirectory>
+	<!--testSourceDirectory>${project.basedir}/test</testSourceDirectory-->
+
+     <plugins>
+	    <plugin>
+	      <artifactId>maven-compiler-plugin</artifactId>
+	      <configuration>
+	        <source>1.5</source>
+	        <target>1.5</target>
+	      </configuration>
+	    </plugin>
+      </plugins>
+</build>
+  <developers>
+	<developer>
+		<name>Tryggvi Larusson</name>
+		<id>tryggvil</id>
+		<email>tryggvi@greenqloud.com</email>
+		<organization>greenqloud</organization>
+	</developer>
+  </developers>
+<dependencies>
+	<dependency>
+		<groupId>com.cloud.cloudstack</groupId>
+		<artifactId>utils</artifactId>
+		<version>2.0.0-SNAPSHOT</version>
+		<type>jar</type>
+		<scope>compile</scope>
+	</dependency>
+	<dependency>
+		<groupId>org.apache.xmlrpc</groupId>
+		<artifactId>xmlrpc-common</artifactId>
+		<version>3.1.3</version>
+		<type>jar</type>
+		<scope>compile</scope>
+	</dependency>
+	<dependency>
+		<groupId>org.apache.xmlrpc</groupId>
+		<artifactId>xmlrpc-client</artifactId>
+		<version>3.1.3</version>
+		<type>jar</type>
+		<scope>compile</scope>
+	</dependency>
+	<dependency>
+		<groupId>com.google.code.gson</groupId>
+		<artifactId>gson</artifactId>
+		<version>1.4</version>
+		<type>jar</type>
+		<scope>compile</scope>
+	</dependency>
+	<dependency>
+		<groupId>com.trilead</groupId>
+		<artifactId>trilead-ssh2</artifactId>
+		<version>build213-svnkit-1.3-patch</version>
+		<type>jar</type>
+		<scope>compile</scope>
+	</dependency>
+	<dependency>
+		<groupId>commons-httpclient</groupId>
+		<artifactId>commons-httpclient</artifactId>
+		<version>3.1</version>
+		<type>jar</type>
+		<scope>compile</scope>
+	</dependency>
+	<dependency>
+		<groupId>commons-codec</groupId>
+		<artifactId>commons-codec</artifactId>
+		<version>1.4</version>
+		<type>jar</type>
+		<scope>compile</scope>
+	</dependency>
+	<dependency>
+		<groupId>com.xensource</groupId>
+		<artifactId>xenapi</artifactId>
+		<version>5.5.0-1</version>
+		<type>jar</type>
+		<scope>compile</scope>
+	</dependency>
+</dependencies>
+</project>
