@@ -55,6 +55,12 @@
 		<version>1.0.2</version>
 		<type>jar</type>
 		<scope>compile</scope>
+		<exclusions>
+			<exclusion>
+			<groupId>xml-apis</groupId>
+			<artifactId>xml-apis</artifactId>
+			</exclusion>
+		</exclusions>
 	</dependency>
 	<dependency>
 		<groupId>javax.servlet</groupId>
