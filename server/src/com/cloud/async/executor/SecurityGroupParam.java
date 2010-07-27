@@ -26,16 +26,18 @@ public class SecurityGroupParam {
     private List<Long> securityGroupIdList;
     private String publicIp;
     private Long instanceId;
+    private long eventId;
 
     public SecurityGroupParam() {
     }
 
-    public SecurityGroupParam(Long userId, Long securityGroupId, List<Long> securityGroupIdList, String publicIp, Long instanceId) {
+    public SecurityGroupParam(Long userId, Long securityGroupId, List<Long> securityGroupIdList, String publicIp, Long instanceId, long eventId) {
     	this.userId = userId;
     	this.securityGroupId = securityGroupId;
     	this.securityGroupIdList = securityGroupIdList;
     	this.publicIp = publicIp;
     	this.instanceId = instanceId;
+    	this.eventId = eventId;
     }
 
     public Long getUserId() {
@@ -77,4 +79,12 @@ public class SecurityGroupParam {
 	public void setInstanceId(Long instanceId) {
 		this.instanceId = instanceId;
 	}
+
+    public void setEventId(long eventId) {
+        this.eventId = eventId;
+    }
+
+    public long getEventId() {
+        return eventId;
+    }
 }

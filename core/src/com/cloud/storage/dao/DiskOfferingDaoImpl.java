@@ -18,9 +18,6 @@
 
 package com.cloud.storage.dao;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.ejb.Local;
@@ -28,50 +25,27 @@ import javax.ejb.Local;
 import org.apache.log4j.Logger;
 
 import com.cloud.storage.DiskOfferingVO;
+import com.cloud.storage.DiskOfferingVO.Type;
+import com.cloud.utils.db.Attribute;
+import com.cloud.utils.db.Filter;
 import com.cloud.utils.db.GenericDaoBase;
 import com.cloud.utils.db.SearchBuilder;
 import com.cloud.utils.db.SearchCriteria;
-import com.cloud.utils.db.Transaction;
+import com.cloud.utils.db.SearchCriteria.Op;
 
 @Local(value={DiskOfferingDao.class})
 public class DiskOfferingDaoImpl extends GenericDaoBase<DiskOfferingVO, Long> implements DiskOfferingDao {
     private static final Logger s_logger = Logger.getLogger(DiskOfferingDaoImpl.class);
 
-    private static final String FIND_DISK_OFFERING_BY_INSTANCE_ID = "SELECT do.id, do.name, do.display_text, do.disk_size, do.mirrored" +
-                                                                    "  FROM disk_offering do, vm_disk vmd" +
-                                                                    "  WHERE ((vmd.instance_id = ?) AND (vmd.removed IS NULL) AND (vmd.disk_offering_id = do.id))";
     private final SearchBuilder<DiskOfferingVO> DomainIdSearch;
+    private final Attribute _typeAttr;
 
     protected DiskOfferingDaoImpl() {
         DomainIdSearch  = createSearchBuilder();
         DomainIdSearch.and("domainId", DomainIdSearch.entity().getDomainId(), SearchCriteria.Op.EQ);
         DomainIdSearch.done();
-    }
-
-    @Override
-    public List<DiskOfferingVO> listByInstanceId(long instanceId) {
-        // FIXME:  this should return a list, but for now it's hard coded to 1 disk offering per instance
-        Transaction txn = Transaction.currentTxn();
-        PreparedStatement pstmt = null;
-        List<DiskOfferingVO> offerings = new ArrayList<DiskOfferingVO>();
-        try {
-            pstmt = txn.prepareAutoCloseStatement(FIND_DISK_OFFERING_BY_INSTANCE_ID);
-            pstmt.setLong(1, instanceId);
-            ResultSet rs = pstmt.executeQuery();
-            DiskOfferingVO diskOffering = null;
-            while (rs.next()) {
-                diskOffering = new DiskOfferingVO();
-                diskOffering.setId(rs.getLong(1));
-                diskOffering.setName(rs.getString(2));
-                diskOffering.setDisplayText(rs.getString(3));
-                diskOffering.setDiskSize(rs.getLong(4));
-                diskOffering.setMirrored(rs.getBoolean(5));
-                offerings.add(diskOffering);
-            }
-        } catch (Exception e) {
-            s_logger.warn(e);
-        }
-        return offerings;
+        
+        _typeAttr = _allAttributes.get("type");
     }
 
     @Override
@@ -80,5 +54,30 @@ public class DiskOfferingDaoImpl extends GenericDaoBase<DiskOfferingVO, Long> im
         sc.setParameters("domainId", domainId);
         // FIXME:  this should not be exact match, but instead should find all available disk offerings from parent domains
         return listActiveBy(sc);
+    }
+    
+    @Override
+    protected List<DiskOfferingVO> searchAll(SearchCriteria sc, final Filter filter, final Boolean lock, final boolean cache) {
+        sc.addAnd(_typeAttr, Op.EQ, Type.Disk);
+        return super.searchAll(sc, filter, lock, cache);
+    }
+    
+    @Override
+    public List<Object[]> searchAll(SearchCriteria sc, final Filter filter) {
+        sc.addAnd(_typeAttr, Op.EQ, Type.Disk);
+        return super.searchAll(sc, filter);
+    }
+    
+    @Override
+    protected List<DiskOfferingVO> executeList(final String sql, final Object... params) {
+        StringBuilder builder = new StringBuilder(sql);
+        int index = builder.indexOf("WHERE");
+        if (index == -1) {
+            builder.append(" WHERE type=?");
+        } else {
+            builder.insert(index + 6, "type=? ");
+        }
+        
+        return super.executeList(sql, Type.Disk, params);
     }
 }

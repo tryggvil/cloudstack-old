@@ -43,8 +43,10 @@ public interface UserDao extends GenericDao<UserVO, Long>{
 	 * @param email
 	 * @param accountId
 	 * @param timezone
+	 * @param apikey
+	 * @param secretkey
 	 */
-	void update(long id, String username, String password, String firstname, String lastname, String email, Long accountId, String timezone);
+	void update(long id, String username, String password, String firstname, String lastname, String email, Long accountId, String timezone, String apiKey, String secretKey);
 	
 	List<UserVO> listByAccount(long accountId);
 

@@ -18,18 +18,18 @@
 
 package com.cloud.dc.dao;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import javax.ejb.Local;
 import javax.naming.ConfigurationException;
+import javax.persistence.TableGenerator;
 
 import org.apache.log4j.Logger;
 
 import com.cloud.dc.DataCenterIpAddressVO;
+import com.cloud.dc.DataCenterLinkLocalIpAddressVO;
 import com.cloud.dc.DataCenterVO;
 import com.cloud.dc.DataCenterVnetVO;
 import com.cloud.dc.PodVlanVO;
@@ -38,8 +38,7 @@ import com.cloud.utils.component.ComponentLocator;
 import com.cloud.utils.db.GenericDaoBase;
 import com.cloud.utils.db.SearchBuilder;
 import com.cloud.utils.db.SearchCriteria;
-import com.cloud.utils.db.Transaction;
-import com.cloud.utils.exception.CloudRuntimeException;
+import com.cloud.utils.db.SequenceFetcher;
 import com.cloud.utils.net.NetUtils;
 
 /**
@@ -53,14 +52,15 @@ import com.cloud.utils.net.NetUtils;
 public class DataCenterDaoImpl extends GenericDaoBase<DataCenterVO, Long> implements DataCenterDao {
     private static final Logger s_logger = Logger.getLogger(DataCenterDaoImpl.class);
 
-    protected static final String UPDATE_MAC_ADDRESS_SQL = "UPDATE data_center set mac_address = LAST_INSERT_ID(mac_address + 1) WHERE id = ?";
-    
     protected SearchBuilder<DataCenterVO> NameSearch;
 
     protected static final DataCenterIpAddressDaoImpl _ipAllocDao = ComponentLocator.inject(DataCenterIpAddressDaoImpl.class);
+    protected static final DataCenterLinkLocalIpAddressDaoImpl _LinkLocalIpAllocDao = ComponentLocator.inject(DataCenterLinkLocalIpAddressDaoImpl.class);
     protected static final DataCenterVnetDaoImpl _vnetAllocDao = ComponentLocator.inject(DataCenterVnetDaoImpl.class);
     protected static final PodVlanDaoImpl _podVlanAllocDao = ComponentLocator.inject(PodVlanDaoImpl.class);
     protected long _prefix;
+    protected Random _rand = new Random(System.currentTimeMillis());
+    protected TableGenerator _tgMacAddress;
 
     @Override
     public DataCenterVO findByName(String name) {
@@ -69,33 +69,14 @@ public class DataCenterDaoImpl extends GenericDaoBase<DataCenterVO, Long> implem
         return findOneActiveBy(sc);
     }
 
-    protected long getNextSequence(String sql, long zoneId) {
-        Transaction txn = Transaction.currentTxn();
-        PreparedStatement pstmt = null;
-        try {
-            pstmt = txn.prepareAutoCloseStatement(sql);
-
-            pstmt.setLong(1, zoneId);
-
-            pstmt.executeUpdate();
-
-            pstmt = txn.prepareAutoCloseStatement(SELECT_LAST_INSERT_ID_SQL);
-            ResultSet rs = pstmt.executeQuery();
-            if (rs == null || !rs.next()) {
-                throw new CloudRuntimeException("Unable to fetch a sequence with " + sql);
-            }
-
-            long result = rs.getLong(1);
-            return result;
-        } catch (SQLException e) {
-            s_logger.warn("DB Exception", e);
-            throw new CloudRuntimeException("DB Exception ", e);
-        }
-    }
-
     @Override
     public void releaseVnet(String vnet, long dcId, long accountId) {
         _vnetAllocDao.release(vnet, dcId, accountId);
+    }
+    
+    @Override
+    public List<DataCenterVnetVO> findVnet(long dcId, String vnet) {
+    	return _vnetAllocDao.findVnet(dcId, vnet);
     }
 
     @Override
@@ -104,13 +85,23 @@ public class DataCenterDaoImpl extends GenericDaoBase<DataCenterVO, Long> implem
     }
     
     @Override
+    public void releaseLinkLocalPrivateIpAddress(String ipAddress, long dcId, Long instanceId) {
+    	_LinkLocalIpAllocDao.releaseIpAddress(ipAddress, dcId, instanceId);
+    }
+    
+    @Override
     public boolean deletePrivateIpAddressByPod(long podId) {
     	return _ipAllocDao.deleteIpAddressByPod(podId);
     }
+    
+    @Override
+    public boolean deleteLinkLocalPrivateIpAddressByPod(long podId) {
+    	return _LinkLocalIpAllocDao.deleteIpAddressByPod(podId);
+    }
 
     @Override
-    public String allocateVnet(long podId, long accountId) {
-        DataCenterVnetVO vo = _vnetAllocDao.take(podId, accountId);
+    public String allocateVnet(long dataCenterId, long accountId) {
+        DataCenterVnetVO vo = _vnetAllocDao.take(dataCenterId, accountId);
         if (vo == null) {
             return null;
         }
@@ -134,9 +125,12 @@ public class DataCenterDaoImpl extends GenericDaoBase<DataCenterVO, Long> implem
 
     @Override
     public String[] getNextAvailableMacAddressPair(long id, long mask) {
-        long seq =  getNextSequence(UPDATE_MAC_ADDRESS_SQL, id);
+        SequenceFetcher fetch = SequenceFetcher.getInstance();
+        
+        long seq = fetch.getNextSequence(Long.class, _tgMacAddress, id);
         seq = seq | _prefix | ((id & 0x7f) << 32);
         seq |= mask;
+        seq |= ((_rand.nextInt(Short.MAX_VALUE) << 16) & 0x00000000ffff0000l);
         String[] pair = new String[2];
         pair[0] = NetUtils.long2Mac(seq);
         pair[1] = NetUtils.long2Mac(seq | 0x1l << 39);
@@ -146,6 +140,15 @@ public class DataCenterDaoImpl extends GenericDaoBase<DataCenterVO, Long> implem
     @Override
     public String allocatePrivateIpAddress(long dcId, long podId, long instanceId) {
         DataCenterIpAddressVO vo = _ipAllocDao.takeIpAddress(dcId, podId, instanceId);
+        if (vo == null) {
+            return null;
+        }
+        return vo.getIpAddress();
+    }
+    
+    @Override
+    public String allocateLinkLocalPrivateIpAddress(long dcId, long podId, long instanceId) {
+    	DataCenterLinkLocalIpAddressVO vo = _LinkLocalIpAllocDao.takeIpAddress(dcId, podId, instanceId);
         if (vo == null) {
             return null;
         }
@@ -171,6 +174,11 @@ public class DataCenterDaoImpl extends GenericDaoBase<DataCenterVO, Long> implem
     public void addPrivateIpAddress(long dcId,long podId, String start, String end) {
         _ipAllocDao.addIpRange(dcId, podId, start, end);
     }
+    
+    @Override
+    public void addLinkLocalPrivateIpAddress(long dcId,long podId, String start, String end) {
+    	_LinkLocalIpAllocDao.addIpRange(dcId, podId, start, end);
+    }
 
     @Override
     public boolean configure(String name, Map<String, Object> params) throws ConfigurationException {
@@ -192,8 +200,12 @@ public class DataCenterDaoImpl extends GenericDaoBase<DataCenterVO, Long> implem
     }
     
     protected DataCenterDaoImpl() {
+        super();
         NameSearch = createSearchBuilder();
         NameSearch.and("name", NameSearch.entity().getName(), SearchCriteria.Op.EQ);
         NameSearch.done();
+        
+        _tgMacAddress = _tgs.get("macAddress");
+        assert _tgMacAddress != null : "Couldn't get mac address table generator";
     }
 }

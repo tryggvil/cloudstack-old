@@ -63,7 +63,7 @@ public class AttachISOExecutor extends VMOperationExecutor {
 	    	}
 
 	    	try {	
-	    		boolean result = asyncMgr.getExecutorContext().getManagementServer().attachISOToVM(vmId, userId, isoId, attach);
+	    		boolean result = asyncMgr.getExecutorContext().getManagementServer().attachISOToVM(vmId, userId, isoId, attach, param.getEventId());
 				if (result)
 					asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_SUCCEEDED, 0, successMsg);
 				else

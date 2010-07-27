@@ -19,7 +19,6 @@
 // Version: @VERSION@
 
 var DomRTemplateId = 1;
-var xsToolsISOId = 200;
 
 function showTemplatesTab() {
 	// Manage Templates 
@@ -233,6 +232,8 @@ function showTemplatesTab() {
 			template.find("#template_name").text(json.name);
 			template.find("#template_display_text").text(json.displaytext);
 			template.find("#template_account").text(json.account);
+			if(json.size != null)
+			    template.find("#template_size").text(convertBytes(parseInt(json.size)));
 			
 			var status = "Ready";
 			if (json.isready == "false") {
@@ -763,6 +764,9 @@ function showTemplatesTab() {
 			template.find("#iso_name").text(json.name);
 			template.find("#iso_display_text").text(json.displaytext);
 						
+			if(json.size != null)
+			    template.find("#iso_size").text(convertBytes(parseInt(json.size)));
+						
             var status = "Ready";
 			if (json.isready == "false") {
 				status = json.isostatus;
@@ -790,7 +794,7 @@ function showTemplatesTab() {
 				template.find("#iso_delete_container").hide();
 						
 			// hide "Create VM" link  
-			if(json.id == xsToolsISOId) // disallow to create VM from non-bootable ISO (e.g. xs-tools.iso). 
+			if(json.bootable == "false") // disallow to create VM from non-bootable ISO  
 			    template.find("#iso_create_vm_container").hide();
 			
 			template.find("#iso_edit").data("isoId", json.id).bind("click", function(event) {

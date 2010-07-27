@@ -30,4 +30,8 @@ public interface EventDao extends GenericDao<EventVO, Long> {
     public List<EventVO> searchAllEvents(SearchCriteria sc, Filter filter);
 
     public List<EventVO> listOlderEvents(Date oldTime);
+
+    List<EventVO> listStartedEvents(Date minTime, Date maxTime);
+
+    EventVO findCompletedEvent(long startId);
 }

@@ -27,9 +27,12 @@ import com.cloud.async.executor.StartVMExecutor;
 import com.cloud.async.executor.StopVMExecutor;
 import com.cloud.async.executor.VMOperationParam;
 import com.cloud.dc.DataCenterVO;
+import com.cloud.exception.ConcurrentOperationException;
 import com.cloud.exception.InternalErrorException;
 import com.cloud.exception.InvalidParameterValueException;
 import com.cloud.exception.ResourceAllocationException;
+import com.cloud.exception.StorageUnavailableException;
+import com.cloud.network.security.NetworkGroupVO;
 import com.cloud.service.ServiceOfferingVO;
 import com.cloud.storage.DiskOfferingVO;
 import com.cloud.storage.InsufficientStorageCapacityException;
@@ -38,6 +41,7 @@ import com.cloud.storage.StoragePoolVO;
 import com.cloud.storage.VMTemplateVO;
 import com.cloud.user.AccountVO;
 import com.cloud.utils.component.Manager;
+import com.cloud.utils.exception.ExecutionException;
 import com.cloud.vm.UserVm;
 import com.cloud.vm.UserVmVO;
 import com.cloud.vm.VirtualMachineManager;
@@ -69,17 +73,16 @@ public interface UserVmManager extends Manager, VirtualMachineManager<UserVmVO> 
      * @param account account creating the virtual machine.
      * @param dc data center to deploy it in.
      * @param offering the service offering that comes with it.
-     * @param dataDiskOffering the disk offering for the data disk
-     * @param template template to base the virtual machine on. Can be null if this VM is going to be booted from an ISO.
-     * @param iso to boot the virtual machine from
-     * @param rootDiskOffering the disk offering for the root disk
+     * @param template template to base the virtual machine on. Can either represent an ISO, or a normal template.
+     * @param diskOffering the disk offering for the root disk (deploying from ISO) or the data disk (deploying from a normal template)
      * @return UserVmVO if created; null if not.
      */
-    UserVmVO createVirtualMachine(Long vmId, long userId, AccountVO account, DataCenterVO dc, ServiceOfferingVO offering, DiskOfferingVO dataDiskOffering, VMTemplateVO template, DiskOfferingVO rootDiskOffering, String displayName, String group, String userData, List<StoragePoolVO> avoids) throws InsufficientStorageCapacityException, InternalErrorException, ResourceAllocationException;
+    UserVmVO createVirtualMachine(Long vmId, long userId, AccountVO account, DataCenterVO dc, ServiceOfferingVO offering, VMTemplateVO template, DiskOfferingVO diskOffering, String displayName, String group, String userData, List<StoragePoolVO> avoids, long startEventId) throws InsufficientStorageCapacityException, InternalErrorException, ResourceAllocationException;
     
-	UserVmVO createDirectlyAttachedVM(Long vmId, long userId, AccountVO account, DataCenterVO dc, ServiceOfferingVO offering, DiskOfferingVO dataDiskOffering, VMTemplateVO template, DiskOfferingVO rootDiskOffering, String displayName, String group, String userData, List<StoragePoolVO> a) throws InternalErrorException, ResourceAllocationException;
+	UserVmVO createDirectlyAttachedVM(Long vmId, long userId, AccountVO account, DataCenterVO dc, ServiceOfferingVO offering, VMTemplateVO template, DiskOfferingVO diskOffering, String displayName, String group, String userData, List<StoragePoolVO> a, List<NetworkGroupVO> networkGroupVO, long startEventId) throws InternalErrorException, ResourceAllocationException;
 
-    
+	UserVmVO createDirectlyAttachedVMExternal(Long vmId, long userId, AccountVO account, DataCenterVO dc, ServiceOfferingVO offering, VMTemplateVO template, DiskOfferingVO diskOffering, String displayName, String group, String userData, List<StoragePoolVO> a, List<NetworkGroupVO> networkGroupVO, long startEventId) throws InternalErrorException, ResourceAllocationException;
+
     /**
      * Destroys one virtual machine
      * @param userId the id of the user performing the action
@@ -104,14 +107,14 @@ public interface UserVmManager extends Manager, VirtualMachineManager<UserVmVO> 
      * @param volumeId
      * @throws InternalErrorException
      */
-    void attachVolumeToVM(long vmId, long volumeId) throws InternalErrorException;
+    void attachVolumeToVM(long vmId, long volumeId, Long deviceId, long startEventId) throws InternalErrorException;
     
     /**
      * Detaches the specified volume from the VM it is currently attached to.
      * @param volumeId
      * @throws InternalErrorException
      */
-    void detachVolumeFromVM(long volumeId) throws InternalErrorException;
+    void detachVolumeFromVM(long volumeId, long startEventId) throws InternalErrorException;
     
     /**
      * Attaches an ISO to the virtual CDROM device of the specified VM. Will eject any existing virtual CDROM if isoPath is null.
@@ -127,8 +130,11 @@ public interface UserVmManager extends Manager, VirtualMachineManager<UserVmVO> 
      * @param userId the id of the user performing the action
      * @param vmId the id of the virtual machine.
      * @param isoPath path of the ISO from which the VM should be booted (optional)
+     * @throws ExecutionException 
+     * @throws StorageUnavailableException 
+     * @throws ConcurrentOperationException 
      */
-    UserVmVO startVirtualMachine(long userId, long vmId, String isoPath);
+    UserVmVO startVirtualMachine(long userId, long vmId, String isoPath) throws ExecutionException, StorageUnavailableException, ConcurrentOperationException;
     boolean executeStartVM(StartVMExecutor executor, VMOperationParam param);
     
     /**
@@ -137,8 +143,11 @@ public interface UserVmManager extends Manager, VirtualMachineManager<UserVmVO> 
      * @param vmId the id of the virtual machine.
      * @param password the password that the user wants to use to access the virtual machine
      * @param isoPath path of the ISO from which the VM should be booted (optional)
+     * @throws ExecutionException 
+     * @throws StorageUnavailableException 
+     * @throws ConcurrentOperationException 
      */
-    UserVmVO startVirtualMachine(long userId, long vmId, String password, String isoPath);
+    UserVmVO startVirtualMachine(long userId, long vmId, String password, String isoPath) throws ExecutionException, StorageUnavailableException, ConcurrentOperationException;
     
     /**
      * Stops the virtual machine
@@ -148,25 +157,26 @@ public interface UserVmManager extends Manager, VirtualMachineManager<UserVmVO> 
      */
     boolean stopVirtualMachine(long userId, long vmId);
     boolean executeStopVM(StopVMExecutor executor, VMOperationParam param);
-    void completeStopCommand(long userId, UserVmVO vm, Event e);
+    void completeStopCommand(long userId, UserVmVO vm, Event e, long startEventId);
     
 
     /**
      * upgrade the service offering of the virtual machine
      * @param vmId id of the virtual machine being upgraded
      * @param serviceOfferingId id of the service offering the vm should now run under
-     * @return string description of the upgrade result
+     * @return success/failure
      */
-    String upgradeVirtualMachine(long vmId, long serviceOfferingId);
+    boolean upgradeVirtualMachine(long vmId, long serviceOfferingId);
     
     /**
-     * Obtains statistics for a list of VMs; CPU and network utilization
+     * Obtains statistics for a list of host or VMs; CPU and network utilization
      * @param host ID
-     * @param list of VM IDs
+     * @param host name
+     * @param list of VM IDs or host id
      * @return GetVmStatsAnswer
      * @throws InternalErrorException
      */
-    HashMap<Long, VmStatsEntry> getVirtualMachineStatistics(long hostId, List<Long> vmIds) throws InternalErrorException;
+    HashMap<Long, VmStatsEntry> getVirtualMachineStatistics(long hostId, String hostName, List<Long> vmIds) throws InternalErrorException;
     
     boolean rebootVirtualMachine(long userId, long vmId);
     boolean executeRebootVM(RebootVMExecutor executor, VMOperationParam param);
@@ -200,6 +210,12 @@ public interface UserVmManager extends Manager, VirtualMachineManager<UserVmVO> 
      * @param instanceId the id of the instance for which the network rules should be cleaned
      */
     void cleanNetworkRules(long userId, long instanceId);
+    
+    /**
+     * Releases a guest IP address for a VM. If the VM is on a direct attached network, will also unassign the IP address.
+     * @param userVm
+     */
+    void releaseGuestIpAddress(UserVmVO userVm);
 
 
 }

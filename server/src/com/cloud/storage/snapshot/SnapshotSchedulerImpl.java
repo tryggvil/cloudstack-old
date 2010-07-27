@@ -18,6 +18,7 @@
 package com.cloud.storage.snapshot;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -221,7 +222,7 @@ public class SnapshotSchedulerImpl implements SnapshotScheduler {
         _snapshotScheduleDao.persist(snapshotSchedule); 
         List<Long> policyIds = new ArrayList<Long>();
         policyIds.add(Snapshot.MANUAL_POLICY_ID);
-        return executeCurrentSnapshots(userId, volumeId, policyIds);
+        return _snapshotManager.createSnapshotAsync(userId, volumeId, policyIds);
     }
     
     @DB
@@ -240,8 +241,18 @@ public class SnapshotSchedulerImpl implements SnapshotScheduler {
         // The value contains the list of policies associated with this new snapshot.
         // There can be more than one policy for a list if different policies coincide for the same volume.
         Map<Long, List<Long>> listOfVolumesSnapshotted = new HashMap<Long, List<Long>>();
+        Calendar cal = Calendar.getInstance(DateUtil.GMT_TIMEZONE);
+        cal.add(Calendar.MINUTE, -15);
+        //Skip any snapshots older than 15mins
+        Date graceTime = cal.getTime();
         
         for (SnapshotScheduleVO snapshotToBeExecuted : snapshotsToBeExecuted) {
+            Date scheduleTime = snapshotToBeExecuted.getScheduledTimestamp();
+            if(scheduleTime.before(graceTime)){
+                s_logger.info("Snapshot schedule older than 15mins. Skipping snapshot for volume: "+snapshotToBeExecuted.getVolumeId());
+                scheduleNextSnapshotJob(snapshotToBeExecuted);
+                continue;
+            }
             long policyId = snapshotToBeExecuted.getPolicyId();
             long volumeId = snapshotToBeExecuted.getVolumeId();
             List<Long> coincidingPolicies = listOfVolumesSnapshotted.get(volumeId);
@@ -286,7 +297,7 @@ public class SnapshotSchedulerImpl implements SnapshotScheduler {
                 txn.commit();
                 
                 s_logger.debug("Scheduling 1 snapshot for volume " + volumeId + " for schedule ids: " + coincidentSchedules + " at " + displayTime);
-                long jobId = executeCurrentSnapshots(userId, volumeId, coincidingPolicies);
+                long jobId = _snapshotManager.createSnapshotAsync(userId, volumeId, coincidingPolicies);
 				
                 // Add this snapshot to the listOfVolumesSnapshotted
 				// So that the coinciding schedules don't get scheduled again.
@@ -296,25 +307,6 @@ public class SnapshotSchedulerImpl implements SnapshotScheduler {
         }
     }
 
-    @DB
-    protected long executeCurrentSnapshots(Long userId, Long volumeId, List<Long> coincidingPolicies) {
-      
-        long  jobId = _snapshotManager.createSnapshotAsync(userId, volumeId, coincidingPolicies);
-
-        Transaction txn = Transaction.currentTxn();
-        txn.start();
-        // set the async_job_id for this in the schedule queue so that it doesn't get scheduled again and block others.
-        // mark each of the coinciding schedules as executing in the job queue.
-        for (Long policyId : coincidingPolicies) {
-            SnapshotScheduleVO snapshotSchedule = _snapshotScheduleDao.getCurrentSchedule(volumeId, policyId, false);
-            snapshotSchedule.setAsyncJobId(jobId);
-            _snapshotScheduleDao.update(snapshotSchedule.getId(), snapshotSchedule);
-        }
-        txn.commit();
-        
-        return jobId;
-    }
-    
     private Date scheduleNextSnapshotJob(SnapshotScheduleVO snapshotSchedule) {
         Long policyId = snapshotSchedule.getPolicyId();
         Long expectedId = snapshotSchedule.getId();

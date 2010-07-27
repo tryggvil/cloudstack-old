@@ -25,12 +25,11 @@ package com.cloud.agent.api;
  * This currently assumes that both primary and secondary storage are mounted on the XenServer.  
  */
 public class BackupSnapshotCommand extends SnapshotCommand {
-    private String volumeUuid;
-    private String lastBackedUpSnapshotUuid;
-    private String firstBackupUuid;
     private String prevSnapshotUuid;
+    private String prevBackupUuid;
     private boolean isFirstSnapshotOfRootVolume;
     private boolean isVolumeInactive;
+    private String firstBackupUuid;
     
     protected BackupSnapshotCommand() {
         
@@ -38,13 +37,11 @@ public class BackupSnapshotCommand extends SnapshotCommand {
     
     /**
      * @param primaryStoragePoolNameLabel   The UUID of the primary storage Pool
-     * @param volumeUuid               The UUID of the volume for which the snapshot was taken
-     * @param volumeName               The name of the volume whose snapshot was taken (something like i-3-SV-ROOT)
-     * @param snapshotUuid             The UUID of the snapshot which is going to be backed up 
-     * @param secondaryStoragePoolURL  This is what shows up in the UI when you click on Secondary storage. 
-     * @param lastBackedUpSnapshotUuid This is the UUID of the vhd file which was last backed up on secondary storage.
-     * @param firstBackupUuid          This is the backup of the first ever snapshot taken by the volume.                                 
+     * @param secondaryStoragePoolURL  This is what shows up in the UI when you click on Secondary storage.
+     * @param snapshotUuid             The UUID of the snapshot which is going to be backed up
      * @param prevSnapshotUuid         The UUID of the previous snapshot for this volume. This will be destroyed on the primary storage.
+     * @param prevBackupUuid           This is the UUID of the vhd file which was last backed up on secondary storage.
+     * @param firstBackupUuid          This is the backup of the first ever snapshot taken by the volume.                                 
      * @param isFirstSnapshotOfRootVolume true if this is the first snapshot of a root volume. Set the parent of the backup to null.
      * @param isVolumeInactive         True if the volume belongs to a VM that is not running or is detached. 
      */
@@ -53,48 +50,33 @@ public class BackupSnapshotCommand extends SnapshotCommand {
                                  Long   dcId,
                                  Long   accountId,
                                  Long   volumeId,
-                                 String volumeUuid,
                                  String snapshotUuid,
-                                 String lastBackedUpSnapshotUuid,
-                                 String firstBackupUuid,
                                  String prevSnapshotUuid,
+                                 String prevBackupUuid,
+                                 String firstBackupUuid,
                                  boolean isFirstSnapshotOfRootVolume,
                                  boolean isVolumeInactive) 
     {
         super(primaryStoragePoolNameLabel, secondaryStoragePoolURL, snapshotUuid, dcId, accountId, volumeId);
-        this.volumeUuid = volumeUuid;
-        this.lastBackedUpSnapshotUuid = lastBackedUpSnapshotUuid;
-        this.firstBackupUuid = firstBackupUuid;
         this.prevSnapshotUuid = prevSnapshotUuid;
+        this.prevBackupUuid = prevBackupUuid;
+        this.firstBackupUuid = firstBackupUuid;
         this.isFirstSnapshotOfRootVolume = isFirstSnapshotOfRootVolume;
         this.isVolumeInactive = isVolumeInactive;
     }
 
-    /**
-     * @return the volumeUuid
-     */
-    public String getVolumeUuid() {
-        return volumeUuid;
+    public String getPrevSnapshotUuid() {
+        return prevSnapshotUuid;
     }
 
-    /**
-     * @return the lastBackedUpSnapshotUuid
-     */
-    public String getLastBackedUpSnapshotUuid() {
-        return lastBackedUpSnapshotUuid;
+    public String getPrevBackupUuid() {
+        return prevBackupUuid;
     }
     
     public String getFirstBackupUuid() {
         return firstBackupUuid;
     }
     
-    /**
-     * @return the prevSnapshotUuid
-     */
-    public String getPrevSnapshotUuid() {
-        return prevSnapshotUuid;
-    }
-
     public boolean isFirstSnapshotOfRootVolume() {
         return isFirstSnapshotOfRootVolume;
     }

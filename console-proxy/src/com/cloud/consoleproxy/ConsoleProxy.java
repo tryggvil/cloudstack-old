@@ -56,6 +56,7 @@ public class ConsoleProxy {
 	public static Object context;
 	public static Method authMethod;
 	public static Method reportMethod;
+	public static Method ensureRouteMethod;
 
 	static Hashtable<String, ConsoleProxyViewer> connectionMap = new Hashtable<String, ConsoleProxyViewer>();
 	static int tcpListenPort = 5999;
@@ -222,6 +223,20 @@ public class ConsoleProxy {
 		}
 	}
 	
+	public static void ensureRoute(String address) {
+		if(ensureRouteMethod != null) {
+			try {
+				ensureRouteMethod.invoke(ConsoleProxy.context, address);
+			} catch (IllegalAccessException e) {
+				s_logger.error("Unable to invoke ensureRoute due to " + e.getMessage());
+			} catch (InvocationTargetException e) {
+				s_logger.error("Unable to invoke ensureRoute due to " + e.getMessage());
+			}
+		} else {
+			s_logger.warn("Unable to find ensureRoute method, console proxy agent is not up to date");
+		}
+	}
+	
 	public static void startWithContext(Properties conf, Object context) {
 		s_logger.info("Start console proxy with context");
 		if(conf != null) {
@@ -239,6 +254,7 @@ public class ConsoleProxy {
 			Class<?> contextClazz = Class.forName("com.cloud.agent.resource.consoleproxy.ConsoleProxyResource");
 			authMethod = contextClazz.getDeclaredMethod("authenticateConsoleAccess", String.class, String.class);
 			reportMethod = contextClazz.getDeclaredMethod("reportLoadInfo", String.class);
+			ensureRouteMethod = contextClazz.getDeclaredMethod("ensureRoute", String.class);
 		} catch (SecurityException e) {
 			s_logger.error("Unable to setup private channel due to SecurityException", e);
 		} catch (NoSuchMethodException e) {
@@ -403,13 +419,15 @@ public class ConsoleProxy {
 		return viewer;
 	}
 	
-	static void initViewer(ConsoleProxyViewer viewer, String host, int port, String sid) throws AuthenticationException {
+	static void initViewer(ConsoleProxyViewer viewer, String host, int port, String tag, String sid) throws AuthenticationException {
+		ConsoleProxyViewer.authenticationExternally(tag, sid);
+		
 		viewer.host = host;
 		viewer.port = port;
+		viewer.tag = tag;
 		viewer.passwordParam = sid;
 		
 		viewer.init();
-		viewer.authenticationExternally();
 	}
 	
 	static ConsoleProxyViewer getVncViewer(String host, int port, String sid, String tag) throws Exception {
@@ -420,8 +438,7 @@ public class ConsoleProxy {
 			viewer = connectionMap.get(host + ":" + port);
 			if (viewer == null) {
 				viewer = createViewer();
-				viewer.setTag(tag);
-				initViewer(viewer, host, port, sid);
+				initViewer(viewer, host, port, tag, sid);
 				connectionMap.put(host + ":" + port, viewer);
 				s_logger.info("Added viewer object " + viewer);
 				
@@ -429,14 +446,12 @@ public class ConsoleProxy {
 			} else if (!viewer.rfbThread.isAlive()) {
 				s_logger.info("The rfb thread died, reinitializing the viewer " +
 						viewer);
-				viewer.setTag(tag);
-				initViewer(viewer, host, port, sid);
+				initViewer(viewer, host, port, tag, sid);
 				
 				reportLoadChange = true;
 			} else if (!sid.equals(viewer.passwordParam)) {
 				s_logger.warn("Bad sid detected(VNC port may be reused). sid in session: " + viewer.passwordParam + ", sid in request: " + sid);
-				viewer.setTag(tag);
-				initViewer(viewer, host, port, sid);
+				initViewer(viewer, host, port, tag, sid);
 				
 				reportLoadChange = true;
 					
@@ -477,23 +492,20 @@ public class ConsoleProxy {
 
 			if (viewer == null) {
 				viewer = createViewer();
-				viewer.setTag(tag);
 				viewer.ajaxViewer = true;
 				
-				initViewer(viewer, host, port, sid);
+				initViewer(viewer, host, port, tag, sid);
 				connectionMap.put(host + ":" + port, viewer);
 				s_logger.info("Added viewer object " + viewer);
 				reportLoadChange = true;
 			} else if (!viewer.rfbThread.isAlive()) {
 				s_logger.info("The rfb thread died, reinitializing the viewer " +
 						viewer);
-				viewer.setTag(tag);
-				initViewer(viewer, host, port, sid);
+				initViewer(viewer, host, port, tag, sid);
 				reportLoadChange = true;
 			} else if (!sid.equals(viewer.passwordParam)) {
 				s_logger.warn("Bad sid detected(VNC port may be reused). sid in session: " + viewer.passwordParam + ", sid in request: " + sid);
-				viewer.setTag(tag);
-				initViewer(viewer, host, port, sid);
+				initViewer(viewer, host, port, tag, sid);
 				reportLoadChange = true;
 				
 				/*
@@ -609,7 +621,7 @@ public class ConsoleProxy {
 	    		        key  = e.nextElement();
 	    		        viewer  = connMap.get(key);
     		    	}
-	    		         
+
 	    		    long seconds_unused =
 	    		        (System.currentTimeMillis() - viewer.lastUsedTime) / 1000;
 	    		         
@@ -621,6 +633,7 @@ public class ConsoleProxy {
 	    		        bs[1] = 3;
 	    		        viewer.writeToClientStream(bs);
 	    		    }
+	    		    
 	    		    if (seconds_unused < viewerLinger) {
 	    		      	continue;
 	    		    }

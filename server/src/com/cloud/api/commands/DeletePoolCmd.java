@@ -9,6 +9,7 @@ import org.apache.log4j.Logger;
 import com.cloud.api.BaseCmd;
 import com.cloud.api.ServerApiException;
 import com.cloud.storage.StoragePoolVO;
+import com.cloud.storage.Storage.StoragePoolType;
 import com.cloud.utils.Pair;
 
 public class DeletePoolCmd extends BaseCmd {
@@ -21,9 +22,11 @@ public class DeletePoolCmd extends BaseCmd {
     	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ID, Boolean.TRUE));
     }
 
+    @Override
     public String getName() {
         return s_name;
     }
+    @Override
     public List<Pair<Enum, Boolean>> getProperties() {
         return s_properties;
     }
@@ -38,8 +41,8 @@ public class DeletePoolCmd extends BaseCmd {
     		throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to find pool by id " + poolId);
     	}
     	
-    	if (sPool.getPoolType().equals("lvm")) {
-    		throw new ServerApiException(BaseCmd.UNSUPPORTED_ACTION_ERROR, "Unable to delete local storage " + poolId);
+    	if (sPool.getPoolType().equals(StoragePoolType.LVM)) {
+    		throw new ServerApiException(BaseCmd.UNSUPPORTED_ACTION_ERROR, "Unable to delete local storage id: " + poolId);
     	}
     	
     	boolean deleted = true;

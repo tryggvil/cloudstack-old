@@ -334,8 +334,10 @@ public class Script implements Callable<String> {
                 if (begin < 0)
                     begin = cp.indexOf('/');
 
-                int end = cp.lastIndexOf("!");
-                end = cp.lastIndexOf(File.separator, end);
+                int endBang = cp.lastIndexOf("!");
+                int end = cp.lastIndexOf(File.separator, endBang);
+                if (end < 0) 
+                	end = cp.lastIndexOf('/', endBang);
                 cp = cp.substring(begin, end);
 
                 s_logger.debug("Current binaries reside at " + cp);

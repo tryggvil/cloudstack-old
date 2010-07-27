@@ -22,6 +22,7 @@ public class UpgradeVMParam {
 	private long userId;
 	private long vmId;
 	private long serviceOfferingId;
+	private long eventId;
 	
 	public UpgradeVMParam() {
 	}
@@ -55,4 +56,12 @@ public class UpgradeVMParam {
 	public void setServiceOfferingId(long serviceOfferingId) {
 		this.serviceOfferingId = serviceOfferingId;
 	}
+
+    public void setEventId(long eventId) {
+        this.eventId = eventId;
+    }
+
+    public long getEventId() {
+        return eventId;
+    }
 }

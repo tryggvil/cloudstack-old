@@ -17,6 +17,8 @@
  */
 package com.cloud.storage.secondary;
 
+import com.cloud.agent.api.StartupCommand;
+import com.cloud.host.HostVO;
 import com.cloud.utils.component.Manager;
 import com.cloud.vm.SecondaryStorageVmVO;
 
@@ -27,11 +29,11 @@ public interface SecondaryStorageVmManager extends Manager {
 	
 	public static final String ALERT_SUBJECT = "secondarystoragevm-alert";
 		
-	public SecondaryStorageVmVO startSecStorageVm(long ssVmVmId);
-	public boolean stopSecStorageVm(long ssVmVmId);
-	public boolean rebootSecStorageVm(long ssVmVmId);
-	public boolean destroySecStorageVm(long ssVmVmId);
-	
+	public SecondaryStorageVmVO startSecStorageVm(long ssVmVmId, long startEventId);
+	public boolean stopSecStorageVm(long ssVmVmId, long startEventId);
+	public boolean rebootSecStorageVm(long ssVmVmId, long startEventId);
+	public boolean destroySecStorageVm(long ssVmVmId, long startEventId);
+	public void onAgentConnect(Long dcId, StartupCommand cmd);
 	public boolean  generateFirewallConfiguration(Long agentId);
 	public boolean generateSetupCommand(Long zoneId);
 	

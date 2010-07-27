@@ -49,7 +49,11 @@ import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
-import com.cloud.server.ManagementServer;
+import com.cloud.service.ServiceOfferingVO;
+import com.cloud.service.ServiceOffering.GuestIpType;
+import com.cloud.service.dao.ServiceOfferingDaoImpl;
+import com.cloud.storage.DiskOfferingVO;
+import com.cloud.storage.dao.DiskOfferingDaoImpl;
 import com.cloud.utils.component.ComponentLocator;
 import com.cloud.utils.db.DB;
 import com.cloud.utils.db.Transaction;
@@ -144,6 +148,8 @@ public class DatabaseConfig {
     	fieldNames.add("guestIpType");
     	fieldNames.add("url");
     	fieldNames.add("storageType");
+    	fieldNames.add("category");
+    	fieldNames.add("tags");
     	
 
     	
@@ -627,7 +633,7 @@ public class DatabaseConfig {
     	long zoneDbId = Long.parseLong(zoneId);
     	String zoneName = PodZoneConfig.getZoneName(zoneDbId);
     	
-    	pzc.modifyVlan(zoneName, true, vlanId, gateway, netmask, vlanPodName, vlanType);
+    	pzc.modifyVlan(zoneName, true, vlanId, gateway, netmask, vlanPodName, vlanType, publicIpRange);
     	
     	long vlanDbId = pzc.getVlanDbId(zoneName, vlanId);
     	iprc.saveIPRange("public", -1, zoneDbId, vlanDbId, startIP, endIP);
@@ -639,6 +645,7 @@ public class DatabaseConfig {
         String name = _currentObjectParams.get("name");
         long dataCenterId = Long.parseLong(_currentObjectParams.get("zoneId"));
         String privateIpRange = _currentObjectParams.get("ipAddressRange");
+        String gateway = _currentObjectParams.get("gateway");
         String cidr = _currentObjectParams.get("cidr");
         String zoneName = PodZoneConfig.getZoneName(dataCenterId);
         String startIP = null;
@@ -653,13 +660,19 @@ public class DatabaseConfig {
             vlanEnd = Integer.parseInt(tokens[1]);
         }
         
-        pzc.savePod(false, id, name, dataCenterId, cidr, vlanStart, vlanEnd);
-        
         // Get the individual cidrAddress and cidrSize values
 		String[] cidrPair = cidr.split("\\/");
 		String cidrAddress = cidrPair[0];
 		String cidrSize = cidrPair[1];
+        long cidrSizeNum = Long.parseLong(cidrSize);
         
+        // Check that the gateway is in the same subnet as the CIDR
+    	if (!IPRangeConfig.sameSubnetCIDR(gateway, cidrAddress, cidrSizeNum)) {
+    		printError("For pod " + name + " in zone " + zoneName + " , please ensure that your gateway is in the same subnet as the  pod's CIDR address.");
+    	}
+        
+        pzc.savePod(false, id, name, dataCenterId, gateway, cidr, vlanStart, vlanEnd);
+                       
 		if (privateIpRange != null) {
 			// Check that the given IP address range was valid
 			if (!checkIpAddressRange(privateIpRange)) printError("Please enter a valid private IP range.");
@@ -671,10 +684,17 @@ public class DatabaseConfig {
 		}
     	
     	// Check that the start IP and end IP match up with the CIDR
-    	long cidrSizeNum = Long.parseLong(cidrSize);
-    	if (!IPRangeConfig.sameSubnetCIDR(startIP, endIP, cidrSizeNum)) printError("For pod " + name + " in zone " + zoneName + ", please ensure that your start IP and end IP are in the same subnet, as per the pod's CIDR size.");
-		if (!IPRangeConfig.sameSubnetCIDR(startIP, cidrAddress, cidrSizeNum)) printError("For pod " + name + " in zone " + zoneName + ", please ensure that your start IP is in the same subnet as the pod's CIDR address.");
-		if (!IPRangeConfig.sameSubnetCIDR(endIP, cidrAddress, cidrSizeNum)) printError("For pod " + name + " in zone " + zoneName + ", please ensure that your end IP is in the same subnet as the pod's CIDR address.");
+    	if (!IPRangeConfig.sameSubnetCIDR(startIP, endIP, cidrSizeNum)) {
+    		printError("For pod " + name + " in zone " + zoneName + ", please ensure that your start IP and end IP are in the same subnet, as per the pod's CIDR size.");
+    	}
+    	
+		if (!IPRangeConfig.sameSubnetCIDR(startIP, cidrAddress, cidrSizeNum)) {
+			printError("For pod " + name + " in zone " + zoneName + ", please ensure that your start IP is in the same subnet as the pod's CIDR address.");
+		}
+		
+		if (!IPRangeConfig.sameSubnetCIDR(endIP, cidrAddress, cidrSizeNum)) {
+			printError("For pod " + name + " in zone " + zoneName + ", please ensure that your end IP is in the same subnet as the pod's CIDR address.");
+		}
     	
 		if (privateIpRange != null) {
 			// Save the IP address range
@@ -700,19 +720,33 @@ public class DatabaseConfig {
         boolean ha = Boolean.parseBoolean(_currentObjectParams.get("enableHA"));
         boolean mirroring = Boolean.parseBoolean(_currentObjectParams.get("mirrored"));
         String guestIpType = _currentObjectParams.get("guestIpType");
-        if (guestIpType == null) guestIpType = "Virtualized";
+        GuestIpType type = null;
+        if (guestIpType == null) {
+            type = GuestIpType.Virtualized;
+        } else {
+            type = GuestIpType.valueOf(guestIpType);
+        }
         
-        int useLocalStorage;
+        boolean useLocalStorage;
         if (useLocalStorageValue != null) {
         	if (Boolean.parseBoolean(useLocalStorageValue)) {
-        		useLocalStorage = 1;
+        		useLocalStorage = true;
         	} else {
-        		useLocalStorage = 0;
+        		useLocalStorage = false;
         	}
         } else {
-        	useLocalStorage = 0;
+        	useLocalStorage = false;
         }
-
+        
+        ServiceOfferingVO serviceOffering = new ServiceOfferingVO(name, cpu, ramSize, speed, nwRate, mcRate, ha, displayText, type, useLocalStorage, false, null);
+        ServiceOfferingDaoImpl dao = ComponentLocator.inject(ServiceOfferingDaoImpl.class);
+        try {
+            dao.persist(serviceOffering);
+        } catch (Exception e) {
+            s_logger.error("error creating service offering", e);
+            
+        }
+        /*
         String insertSql = "INSERT INTO `cloud`.`service_offering` (id, name, cpu, ram_size, speed, nw_rate, mc_rate, created, ha_enabled, mirrored, display_text, guest_ip_type, use_local_storage) " +
                 "VALUES (" + id + ",'" + name + "'," + cpu + "," + ramSize + "," + speed + "," + nwRate + "," + mcRate + ",now()," + ha + "," + mirroring + ",'" + displayText + "','" + guestIpType + "','" + useLocalStorage + "')";
 
@@ -724,6 +758,7 @@ public class DatabaseConfig {
             s_logger.error("error creating service offering", ex);
             return;
         }
+        */
     }
     
     @DB
@@ -734,18 +769,40 @@ public class DatabaseConfig {
         String displayText = _currentObjectParams.get("displayText");
         int diskSpace = Integer.parseInt(_currentObjectParams.get("diskSpace"));
         boolean mirroring = Boolean.parseBoolean(_currentObjectParams.get("mirrored"));
-
-        String insertSql = "INSERT INTO `cloud`.`disk_offering` (id, domain_id, name, display_text, disk_size, mirrored) " +
-                "VALUES (" + id + "," + domainId + ",'" + name + "','" + displayText + "'," + diskSpace + "," + mirroring + ")";
+        String tags = _currentObjectParams.get("tags");
+        
+        if (tags != null && tags.length() > 0) {
+            String[] tokens = tags.split(",");
+            StringBuilder newTags = new StringBuilder();
+            for (String token : tokens) {
+                newTags.append(token.trim()).append(",");
+            }
+            newTags.delete(newTags.length() - 1, newTags.length());
+            tags = newTags.toString();
+        }
+        
+        DiskOfferingVO diskOffering = new DiskOfferingVO(domainId, name, displayText, diskSpace, mirroring, tags);
+        DiskOfferingDaoImpl offering = ComponentLocator.inject(DiskOfferingDaoImpl.class);
+        try {
+            offering.persist(diskOffering);
+        } catch (Exception e) {
+            s_logger.error("error creating disk offering", e);
+            
+        }
+        /*
+        String insertSql = "INSERT INTO `cloud`.`disk_offering` (id, domain_id, name, display_text, disk_size, mirrored, tags) " +
+                "VALUES (" + id + "," + domainId + ",'" + name + "','" + displayText + "'," + diskSpace + "," + mirroring + ", ? )";
 
         Transaction txn = Transaction.currentTxn();
         try {
             PreparedStatement stmt = txn.prepareAutoCloseStatement(insertSql);
+            stmt.setString(1, tags);
             stmt.executeUpdate();
         } catch (SQLException ex) {
             s_logger.error("error creating disk offering", ex);
             return;
         }
+        */
     }
     
     @DB
@@ -908,21 +965,25 @@ public class DatabaseConfig {
     private void saveDefaultConfiguations() {
         for (String name : s_defaultConfigurationValues.keySet()) {
             String value = s_defaultConfigurationValues.get(name);
-            saveConfiguration(name, value);
+            saveConfiguration(name, value, null);
         }
     }
     
     private void saveConfiguration() {
         String name = _currentObjectParams.get("name");
         String value = _currentObjectParams.get("value");
-        saveConfiguration(name, value);
+        String category = _currentObjectParams.get("category");
+        saveConfiguration(name, value, category);
     }
     
     @DB
-    protected void saveConfiguration(String name, String value) {
+    protected void saveConfiguration(String name, String value, String category) {
         String instance = "DEFAULT";
         String description = s_configurationDescriptions.get(name);
         String component = s_configurationComponents.get(name);
+        if (category == null) {
+        	category = "Advanced";
+        }
         
         String instanceNameError = "Please enter a non-blank value for the field: ";
         if (name.equals("instance.name")) {
@@ -938,8 +999,8 @@ public class DatabaseConfig {
         	if (value != null && !value.isEmpty()) _multicastThrottlingRate = value;
         }
 
-        String insertSql = "INSERT INTO `cloud`.`configuration` (instance, component, name, value, description) " +
-            "VALUES ('" + instance + "','" + component + "','" + name + "','" + value + "','" + description + "')";
+        String insertSql = "INSERT INTO `cloud`.`configuration` (instance, component, name, value, description, category) " +
+            "VALUES ('" + instance + "','" + component + "','" + name + "','" + value + "','" + description + "','" + category + "')";
         
         String selectSql = "SELECT name FROM cloud.configuration WHERE name = '" + name + "'";
 
@@ -983,7 +1044,7 @@ public class DatabaseConfig {
 
     @DB
     protected void saveRootDomain() {
-        String insertSql = "insert into `cloud`.`domain` (id, name, parent, owner, path, level) values (1, 'ROOT', NULL, 2, '', 0)";
+        String insertSql = "insert into `cloud`.`domain` (id, name, parent, owner, path, level) values (1, 'ROOT', NULL, 2, '/', 0)";
         Transaction txn = Transaction.currentTxn();
         try {
             PreparedStatement stmt = txn.prepareAutoCloseStatement(insertSql);

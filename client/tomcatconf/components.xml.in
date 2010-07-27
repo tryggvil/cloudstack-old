@@ -35,7 +35,6 @@
             <param name="cache.time.to.live">-1</param>
         </dao>
         <dao name="DiskOffering" class="com.cloud.storage.dao.DiskOfferingDaoImpl"/>
-        <dao name="VMDisk" class="com.cloud.storage.dao.VmDiskDaoImpl"/>
         <dao name="host zone" class="com.cloud.dc.dao.DataCenterDaoImpl">
             <param name="cache.size">50</param>
             <param name="cache.time.to.live">-1</param>
@@ -47,6 +46,8 @@
         <dao name="IP Addresses" class="com.cloud.network.dao.IPAddressDaoImpl"/>
         <dao name="vlan" class="com.cloud.dc.dao.VlanDaoImpl">
         </dao>
+		<dao name="PodVlanMap" class="com.cloud.dc.dao.PodVlanMapDaoImpl"/>
+        <dao name="AccountVlanMap" class="com.cloud.dc.dao.AccountVlanMapDaoImpl"/>
         <dao name="Volume" class="com.cloud.storage.dao.VolumeDaoImpl"/>
         <dao name="Events" class="com.cloud.event.dao.EventDaoImpl"/>
         <dao name="VM Template" class="com.cloud.storage.dao.VMTemplateDaoImpl">
@@ -70,6 +71,12 @@
         <dao name="Security Group Mapping" class="com.cloud.network.dao.SecurityGroupVMMapDaoImpl"/>
         <dao name="Load Balancer Mapping" class="com.cloud.network.dao.LoadBalancerVMMapDaoImpl"/>
 		<dao name="Datacenter IP Addresses" class="com.cloud.dc.dao.DataCenterIpAddressDaoImpl"/>
+        <dao name="Network Security Group" class="com.cloud.network.security.dao.NetworkGroupDaoImpl"/>
+        <dao name="Ingress Rules" class="com.cloud.network.security.dao.IngressRuleDaoImpl"/>
+        <dao name="Network Group Mapping" class="com.cloud.network.security.dao.NetworkGroupVMMapDaoImpl"/>
+        <dao name="Network Group Rules" class="com.cloud.network.security.dao.NetworkGroupRulesDaoImpl"/>
+        <dao name="Network Group Work" class="com.cloud.network.security.dao.NetworkGroupWorkDaoImpl"/>
+        <dao name="Network Group VM Ruleset log" class="com.cloud.network.security.dao.VmRulesetLogDaoImpl"/>
         <dao name="Pricing" class="com.cloud.pricing.dao.PricingDaoImpl"/>
         <dao name="Alert" class="com.cloud.alert.dao.AlertDaoImpl"/>
         <dao name="Capacity" class="com.cloud.capacity.dao.CapacityDaoImpl"/>
@@ -100,17 +107,17 @@
         <dao name="StoragePoolHostDao" class="com.cloud.storage.dao.StoragePoolHostDaoImpl"/>
         <dao name="GuestOSDao" class="com.cloud.storage.dao.GuestOSDaoImpl"/>
         <dao name="GuestOSCategoryDao" class="com.cloud.storage.dao.GuestOSCategoryDaoImpl"/>
+        <dao name="ClusterDao" class="com.cloud.dc.dao.ClusterDaoImpl"/>
         
         <adapters key="com.cloud.agent.manager.allocator.HostAllocator">
             <adapter name="FirstFitRouting" class="com.cloud.agent.manager.allocator.impl.FirstFitRoutingAllocator"/>
             <adapter name="FirstFit" class="com.cloud.agent.manager.allocator.impl.FirstFitAllocator"/>
-            <adapter name="FirstFitComputing" class="com.cloud.agent.manager.allocator.impl.FirstFitComputingAllocator"/>
         </adapters>
-        <adapters key="com.cloud.agent.manager.allocator.StoragePoolAllocator">
-            <adapter name="LocalStorage" class="com.cloud.agent.manager.allocator.impl.LocalStoragePoolAllocator"/>
-            <adapter name="Storage" class="com.cloud.agent.manager.allocator.impl.FirstFitStoragePoolAllocator"/>
-            <adapter name="Storage" class="com.cloud.agent.manager.allocator.impl.RandomStoragePoolAllocator"/>
-            <adapter name="GarbageCollecting" class="com.cloud.agent.manager.allocator.impl.GarbageCollectingStoragePoolAllocator"/>
+        <adapters key="com.cloud.storage.allocator.StoragePoolAllocator">
+            <adapter name="LocalStorage" class="com.cloud.storage.allocator.LocalStoragePoolAllocator"/>
+            <adapter name="Storage" class="com.cloud.storage.allocator.FirstFitStoragePoolAllocator"/>
+            <adapter name="Storage" class="com.cloud.storage.allocator.RandomStoragePoolAllocator"/>
+            <adapter name="GarbageCollecting" class="com.cloud.storage.allocator.GarbageCollectingStoragePoolAllocator"/>
         </adapters>
         <adapters key="com.cloud.agent.manager.allocator.PodAllocator">
             <adapter name="User First" class="com.cloud.agent.manager.allocator.impl.UserConcentratedAllocator"/>
@@ -129,6 +136,10 @@
         </adapters>
         <adapters key="com.cloud.ha.FenceBuilder">
             <adapter name="StorageFenceBuilder" class="com.cloud.ha.StorageFence"/>
+        </adapters>
+
+		<adapters key="com.cloud.network.IpAddrAllocator">
+            <adapter name="Basic" class="com.cloud.network.ExteralIpAddressAllocator"/>
         </adapters>
 
         <adapters key="com.cloud.resource.Discoverer">
@@ -152,7 +163,7 @@
         </manager>
         <manager name="download manager" class="com.cloud.storage.download.DownloadMonitorImpl">
         </manager>
-        <manager name="console proxy manager" class="com.cloud.consoleproxy.ConsoleProxyManagerImpl">
+        <manager name="console proxy manager" class="com.cloud.consoleproxy.AgentBasedStandaloneConsoleProxyManager">
         </manager>
         <manager name="vm manager" class="com.cloud.vm.UserVmManagerImpl"/>
         <manager name="upgrade manager" class="com.cloud.maint.UpgradeManagerImpl">
@@ -175,6 +186,8 @@
         </manager>
         <manager name="Template Manager" class="com.cloud.template.TemplateManagerImpl">
         </manager>
+        <manager name="NetworkGroupManager" class="com.cloud.network.security.NetworkGroupManagerImpl">
+        </manager>
 <!--        
         <adapters key="com.cloud.alert.AlertAdapter">
             <adapter name="ConsoleProxyAlert" class="com.cloud.alert.ConsoleProxyAlertAdapter"/>
@@ -189,6 +202,7 @@
 		</manager>
 		<dao name="User configuration server" class="com.cloud.user.dao.UserDaoImpl">
         </dao>
+        <dao name="Account configuration server" class="com.cloud.user.dao.AccountDaoImpl"/>
         <dao name="IP Addresses configuration server" class="com.cloud.network.dao.IPAddressDaoImpl"/>
 		<dao name="Datacenter IP Addresses configuration server" class="com.cloud.dc.dao.DataCenterIpAddressDaoImpl"/>
 		<dao name="domain router" class="com.cloud.vm.dao.DomainRouterDaoImpl"/>
@@ -196,6 +210,8 @@
         </dao>
         <dao name="host pod configuration server" class="com.cloud.dc.dao.HostPodDaoImpl">
         </dao>
+		<dao name="PodVlanMap configuration server" class="com.cloud.dc.dao.PodVlanMapDaoImpl"/>
+        <dao name="AccountVlanMap configurations erver" class="com.cloud.dc.dao.AccountVlanMapDaoImpl"/>
         <dao name="vlan configuration server" class="com.cloud.dc.dao.VlanDaoImpl">
         </dao>
         <dao name="VM Instance configuration server" class="com.cloud.vm.dao.VMInstanceDaoImpl">
@@ -205,6 +221,7 @@
             <param name="cache.time.to.live">-1</param>
         </dao>
         <dao name="DiskOffering configuration server" class="com.cloud.storage.dao.DiskOfferingDaoImpl"/>
+        <dao name="Events configuration server" class="com.cloud.event.dao.EventDaoImpl"/>
     </configuration-server>
     
 </components.xml>

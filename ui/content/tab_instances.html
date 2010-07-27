@@ -25,20 +25,23 @@
             </ol>
             </form>
             <a id="search_button" class="search_button" href="#"></a>
-            
-            <div id="advanced_search_link" class="advsearch_link">Advanced</div>
+            <div id="advanced_search_link" class="advsearch_link">
+                Advanced</div>
             <div id="advanced_search" class="adv_searchpopup" style="display: none;">
                 <div class="adv_searchformbox">
-                    <h3>Advance Search</h3>
+                    <h3>
+                        Advance Search</h3>
                     <a id="advanced_search_close" href="#">Close </a>
                     <form action="#" method="post">
                     <ol>
                         <li>
-                            <label for="filter">Name:</label>
+                            <label for="filter">
+                                Name:</label>
                             <input class="text" type="text" name="adv_search_name" id="adv_search_name" />
                         </li>
                         <li>
-                            <label for="filter">State:</label>
+                            <label for="filter">
+                                State:</label>
                             <select class="select" id="adv_search_state">
                                 <option value=""></option>
                                 <option value="Creating">Creating</option>
@@ -54,36 +57,40 @@
                             </select>
                         </li>
                         <li>
-                            <label for="filter">Zone:</label>
+                            <label for="filter">
+                                Zone:</label>
                             <select class="select" id="adv_search_zone">
                             </select>
                         </li>
                         <li id="adv_search_pod_li" style="display: none;">
-                            <label for="filter">Pod:</label>
+                            <label for="filter">
+                                Pod:</label>
                             <select class="select" id="adv_search_pod">
                             </select>
                         </li>
                         <li id="adv_search_domain_li" style="display: none;">
-                            <label for="filter">Domain:</label>
+                            <label for="filter">
+                                Domain:</label>
                             <select class="select" id="adv_search_domain">
                             </select>
                         </li>
                         <li id="adv_search_account_li" style="display: none;">
-                            <label for="filter">Account:</label>
-                            <input class="text" type="text" id="adv_search_account" />                              
+                            <label for="filter">
+                                Account:</label>
+                            <input class="text" type="text" id="adv_search_account" />
                         </li>
                     </ol>
                     </form>
-                   <div class="adv_search_actionbox">
-                    	<div class="adv_searchpopup_button" id="adv_search_button"></div>
-					</div>
+                    <div class="adv_search_actionbox">
+                        <div class="adv_searchpopup_button" id="adv_search_button">
+                        </div>
+                    </div>
                 </div>
-            </div>            
-            
+            </div>
         </div>
     </div>
-	<div class="filter_actionbox">
-	</div>
+    <div class="filter_actionbox">
+    </div>
     <div class="grid_container">
         <div id="loading_gridtable" class="loading_gridtable" style="display: none;">
             <div class="loading_gridanimation">
@@ -127,7 +134,7 @@
     margin: 0; display: none">
     <div class="vm_rows">
         <div class="vm_rows_top">
-            <div class="vm_genrows_cell" style="width: 6%;">
+            <div class="vm_genrows_cell" style="width: 7%;">
                 <div class="admin_vmstatus">
                     <div id="vm_state_bar" class="admin_vmgreen_arrow">
                     </div>
@@ -139,7 +146,7 @@
             </div>
             <div class="vm_genrows_cell" style="width: 1%;">
             </div>
-            <div class="vm_genrows_cell" style="width: 30%;">
+            <div class="vm_genrows_cell" style="width: 29%;">
                 <div class="admin_vmcontainer">
                     <div class="admin_vmcontainerleft" style="background: url(images/admin_vmyellow_left.gif) no-repeat top left;">
                     </div>
@@ -179,10 +186,10 @@
                     </div>
                     <div class="admin_vmcontainermid" style="background: url(images/admin_vmblue_mid.gif) repeat-x top left;">
                         <ul class="admin_vmcontainermid_list">
-                            <li style="margin-top:2px;" id="vm_created"></li>                            
-                            <li style="margin-top:2px;" id="vm_account"></li>
-                            <li style="margin-top:2px;" id="vm_domain"></li>
-                            <li style="margin-top:2px;" id="vm_host"></li>
+                            <li style="margin-top: 2px;" id="vm_created"></li>
+                            <li style="margin-top: 2px;" id="vm_account"></li>
+                            <li style="margin-top: 2px;" id="vm_domain"></li>
+                            <li style="margin-top: 2px;" id="vm_host"></li>
                         </ul>
                     </div>
                 </div>
@@ -200,6 +207,8 @@
                     Actions</div>
                 <div id="vm_action_volumes" class="vm_botactionslinks_down">
                     Volumes</div>
+                <div id="vm_action_statistics" class="vm_botactionslinks_down" style="margin-left:15px; display:inline;">
+                    Statistics</div>
             </div>
             <div class="vm_rowbot_loading" style="display: none;" id="vm_loading_container">
                 <div class="vm_rowbot_loadinganimation">
@@ -284,9 +293,9 @@
                             Change Group</div>
                     </li>
                     <li>Others</li>
-                    <li>
-                        <div id="vm_action_apply_security" class="vmaction_links_on">
-                            Apply PF Services</div>
+                    <li id="vm_action_list_network_groups_container">
+                        <div id="vm_action_list_network_groups" class="vmaction_links_on">
+                            Network Groups</div>
                     </li>
                     <li>
                         <div id="vm_action_ha" class="vmaction_links_on">
@@ -296,6 +305,12 @@
             </div>
         </div>
     </div>
+    <div class="hostadmin_showdetails_panel" id="vm_statistics_panel" style="display:none">
+    	<div class="host_statisticspanel">
+			<div class="host_statisticslist" id="vm_cpu_stat"><div class="hostcpu_icon"></div><p><strong> CPU Total:</strong>  | <strong>CPU Allocated:</strong>  | <span class="host_statisticspanel_green"> <strong>CPU Used:</strong></span></p></div>
+			<div class="host_statisticslist" id="vm_network_stat"><div class="hostnetwork_icon"></div><p><strong> Network read:</strong> | <strong>Network write:</strong></p></div>
+        </div>
+    </div>    
     <div class="hostadmin_showdetails_panel" id="volume_detail_panel" style="display: none;">
         <div class="hostadmin_showdetails_grid">
             <div class="hostadmin_showdetailsheader">
@@ -333,7 +348,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div>       
 </div>
 <!-- END VM Instance Template -->
 <!-- Disk Volume Template -->
@@ -368,8 +383,8 @@
         </div>
         <div class="hostadmin_showdetailsrow_cell" style="width: 19%">
             <div class="netgrid_celltitles" id="detail_action">
-                <a id="volume_action_detach_disk" href="#">Detach Disk</a><span id="volume_acton_separator">&nbsp;&nbsp;|</span><a
-                    id="volume_action_create_template" href="#">Create Template</a></div>
+                <a id="volume_action_detach_disk" href="#">Detach Disk</a><span id="volume_acton_separator"></span>
+				<a id="volume_action_create_template" href="#" style="display:none">Create Template</a></div>
         </div>
     </div>
 </div>
@@ -405,17 +420,17 @@
             <li>
                 <label for="create_template_public">
                     Public:</label>
-                <select class="select" name="create_template_public" id="create_template_public">
-                    <option value="true">Yes</option>
+                <select class="select" name="create_template_public" id="create_template_public">                    
                     <option value="false">No</option>
+                    <option value="true">Yes</option>
                 </select>
             </li>
             <li>
                 <label for="user_name">
                     Password Enabled?:</label>
-                <select class="select" name="create_template_password" id="create_template_password">
-                    <option value="true">Yes</option>
+                <select class="select" name="create_template_password" id="create_template_password">                    
                     <option value="false">No</option>
+                    <option value="true">Yes</option>
                 </select>
             </li>
         </ol>
@@ -463,298 +478,393 @@
 	</div>
 	-->
 <!-- END Console Overlay -->
-<!-- Add New VM Wizard -->
+<!-- New VM Wizard (begin) -->
 <div class="vmpopup_container" id="vmpopup" style="display: none;">
-	<div class="revwiz_closebutton" id="vm_wizard_close"></div>
-	<div id="step1" style="display:block;">
+    <div class="revwiz_closebutton" id="vm_wizard_close">
+    </div>
+    <div id="step1" style="display: block;">
         <div class="rev_wiztop">
             <div class="rev_wizardbox">
                 <div class="rev_wizardsteps">
-                    <div class="revwiz_selectednumber">1</div>
-                    <h3>Select a Zone</h3>
+                    <div class="revwiz_selectednumber">
+                        1</div>
+                    <h3>
+                        Select a Template</h3>
                 </div>
                 <div class="rev_wizardsteps">
-                    <div class="revwiz_nonselectednumber">2</div>
-                    <h3>Select a Template</h3>
+                    <div class="revwiz_nonselectednumber">
+                        2</div>
+                    <h3>
+                        Select a Service</h3>
                 </div>
                 <div class="rev_wizardsteps">
-                    <div class="revwiz_nonselectednumber">3</div>
-                    <h3>Select Offerings</h3>
+                    <div class="revwiz_nonselectednumber">
+                        3</div>
+                    <h3>
+                        Optional</h3>
                 </div>
                 <div class="rev_wizardsteps">
-                    <div class="revwiz_nonselectednumber">4</div>
-                    <h3>Select Review</h3>
-                </div>
-            </div>	
-        </div>
-        <div class="rev_wizmid">
-        	<div class="rev_wizmid_maincontent">
-            	<div class="rev_wizmid_titlebox">
-                	<h2><strong>Step 1:</strong> Select a Zone</h2>
-                    <p> To create a new instance, please first select a zone you wish to have your virtual instance hosted on.</p>
-                </div>
-                <div class="rev_wizmid_contentbox">
-                	<div class="rev_tempsearchpanel"></div>
-                    <div class="rev_wizformarea">
-                    	<form name="step1" method="post" action="#">
-                        	<ol>
-                                <li>
-                                    <label for="zone">
-                                        Availability Zone:</label>
-                                    <select class="select" id="wizard_zone" name="zone">
-                                    </select>
-                                </li>
-                                <li>
-                                    <div>
-                                        <label for="name">
-                                            Name (optional):</label>
-                                        <input class="text" type="text" id="wizard_vm_name" />
-                                    </div>
-                                    <div id="wizard_vm_name_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div>
-                                </li>
-                                <li>
-                                    <div>
-                                        <label for="group">
-                                            Group (optional):</label>
-                                        <input class="text" type="text" id="wizard_vm_group" />
-                                    </div>
-                                    <div id="wizard_vm_group_errormsg" class="dialog_formcontent_errormsg" style="display:none;"></div>
-                                </li>
-                            </ol>
-                        </form>
-                    </div>
-                </div>
-                <div class="rev_wizmid_actionbox">
-                	<div class="rev_wizmid_actionnext"> Go to Step 2</div>
+                    <div class="revwiz_nonselectednumber">
+                        4</div>
+                    <h3>
+                        Select Review</h3>
                 </div>
             </div>
         </div>
-        <div class="rev_wizbot"></div>
-    </div>
-    
-    <div id="step2" style="display:none;">
-        <div class="rev_wiztop">
-            <div class="rev_wizardbox">
-                <div class="rev_wizardsteps">
-                    <div class="revwiz_nonselectednumber">1</div>
-                    <h3>Select a Zone</h3>
-                </div>
-                <div class="rev_wizardsteps">
-                    <div class="revwiz_selectednumber">2</div>
-                    <h3>Select a Template</h3>
-                </div>
-                <div class="rev_wizardsteps">
-                    <div class="revwiz_nonselectednumber">3</div>
-                    <h3>Select Offerings</h3>
-                </div>
-                <div class="rev_wizardsteps">
-                    <div class="revwiz_nonselectednumber">4</div>
-                    <h3>Select Review</h3>
-                </div>
-            </div>	
-        </div>
         <div class="rev_wizmid">
-        	<div class="rev_wizmid_maincontent">
-            	<div class="rev_wizmid_titlebox">
-                	<h2><strong>Step 2:</strong> Select a Template</h2>
-                    <p> Please select a template for your new virtual instance. You can also choose to select a blank template from which an ISO image can be installed onto. </p>
+            <div class="rev_wizmid_maincontent">
+                <div class="rev_wizmid_titlebox">
+                    <h2>
+                        <strong>Step 1:</strong> Select a Template</h2>
+                    <p>
+                        Please select a template for your new virtual instance. You can also choose to select
+                        a blank template from which an ISO image can be installed onto.
+                    </p>
                 </div>
                 <div class="rev_wizmid_contentbox">
-                	<div class="rev_tempsearchpanel">
-                    	<div class="rev_tempsearchbox">
-                        	<form method="post" action="#">
-                            	<ol>
-                                	<li><input id="search_input" class="text" type="text" name="search_input" />
-                                </ol>
+                    <div class="rev_tempsearchpanel">
+                        <label for="wizard_zone">
+                            Availability Zone:</label>
+                        <select class="select" id="wizard_zone" name="zone">
+                        </select>
+                        <div class="rev_tempsearchbox">
+                            <form method="post" action="#">
+                            <ol>
+                                <li>
+                                    <input id="search_input" class="text" type="text" name="search_input" />
+                            </ol>
                             </form>
-                            <div id="search_button" class="rev_searchbutton">Search</div>
+                            <div id="search_button" class="rev_searchbutton">
+                                Search</div>
                         </div>
                     </div>
                     <div class="rev_wizformarea">
-						<div class="revwiz_message_container" style="display: none;" id="wiz_message">
-							<div class="revwiz_message_top">
-								<p id="wiz_message_text">Please select a template or ISO to continue</p>
-							</div>
-							<div class="revwiz_message_bottom">
-								 <div class="revwizcontinue_button" id="wiz_message_continue" ></div>
-							</div>
-       			 		</div>
-                    	<div class="rev_wizmid_tempbox">
-							<div class="revwiz_loadingbox" id="wiz_template_loading" style="display:none">
-								<div class="loading_gridanimation"></div>
-								<p> Loading...</p>
-							</div>
-                        	<div class="rev_wizmid_tempbox_left" id="wiz_template_filter">
-                            	<div class="rev_wizmid_selectedtempbut" id="wiz_featured">Featured Template</div>
-                                <div class="rev_wizmid_nonselectedtempbut" id="wiz_my">My Template</div>
-                                <div class="rev_wizmid_nonselectedtempbut" id="wiz_community">Community Template</div>
-                                <div class="rev_wizmid_nonselectedtempbut" id="wiz_blank">Blank Template</div>
+                        <div class="revwiz_message_container" style="display: none;" id="wiz_message">
+                            <div class="revwiz_message_top">
+                                <p id="wiz_message_text">
+                                    Please select a template or ISO to continue</p>
+                            </div>
+                            <div class="revwiz_message_bottom">
+                                <div class="revwizcontinue_button" id="wiz_message_continue">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="rev_wizmid_tempbox">
+                            <div class="revwiz_loadingbox" id="wiz_template_loading" style="display: none">
+                                <div class="loading_gridanimation">
+                                </div>
+                                <p>
+                                    Loading...</p>
+                            </div>
+                            <div class="rev_wizmid_tempbox_left" id="wiz_template_filter">
+                                <div class="rev_wizmid_selectedtempbut" id="wiz_featured">
+                                    Featured Template</div>
+                                <div class="rev_wizmid_nonselectedtempbut" id="wiz_my">
+                                    My Template</div>
+                                <div class="rev_wizmid_nonselectedtempbut" id="wiz_community">
+                                    Community Template</div>
+                                <div class="rev_wizmid_nonselectedtempbut" id="wiz_blank">
+                                    Blank Template</div>
                             </div>
                             <div class="rev_wizmid_tempbox_right">
-								<div class="rev_wiztemplistpanel" id="template_container">
-								</div>
+                                <div class="rev_wiztemplistpanel" id="template_container">
+                                </div>
                                 <div class="rev_wiztemplistactions">
-									<div class="rev_wiztemplist_actionsbox">
-                                  		<a href="#" id="prevPage">Prev</a> | <a href="#" id="nextPage">Next</a>
-									</div>
+                                    <div class="rev_wiztemplist_actionsbox">
+                                        <a href="#" id="prevPage">Prev</a>  <a href="#" id="nextPage">Next</a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="rev_wizmid_actionbox">
-                	<div class="rev_wizmid_actionnext"> Go to Step 3</div>
-                    <div class="rev_wizmid_actionback"> Back</div>
+                    <div class="rev_wizmid_actionnext">
+                        Go to Step 2</div>
                 </div>
             </div>
         </div>
-        <div class="rev_wizbot"></div>
+        <div class="rev_wizbot">
+        </div>
     </div>
-    
-    <div id="step3" style="display:none;">
+    <div id="step2" style="display: none;">
         <div class="rev_wiztop">
             <div class="rev_wizardbox">
                 <div class="rev_wizardsteps">
-                    <div class="revwiz_nonselectednumber">1</div>
-                    <h3>Select a Zone</h3>
+                    <div class="revwiz_nonselectednumber">
+                        1</div>
+                    <h3>
+                        Select a Template</h3>
                 </div>
                 <div class="rev_wizardsteps">
-                    <div class="revwiz_nonselectednumber">2</div>
-                    <h3>Select a Template</h3>
+                    <div class="revwiz_selectednumber">
+                        2</div>
+                    <h3>
+                        Select a Service</h3>
                 </div>
                 <div class="rev_wizardsteps">
-                    <div class="revwiz_selectednumber">3</div>
-                    <h3>Select Offerings</h3>
+                    <div class="revwiz_nonselectednumber">
+                        3</div>
+                    <h3>
+                        Optional</h3>
                 </div>
                 <div class="rev_wizardsteps">
-                    <div class="revwiz_nonselectednumber">4</div>
-                    <h3>Select Review</h3>
+                    <div class="revwiz_nonselectednumber">
+                        4</div>
+                    <h3>
+                        Select Review</h3>
                 </div>
-            </div>	
+            </div>
         </div>
         <div class="rev_wizmid">
-        	<div class="rev_wizmid_maincontent">
-            	<div class="rev_wizmid_titlebox">
-                	<h2><strong>Step 3:</strong> Select Offerings</h2>
-                    <p> Please select the CPU, Memory, and Storage requirements you need for your new Virtual Instance.</p>
+            <div class="rev_wizmid_maincontent">
+                <div class="rev_wizmid_titlebox">
+                    <h2>
+                        <strong>Step 2:</strong> Select a Service</h2>
+                    <p>
+                        Please select the CPU, Memory, and Storage requirements you need for your new Virtual
+                        Instance.</p>
                 </div>
                 <div class="rev_wizmid_contentbox">
-                	<div class="rev_tempsearchpanel"></div>
-                    <div class="rev_wizformarea">               
-                       <div class="revwiz_message_container" style="display: none;" id="wiz_message">
-							<div class="revwiz_message_top">
-								<p id="wiz_message_text">Please select an offering to continue</p>
-							</div>
-							<div class="revwiz_message_bottom">
-								 <div class="revwizcontinue_button" id="wiz_message_continue" ></div>
-							</div>
-       			 		</div>                   
-                       <form name="step2" method="post" action="#">
-                            <div class="revwiz_formcontent_title">
-                                Service Offerings :</div>
-                            <ol id="wizard_service_offering">
-                            	
-                            </ol>
-                            <div class="revwiz_formcontent_title" id="wizard_root_disk_offering_title" style="display: none;">
-                                Root Disk Offerings :</div>
-                            <ol id="wizard_root_disk_offering">
-                            </ol>
-                            <div class="revwiz_formcontent_title" id="wizard_data_disk_offering_title" style="display: none;">
-                                Data Disk Offerings :</div>
-                            <ol id="wizard_data_disk_offering">
-                            </ol>
+                    <div class="rev_tempsearchpanel">
+                    </div>
+                    <div class="rev_wizformarea">
+                        <div class="revwiz_message_container" style="display: none;" id="wiz_message">
+                            <div class="revwiz_message_top">
+                                <p id="wiz_message_text">
+                                    Please select an offering to continue</p>
+                            </div>
+                            <div class="revwiz_message_bottom">
+                                <div class="revwizcontinue_button" id="wiz_message_continue">
+                                </div>
+                            </div>
+                        </div>
+                        <form name="step2" method="post" action="#">
+                        <div class="revwiz_formcontent_title">
+                            Service Offerings :</div>
+                        <ol id="wizard_service_offering">
+                        </ol>
+                        <ol id="wizard_network_groups_container" style="display:none; margin-top:10px;">
+                            <li>
+                                <label for="wizard_network_groups">
+                                    Network Groups:</label>
+                                <select id="wizard_network_groups" class="multiple" multiple="multiple" size="5">
+                                </select>
+                                <p style="color:#666; float:left; width:auto; margin:15px 0 0 10px; display:inline;">(Use <strong>Ctrl-click</strong> to select all applicable security groups)</p> 
+                            </li>
+                        </ol>
                         </form>
                     </div>
                 </div>
                 <div class="rev_wizmid_actionbox">
-                	<div class="rev_wizmid_actionnext"> Go to Step 4</div>
-                    <div class="rev_wizmid_actionback"> Back</div>
+                    <div class="rev_wizmid_actionnext">
+                        Go to Step 3</div>
+                    <div class="rev_wizmid_actionback">
+                        Back</div>
                 </div>
             </div>
         </div>
-        <div class="rev_wizbot"></div>
+        <div class="rev_wizbot">
+        </div>
     </div>
-    
-    <div id="step4" style="display:none;">
+    <div id="step3" style="display: none;">
         <div class="rev_wiztop">
             <div class="rev_wizardbox">
                 <div class="rev_wizardsteps">
-                    <div class="revwiz_nonselectednumber">1</div>
-                    <h3>Select a Zone</h3>
+                    <div class="revwiz_nonselectednumber">
+                        1</div>
+                    <h3>
+                        Select a Template</h3>
                 </div>
                 <div class="rev_wizardsteps">
-                    <div class="revwiz_nonselectednumber">2</div>
-                    <h3>Select a Template</h3>
+                    <div class="revwiz_nonselectednumber">
+                        2</div>
+                    <h3>
+                        Select a Service</h3>
                 </div>
                 <div class="rev_wizardsteps">
-                    <div class="revwiz_nonselectednumber">3</div>
-                    <h3>Select Offerings</h3>
+                    <div class="revwiz_selectednumber">
+                        3</div>
+                    <h3>
+                        Optional</h3>
                 </div>
                 <div class="rev_wizardsteps">
-                    <div class="revwiz_selectednumber">4</div>
-                    <h3>Select Review</h3>
-                </div>
-            </div>	
-        </div>
-        <div class="rev_wizmid">
-        	<div class="rev_wizmid_maincontent">
-            	<div class="rev_wizmid_titlebox">
-                	<h2><strong>Step 4:</strong> Review</h2>
-                    <p>Please review you selections and hit 'Submit' to create your new instance. Click 'Prev' to make any changes to your new VM Instance.</p>
-                </div>
-                <div class="rev_wizmid_contentbox">
-                	<div class="rev_tempsearchpanel"></div>
-                    <div class="rev_wiz_reviewbox">
-                    	<div class="rev_wiz_reviewlist">
-                        	<div class="rev_wiz_reviewlabel">Zone:</div>
-                            <div class="rev_wiz_reviewanswers" id="wizard_review_zone"></div>
-                        </div>
-                        
-                        <div class="rev_wiz_reviewlist">
-                        	<div class="rev_wiz_reviewlabel">Name:</div>
-                            <div class="rev_wiz_reviewanswers" id="wizard_review_name"></div>
-                        </div>
-                        
-                        <div class="rev_wiz_reviewlist">
-                        	<div class="rev_wiz_reviewlabel">Group:</div>
-                            <div class="rev_wiz_reviewanswers" id="wizard_review_group"></div>
-                        </div>
-                        
-                        <div class="rev_wiz_reviewlist">
-                        	<div class="rev_wiz_reviewlabel">Template:</div>
-                            <div class="rev_wiz_reviewanswers" id="wizard_review_template"></div>
-                        </div>
-						<div class="rev_wiz_reviewlist" id="wizard_review_iso_p">
-                        	<div class="rev_wiz_reviewlabel">ISO:</div>
-                            <div class="rev_wiz_reviewanswers" id="wizard_review_iso"></div>
-                        </div>
-                        
-                        <div class="rev_wiz_reviewlist">
-                        	<div class="rev_wiz_reviewlabel">Service Offering:</div>
-                            <div class="rev_wiz_reviewanswers" id="wizard_review_service_offering"></div>
-                        </div>
-                        
-                        <div class="rev_wiz_reviewlist" id="wizard_review_data_disk_offering_p">
-                        	<div class="rev_wiz_reviewlabel">Data Disk Offering:</div>
-                            <div class="rev_wiz_reviewanswers" id="wizard_review_data_disk_offering"></div>
-                        </div>
-						<div class="rev_wiz_reviewlist" id="wizard_review_root_disk_offering_p">
-                        	<div class="rev_wiz_reviewlabel">Root Disk Offering:</div>
-                            <div class="rev_wiz_reviewanswers" id="wizard_review_root_disk_offering"></div>
-                        </div>
-                    </div>
-                    
-                </div>
-                <div class="rev_wizmid_actionbox">
-                	<div class="rev_wizmid_actionnext"> Submit</div>
-                    <div class="rev_wizmid_actionback"> Back</div>
+                    <div class="revwiz_nonselectednumber">
+                        4</div>
+                    <h3>
+                        Select Review</h3>
                 </div>
             </div>
         </div>
-        <div class="rev_wizbot"></div>
+        <div class="rev_wizmid">
+            <div class="rev_wizmid_maincontent">
+                <div class="rev_wizmid_titlebox">
+                    <h2>
+                        <strong>Step 3:</strong> Optional</h2>
+                    <p>
+                        To create a new instance, please first select a zone you wish to have your virtual
+                        instance hosted on.</p>
+                </div>
+                <div class="rev_wizmid_contentbox">
+                    <div class="rev_tempsearchpanel">
+                    </div>
+                    <div class="rev_wizformarea">
+                        <form name="step1" method="post" action="#">
+                        <ol>
+                            <li>
+                                <div>
+                                    <label for="wizard_vm_name">
+                                        Name (optional):</label>
+                                    <input class="text" type="text" id="wizard_vm_name" />
+                                </div>
+                                <div id="wizard_vm_name_errormsg" class="dialog_formcontent_errormsg" style="display: none;">
+                                </div>
+                            </li>
+                            <li>
+                                <div>
+                                    <label for="wizard_vm_group">
+                                        Group (optional):</label>
+                                    <input class="text" type="text" id="wizard_vm_group" />
+                                </div>
+                                <div id="wizard_vm_group_errormsg" class="dialog_formcontent_errormsg" style="display: none;">
+                                </div>
+                            </li>
+                            <li>
+                                <div class="revwiz_formcontent_title" id="wizard_root_disk_offering_title" style="display: none;">
+                                    Root Disk Offerings:</div>
+                                <ol id="wizard_root_disk_offering">
+                                </ol>
+                                <div class="revwiz_formcontent_title" id="wizard_data_disk_offering_title" style="display: block; margin-top:10px;">
+                                    Data Disk Offerings (optional) :</div>
+                                <ol id="wizard_data_disk_offering">
+                                </ol>
+                            </li>
+                        </ol>
+                        </form>
+                    </div>
+                </div>
+                <div class="rev_wizmid_actionbox">
+                    <div class="rev_wizmid_actionnext">
+                        Go to Step 4</div>
+                    <div class="rev_wizmid_actionback">
+                        Back</div>
+                </div>
+            </div>
+        </div>
+        <div class="rev_wizbot">
+        </div>
+    </div>
+    <div id="step4" style="display: none;">
+        <div class="rev_wiztop">
+            <div class="rev_wizardbox">
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_nonselectednumber">
+                        1</div>
+                    <h3>
+                        Select a Template</h3>
+                </div>
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_nonselectednumber">
+                        2</div>
+                    <h3>
+                        Select a Service</h3>
+                </div>
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_nonselectednumber">
+                        3</div>
+                    <h3>
+                        Optional</h3>
+                </div>
+                <div class="rev_wizardsteps">
+                    <div class="revwiz_selectednumber">
+                        4</div>
+                    <h3>
+                        Select Review</h3>
+                </div>
+            </div>
+        </div>
+        <div class="rev_wizmid">
+            <div class="rev_wizmid_maincontent">
+                <div class="rev_wizmid_titlebox">
+                    <h2>
+                        <strong>Step 4:</strong> Review</h2>
+                    <p>
+                        Please review you selections and hit 'Submit' to create your new instance. Click
+                        'Prev' to make any changes to your new VM Instance.</p>
+                </div>
+                <div class="rev_wizmid_contentbox">
+                    <div class="rev_tempsearchpanel">
+                    </div>
+                    <div class="rev_wiz_reviewbox">
+                        <div class="rev_wiz_reviewlist">
+                            <div class="rev_wiz_reviewlabel">
+                                Zone:</div>
+                            <div class="rev_wiz_reviewanswers" id="wizard_review_zone">
+                            </div>
+                        </div>
+                        <div class="rev_wiz_reviewlist">
+                            <div class="rev_wiz_reviewlabel">
+                                Name:</div>
+                            <div class="rev_wiz_reviewanswers" id="wizard_review_name">
+                            </div>
+                        </div>
+                        <div class="rev_wiz_reviewlist">
+                            <div class="rev_wiz_reviewlabel">
+                                Group:</div>
+                            <div class="rev_wiz_reviewanswers" id="wizard_review_group">
+                            </div>
+                        </div>
+                        <div class="rev_wiz_reviewlist">
+                            <div class="rev_wiz_reviewlabel">
+                                Template:</div>
+                            <div class="rev_wiz_reviewanswers" id="wizard_review_template">
+                            </div>
+                        </div>
+                        <div class="rev_wiz_reviewlist" id="wizard_review_iso_p">
+                            <div class="rev_wiz_reviewlabel">
+                                ISO:</div>
+                            <div class="rev_wiz_reviewanswers" id="wizard_review_iso">
+                            </div>
+                        </div>
+                        <div class="rev_wiz_reviewlist">
+                            <div class="rev_wiz_reviewlabel">
+                                Service Offering:</div>
+                            <div class="rev_wiz_reviewanswers" id="wizard_review_service_offering">
+                            </div>
+                        </div>
+                        <div class="rev_wiz_reviewlist" id="wizard_review_network_groups_p" style="display:none">
+                            <div class="rev_wiz_reviewlabel">
+                                Network Groups:</div>
+                            <div class="rev_wiz_reviewanswers" id="wizard_review_network_groups">
+                            </div>
+                        </div>
+                        <div class="rev_wiz_reviewlist" id="wizard_review_data_disk_offering_p">
+                            <div class="rev_wiz_reviewlabel">
+                                Data Disk Offering:</div>
+                            <div class="rev_wiz_reviewanswers" id="wizard_review_data_disk_offering">
+                            </div>
+                        </div>
+                        <div class="rev_wiz_reviewlist" id="wizard_review_root_disk_offering_p">
+                            <div class="rev_wiz_reviewlabel">
+                                Root Disk Offering:</div>
+                            <div class="rev_wiz_reviewanswers" id="wizard_review_root_disk_offering">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="rev_wizmid_actionbox">
+                    <div class="rev_wizmid_actionnext">
+                        Submit</div>
+                    <div class="rev_wizmid_actionback">
+                        Back</div>
+                </div>
+            </div>
+        </div>
+        <div class="rev_wizbot">
+        </div>
     </div>
 </div>
-<!-- END Add New VM Wizard -->
+<!-- New VM Wizard (end) -->
 <!-- Change Service Offering Dialog -->
 <div id="dialog_change_service_offering" title="Change Service Offering">
     <p>
@@ -774,6 +884,14 @@
         </form>
     </div>
 </div>
+<!-- List Network Groups Dialog (begin) -->
+<div id="dialog_list_network_groups" title="Network Groups">
+    <ul class="network_groups_list_first_level" id="network_groups_list_first_level">         
+    </ul>
+</div>
+<ul class="network_groups_list_second_level" id="network_groups_list_second_level">
+</ul>
+<!-- List Network Groups Dialog (end) -->
 <!-- Change Group Dialog -->
 <div id="dialog_change_group" title="Change Group">
     <p>
@@ -832,63 +950,7 @@
         </form>
     </div>
 </div>
-<!-- Apply Security Groups Dialog -->
-<div id="dialog_apply_security_groups" title="Apply Port Forwarding Services">
-    <p>
-        Please choose the Port Forwarding Services you would like to apply for <b><span id="security_group_vm_name">
-        </span></b>. To apply new a service, make sure they are moved to the "Applied Port Forwarding
-        Service" box. When you are satisfied with your services, hit 'Apply' to make
-        the changes permanent.</p>
-    <div class="dialog_formcontent">
-        <form action="#" method="post" id="form_acquire">
-        <ol>
-            <li>
-                <label for="user_name">
-                    Public IP:</label>
-                <select class="select" name="apply_sg_public_ip" id="apply_sg_public_ip">
-                    <option name="none">Retrieving...</option>
-                </select>
-            </li>
-        </ol>
-        </form>
-    </div>
-    <div class="sortable_grouppanel">
-        <div class="sortable_group_left">
-            <h2>
-                Available Services</h2>
-            <div class="sortable_groupbox">
-                <ol class="selectable" id="selectable_available">
-                </ol>
-            </div>
-        </div>
-        <div class="sortable_group_mid">
-            <div class="sortable_direction_box">
-                <div class="rightarrow_button" id="move_right">
-                </div>
-                <div class="leftarrow_button" id="move_left">
-                </div>
-            </div>
-        </div>
-        <div class="sortable_group_right">
-            <h2>
-                Applied Services</h2>
-            <div class="sortable_groupbox">
-                <ol class="selectable" id="selectable_applied">
-                </ol>
-            </div>
-        </div>
-        <div class="selectable_errorbox" style="display: none">
-            <p>
-                <strong>Alert</strong>: <span id="apply_error_text">Some error text will appear here</span></p>
-        </div>
-        <div class="selectable_commentbox" style="display: none">
-            <div class="selectable_loader">
-            </div>
-            <p>
-                <strong>Please wait while we apply your Port Forwarding Services...</strong></p>
-        </div>
-    </div>
-</div>
+
 <!-- Snapshots-->
 <div class="maincontent" style="display: none;" id="submenu_content_snapshots">
     <div id="maincontent_title">
@@ -1136,8 +1198,8 @@
 <!-- Rollback Snapshot Dialog -->
 <div id="dialog_rollback_snapshot" title="Rollback Snapshot" style="display: none">
     <p>
-        Please confirm you want to rollback to the following snapshot: <b><span id="snapshot_name">
-        </b>for the Virtual Instance: <b><span id="snapshot_vm_name"></b>
+        Please confirm you want to rollback to the following snapshot: <b><span id="snapshot_name"></span>
+        </b>for the Virtual Instance: <b><span id="snapshot_vm_name"></span></b>
     </p>
     <div class="selectable_errorbox" style="width: 375px; display: none">
         <p>
@@ -1167,20 +1229,23 @@
             </ol>
             </form>
             <a class="search_button" id="search_button" href="#"></a>
-            
-            <div id="advanced_search_link" class="advsearch_link">Advanced</div>
+            <div id="advanced_search_link" class="advsearch_link">
+                Advanced</div>
             <div id="advanced_search" class="adv_searchpopup" style="display: none;">
                 <div class="adv_searchformbox">
-                    <h3>Advance Search</h3>
+                    <h3>
+                        Advance Search</h3>
                     <a id="advanced_search_close" href="#">Close </a>
                     <form action="#" method="post">
                     <ol>
                         <li>
-                            <label for="filter">Name:</label>
+                            <label for="filter">
+                                Name:</label>
                             <input class="text" type="text" name="adv_search_name" id="adv_search_name" />
                         </li>
                         <li>
-                            <label for="filter">State:</label>
+                            <label for="filter">
+                                State:</label>
                             <select class="select" id="adv_search_state">
                                 <option value=""></option>
                                 <option value="Creating">Creating</option>
@@ -1196,32 +1261,36 @@
                             </select>
                         </li>
                         <li>
-                            <label for="filter">Zone:</label>
+                            <label for="filter">
+                                Zone:</label>
                             <select class="select" id="adv_search_zone">
                             </select>
                         </li>
                         <li id="adv_search_pod_li" style="display: none;">
-                            <label for="filter">Pod:</label>
+                            <label for="filter">
+                                Pod:</label>
                             <select class="select" id="adv_search_pod">
                             </select>
                         </li>
                         <li id="adv_search_domain_li" style="display: none;">
-                            <label for="filter">Domain:</label>
+                            <label for="filter">
+                                Domain:</label>
                             <select class="select" id="adv_search_domain">
                             </select>
                         </li>
-                         <li id="adv_search_account_li" style="display: none;">
-                            <label for="filter">Account:</label>
-                            <input class="text" type="text" id="adv_search_account" />                            
+                        <li id="adv_search_account_li" style="display: none;">
+                            <label for="filter">
+                                Account:</label>
+                            <input class="text" type="text" id="adv_search_account" />
                         </li>
                     </ol>
                     </form>
                     <div class="adv_search_actionbox">
-                    	<div class="adv_searchpopup_button" id="adv_search_button"></div>
-					</div>
+                        <div class="adv_searchpopup_button" id="adv_search_button">
+                        </div>
+                    </div>
                 </div>
             </div>
-            
         </div>
     </div>
     <div class="filter_actionbox">
@@ -1252,7 +1321,7 @@
                 <div class="grid_headertitles">
                     Zone</div>
             </div>
-            <div class="grid_genheader_cell" style="width: 15%;">
+            <div class="grid_genheader_cell" style="width: 10%;">
                 <div class="grid_headertitles">
                     Name</div>
             </div>
@@ -1260,9 +1329,13 @@
                 <div class="grid_headertitles">
                     Public IP</div>
             </div>
-             <div class="grid_genheader_cell" style="width: 10%;">
+            <div class="grid_genheader_cell" style="width: 10%;">
                 <div class="grid_headertitles">
                     Private IP</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 10%;">
+                <div class="grid_headertitles">
+                    Guest IP</div>
             </div>
             <div class="grid_genheader_cell" style="width: 12%;">
                 <div class="grid_headertitles">
@@ -1272,10 +1345,10 @@
                 <div class="grid_headertitles">
                     Network Domain</div>
             </div>
-            <div class="grid_genheader_cell" style="width: 15%;">
+            <div class="grid_genheader_cell" style="width: 10%;">
                 <div class="grid_headertitles">
                     Account</div>
-            </div>           
+            </div>
             <div class="grid_genheader_cell" style="width: 10%;">
                 <div class="grid_headertitles">
                     Created</div>
@@ -1318,7 +1391,7 @@
         <div class="grid_celltitles" id="router_zonename">
         </div>
     </div>
-    <div class="grid_genrow_cell" style="width: 15%;">
+    <div class="grid_genrow_cell" style="width: 10%;">
         <div class="grid_celltitles" id="router_name">
         </div>
     </div>
@@ -1330,6 +1403,10 @@
         <div class="grid_celltitles" id="router_private_ip">
         </div>
     </div>
+    <div class="grid_genrow_cell" style="width: 10%;">
+        <div class="grid_celltitles" id="router_guest_ip">
+        </div>
+    </div>
     <div class="grid_genrow_cell" style="width: 12%;">
         <div class="grid_celltitles" id="router_host">
         </div>
@@ -1338,10 +1415,10 @@
         <div class="grid_celltitles" id="router_domain">
         </div>
     </div>
-    <div class="grid_genrow_cell" style="width: 15%;">
+    <div class="grid_genrow_cell" style="width: 10%;">
         <div class="grid_celltitles" id="router_owner">
         </div>
-    </div>   
+    </div>
     <div class="grid_genrow_cell" style="width: 10%;">
         <div class="grid_celltitles" id="router_created">
         </div>
@@ -1358,7 +1435,7 @@
                 <a id="router_action_view_console" href="#">View Console</a> |</div>
         </div>
     </div>
-    <div class="row_loading" style="display: none; height:58px;">
+    <div class="row_loading" style="display: none; height: 58px;">
     </div>
     <div class="loading_animationcontainer" style="display: none;">
         <div class="loading_animationtext">
@@ -1385,7 +1462,6 @@
         </div>
         <h1>
             System</h1>
-          
         <div class="search_formarea">
             <form action="#" method="post">
             <ol>
@@ -1394,20 +1470,23 @@
             </ol>
             </form>
             <a class="search_button" id="search_button" href="#"></a>
-            
-            <div id="advanced_search_link" class="advsearch_link">Advanced</div>
+            <div id="advanced_search_link" class="advsearch_link">
+                Advanced</div>
             <div id="advanced_search" class="adv_searchpopup" style="display: none;">
                 <div class="adv_searchformbox">
-                    <h3>Advance Search</h3>
+                    <h3>
+                        Advance Search</h3>
                     <a id="advanced_search_close" href="#">Close </a>
                     <form action="#" method="post">
                     <ol>
                         <li>
-                            <label for="filter">Name:</label>
+                            <label for="filter">
+                                Name:</label>
                             <input class="text" type="text" name="adv_search_name" id="adv_search_name" />
                         </li>
                         <li>
-                            <label for="filter">State:</label>
+                            <label for="filter">
+                                State:</label>
                             <select class="select" id="adv_search_state">
                                 <option value=""></option>
                                 <option value="Creating">Creating</option>
@@ -1423,28 +1502,31 @@
                             </select>
                         </li>
                         <li>
-                            <label for="filter">Zone:</label>
+                            <label for="filter">
+                                Zone:</label>
                             <select class="select" id="adv_search_zone">
                             </select>
                         </li>
                         <li id="adv_search_pod_li" style="display: none;">
-                            <label for="filter">Pod:</label>
+                            <label for="filter">
+                                Pod:</label>
                             <select class="select" id="adv_search_pod">
                             </select>
                         </li>
                         <li id="adv_search_domain_li" style="display: none;">
-                            <label for="filter">Domain:</label>
+                            <label for="filter">
+                                Domain:</label>
                             <select class="select" id="adv_search_domain">
                             </select>
                         </li>
                     </ol>
                     </form>
                     <div class="adv_search_actionbox">
-                    	<div class="adv_searchpopup_button" id="adv_search_button"></div>
-					</div>
+                        <div class="adv_searchpopup_button" id="adv_search_button">
+                        </div>
+                    </div>
                 </div>
             </div>
-            
         </div>
     </div>
     <div class="filter_actionbox">
@@ -1467,11 +1549,12 @@
                 Loading...</p>
         </div>
         <div class="grid_header">
-            <div class="grid_genheader_cell" style="width: 6%;">
+            <div class="grid_genheader_cell" style="width: 7%;">
                 <div class="grid_headertitles">
+                	Status
                 </div>
             </div>
-			<div class="grid_genheader_cell" style="width: 12%;">
+            <div class="grid_genheader_cell" style="width: 11%;">
                 <div class="grid_headertitles">
                     Type</div>
             </div>
@@ -1485,7 +1568,7 @@
             </div>
             <div class="grid_genheader_cell" style="width: 9%;">
                 <div class="grid_headertitles">
-                    Active Session</div>
+                    Active Sessions</div>
             </div>
             <div class="grid_genheader_cell" style="width: 10%;">
                 <div class="grid_headertitles">
@@ -1503,7 +1586,7 @@
                 <div class="grid_headertitles">
                     Gateway</div>
             </div>
-            <div class="grid_genheader_cell" style="width: 11%;">
+            <div class="grid_genheader_cell" style="width: 11%; border:0;">
                 <div class="grid_headertitles">
                     Created</div>
             </div>
@@ -1537,36 +1620,45 @@
 <div id="console_template" style="display: none">
     <div class="green_statusbar" id="console_state_bar">
     </div>
-    <div class="grid_genrow_cell" style="width: 5%;">
+    <div class="grid_genrow_cell" style="width: 6%;">
         <div class="grid_runningtitles" id="console_state">
             State</div>
     </div>
-	<div class="grid_genrow_cell" style="width: 12%;">
-        <div class="grid_celltitles" id="console_type"></div>
+    <div class="grid_genrow_cell" style="width: 11%;">
+        <div class="grid_celltitles" id="console_type">
+        </div>
     </div>
     <div class="grid_genrow_cell" style="width: 10%;">
-        <div class="grid_celltitles" id="console_zone"></div>
+        <div class="grid_celltitles" id="console_zone">
+        </div>
     </div>
     <div class="grid_genrow_cell" style="width: 9%;">
-        <div class="grid_celltitles" id="console_name"></div>
+        <div class="grid_celltitles" id="console_name">
+        </div>
     </div>
     <div class="grid_genrow_cell" style="width: 9%;">
-        <div class="grid_celltitles" id="console_active_session"></div>
+        <div class="grid_celltitles" id="console_active_session">
+        </div>
     </div>
     <div class="grid_genrow_cell" style="width: 10%;">
-        <div class="grid_celltitles" id="console_public_ip"></div>
+        <div class="grid_celltitles" id="console_public_ip">
+        </div>
     </div>
     <div class="grid_genrow_cell" style="width: 10%;">
-        <div class="grid_celltitles" id="console_private_ip"></div>
+        <div class="grid_celltitles" id="console_private_ip">
+        </div>
     </div>
     <div class="grid_genrow_cell" style="width: 12%;">
-        <div class="grid_celltitles" id="console_host"></div>
+        <div class="grid_celltitles" id="console_host">
+        </div>
     </div>
     <div class="grid_genrow_cell" style="width: 10%;">
-        <div class="grid_celltitles" id="console_gateway"></div>
+        <div class="grid_celltitles" id="console_gateway">
+        </div>
     </div>
-    <div class="grid_genrow_cell" style="width: 11%;">
-        <div class="grid_celltitles" id="console_created"></div>
+    <div class="grid_genrow_cell" style="width: 11%; border:0;">
+        <div class="grid_celltitles" id="console_created">
+        </div>
     </div>
     <div id="grid_links_container" style="display: none;">
         <div class="grid_links">
@@ -1580,7 +1672,7 @@
                 <a id="console_action_view_console" href="#">View Console</a> |</div>
         </div>
     </div>
-    <div class="row_loading" style="display: none; height:58px;">
+    <div class="row_loading" style="display: none; height: 58px;">
     </div>
     <div class="loading_animationcontainer" style="display: none;">
         <div class="loading_animationtext">
@@ -1599,14 +1691,18 @@
     </div>
 </div>
 <!-- System VM Template (end) -->
-
 <!--
 	Terms and Conditions Dialog 
 	****  Please change this accordingly ****
 -->
 <div id="dialog_t_and_c" title="Terms and Conditions">
     <p>
-		<b>Terms and Conditions</b><br/></br>
-		Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-	</p>
+        <b>Terms and Conditions</b><br />
+        </br> Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor
+        incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+        exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute
+        irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
+        pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia
+        deserunt mollit anim id est laborum.
+    </p>
 </div>

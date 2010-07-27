@@ -29,6 +29,7 @@ import com.cloud.event.dao.EventDao;
 import com.cloud.network.NetworkManager;
 import com.cloud.network.dao.IPAddressDao;
 import com.cloud.server.ManagementServer;
+import com.cloud.storage.StorageManager;
 import com.cloud.storage.dao.VolumeDao;
 import com.cloud.storage.snapshot.SnapshotManager;
 import com.cloud.user.AccountManager;
@@ -48,6 +49,7 @@ public class AsyncJobExecutorContextImpl implements AsyncJobExecutorContext {
 	private UserVmManager _vmMgr;
     private SnapshotManager _snapMgr;
 	private AccountManager _accountMgr;
+	private StorageManager _storageMgr;
     private EventDao _eventDao;
     private UserVmDao _vmDao;
     private AccountDao _accountDao;
@@ -77,6 +79,11 @@ public class AsyncJobExecutorContextImpl implements AsyncJobExecutorContext {
 	@Override
 	public UserVmManager getVmMgr() {
 		return _vmMgr;
+	}
+	
+	@Override
+	public StorageManager getStorageMgr() {
+		return _storageMgr;
 	}
 	
 	/**server/src/com/cloud/async/AsyncJobExecutorContext.java
@@ -165,6 +172,11 @@ public class AsyncJobExecutorContextImpl implements AsyncJobExecutorContext {
         _accountMgr = locator.getManager(AccountManager.class);
         if (_accountMgr == null) {
             throw new ConfigurationException("unable to get " + AccountManager.class.getName());
+        }
+        
+        _storageMgr = locator.getManager(StorageManager.class);
+        if (_storageMgr == null) {
+        	throw new ConfigurationException("unable to get " + StorageManager.class.getName());
         }
         
         _eventDao = locator.getDao(EventDao.class);

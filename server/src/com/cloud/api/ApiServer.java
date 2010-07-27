@@ -250,9 +250,15 @@ public class ApiServer implements HttpRequestHandler {
                 } catch (Exception e) {
                     s_logger.error("IO Exception responding to http request", e);
                 }
+            } catch(RuntimeException e) {
+            	// log runtime exception like NullPointerException to help identify the source easier
+                s_logger.error("Unhandled exception, ", e);
+                throw e;
             }
         } finally {
             s_accessLogger.info(sb.toString());
+            
+            UserContext.unregisterContext();
         }
     }
 
@@ -391,9 +397,15 @@ public class ApiServer implements HttpRequestHandler {
                 return false;
             }
 
-            requestParameters.put(BaseCmd.Properties.USER_ID.getName(), new String[] { user.getId().toString() });
-            requestParameters.put(BaseCmd.Properties.ACCOUNT.getName(), new String[] { account.getAccountName().toString() });
-            requestParameters.put(BaseCmd.Properties.ACCOUNT_OBJ.getName(), new Object[] { account });
+            if (account.getType() == Account.ACCOUNT_TYPE_NORMAL) {
+    			requestParameters.put(BaseCmd.Properties.USER_ID.getName(), new String[] { user.getId().toString() });
+                requestParameters.put(BaseCmd.Properties.ACCOUNT.getName(), new String[] { account.getAccountName() });
+                requestParameters.put(BaseCmd.Properties.DOMAIN_ID.getName(), new String[] { account.getDomainId().toString() });
+        		requestParameters.put(BaseCmd.Properties.ACCOUNT_OBJ.getName(), new Object[] { account });
+    		} else {
+    			requestParameters.put(BaseCmd.Properties.USER_ID.getName(), new String[] { user.getId().toString() });
+    			requestParameters.put(BaseCmd.Properties.ACCOUNT_OBJ.getName(), new Object[] { account });
+    		}           
 
             if (!isCommandAvailable(account.getType(), commandName)) {
         		return false;
@@ -425,23 +437,23 @@ public class ApiServer implements HttpRequestHandler {
         return false;
     }
     
-    public List<Pair<String, Object>> loginUser(String username, String password, Long domainId, String domain) {
+    public List<Pair<String, Object>> loginUser(String username, String password, Long domainId, String domainPath, Map<String, Object[]> requestParameters) {
     	// We will always use domainId first.  If that does not exist, we will use domain name.  If THAT doesn't exist
     	// we will default to ROOT
         if (domainId == null) {
-        	if (domain == null || domain.trim().length() == 0) {
+        	if (domainPath == null || domainPath.trim().length() == 0) {
         		domainId = DomainVO.ROOT_DOMAIN;
         	} else {
-        		DomainVO domainObj = _ms.findDomainByName(domain);
+                DomainVO domainObj = _ms.findDomainByPath(domainPath);
         		if (domainObj != null) {
         			domainId = domainObj.getId();
-        		} else {
-        			domainId = DomainVO.ROOT_DOMAIN;
+        		} else { // if an unknown path is passed in, fail the login call
+        			return null;
         		}
         	}
         }
-        
-        UserAccount userAcct = _ms.authenticateUser(username, password, domainId);
+
+        UserAccount userAcct = _ms.authenticateUser(username, password, domainId, requestParameters);
         if (userAcct != null) 
         {
         	String timezone = userAcct.getTimezone();
@@ -461,14 +473,20 @@ public class ApiServer implements HttpRequestHandler {
             List<Pair<String, Object>> loginParams = new ArrayList<Pair<String, Object>>();
 
             String networkType = _ms.getConfigurationValue("network.type");
-            String hypervisorType = _ms.getConfigurationValue("hypervisor.type");
-            
-            if (networkType == null) {
+            if (networkType == null) 
             	networkType = "vnet";
-            }
-            if (hypervisorType == null) {
+            
+            String hypervisorType = _ms.getConfigurationValue("hypervisor.type");
+            if (hypervisorType == null) 
             	hypervisorType = "kvm";
-            }
+            
+            String directAttachNetworkGroupsEnabled = _ms.getConfigurationValue("direct.attach.network.groups.enabled");
+            if(directAttachNetworkGroupsEnabled == null) 
+            	directAttachNetworkGroupsEnabled = "false";     
+            
+            String directAttachedUntaggedEnabled = _ms.getConfigurationValue("direct.attach.untagged.vlan.enabled");
+            if (directAttachedUntaggedEnabled == null) 
+            	directAttachedUntaggedEnabled = "false";
             
             // set the userId and account object for everyone
             loginParams.add(new Pair<String, Object>("userId", userAcct.getId().toString()));
@@ -481,6 +499,8 @@ public class ApiServer implements HttpRequestHandler {
             loginParams.add(new Pair<String, Object>("type", new Short(account.getType())));
             loginParams.add(new Pair<String, Object>("networkType", networkType));
             loginParams.add(new Pair<String, Object>("hypervisorType", hypervisorType));
+            loginParams.add(new Pair<String, Object>("directAttachNetworkGroupsEnabled", directAttachNetworkGroupsEnabled));
+            loginParams.add(new Pair<String, Object>("directAttachedUntaggedEnabled", directAttachedUntaggedEnabled));
             if (timezone!=null) {
             	loginParams.add(new Pair<String, Object>("timezone", timezone));
             	loginParams.add(new Pair<String, Object>("timezoneOffset", offsetInHrs));

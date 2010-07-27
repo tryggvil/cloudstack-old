@@ -25,7 +25,8 @@ configure: configure-stamp
 configure-stamp:
 	dh_testdir
 	# Add here commands to configure the package.
-	./waf configure --prefix=/usr --libdir=/usr/lib --bindir=/usr/bin --javadir=/usr/share/java --sharedstatedir=/var/lib --localstatedir=/var --sysconfdir=/etc --mandir=/usr/share/man --libexecdir=/usr/bin --with-tomcat=/usr/share/tomcat6 --tomcat-user=cloud --build-number=$(BUILDNUMBER) showconfig
+	./waf configure --prefix=/usr --libdir=/usr/lib --bindir=/usr/bin --javadir=/usr/share/java --sharedstatedir=/var/lib --localstatedir=/var --sysconfdir=/etc --mandir=/usr/share/man --libexecdir=/usr/bin --with-tomcat=/usr/share/tomcat6 --tomcat-user=cloud --fast
+	./waf showconfig
 	touch configure-stamp
 
 
@@ -36,7 +37,7 @@ build-arch: build-arch-stamp
 build-arch-stamp: configure-stamp  
 
 	# Add here commands to compile the arch part of the package.
-	./waf build
+	./waf build --build-number=$(BUILDNUMBER)
 	touch $@
 
 build-indep: build-indep-stamp
@@ -77,7 +78,8 @@ install-arch:
 
 	# Add here commands to install the arch part of the package into
 	# debian/tmp.
-	./waf install --destdir=$(CURDIR)/debian/tmp install --nochown
+	# we put the build number again here, otherwise state checking will cause an almost-full recompile
+	./waf install --destdir=$(CURDIR)/debian/tmp install --nochown --build-number=$(BUILDNUMBER)
 
 	dh_install -s
 # Must not depend on anything. This is to be called by
@@ -87,7 +89,7 @@ binary-common:
 	dh_testdir
 	dh_testroot
 	dh_installchangelogs 
-	dh_installdocs -A README
+	dh_installdocs -A README HACKING
 	dh_installexamples
 #	dh_installmenu
 #	dh_installdebconf

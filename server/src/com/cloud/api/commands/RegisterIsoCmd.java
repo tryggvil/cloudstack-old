@@ -102,6 +102,16 @@ public class RegisterIsoCmd extends BaseCmd {
         	throw new ServerApiException(BaseCmd.PARAM_ERROR, "Please specify a valid zone Id.");
         }
         
+        if((!url.toLowerCase().endsWith("iso"))&&(!url.toLowerCase().endsWith("iso.zip"))&&(!url.toLowerCase().endsWith("iso.bz2"))
+        		&&(!url.toLowerCase().endsWith("iso.gz"))){
+        	throw new ServerApiException(BaseCmd.PARAM_ERROR, "Please specify a valid iso");
+        }
+        
+        boolean allowPublicUserTemplates = Boolean.parseBoolean(getManagementServer().getConfigurationValue("allow.public.user.templates"));        
+        if (!isAdmin && !allowPublicUserTemplates && isPublic) {
+        	throw new ServerApiException(BaseCmd.PARAM_ERROR, "Only private ISOs can be created.");
+        }
+        
         if (!isAdmin || featured == null) {
         	featured = Boolean.FALSE;
         }
@@ -150,7 +160,11 @@ public class RegisterIsoCmd extends BaseCmd {
         		listForEmbeddedObject.add(new Pair<String, Object>(BaseCmd.Properties.NAME.getName(), template.getName()));
         		listForEmbeddedObject.add(new Pair<String, Object>(BaseCmd.Properties.DISPLAY_TEXT.getName(), template.getDisplayText()));
         		listForEmbeddedObject.add(new Pair<String, Object>(BaseCmd.Properties.IS_PUBLIC.getName(), Boolean.valueOf(template.isPublicTemplate()).toString()));
-        		listForEmbeddedObject.add(new Pair<String, Object>(BaseCmd.Properties.CREATED.getName(), getDateString(template.getCreated())));
+        		
+        		if (isoHostRef != null) {
+        			listForEmbeddedObject.add(new Pair<String, Object>(BaseCmd.Properties.CREATED.getName(), getDateString(isoHostRef.getCreated())));
+        		}
+        		
         		listForEmbeddedObject.add(new Pair<String, Object>(BaseCmd.Properties.IS_READY.getName(), (isoHostRef != null && isoHostRef.getDownloadState() == Status.DOWNLOADED)));
         		listForEmbeddedObject.add(new Pair<String, Object>(BaseCmd.Properties.IS_FEATURED.getName(), Boolean.valueOf(template.isFeatured()).toString()));
         		listForEmbeddedObject.add(new Pair<String, Object>(BaseCmd.Properties.BOOTABLE.getName(), Boolean.valueOf(template.isBootable()).toString()));

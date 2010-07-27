@@ -166,7 +166,8 @@
                     	    <div class="zonedetails_editzonebutton" id="action_edit_zone" style="display:none"></div>
                         	<div class="zonedetails_addpodbutton" id="action_add_pod" style="display:none"></div>
                         	<div class="zonedetails_editpodbutton" id="action_edit_pod" style="display:none"></div>
-                            <div class="zonedetails_addipbutton" id="action_add_publicip_vlan" style="display:none"></div>
+                            <div class="zonedetails_addvlanipbutton" id="action_add_publicip_vlan" style="display:none"></div>
+                            <div class="zonedetails_directipbutton" id="action_add_directip_vlan" style="display:none"></div>
                             <div class="zonedetails_adddeletebutton" id="action_delete" style="display:none"></div>
                         </div>
                     </div>
@@ -212,20 +213,24 @@
 		    <div class="zonetree_podicon"></div>
 		    <p>Pod:<div class="zonetree_links" id="pod_name">Name of the Pod</div></p>
 	    </div>
+	    <div id="pod_content">
+	        <div id="directip_ranges_container">
+		    </div>
+	    </div>
 	</div>
 </div>
 <!-- END Pod Template -->
 
-<!-- Public Ip Range Template -->
-<div id="publicip_range_template" style="display:none">
+<!-- VLAN Ip Range Template -->
+<div id="vlan_ip_range_template" style="display:none">
     <div class="adding_loading" style="height:25px;display:none" id="loading_container">
 	    <div class="adding_animation"></div>
-	    <div class="adding_text">Adding a public IP range &hellip; </div>
+	    <div class="adding_text">Adding an VLAN IP range &hellip; </div>
     </div>
     <div id="row_container">  
 	    <div class="zonetree_secondlevel">
 		    <div class="zonetree_ipicon"></div>
-		    <p>Public IP Range:<div class="zonetree_links" id="publicip_range_name">100.123.345.123 - 100.123.345.123</div></p>
+		    <p><span id="vlan_ip_range_type">IP Range:</span><div class="zonetree_links" id="vlan_ip_range_name">100.123.345.123 - 100.123.345.123</div></p>
 	    </div>
 	</div>
 </div>
@@ -259,7 +264,7 @@
 				</li>
 				<li>
 					<label>Internal DNS 2:</label>
-					<input class="text" type="text" id=add_zone_internaldns1"/>
+					<input class="text" type="text" id="add_zone_internaldns2"/>
 					<div id="add_zone_internaldns2_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
 				</li>
 				<li id="add_zone_container">
@@ -336,22 +341,27 @@
 		<form action="#" method="post" id="form_acquire">
 			<ol>
 				<li>
-					<label for="user_name">Name:</label>
+					<label for="user_name" style="width:115px;">Name:</label>
 					<input class="text" type="text" name="add_pod_name" id="add_pod_name"/>
 					<div id="add_pod_name_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
 				</li>
 				<li>
-					<label for="user_name">CIDR:</label>
+					<label for="add_pod_gateway" style="width:115px;">Gateway:</label>
+					<input class="text" type="text" id="add_pod_gateway"/>
+					<div id="add_pod_gateway_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
+				</li>
+				<li>
+					<label for="user_name" style="width:115px;">CIDR:</label>
 					<input class="text" type="text" name="add_pod_cidr" id="add_pod_cidr"/>
 					<div id="add_pod_cidr_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
 				</li>
 				<li>
-					<label for="user_name">IP Range:</label>
+					<label for="user_name" style="width:115px;">Private IP Range:</label>
 					<input class="text" style="width:67px" type="text" name="add_pod_startip" id="add_pod_startip"/><span>-</span>
                     <input class="text" style="width:67px" type="text" name="add_pod_endip" id="add_pod_endip"/>
 					<div id="add_pod_startip_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
 					<div id="add_pod_endip_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
-				</li>
+				</li>				
 			</ol>
 		</form>
 	</div>
@@ -365,21 +375,26 @@
 		<form action="#" method="post" id="form4">
 			<ol>
 				<li>
-					<label for="user_name">Name:</label>
+					<label for="user_name" style="width:115px;">Name:</label>
 					<input class="text" type="text" name="edit_pod_name" id="edit_pod_name"/>
 					<div id="edit_pod_name_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
 				</li>
 				<li>
-					<label for="user_name">CIDR:</label>
+					<label for="user_name" style="width:115px;">CIDR:</label>
 					<input class="text" type="text" name="edit_pod_cidr" id="edit_pod_cidr"/>
 					<div id="edit_pod_cidr_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
 				</li>
 				<li>
-					<label for="user_name">IP Range:</label>
+					<label for="user_name" style="width:115px;">Private IP Range:</label>
 					<input class="text" style="width:67px" type="text" name="edit_pod_startip" id="edit_pod_startip"/><span>-</span>
                     <input class="text" style="width:67px" type="text" name="edit_pod_endip" id="edit_pod_endip"/>
 					<div id="edit_pod_startip_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
 					<div id="edit_pod_endip_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
+				</li>
+				<li>
+					<label for="edit_pod_gateway" style="width:115px;">Gateway:</label>
+					<input class="text" type="text" id="edit_pod_gateway"/>
+					<div id="edit_pod_gateway_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
 				</li>
 			</ol>
 		</form>
@@ -387,23 +402,43 @@
 </div>
 <!-- Edit Pod Dialog (end) -->
 
-<!-- Add Public IP Range Dialog -->
-<div id="dialog_add_publicip_vlan" title="Add Public VLAN IP Range" style="display:none">
-	<p>Please enter the following info to add a new public VLAN ip range for zone: <b><span id="add_publicip_vlan_zone_name"></span></b></p>
+<!-- Add VLAN IP Range Dialog for zone (begin) -->
+<div id="dialog_add_vlan_for_zone" title="Add VLAN IP Range" style="display:none">
+	<p>Please enter the following info to add a new IP range for zone: <b><span id="add_publicip_vlan_zone_name"></span></b></p>
 	<div class="dialog_formcontent">
 		<form action="#" method="post" id="form_acquire">
 			<ol>
+				<li style="display:none" id="add_publicip_vlan_type_container">
+					<label for="add_publicip_vlan_type">Type:</label>
+					<select class="select" name="add_publicip_vlan_type" id="add_publicip_vlan_type">
+					    <option value="false">direct</option>
+						<option value="true">public</option>						
+					</select>
+				</li>
 				<li id="add_publicip_vlan_container">
-					<label for="user_name">VLAN:</label>
+					<label for="add_publicip_vlan_tagged">VLAN:</label>
 					<select class="select" name="add_publicip_vlan_tagged" id="add_publicip_vlan_tagged">
-					    <option value="untagged">untagged</option>
-						<option value="tagged">tagged</option>						
 					</select>
 				</li>
 				<li style="display:none" id="add_publicip_vlan_vlan_container">
 					<label for="user_name">VLAN ID:</label>
 					<input class="text" type="text" name="add_publicip_vlan_vlan" id="add_publicip_vlan_vlan"/>
 					<div id="add_publicip_vlan_vlan_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
+				</li>
+				<li style="display:none" id="add_publicip_vlan_pod_container">
+					<label for="user_name">Pod:</label>
+					<select class="select" name="add_publicip_vlan_pod" id="add_publicip_vlan_pod">					
+					</select>
+				</li>
+				<li style="display:none" id="add_publicip_vlan_domain_container">
+					<label for="user_name">Domain:</label>
+					<select class="select" name="add_publicip_vlan_domain" id="add_publicip_vlan_domain">					
+					</select>
+				</li>
+				<li style="display:none" id="add_publicip_vlan_account_container">
+					<label for="user_name">Account:</label>
+					<input class="text" type="text" name="add_publicip_vlan_account" id="add_publicip_vlan_account"/>
+					<div id="add_publicip_vlan_account_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
 				</li>
 				<li>
 					<label for="user_name">Gateway:</label>
@@ -426,9 +461,36 @@
 		</form>
 	</div>
 </div>
-<!-- END Add Public IP Range Dialog -->
+<!-- Add VLAN IP Range Dialog for zone (end) -->
     
-
+<!-- Add VLAN IP Range Dialog for pod (begin) -->
+<div id="dialog_add_vlan_for_pod" title="Add Direct IP Range" style="display:none">
+	<p>Please enter the following info to add a new direct IP range on untagged VLAN to pod: <b><span id="pod_name_label"></span></b></p>
+	<div class="dialog_formcontent">
+		<form action="#" method="post" id="form5">
+			<ol>					
+				<li>
+					<label for="gateway">Gateway:</label>
+					<input class="text" type="text" id="gateway"/>
+					<div id="gateway_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
+				</li>
+				<li>
+					<label for="netmask">Netmask:</label>
+					<input class="text" type="text" id="netmask"/>
+					<div id="netmask_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
+				</li>
+				<li>
+					<label>IP Range:</label>
+					<input class="text" style="width:67px" type="text" id="startip"/><span>-</span>
+                    <input class="text" style="width:67px" type="text" id="endip"/>
+					<div id="startip_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
+					<div id="endip_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
+				</li>
+			</ol>
+		</form>
+	</div>
+</div>
+<!-- Add VLAN IP Range Dialog for pod (end) -->
 
 <!--Service Offerings -->
 <div class="maincontent" style="display:none;" id="submenu_content_service">
@@ -484,7 +546,7 @@
             <div class="grid_genheader_cell" style="width:10%;">
             	<div class="grid_headertitles">Name</div>
             </div>
-            <div class="grid_genheader_cell" style="width:28%;">
+            <div class="grid_genheader_cell" style="width:16%;">
             	<div class="grid_headertitles">Display text</div>
             </div>
             <div class="grid_genheader_cell" style="width:7%;">
@@ -496,10 +558,16 @@
             <div class="grid_genheader_cell" style="width:10%;">
             	<div class="grid_headertitles">Memory</div>
             </div>
-            <div class="grid_genheader_cell" style="width:10%;">
+            <div class="grid_genheader_cell" style="width:7%;">
             	<div class="grid_headertitles">Offer HA</div>
             </div>
-            <div class="grid_genheader_cell" style="width:12%;">
+            <div class="grid_genheader_cell" style="width:7%;">
+            	<div class="grid_headertitles">Network Type</div>
+            </div>
+            <div class="grid_genheader_cell" style="width:10%;">
+            	<div class="grid_headertitles">Tags</div>
+            </div>
+            <div class="grid_genheader_cell" style="width:10%;">
             	<div class="grid_headertitles">Created</div>
             </div>
             <div class="grid_genheader_cell" style="width:8%;">
@@ -543,29 +611,35 @@
     </div>
     <div id="row_container">  
 	    <div class="grid_smallgenrow_cell" style="width:4%;">
-		    <div class="netgrid_celltitles" id="service_id">1</div>
+		    <div class="netgrid_celltitles" id="service_id"></div>
 	    </div>
 	    <div class="grid_smallgenrow_cell" style="width:10%;">
-		    <div class="netgrid_celltitles" id="service_name">Small Instance</div>
+		    <div class="netgrid_celltitles" id="service_name"></div>
 	    </div>
-	    <div class="grid_smallgenrow_cell" style="width:28%;">
-		    <div class="netgrid_celltitles" id="service_display">Small Instance[500MHZ. 512MB MEM , 16GB Disk]-$0.10per hour</div>
+	    <div class="grid_smallgenrow_cell" style="width:16%;">
+		    <div class="netgrid_celltitles" id="service_display"></div>
 	    </div>
 	    <div class="grid_smallgenrow_cell" style="width:7%;">
-		    <div class="netgrid_celltitles" id="service_storagetype">storage type</div>
+		    <div class="netgrid_celltitles" id="service_storagetype"></div>
 	    </div>
 	    <div class="grid_smallgenrow_cell" style="width:10%;">
-		    <div class="netgrid_celltitles" id="service_cpu">1x500MHZ</div>
+		    <div class="netgrid_celltitles" id="service_cpu"></div>
 	    </div>
 	    <div class="grid_smallgenrow_cell" style="width:10%;">
-		    <div class="netgrid_celltitles" id="service_memory">512MB</div>
+		    <div class="netgrid_celltitles" id="service_memory"></div>
+	    </div>
+	    <div class="grid_smallgenrow_cell" style="width:7%;">
+		    <div class="netgrid_celltitles" id="service_offerha"></div>
+	    </div>
+	    <div class="grid_smallgenrow_cell" style="width:7%;">
+		    <div class="netgrid_celltitles" id="service_networktype"></div>
 	    </div>
 	     <div class="grid_smallgenrow_cell" style="width:10%;">
-		    <div class="netgrid_celltitles" id="service_offerha">offer HA</div>
+		    <div class="netgrid_celltitles" id="service_tags"></div>
 	    </div>
-	    <div class="grid_smallgenrow_cell" style="width:12%;">
-		    <div class="netgrid_celltitles" id="service_created">02/18/2010</div>
-	    </div>
+	    <div class="grid_smallgenrow_cell" style="width:10%;">
+		    <div class="netgrid_celltitles" id="service_created"></div>
+	    </div>	   
 	    <div class="grid_smallgenrow_cell" style="width:8%;">
 		    <div class="netgrid_celltitles"><a id="service_action_edit" href="#">Edit</a> | <a id="service_action_delete" href="#">Delete</a></div>
 	    </div>
@@ -617,7 +691,21 @@
 						<option value="false">No</option>
 						<option value="true">Yes</option>
 					</select>
-				</li>					
+				</li>	
+				<li>
+					<label>Network Type</label>
+					<select class="select" id="add_service_networktype">						
+						<option value="direct">Direct</option>
+						<option value="public">Public</option>
+					</select>
+				</li>	
+				<li id="add_service_tags_container">
+                    <label for="add_service_tags">
+                        Tags:</label>
+                    <input class="text" type="text" id="add_service_tags" />
+                    <div id="add_service_tags_errormsg" class="dialog_formcontent_errormsg" style="display: none;">
+                    </div>
+                </li>						
 			</ol>
 		</form>
 	</div>
@@ -704,11 +792,14 @@
             <div class="grid_genheader_cell" style="width:19%;">
             	<div class="grid_headertitles">Name</div>
             </div>
-            <div class="grid_genheader_cell" style="width:44%;">
+            <div class="grid_genheader_cell" style="width:24%;">
             	<div class="grid_headertitles">Description</div>
             </div>
             <div class="grid_genheader_cell" style="width:10%;">
             	<div class="grid_headertitles">Disk size</div>
+            </div>
+            <div class="grid_genheader_cell" style="width:20%;">
+            	<div class="grid_headertitles">Tags</div>
             </div>
             <div class="grid_genheader_cell" style="width:10%;">
             	<div class="grid_headertitles">Domain</div>
@@ -763,11 +854,14 @@
 	    <div class="grid_smallgenrow_cell" style="width:19%;">
 		    <div class="netgrid_celltitles" id="disk_name">Disk name</div>
 	    </div>
-	    <div class="grid_smallgenrow_cell" style="width:44%;">
+	    <div class="grid_smallgenrow_cell" style="width:24%;">
 		    <div class="netgrid_celltitles" id="disk_description">Disk description</div>
 	    </div>
 	    <div class="grid_smallgenrow_cell" style="width:10%;">
 		    <div class="netgrid_celltitles" id="disk_disksize">Disk size</div>
+	    </div>
+	    <div class="grid_smallgenrow_cell" style="width:20%;">
+		    <div class="netgrid_celltitles" id="disk_tags"></div>
 	    </div>
 	    <div class="grid_smallgenrow_cell" style="width:10%;">
 		    <div class="netgrid_celltitles" id="disk_domain">Domain</div>
@@ -804,7 +898,14 @@
 					<label for="user_name">Disk size (in GB):</label>
 					<input class="text" type="text" name="add_disk_disksize" id="add_disk_disksize"/>
 					<div id="add_disk_disksize_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
-				</li>
+				</li>				
+				<li id="add_disk_tags_container">
+                    <label for="add_disk_tags">
+                        Tags:</label>
+                    <input class="text" type="text" id="add_disk_tags" />
+                    <div id="add_disk_tags_errormsg" class="dialog_formcontent_errormsg" style="display: none;">
+                    </div>
+                </li>				
 				<!--
 				<li>
 					<label for="user_name">Mirrored?:</label>

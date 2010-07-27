@@ -26,6 +26,7 @@ import org.apache.log4j.Logger;
 
 import com.cloud.api.BaseCmd;
 import com.cloud.api.ServerApiException;
+import com.cloud.exception.InvalidParameterValueException;
 import com.cloud.user.Account;
 import com.cloud.user.User;
 import com.cloud.utils.Pair;
@@ -44,7 +45,8 @@ public class UpdateUserCmd extends BaseCmd {
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.LASTNAME, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.EMAIL, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.TIMEZONE, Boolean.FALSE));
-
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.API_KEY, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.SECRET_KEY, Boolean.FALSE));
     }
 
     public String getName() {
@@ -63,13 +65,19 @@ public class UpdateUserCmd extends BaseCmd {
         String lastname = (String)params.get(BaseCmd.Properties.LASTNAME.getName());
         String email = (String)params.get(BaseCmd.Properties.EMAIL.getName());
         String timezone = (String)params.get(BaseCmd.Properties.TIMEZONE.getName());
-        
+        String apiKey = (String)params.get(BaseCmd.Properties.API_KEY.getName());
+        String secretKey = (String)params.get(BaseCmd.Properties.SECRET_KEY.getName());
         //check if the user exists in the system
         User user = getManagementServer().getUser(userId.longValue());
         if (user == null) {
             throw new ServerApiException(BaseCmd.PARAM_ERROR, "unable to find user by id");
         }
 
+        if((apiKey == null && secretKey != null) || (apiKey != null && secretKey == null))
+        {
+        	throw new ServerApiException(BaseCmd.PARAM_ERROR, "Please provide an api key/secret key pair");
+        }
+        
         // If the account is an admin type, return an error.  We do not allow this
         Account account = getManagementServer().findAccountById(user.getAccountId());
         if (account != null && (account.getId() == Account.ACCOUNT_ID_SYSTEM)) {
@@ -94,8 +102,20 @@ public class UpdateUserCmd extends BaseCmd {
         if (timezone == null) {
         	timezone = user.getTimezone();
         }
+        if (apiKey == null) {
+        	apiKey = user.getApiKey();
+        }
+        if (secretKey == null) {
+        	secretKey = user.getSecretKey();
+        }
         List<Pair<String, Object>> returnValues = new ArrayList<Pair<String, Object>>();
-        boolean success = getManagementServer().updateUser(user.getId(), username, password, firstname, lastname, email, timezone);
+        boolean success = false;
+		try {
+			success = getManagementServer().updateUser(user.getId(), username, password, firstname, lastname, email, timezone, apiKey, secretKey);
+		} catch (InvalidParameterValueException e) 
+		{
+			throw new ServerApiException(BaseCmd.INTERNAL_ERROR, e.getMessage());
+		}
         if (success) {
            returnValues.add(new Pair<String,Object> (BaseCmd.Properties.SUCCESS.getName(), Boolean.valueOf(success).toString()));
         } else {

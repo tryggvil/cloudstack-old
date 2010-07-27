@@ -100,15 +100,10 @@ public class CreateTemplateCmd extends BaseCmd {
             }
             // Set the volumeId to that of the snapshot. All further input parameter checks will be done w.r.t the volume.
             volumeId = snapshot.getVolumeId();
-            volume = getManagementServer().findVolumeById(volumeId);
-            if (volume.getTemplateId() == null) {
-                throw new ServerApiException(BaseCmd.PARAM_ERROR, "Can only create a template from a snapshot created from a ROOT volume based off a Template or ISO");
-            }
+			volume = getManagementServer().findAnyVolumeById(volumeId);
+        } else {
+            volume = getManagementServer().findAnyVolumeById(volumeId);
         }
-        else {
-            volume = getManagementServer().findVolumeById(volumeId);
-        }
-        
         
         if (volume == null) {
             throw new ServerApiException(BaseCmd.PARAM_ERROR, "unable to find a volume with id " + volumeId);
@@ -123,9 +118,14 @@ public class CreateTemplateCmd extends BaseCmd {
             throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to create a template from volume with id " + volumeId + ", permission denied.");
         }
 
-        if (!isAdmin || isPublic == null) {
+        if (isPublic == null) {
         	isPublic = Boolean.FALSE;
         }   
+        
+        boolean allowPublicUserTemplates = Boolean.parseBoolean(getManagementServer().getConfigurationValue("allow.public.user.templates"));        
+        if (!isAdmin && !allowPublicUserTemplates && isPublic) {
+        	throw new ServerApiException(BaseCmd.PARAM_ERROR, "Only private templates can be created.");
+        }
         
         if (!isAdmin || featured == null) {
         	featured = Boolean.FALSE;

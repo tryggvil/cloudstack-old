@@ -1,0 +1,2133 @@
+#!/usr/bin/python
+#
+# A plugin for executing script needed by vmops cloud 
+
+import os, sys, time
+import XenAPIPlugin
+sys.path.append("/opt/xensource/sm/")
+import SR, VDI, SRCommand, util, lvutil
+from util import CommandException
+import vhdutil
+import shutil
+import lvhdutil
+import subprocess
+from lvmcache import LVMCache
+from journaler import Journaler
+from lock import Lock
+import errno
+import shutil
+import subprocess
+import xs_errors
+import cleanup
+import hostvmstats
+import socket
+import stat
+import random
+import base64
+import tempfile
+
+VHD_UTIL = '/usr/sbin/vhd-util'
+VHD_PREFIX = 'VHD-'
+
+def echo(fn):
+    def wrapped(*v, **k):
+        name = fn.__name__
+        util.SMlog("#### VMOPS enter  %s ####" % name )
+        res = fn(*v, **k)
+        util.SMlog("#### VMOPS exit  %s ####" % name )
+        return res
+    return wrapped
+
+@echo
+def gethostvmstats(session, args):
+    collect_host_stats = args['collectHostStats']
+    consolidation_function = args['consolidationFunction']
+    interval = args['interval']
+    start_time = args['startTime']
+    result = hostvmstats.get_stats(collect_host_stats, consolidation_function, interval, start_time)
+    return result
+    
+@echo
+def find_bond(session, args):
+    nic = args['arg1']
+    try:
+        cmd = ["bash", "/opt/xensource/bin/find_bond.sh", nic]
+        txt = util.pread2(cmd)
+    except:
+        txt = ''
+    
+    return txt
+    
+@echo
+def setup_iscsi(session, args):
+   uuid=args['uuid']
+   try:
+       cmd = ["bash", "/opt/xensource/bin/setup_iscsi.sh", uuid]
+       txt = util.pread2(cmd)
+   except:
+       txt = ''
+   return txt
+
+@echo
+def create_secondary_storage_folder(session, args):
+    local_mount_path = None
+
+    util.SMlog("create_secondary_storage_folder, args: " + str(args))
+
+    try:
+        try:
+            # Mount the remote resource folder locally
+            remote_mount_path = args["remoteMountPath"]
+            local_mount_path = os.path.join(SR.MOUNT_BASE, "mount" + str(int(random.random() * 1000000)))
+            mount(remote_mount_path, local_mount_path)
+
+            # Create the new folder
+            new_folder = local_mount_path + "/" + args["newFolder"]
+            if not os.path.isdir(new_folder):
+                current_umask = os.umask(0)
+                os.makedirs(new_folder)
+                os.umask(current_umask)
+        except OSError, (errno, strerror):
+            errMsg = "create_secondary_storage_folder failed: errno: " + str(errno) + ", strerr: " + strerror
+            util.SMlog(errMsg)
+            raise xs_errors.XenError(errMsg)
+        except:
+            errMsg = "create_secondary_storage_folder failed."
+            util.SMlog(errMsg)
+            raise xs_errors.XenError(errMsg)
+    finally:
+        if local_mount_path != None:
+            # Unmount the local folder
+            umount(local_mount_path)
+            # Remove the local folder
+            os.system("rm -rf " + local_mount_path)
+        
+    return "1"
+
+@echo
+def delete_secondary_storage_folder(session, args):
+    local_mount_path = None
+
+    util.SMlog("delete_secondary_storage_folder, args: " + str(args))
+
+    try:
+        try:
+            # Mount the remote resource folder locally
+            remote_mount_path = args["remoteMountPath"]
+            local_mount_path = os.path.join(SR.MOUNT_BASE, "mount" + str(int(random.random() * 1000000)))
+            mount(remote_mount_path, local_mount_path)
+
+            # Delete the specified folder
+            folder = local_mount_path + "/" + args["folder"]
+            if os.path.isdir(folder):
+                os.system("rm -rf " + folder)
+        except OSError, (errno, strerror):
+            errMsg = "delete_secondary_storage_folder failed: errno: " + str(errno) + ", strerr: " + strerror
+            util.SMlog(errMsg)
+            raise xs_errors.XenError(errMsg)
+        except:
+            errMsg = "delete_secondary_storage_folder failed."
+            util.SMlog(errMsg)
+            raise xs_errors.XenError(errMsg)
+    finally:
+        if local_mount_path != None:
+            # Unmount the local folder
+            umount(local_mount_path)
+            # Remove the local folder
+            os.system("rm -rf " + local_mount_path)
+        
+    return "1"
+    
+@echo
+def execute_script(session, args):
+    return ""
+    
+@echo
+def post_create_private_template(session, args):
+    local_mount_path = None
+
+    try:
+        try:
+            # Mount the remote templates folder locally
+            remote_mount_path = args["remoteTemplateMountPath"]
+            local_mount_path = os.path.join(SR.MOUNT_BASE, "template" + str(int(random.random() * 10000)))
+            mount(remote_mount_path, local_mount_path)
+            util.SMlog("Mounted secondary storage template folder")
+
+            # Retrieve args
+            filename = args["templateFilename"]
+            name = args["templateName"]
+            description = args["templateDescription"]
+            checksum = args["checksum"]
+            virtual_size = args["virtualSize"]
+            template_id = args["templateId"]
+            
+            # Determine the template size
+            template_download_folder = local_mount_path + "/" + args["templateDownloadFolder"]
+            template_download_path = template_download_folder + filename
+            file_size = os.path.getsize(template_download_path)
+            util.SMlog("Got template file_size: " + str(file_size))
+
+            # Create the template.properties file
+            template_properties_download_path = template_download_folder + "template.properties"
+            f = open(template_properties_download_path, "w")
+            f.write("filename=" + filename + "\n")
+            f.write("name=" + filename + "\n")
+            f.write("vhd=true\n")
+            f.write("id=" + template_id + "\n")
+            f.write("vhd.filename=" + filename + "\n")
+            f.write("uniquename=" + name + "\n")
+            f.write("vhd.virtualsize=" + virtual_size + "\n")
+            f.write("vhd.size=" + str(file_size) + "\n")
+            f.write("virtualsize=" + virtual_size + "\n")
+            f.write("checksum=" + checksum + "\n")
+            f.write("hvm=true\n")
+            f.write("description=" + name + "\n")
+            f.close()
+            util.SMlog("Created template.properties file")
+
+            # Create the template install folder if necessary
+            template_install_folder = local_mount_path + "/" + args["templateInstallFolder"]
+            if not os.path.isdir(template_install_folder):
+                current_umask = os.umask(0)
+                os.makedirs(template_install_folder)
+                os.umask(current_umask)
+            
+            # Move the template and the template.properties file to the install folder
+            os.system("mv " + template_download_folder + "/" + filename + " " + template_install_folder)
+            os.system("mv " + template_download_folder + "/template.properties " + template_install_folder)
+            template_install_path = template_install_folder + filename
+            template_properties_install_path = template_install_folder + "template.properties"
+            
+            # Set permissions
+            permissions = stat.S_IREAD | stat.S_IWRITE | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH | stat.S_IWOTH
+            os.chmod(template_install_path, permissions)
+            os.chmod(template_properties_install_path, permissions)
+            util.SMlog("Set permissions on template and template.properties")
+
+            # Delete the template download folder
+            os.system("rm -rf " + template_download_folder)
+        except:
+            errMsg = "post_create_private_template failed."
+            util.SMlog(errMsg)
+            raise xs_errors.XenError(errMsg)
+    finally:
+        if local_mount_path != None:
+            # Unmount the local templates folder
+            umount(local_mount_path)
+            # Remove the local templates folder
+            os.system("rm -rf " + local_mount_path)
+
+    return "1"
+    
+@echo
+def getvncport(session, args):
+    domid = args['domID']
+    hvm = args['hvm']
+    if hvm == 'true':
+        path = "/local/domain/" + domid + "/console/vnc-port"
+    else:
+        path = "/local/domain/" + domid + "/serial/0/vnc-port"
+    try:
+        cmd = ["xenstore-read", path]
+        txt = util.pread2(cmd)
+    except:
+        txt = ''
+ 
+    return txt
+   
+@echo
+def getgateway(session, args):
+    mgmt_ip = args['mgmtIP']
+    try:
+        cmd = ["bash", "/opt/xensource/bin/network_info.sh", "-g", mgmt_ip]
+        txt = util.pread2(cmd)
+    except:
+        txt = ''
+
+    return txt
+    
+@echo
+def getnetwork(session, args):
+    mgmt_ip = args['mgmtIP']
+    try:
+        cmd = ["bash", "/opt/xensource/bin/network_info.sh", "-l", mgmt_ip]
+        txt = util.pread2(cmd)
+    except:
+        txt = ''
+    
+    return txt
+
+@echo
+def preparemigration(session, args):
+    uuid = args['uuid']
+    try:
+        cmd = ["/opt/xensource/bin/make_migratable.sh", uuid]
+        util.pread2(cmd)
+        txt = 'success'
+    except:
+        util.SMlog("Catch prepare migration exception" )
+        txt = ''
+
+    return txt
+
+@echo
+def setIptables(session, args):
+    try:
+        try:
+            shutil.move("/etc/cron.daily/logrotate", "/etc/cron.hourly")
+        except:
+            txt = ''
+
+        f = open("/proc/sys/fs/aio-max-nr", 'w')
+        f.write("1048576")
+        f.close()
+        try:
+            cmd = ["iptables", "-D", "RH-Firewall-1-INPUT", "-p", "tcp", "-m", "tcp", "--dport", "5900:6099", "-j", "ACCEPT"]
+            txt = util.pread2(cmd)
+        except:
+            txt = ''
+
+        cmd = ["iptables", "-I", "RH-Firewall-1-INPUT", "-p", "tcp", "-m", "tcp", "--dport", "5900:6099", "-j", "ACCEPT"]
+        txt = util.pread2(cmd)
+               
+        txt = 'success'
+    except:
+        util.SMlog("  setIptables execution failed "  )
+        txt = ''
+    util.SMlog("execute setIptables command result (%s), ignoring" % txt)
+
+    return txt
+ 
+@echo
+def patchdomr(session, args):
+    vmname = args['vmname']
+    vmtype = args['vmtype']
+    device = args['device']
+    try:
+        cmd = ["/bin/bash", "/opt/xensource/bin/prepsystemvm.sh", "-l", vmname, "-t", vmtype, "-d", device]
+        txt = util.pread2(cmd)
+        txt = 'success'
+    except:
+        util.SMlog("  patch domr failed "  )
+        txt = '' 
+
+    return txt
+
+@echo
+def pingdomr(session, args):
+    host = args['host']
+    port = args['port']
+    socket.setdefaulttimeout(3)
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.connect((host,int(port)))
+        txt = 'success'
+    except:
+        txt = ''
+    
+    s.close()
+
+    return txt
+
+@echo
+def pingxenserver(session, args):
+    txt = 'success'
+    return txt
+
+@echo
+def ipassoc(session, args):
+    sargs = args['args']
+    cmd = sargs.split(' ')
+    cmd.insert(0, "/opt/xensource/bin/ipassoc.sh")
+    cmd.insert(0, "/bin/bash")
+    try:
+        txt = util.pread2(cmd)
+        txt = 'success'
+    except:
+        util.SMlog("  ip associate failed "  )
+        txt = '' 
+
+    return txt
+
+@echo
+def vm_data(session, args):
+    router_ip = args.pop('routerIP')
+    vm_ip = args.pop('vmIP')
+
+    util.SMlog("    adding vmdata for VM with IP: " + vm_ip + " to router with IP: " + router_ip)
+
+    for pair in args:
+        pairList = pair.split(',')
+        vmDataFolder = pairList[0]
+        vmDataFile = pairList[1]
+        vmDataValue = args[pair]
+        cmd = ["/bin/bash", "/opt/xensource/bin/vm_data.sh", "-r", router_ip, "-v", vm_ip, "-F", vmDataFolder, "-f", vmDataFile]
+        
+        fd = None
+        tmp_path = None
+        if (vmDataValue != "none"):
+            try:
+                fd,tmp_path = tempfile.mkstemp()
+                tmpfile = open(tmp_path, 'w')
+
+                if (vmDataFolder == "userdata"):
+                    vmDataValue = base64.urlsafe_b64decode(vmDataValue)
+                    
+                tmpfile.write(vmDataValue)
+                tmpfile.close()
+                cmd.append("-d")
+                cmd.append(tmp_path)
+            except:
+                util.SMlog("  vmdata failed to write tempfile "  )
+                os.close(fd)
+                os.remove(tmp_path)
+                return ''
+
+        try:
+            txt = util.pread2(cmd)
+            txt = 'success'
+        except:
+            util.SMlog("    vmdata failed with folder: " + vmDataFolder + " and file: " + vmDataFile)
+            txt = ''
+
+        if (fd != None):
+            os.close(fd)
+            os.remove(tmp_path)
+
+    return txt
+
+def pingtest(session, args):
+    sargs = args['args']
+    cmd = sargs.split(' ')
+    cmd.insert(0, "/opt/xensource/bin/pingtest.sh")
+    cmd.insert(0, "/bin/bash")
+    try:
+        txt = util.pread2(cmd)
+        txt = 'success'
+    except:
+        util.SMlog("  pingtest failed "  )
+        txt = ''
+
+    return txt
+
+@echo
+def savePassword(session, args):
+    sargs = args['args']
+    cmd = sargs.split(' ')
+    cmd.insert(0, "/opt/xensource/bin/save_password_to_domr.sh")
+    cmd.insert(0, "/bin/bash")
+    try:
+        txt = util.pread2(cmd)
+        txt = 'success'
+    except:
+        util.SMlog("  save password to domr failed "  )
+        txt = '' 
+
+    return txt
+
+@echo
+def saveDhcpEntry(session, args):
+    sargs = args['args']
+    cmd = sargs.split(' ')
+    cmd.insert(0, "/opt/xensource/bin/dhcp_entry.sh")
+    cmd.insert(0, "/bin/bash")
+    try:
+        txt = util.pread2(cmd)
+        txt = 'success'
+    except:
+        util.SMlog(" save dhcp entry failed "  )
+        txt = '' 
+
+    return txt
+
+@echo
+def setLinkLocalIP(session, args):
+    brName = args['brName']
+    try:
+        cmd = ["brctl", "addbr", brName]
+        txt = util.pread2(cmd)
+    except:
+        txt = '' 
+    try:
+        cmd = ["ip", "route", "del", "169.254.0.0/16"]
+        txt = util.pread2(cmd)
+    except:
+        txt = '' 
+    try:
+        cmd = ["ifconfig", brName, "169.254.0.1", "netmask", "255.255.0.0"]
+        txt = util.pread2(cmd)
+    except:
+        txt = '' 
+    try:
+        cmd = ["ip", "route", "add", "169.254.0.0/16", "dev", brName, "src", "169.254.0.1"]
+        txt = util.pread2(cmd)
+    except:
+        txt = '' 
+    txt = 'success'
+    return txt
+    
+@echo
+def setFirewallRule(session, args):
+    sargs = args['args']
+    cmd = sargs.split(' ')
+    cmd.insert(0, "/opt/xensource/bin/call_firewall.sh")
+    cmd.insert(0, "/bin/bash")
+    try:
+        txt = util.pread2(cmd)
+        txt = 'success'
+    except:
+        util.SMlog(" set firewall rule failed "  )
+        txt = '' 
+
+    return txt
+
+@echo
+def setLoadBalancerRule(session, args):
+    sargs = args['args']
+    cmd = sargs.split(' ')
+    cmd.insert(0, "/opt/xensource/bin/call_loadbalancer.sh")
+    cmd.insert(0, "/bin/bash")
+    try:
+        txt = util.pread2(cmd)
+        txt = 'success'
+    except:
+        util.SMlog(" set loadbalancer rule failed "  )
+        txt = '' 
+
+    return txt
+    
+@echo
+def createFile(session, args):
+    file_path = args['filepath']
+    file_contents = args['filecontents']
+
+    try:
+        f = open(file_path, "w")
+        f.write(file_contents)
+        f.close()
+        txt = 'success'
+    except:
+        util.SMlog(" failed to create HA proxy cfg file ")
+        txt = ''
+
+    return txt
+
+@echo
+def deleteFile(session, args):
+    file_path = args["filepath"]
+
+    try:
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+        txt = 'success'
+    except:
+        util.SMlog(" failed to remove HA proxy cfg file ")
+        txt = ''
+
+    return txt
+
+@echo
+def checkMount(session, args):
+    mountPath = args['mount']
+    mountPath = os.path.join(SR.MOUNT_BASE, mountPath)
+    status = "0"
+    try:
+        p = subprocess.Popen(["/bin/bash", "-c", "if [ -d " + mountPath + " ]; then echo 1; else echo 0;fi"], stdout=subprocess.PIPE)
+        cnt = 10
+        while cnt > 0:
+            if p.poll() == None:
+                time.sleep(1)
+                cnt = cnt -1
+            else:
+                cnt = -1
+        if cnt < 0:
+            status = p.communicate()[0].strip("\n") 
+        else:
+            subprocess.Popen(["/bin/bash", "-c", "kill -9 " + str(p.pid)])
+            status = "0"
+
+        if status == "0":
+            try:
+                cmd = ["umount", "-f",  "-l", mountPath]
+                txt = util.pread2(cmd)
+            except:
+                util.SMlog(" umount failed ")
+    except:
+        util.SMlog("failed to check")
+    return status
+
+@echo
+def checkIscsi(session, args):
+    scsiid = args['scsiid']
+    devpath = "/dev/disk/by-id/scsi-" + scsiid
+    status = "0"
+    try:
+        if util.pathexists(devpath) :
+            rdevpath = os.readlink(devpath)
+            rdevpath = rdevpath.replace(".", "")
+            rdevpath = rdevpath.replace("/", "")
+            rdevpath = "/block/" + rdevpath
+            cmd = ["scsi_id", "-g", "-s", rdevpath ]
+            txt = util.pread2(cmd)
+            txt = txt.replace("\n", "")
+            if scsiid == txt:
+               status = "1" 
+    except:
+        util.SMlog("failed to check Iscsi")
+
+    return status
+
+def isfile(path, isISCSI):
+    errMsg = ''
+    exists = True
+    if isISCSI:
+        exists = checkVolumeAvailablility(path)
+    else:
+        exists = os.path.isfile(path)
+        
+    if not exists:
+        errMsg = "File " + path + " does not exist."
+        util.SMlog(errMsg)
+        raise xs_errors.XenError(errMsg)
+    return errMsg
+
+def copyfile(fromFile, toFile, isISCSI):
+    util.SMlog("Starting to copy " + fromFile + " to " + toFile)
+    errMsg = ''
+    if isISCSI:
+        try:
+            cmd = ['dd', 'if=' + fromFile, 'of=' + toFile]
+            txt = util.pread2(cmd)
+        except:
+            txt = ''
+            errMsg = "Error while copying " + fromFile + " to " + toFile + " in ISCSI mode"
+            util.SMlog(errMsg)
+            raise xs_errors.XenError(errMsg)
+
+    else:
+        try:
+            shutil.copy2(fromFile, toFile)
+        except OSError, (errno, strerror):
+            errMsg = "Error while copying " + fromFile + " to " + toFile + " with errno: " + str(errno) + " and strerr: " + strerror
+            util.SMlog(errMsg)
+            raise xs_errors.XenError(errMsg)
+
+    util.SMlog("Successfully copied " + fromFile + " to " + toFile)
+    return errMsg
+
+def chdir(path):
+    try:
+        os.chdir(path)
+    except OSError, (errno, strerror):
+        errMsg = "Unable to chdir to " + path + " because of OSError with errno: " + str(errno) + " and strerr: " + strerror
+        util.SMlog(errMsg)
+        raise xs_errors.XenError(errMsg)
+    util.SMlog("Chdired to " + path)
+    return
+
+def coalesce(vhdPath):
+    util.SMlog("Starting to coalesce " + vhdPath + " with its parent")
+    try :
+        cmd = [VHD_UTIL, "coalesce", "-n", vhdPath]
+        txt = util.pread2(cmd)
+    except:
+        errMsg = "Unexpected error while trying to coalesce " + vhdPath + " to its parent"
+        util.SMlog(errMsg)
+        raise xs_errors.XenError(errMsg)
+    util.SMlog("Successfully coalesced " + vhdPath + " with its parent ")
+    
+    return
+
+def scanParent(path):
+    # Do a scan for the parent for ISCSI volumes
+    # Note that the parent need not be visible on the XenServer
+    parentUUID = ''
+    try:
+        lvName = os.path.basename(path)
+        dirname = os.path.dirname(path)
+        vgName = os.path.basename(dirname) 
+        vhdInfo = vhdutil.getVHDInfoLVM(lvName, lvhdutil.extractUuid, vgName)
+        parentUUID = vhdInfo.parentUuid
+    except:
+        errMsg = "Could not get vhd parent of " + path
+        util.SMlog(errMsg)
+        raise xs_errors.XenError(errMsg)
+    return parentUUID
+
+def getParent(path, isISCSI):
+    parentUUID = ''
+    try :
+        if isISCSI:
+            parentUUID = vhdutil.getParent(path, lvhdutil.extractUuid)
+        else:
+            parentUUID = vhdutil.getParent(path, cleanup.FileVDI.extractUuid)
+    except:
+        errMsg = "Could not get vhd parent of " + path
+        util.SMlog(errMsg)
+        raise xs_errors.XenError(errMsg)
+    return parentUUID
+
+def getParentOfSnapshot(snapshotUuid, primarySRPath, isISCSI):
+    snapshotVHD    = getVHD(snapshotUuid, isISCSI)
+    snapshotPath   = os.path.join(primarySRPath, snapshotVHD)
+
+    baseCopyUuid = ''
+    if isISCSI:
+        checkVolumeAvailablility(snapshotPath)
+        baseCopyUuid = scanParent(snapshotPath)
+    else:
+        baseCopyUuid = getParent(snapshotPath, isISCSI)
+    
+    util.SMlog("Base copy of snapshotUuid: " + snapshotUuid + " is " + baseCopyUuid)
+    return baseCopyUuid
+
+def setParent(parent, child):
+    try:
+        cmd = [VHD_UTIL, "modify", "-p", parent, "-n", child]
+        txt = util.pread2(cmd)
+    except:
+        errMsg = "Unexpected error while trying to set parent of " + child + " to " + parent 
+        util.SMlog(errMsg)
+        raise xs_errors.XenError(errMsg)
+    util.SMlog("Successfully set parent of " + child + " to " + parent)
+    return
+
+def rename(originalVHD, newVHD):
+    try:
+        os.rename(originalVHD, newVHD)
+    except OSError, (errno, strerror):
+        errMsg = "OSError while renaming " + origiinalVHD + " to " + newVHD + "with errno: " + str(errno) + " and strerr: " + strerror
+        util.SMlog(errMsg)
+        raise xs_errors.XenError(errMsg)
+    return
+
+def coalesceToChild(backupVHD, childUUID, isISCSI):
+    # coalesce childVHD with its parent
+    childVHD = getVHD(childUUID, isISCSI)
+    util.SMlog("childVHD: " + childVHD)
+    # check for existence of childVHD
+    isfile(childVHD, False)
+    util.SMlog("childVHD " + childVHD + " exists")
+    # No exception thrown, file exists
+    coalesce(childVHD)
+    
+    # rename the existing backupVHD file to childVHD
+    # childVHD file automatically gets overwritten
+    rename(backupVHD, childVHD)
+
+    # parent of the newly coalesced file still remains the same.
+    # child of childVHD has it's parent name still set to childVHD.
+    # So the VHD chain hasn't been broken.
+    return
+
+def makedirs(path):
+    if not os.path.isdir(path):
+        try:
+            os.makedirs(path)
+        except OSError, (errno, strerror):
+            errMsg = "OSError while creating " + path + " with errno: " + str(errno) + " and strerr: " + strerror
+            util.SMlog(errMsg)
+            raise xs_errors.XenError(errMsg)
+    return
+
+def mount(remoteDir, localDir):
+    makedirs(localDir)
+    
+    try: 
+        cmd = ['mount', remoteDir, localDir]
+        txt = util.pread2(cmd)
+    except:
+        txt = ''
+        errMsg = "Unexpected error while trying to mount " + remoteDir + " to " + localDir 
+        util.SMlog(errMsg)
+        raise xs_errors.XenError(errMsg)
+    util.SMlog("Successfully mounted " + remoteDir + " to " + localDir)
+
+    return
+
+def umount(localDir):
+    success = False
+    if os.path.isdir(localDir) and os.path.ismount(localDir):
+        try: 
+            cmd = ['umount', localDir]
+            util.pread2(cmd)
+        except CommandException:
+            errMsg = "CommandException raised while trying to umount " + localDir 
+            util.SMlog(errMsg)
+            raise xs_errors.XenError(errMsg)
+        util.SMlog("Successfully unmounted " + localDir)
+        success = True
+    else:
+        util.SMlog("LocalDir: " + localDir + " doesn't exist or is not a mount point")
+
+    return
+
+
+def mountTemplatesDir(secondaryStorageMountPath, templatePath):
+    # Aim is to mount <secondaryStorageMountPath>/<templatePath> on 
+    # SR.MOUNT_BASE/<random_uuid>
+    # It will be unmounted after createVolumeFromSnapshot finishes.
+    # It should be mounted read-only, but don't know how to do that
+    # The random-uuid saves us from conflicts while restoring two different root volumes
+    
+    absoluteTemplatePath = os.path.join(secondaryStorageMountPath, templatePath)
+    absoluteTemplateDir = os.path.dirname(absoluteTemplatePath)
+
+    randomUUID = util.gen_uuid()
+    localTemplateDir = os.path.join(SR.MOUNT_BASE, randomUUID)
+    # create the temp dir
+    makedirs(localTemplateDir)
+    # mount
+    mount(absoluteTemplateDir, localTemplateDir)
+
+    return localTemplateDir
+
+def mountSnapshotsDir(secondaryStorageMountPath, relativeDir, dcId, accountId, instanceId):
+    # The aim is to mount secondaryStorageMountPath on 
+    # SR.MOUNT_BASE/<dcId>/<relativeDir>
+    # And create <accountId>/<instanceId> dir on it, if it doesn't exist already.
+    # Assuming that secondaryStorageMountPath  exists remotely
+
+    # Alex's suggestion and currently implemented:
+    # Just mount secondaryStorageMountPath/<relativeDir> everytime
+    # Never unmount.
+    snapshotsDir = os.path.join(secondaryStorageMountPath, relativeDir)
+
+    # Mkdir local mount point dir, if it doesn't exist.
+    localMountPointPath = os.path.join(SR.MOUNT_BASE, dcId)
+    localMountPointPath = os.path.join(localMountPointPath, relativeDir)
+
+    makedirs(localMountPointPath)
+    # if something is not mounted already on localMountPointPath, 
+    # mount secondaryStorageMountPath on localMountPath
+    if os.path.ismount(localMountPointPath):
+        # There is only one secondary storage per zone. 
+        # And we are mounting each sec storage under a zone-specific directory
+        # So two secondary storage snapshot dirs will never get mounted on the same point on the same XenServer.
+        util.SMlog("The remote snapshots directory has already been mounted on " + localMountPointPath)
+    else:
+        mount(snapshotsDir, localMountPointPath)
+
+    # Create accountId/instanceId dir on localMountPointPath, if it doesn't exist
+    backupsDir = os.path.join(localMountPointPath, accountId)
+    backupsDir = os.path.join(backupsDir, instanceId)
+    makedirs(backupsDir)
+    return backupsDir
+
+@echo
+def unmountSnapshotsDir(session, args):
+    dcId = args['dcId']
+    localMountPointPath = os.path.join(SR.MOUNT_BASE, dcId)
+    localMountPointPath = os.path.join(localMountPointPath, "snapshots")
+    try:
+        umount(localMountPointPath)
+    except:
+        util.SMlog("Ignoring the error while trying to unmount the snapshots dir.")
+
+    return "1"
+
+def getPrimarySRPath(primaryStorageSRUuid, isISCSI):
+    if isISCSI:
+        primarySRDir = lvhdutil.VG_PREFIX + primaryStorageSRUuid
+        return os.path.join(lvhdutil.VG_LOCATION, primarySRDir)
+    else:
+        return os.path.join(SR.MOUNT_BASE, primaryStorageSRUuid)
+
+def getVHD(UUID, isISCSI):
+    if isISCSI:
+        return VHD_PREFIX + UUID
+    else:
+        return UUID + '.' + SR.DEFAULT_TAP
+
+def getIsTrueString(stringValue):
+    booleanValue = False
+    if (stringValue and stringValue == 'true'):
+        booleanValue = True
+    return booleanValue 
+
+def makeUnavailable(uuid, primarySRPath, isISCSI):
+    VHD = getVHD(uuid, isISCSI)
+    path = os.path.join(primarySRPath, VHD)
+    manageAvailability(path, '-an')
+    return
+
+def manageAvailability(path, value):
+    util.SMlog("Setting availability of " + path + " to " + value)
+    try:
+        cmd = ['/usr/sbin/lvchange', value, path]
+        util.pread2(cmd)
+    except: #CommandException, (rc, cmdListStr, stderr):
+        #errMsg = "CommandException thrown while executing: " + cmdListStr + " with return code: " + str(rc) + " and stderr: " + stderr
+        errMsg = "Unexpected exception thrown by lvchange"
+        util.SMlog(errMsg)
+        if value == "-ay":
+            # Raise an error only if we are trying to make it available.
+            # Just warn if we are trying to make it unavailable after the 
+            # snapshot operation is done.
+            raise xs_errors.XenError(errMsg)
+    return
+
+
+def checkVolumeAvailablility(path):
+    try:
+        if not isVolumeAvailable(path):
+            # The VHD file is not available on XenSever. The volume is probably
+            # inactive or detached.
+            # Do lvchange -ay to make it available on XenServer
+            manageAvailability(path, '-ay')
+    except:
+        errMsg = "Could not determine status of ISCSI path: " + path
+        util.SMlog(errMsg)
+        raise xs_errors.XenError(errMsg)
+    
+    success = False
+    i = 0
+    while i < 6:
+        i = i + 1
+        # Check if the vhd is actually visible by checking for the link
+        # set isISCSI to true
+        success = isVolumeAvailable(path)
+        if success:
+            util.SMlog("Made vhd: " + path + " available and confirmed that it is visible")
+            break
+
+        # Sleep for 10 seconds before checking again.
+        time.sleep(10)
+
+    # If not visible within 1 min fail
+    if not success:
+        util.SMlog("Could not make vhd: " +  path + " available despite waiting for 1 minute. Does it exist?")
+
+    return success
+
+def isVolumeAvailable(path):
+    # Check if iscsi volume is available on this XenServer.
+    status = "0"
+    try:
+        p = subprocess.Popen(["/bin/bash", "-c", "if [ -L " + path + " ]; then echo 1; else echo 0;fi"], stdout=subprocess.PIPE)
+        status = p.communicate()[0].strip("\n")
+    except:
+        errMsg = "Could not determine status of ISCSI path: " + path
+        util.SMlog(errMsg)
+        raise xs_errors.XenError(errMsg)
+
+    return (status == "1")
+
+def getLastSnapshotUuid(volumeUuid, expectedLastSnapshotUuid):
+    actualLastSnapshotUuid = ''
+    if volumeUuid:
+        cmd = ['xe', 'vdi-param-get', 'uuid=' + volumeUuid, 'param-name=snapshots']
+        stdout = ''
+        try:
+            stdout = util.pread2(cmd)
+        except: #CommandException, (rc, cmdListStr, stderr):
+            #errMsg = "CommandException thrown while executing: " + cmdListStr + " with return code: " + str(rc) + " and stderr: " + stderr
+            errMsg = "Unexpected error while executing cmd: " + str(cmd)
+            util.SMlog(errMsg)
+            raise xs_errors.XenError(errMsg)
+        if stdout:
+            snapshots = stdout.split(';')
+            if len(snapshots) == 1:
+                if snapshots[0] == expectedLastSnapshotUuid:
+                    actualLastSnapshotUuid = expectedLastSnapshotUuid
+            elif len(snapshots) == 2:
+                # We expect only 1 snapshot to be present. If there is another that is unexpected and the last one
+                if (expectedLastSnapshotUuid == snapshots[0].strip()):
+                    actualLastSnapshotUuid = snapshots[1].strip()
+                else:
+                    # it should be equal to snapshots[1]. Else I have no idea.
+                    actualLastSnapshotUuid = snapshots[0].strip()
+            else:
+                # len(snapshots) > 2:
+                errMsg = "Volume: " + volumeUuid + " has more than 2 snapshots: " + str(snapshots)
+                util.SMlog(errMsg)
+                raise xs_errors.XenError(errMsg)
+                
+    return actualLastSnapshotUuid
+    
+@echo
+def validateSnapshot(session, args):
+    util.SMlog("Called validateSnapshot with " + str(args))
+    primaryStorageSRUuid = args['primaryStorageSRUuid']
+    volumeUuid           = args['volumeUuid']
+    firstBackupUuid      = args['firstBackupUuid']
+    previousSnapshotUuid = args['previousSnapshotUuid']
+    templateUuid         = args['templateUuid']
+    isISCSI              = getIsTrueString(args['isISCSI'])
+   
+    primarySRPath = getPrimarySRPath(primaryStorageSRUuid, isISCSI)
+    util.SMlog("primarySRPath: " + primarySRPath)
+    volumeVHD    = getVHD(volumeUuid, isISCSI)
+    volumePath   = os.path.join(primarySRPath, volumeVHD)
+    util.SMlog("volumePath: " + volumePath)
+
+    baseCopyUuid = ''
+    wasVolumeAvailable = True
+    if isISCSI:
+        wasVolumeAvailable = isVolumeAvailable(volumePath)
+        if not wasVolumeAvailable:
+            # make it available
+            checkVolumeAvailablility(volumePath)
+        baseCopyUuid = scanParent(volumePath)
+    else:
+        baseCopyUuid = getParent(volumePath, isISCSI)
+
+    if baseCopyUuid is None:
+        # Make it an empty string so that it can be used in the return value
+        baseCopyUuid = ''
+
+    actualSnapshotUuid = getLastSnapshotUuid(volumeUuid, previousSnapshotUuid)
+    expectedActual = firstBackupUuid + "#" + baseCopyUuid + "#" + actualSnapshotUuid
+    if firstBackupUuid:
+        # This is not the first snapshot
+        if baseCopyUuid and (baseCopyUuid == firstBackupUuid):
+            retval = "1#"
+        else:
+            retval = "0#"
+    else: 
+        if templateUuid:
+            # The DB thinks this is the first snapshot of a ROOT DISK
+            # The parent of the volume should be the base template, which is also the parent of the given templateUuid.
+            templateVHD = getVHD(templateUuid, isISCSI)
+            templatePath = os.path.join(primarySRPath, templateVHD)
+            baseTemplateUuid = ''
+            wasTemplateAvailable = True
+            if isISCSI:
+                wasTemplateAvailable = isVolumeAvailable(templatePath)
+                if not wasVolumeAvailable:
+                    # make it available
+                    checkVolumeAvailablility(templatePath)
+                baseTemplateUuid = scanParent(templatePath)
+            else:
+                baseTemplateUuid = getParent(templatePath, isISCSI)
+
+            if baseTemplateUuid is None:
+                # This will never happen.
+                baseTemplateUuid = ''
+
+            expectedActual = baseTemplateUuid + "#" + baseCopyUuid + "#" + actualSnapshotUuid
+            if baseTemplateUuid and (baseCopyUuid == baseTemplateUuid):
+                retval = "1#"
+            else:
+                retval = "0#"
+
+            if isISCSI and not wasTemplateAvailable:
+                manageAvailability(templatePath, '-an')
+
+        else:
+            # The DB thinks this is the first snapshot of a DATA DISK. 
+            # The volume VDI should not have any parent.
+            if not baseCopyUuid:
+                retval = "1#"
+            else:
+                retval = "0#"
+
+    # Set the volume's visibility back to what it was.
+    if isISCSI and not wasVolumeAvailable:
+        manageAvailability(volumePath, '-an')
+
+    return retval + expectedActual
+
+@echo
+def validatePreviousSnapshotBackup(session, args):
+    util.SMlog("Called validatePreviousSnapshotBackup with " + str(args))
+    primaryStorageSRUuid = args['primaryStorageSRUuid']
+    previousSnapshotUuid = args['previousSnapshotUuid']
+    firstBackupUuid      = args['firstBackupUuid']
+    isISCSI              = getIsTrueString(args['isISCSI'])
+   
+    if (not firstBackupUuid) or (not previousSnapshotUuid):
+        errMsg = "validatePreviousSnapshotBackup expects both firstBackupUuid: " + str(firstBackupUuid) + " and previousSnapshotUuid: " + str(previousSnapshotUuid) + " to be non-empty strings"
+        util.SMlog(errMsg)
+        raise xs_errors.XenError(errMsg)
+
+    primarySRPath = getPrimarySRPath(primaryStorageSRUuid, isISCSI)
+    util.SMlog("primarySRPath: " + primarySRPath)
+    previousSnapshotVHD    = getVHD(previousSnapshotUuid, isISCSI)
+    previousSnapshotPath   = os.path.join(primarySRPath, previousSnapshotVHD)
+    util.SMlog("previousSnapshotPath: " + previousSnapshotPath)
+    
+    if isISCSI:
+        checkVolumeAvailablility(previousSnapshotPath)
+
+    baseCopyUuid = ''
+    retval = '0#'
+    expectedActual = firstBackupUuid + '#' + baseCopyUuid
+    tries = 0
+    # This essentially waits for GC to happen so that parent of previous
+    # snapshot becomes the first backup.
+    while (tries < 4):
+        # Try 4 times before failing. Shouldn't fail backupSnapshot just because 
+        # GC didn't happen.
+        tries = tries + 1
+        if isISCSI:
+            baseCopyUuid = scanParent(previousSnapshotPath)
+            manageAvailability(previousSnapshotPath, '-an')
+        else:
+            baseCopyUuid = getParent(previousSnapshotPath, isISCSI)
+
+        expectedActual = firstBackupUuid + '#' + baseCopyUuid
+        if baseCopyUuid and (baseCopyUuid == firstBackupUuid):
+            retval = '1#'
+            break
+
+    
+    return retval + expectedActual
+
+@echo
+def backupSnapshot(session, args):
+    util.SMlog("Called backupSnapshot with " + str(args))
+    primaryStorageSRUuid      = args['primaryStorageSRUuid']
+    dcId                      = args['dcId']
+    accountId                 = args['accountId']
+    volumeId                  = args['volumeId']
+    secondaryStorageMountPath = args['secondaryStorageMountPath']
+    snapshotUuid              = args['snapshotUuid']
+    prevSnapshotUuid          = args['prevSnapshotUuid']
+    prevBackupUuid            = args['prevBackupUuid']
+    isFirstSnapshotOfRootVolume =  getIsTrueString(args['isFirstSnapshotOfRootVolume'])
+    isISCSI                   = getIsTrueString(args['isISCSI']) 
+
+    primarySRPath = getPrimarySRPath(primaryStorageSRUuid, isISCSI)
+    util.SMlog("primarySRPath: " + primarySRPath)
+
+    baseCopyUuid = getParentOfSnapshot(snapshotUuid, primarySRPath, isISCSI)
+    baseCopyVHD  = getVHD(baseCopyUuid, isISCSI)
+    baseCopyPath = os.path.join(primarySRPath, baseCopyVHD)
+    util.SMlog("Base copy path: " + baseCopyPath)
+
+    prevBaseCopyUuid = ''
+    if prevSnapshotUuid:
+        prevBaseCopyUuid = getParentOfSnapshot(prevSnapshotUuid, primarySRPath, isISCSI)
+
+    # Mount secondary storage mount path on XenServer along the path
+    # /var/run/sr-mount/<dcId>/snapshots/ and create <accountId>/<volumeId> dir
+    # on it.
+    backupsDir = mountSnapshotsDir(secondaryStorageMountPath, "snapshots", dcId, accountId, volumeId)
+    util.SMlog("Backups dir " + backupsDir)
+    # chdir to the backupsDir for convenience
+    chdir(backupsDir)
+
+    if baseCopyUuid == prevBaseCopyUuid:
+        # There has been no change since the last snapshot so no need to backup 
+        util.SMlog("There has been no change since the last snapshot with backup: " + prevBaseCopyUuid) 
+        if isFirstSnapshotOfRootVolume:
+            # baseCopyUuid is template. That is *NOT* the backup of any
+            # snapshot. There is no backup. So create an empty dummyVHD representing the empty snapshot.
+            # This will prevent deleteSnapshotBackup and createVolumeFromSnapshot from breaking.
+            prevBaseCopyUuid = createDummyVHD(baseCopyPath, backupsDir, isISCSI)
+            # The backup snapshot is the new dummy VHD created. 
+
+        # Set the uuid of the current backup to that of last backup
+        txt = "1#" + prevBaseCopyUuid
+        return txt
+
+    # Check existence of snapshot on primary storage 
+    isfile(baseCopyPath, isISCSI)
+    # copy baseCopyPath to backupsDir
+    backupFile = os.path.join(backupsDir, baseCopyVHD)
+    copyfile(baseCopyPath, backupFile, isISCSI)
+    
+    # Now set the availability of the snapshotPath and the baseCopyPath to false
+    makeUnavailable(snapshotUuid, primarySRPath, isISCSI)
+    manageAvailability(baseCopyPath, '-an')
+    if prevSnapshotUuid:
+        makeUnavailable(prevSnapshotUuid, primarySRPath, isISCSI)
+        makeUnavailable(prevBaseCopyUuid, primarySRPath, isISCSI)
+
+    if isFirstSnapshotOfRootVolume:
+        # First snapshot of the root volume.
+        # It's parent is not null, but the template vhd.
+        # Create a dummy empty vhd and set the parent of backupVHD to it.
+        # This will prevent deleteSnapshotBackup and createVolumeFromSnapshot from breaking
+        prevBackupUuid = createDummyVHD(baseCopyPath, backupsDir, isISCSI)
+
+    # Because the primary storage is always scanned, the parent of this base copy is always the first base copy.
+    # We don't want that, we want a chain of VHDs each of which is a delta from the previous.
+    # So set the parent of the current baseCopyVHD to prevBackupVHD 
+    if prevBackupUuid:
+        # If there was a previous snapshot
+        prevBackupVHD = getVHD(prevBackupUuid, isISCSI)
+        setParent(prevBackupVHD, backupFile)
+
+    txt = "1#" + baseCopyUuid
+    return txt
+
+def createDummyVHD(baseCopyPath, backupsDir, isISCSI):
+    dummyUUID = ''
+    try:
+        dummyUUID = util.gen_uuid()
+        dummyVHD = getVHD(dummyUUID, isISCSI)
+        if isISCSI:
+            checkVolumeAvailablility(baseCopyPath)
+        cmd = [VHD_UTIL, 'query', '-v', '-n', baseCopyPath]
+        virtualSizeInMB = util.pread2(cmd)
+        util.SMlog("Virtual size of " + baseCopyPath + " is " + virtualSizeInMB)
+        cmd = [VHD_UTIL, 'create', '-n', dummyVHD, '-s', virtualSizeInMB]
+        util.pread2(cmd)
+    except CommandException:
+        errMsg = "Unexpected error while creating a dummy VHD " + dummyVHD + " on " + backupsDir
+        util.SMlog(errMsg)
+        raise xs_errors.XenError(errMsg)
+    util.SMlog("Successfully created a new dummy VHD: " + dummyVHD + " on " + backupsDir)
+
+    return dummyUUID
+
+@echo
+def deleteSnapshotBackup(session, args):
+    util.SMlog("Calling deleteSnapshotBackup with " + str(args))
+    dcId                      = args['dcId']
+    accountId                 = args['accountId']
+    volumeId                  = args['volumeId']
+    secondaryStorageMountPath = args['secondaryStorageMountPath']
+    backupUUID                = args['backupUUID']
+    childUUID                 = args['childUUID']
+    isISCSI                   = getIsTrueString(args['isISCSI'])
+
+    backupsDir = mountSnapshotsDir(secondaryStorageMountPath, "snapshots", dcId, accountId, volumeId)
+    # chdir to the backupsDir for convenience
+    chdir(backupsDir)
+
+    backupVHD = getVHD(backupUUID, isISCSI)
+    util.SMlog("checking existence of " + backupVHD)
+
+    # The backupVHD is on secondary which is NFS and not ISCSI.
+    if not os.path.isfile(backupVHD):
+        util.SMlog("backupVHD " + backupVHD + "does not exist. Not trying to delete it")
+        return "1"
+    util.SMlog("backupVHD " + backupVHD + " exists.")
+        
+    # Case 1) childUUID exists
+    if childUUID:
+        coalesceToChild(backupVHD, childUUID, isISCSI)
+    else:
+        # Just delete the backupVHD
+        try:
+            os.remove(backupVHD)
+        except OSError, (errno, strerror):
+            errMsg = "OSError while removing " + backupVHD + " with errno: " + str(errno) + " and strerr: " + strerror
+            util.SMlog(errMsg)
+            raise xs_errors.XenError(errMsg)
+
+    return "1"
+
+@echo
+def createVolumeFromSnapshot(session, args):
+    util.SMlog("Calling createVolumeFromSnapshot with " + str(args))
+    dcId                      = args['dcId']
+    accountId                 = args['accountId']
+    volumeId                  = args['volumeId']
+    secondaryStorageMountPath = args['secondaryStorageMountPath']
+    backedUpSnapshotUuid      = args['backedUpSnapshotUuid']
+    templatePath              = args['templatePath']
+    templateDownloadFolder    = args['templateDownloadFolder']
+    isISCSI                   = getIsTrueString(args['isISCSI'])
+
+    backupsDir = mountSnapshotsDir(secondaryStorageMountPath, "snapshots", dcId, accountId, volumeId)
+    util.SMlog("Backups dir " + backupsDir)
+
+    # chdir to the backupsDir for convenience
+    chdir(backupsDir)
+
+    # Get the parent VHD chain of the backupSnapshotVHD
+    vhdChain = []
+    uuid = backedUpSnapshotUuid
+    while uuid is not None:
+        util.SMlog("Current uuid in parent chain " + uuid)
+        vhd = getVHD(uuid, isISCSI)
+        vhdChain.append(vhd)
+        uuid = getParent(vhd, isISCSI)
+    util.SMlog("successfully created the parent chain " + str(vhdChain))
+
+    destDirParent = ''
+    destDir = ''
+    if templateDownloadFolder:
+        # Copy all the vhds to the final destination templates dir
+        # It is some random directory on the primary created for templates.
+        destDirParent = os.path.join(SR.MOUNT_BASE, "mount" + str(int(random.random() * 1000000)))
+        destDir = os.path.join(destDirParent, templateDownloadFolder)
+        # create the this directory, if it isn't there
+        makedirs(destDir)
+    else:
+        # Copy all the vhds to a temp directory
+        # Create a temp directory
+        destDir = backupsDir + '_temp'
+
+    # Delete the temp directory if it already exists (from a previous createVolumeFromSnapshot)
+    rmtree(destDir)
+    
+    if templateDownloadFolder:
+        # The destDir was created in create_secondary_storage_folder but is not mounted on the primary. Mount it again.
+        remoteMountPoint = os.path.join(secondaryStorageMountPath, "template");
+        remoteMountPoint = os.path.join(remoteMountPoint, templateDownloadFolder)
+        mount(remoteMountPoint, destDir)
+    else:
+        # The parent of the destDir is the snapshots dir and is mounted on the primary. Just create the directory structure.
+        makedirs(destDir)
+
+    # Copy
+    for vhd in vhdChain:
+        vhdPath = os.path.join(backupsDir, vhd)
+        tempFile = os.path.join(destDir, vhd)
+        # We are copying files on secondary storage which is NFS. Set isISCSI to false
+        copyfile(vhdPath, tempFile, False)
+    util.SMlog("Successfully copied all files")
+
+    # coalesce the vhd chains from bottom to top
+    # chdir to destDir for convenience
+    chdir(destDir)
+       
+    # coalesce
+    i = 0
+    finalVhd = vhdChain[0]
+    for vhd in vhdChain:
+        finalVhd = vhdChain[i]
+        last = len(vhdChain) - 1
+        if i == last:
+            # last vhd, has no parent. Don't coalesce
+            break
+        if templatePath and i == (last - 1):
+            # Hack for root disks, the first Vhd is a dummy one. 
+            # Do not coalesce the actual disk with the dummy one.
+            # Instead coalesce it with the templateVHD.
+            break
+
+        i = i + 1
+        # They are arranged from child to parent.
+        util.SMlog("Starting to coalesce " + vhd + " with its parent")
+        try:
+            cmd = [VHD_UTIL, "coalesce", "-n", vhd]
+            txt = util.pread2(cmd)
+        except:
+            errMsg = "Unexpected error while trying to coalesce " + vhd + " to its parent" 
+            util.SMlog(errMsg)
+            raise xs_errors.XenError(errMsg)
+        util.SMlog("Successfully coalesced " + vhd + " with its parent")
+
+        # Remove the child vhd
+        try:
+            os.remove(vhd)
+        except OSError, (errno, strerror):
+            errMsg = "OSError while removing " + vhd + " with errno: " + str(errno) + " and strerr: " + strerror
+            util.SMlog(errMsg)
+            raise xs_errors.XenError(errMsg)
+    
+    util.SMlog("successfully coalesced all vhds to the parent " + finalVhd)
+    finalVhdPath = os.path.join(destDir, finalVhd)
+
+    # This vhd has to be introduced with a new uuid because of the VDI UUID
+    # uniqueness constraint
+    newUUID = ''
+    try:
+        newUUID = util.gen_uuid()
+    except:
+        errMsg = "Unexpected error while trying to generate a uuid"
+        util.SMlog(errMsg)
+        raise xs_errors.XenError(errMsg)
+    util.SMlog("generated a uuid " + newUUID)
+
+    # Now, at the Java layer an NFS SR is created with mount point destDir and scanned. The vhd
+    # file is automatically introduced and a vdi.copy is done to move it to
+    # primary storage.
+    # new vhd file is created on NFS. So it should have NFS naming convention,
+    # set isISCSI to false
+    newVhd = getVHD(newUUID, False)
+    rename(finalVhd, newVhd)
+
+    # For root disk
+    if templatePath:
+        # This will create a vhd on secondary storage destDir with name newVhd
+        mergeTemplateAndSnapshot(secondaryStorageMountPath, templatePath, destDir, newVhd, isISCSI)
+
+    # set the hidden flag of the new VHD to false, so that it doesn't get deleted when the SR scan is done.
+    try:
+        vhdutil.setHidden(newVhd, False)
+    except:
+        errMsg = "Unexpected error while trying to set Hidden flag of " + newVhd
+        util.SMlog(errMsg)
+        raise xs_errors.XenError(errMsg)
+    util.SMlog("Successfully set hidden flag of " + newVhd)
+
+    virtualSizeInMB = 0
+    try:
+        cmd = [VHD_UTIL, 'query', '-v', '-n', newVhd]
+        virtualSizeInMB = util.pread2(cmd)
+        util.SMlog("Virtual size of " + newVhd + " is " + virtualSizeInMB)
+    except:
+        errMsg = "Unexpected error while trying to get the virtual size of " + newVhd
+        util.SMlog(errMsg)
+        raise xs_errors.XenError(errMsg)
+
+    if templateDownloadFolder:
+        # We are done with the destDir on the primary, unmount it and delete the random directory.
+        # Current dir is destDir
+        # cd to something else before unmounting
+        chdir(backupsDir) # as good as anything else
+        # unmount what was mounted.
+        umount(destDir)
+        # Remove the tree starting from the mountXXXX part, just the directories
+        rmtree(destDirParent)
+        # The coalesced data is still available on the secondary.
+
+    return "1#" + newUUID + "#" + virtualSizeInMB
+
+def mergeTemplateAndSnapshot(secondaryStorageMountPath, templatePath, destDir, newVhd, isISCSI):
+    # Mount the template directory present on the secondary to the primary
+    templateDirOnPrimary = mountTemplatesDir(secondaryStorageMountPath, templatePath)
+
+    # Current dir is destDir
+    templateVHD = os.path.basename(templatePath)
+    templatePathOnPrimary = os.path.join(templateDirOnPrimary, templateVHD)
+    templatePathOnTemp = os.path.join(destDir, templateVHD)
+    # Copying from secondary to secondary, so set ISCSI to False
+    copyfile(templatePathOnPrimary, templatePathOnTemp, False)
+    
+    # unmount the temporary directory created for copying the template
+    umount(templateDirOnPrimary)
+
+    # get the dummyVHD which is the parent of the new Vhd
+    dummyUUID = getParent(newVhd, isISCSI)
+    dummyVHD = getVHD(dummyUUID, isISCSI)
+    # set the parent of the newVhd to the templateVHD on secondary
+    setParent(templateVHD, newVhd)
+    # remove the dummyVHD as we don't have any use for it and it wil
+    # lie around after we do an SR scan
+    os.remove(dummyVHD)
+    
+    # coalesce the two VHDs into templateVHD
+    coalesce(newVhd)
+
+    # rename templateVHD to newVhd
+    rename(templateVHD, newVhd)
+
+    return
+    
+def rmtree(path):
+    if os.path.isdir(path):
+        try:
+            shutil.rmtree(path)
+        except OSError, (errno, strerror):
+            errMsg = "Error while deleting " + path + " on secondary storage with errno: " + str(errno) + " and strerr: " + strerror + ". Please delete it manually"
+            util.SMlog(errMsg)
+        util.SMlog("Successfully deleted " + path)
+    else:
+        util.SMlog("Could not find directory with path " + path)
+    return
+
+@echo
+def deleteSnapshotsDir(session, args):
+    util.SMlog("Calling deleteSnapshotsDir with " + str(args))
+    dcId                      = args['dcId']
+    accountId                 = args['accountId']
+    volumeId                  = args['volumeId']
+    secondaryStorageMountPath = args['secondaryStorageMountPath']
+
+    backupsDir = mountSnapshotsDir(secondaryStorageMountPath, "snapshots", dcId, accountId, volumeId)
+    accountDir = os.path.dirname(backupsDir)
+    util.SMlog("accountDir is " + accountDir)
+    rmtree(accountDir)
+
+    return "1"
+
+@echo
+def networkUsage(session, args):
+    sargs = args['args']
+    cmd = sargs.split(' ')
+    cmd.insert(0, "/opt/xensource/bin/networkUsage.sh")
+    cmd.insert(0, "/bin/bash")
+    try:
+        txt = util.pread2(cmd)
+    except:
+        util.SMlog("  network usage error "  )
+        txt = '' 
+
+    return txt
+    
+@echo
+def setup_heartbeat_sr(session, args):
+    host = args['host']
+    sr = args['sr']
+    try:
+        cmd = ["bash", "/opt/xensource/bin/setup_heartbeat_sr.sh", host, sr]
+        txt = util.pread2(cmd)
+    except:
+        txt = ''
+    return txt
+   
+@echo
+def check_heartbeat(session, args):
+    host = args['host']
+    interval = args['interval']
+    try:
+       cmd = ["bash", "/opt/xensource/bin/check_heartbeat.sh", host, interval]
+       txt = util.pread2(cmd)
+    except:
+       txt=''
+    return txt
+    
+   
+@echo
+def heartbeat(session, args):
+    host = args['host']
+    interval = args['interval']
+    try: 
+       cmd = ["/bin/bash", "/opt/xensource/bin/launch_hb.sh", host, interval]
+       txt = util.pread2(cmd)
+    except:
+       txt='fail'
+    return txt
+
+def get_private_nic(session, args):
+    host_uuid = args.get('host_uuid')
+    host = session.xenapi.host.get_by_uuid(host_uuid)
+    piflist = session.xenapi.host.get_PIFs(host)
+    mgmtnic = 'eth0'
+    for pif in piflist:
+        pifrec = session.xenapi.PIF.get_record(pif)
+        network = pifrec.get('network')
+        nwrec = session.xenapi.network.get_record(network)
+        if nwrec.get('name_label') == 'cloud-private':
+            return pifrec.get('device')
+        if pifrec.get('management'):
+            mgmtnic = pifrec.get('device')
+    
+    return mgmtnic
+
+    
+    
+@echo
+def can_bridge_firewall(session, args):
+    host_uuid = args.get('host_uuid')
+    try:
+        util.pread2(['iptables', '-N', 'BRIDGE-FIREWALL'])
+        util.pread2(['iptables', '-I', 'BRIDGE-FIREWALL', '-m', 'state', '--state', 'RELATED,ESTABLISHED', '-j', 'ACCEPT'])
+        util.pread2(['iptables', '-D', 'FORWARD',  '-j', 'RH-Firewall-1-INPUT'])
+    except:
+        util.SMlog('Chain BRIDGE-FIREWALL already exists')
+    privnic = get_private_nic(session, args)
+    result = 'true'
+    try:
+        util.pread2(['/bin/bash', '-c', 'iptables -n -L FORWARD | grep BRIDGE-FIREWALL'])
+    except:
+        try:
+            util.pread2(['iptables', '-I', 'FORWARD', '-m', 'physdev', '--physdev-is-bridged', '-j', 'BRIDGE-FIREWALL'])
+            util.pread2(['iptables', '-A', 'FORWARD', '-m', 'physdev', '--physdev-is-bridged', '--physdev-out', privnic, '-j', 'ACCEPT'])
+            util.pread2(['iptables', '-A', 'FORWARD', '-j', 'DROP'])
+        except:
+            result = 'false'
+
+    if not os.path.exists('/var/run/cloud'):
+        os.makedirs('/var/run/cloud')
+ 
+    cleanup_rules_for_dead_vms(session)
+    cleanup_rules(session)
+    
+    return result
+
+
+def ipset(ipsetname, proto, start, end, ips):
+    try:
+        util.pread2(['ipset', '-N', ipsetname, 'iptreemap'])
+    except:
+        util.SMlog("ipset chain already exists" + ipsetname)
+
+    result = True
+    ipsettmp = ipsetname + str(int(time.time())%3600)
+
+    try: 
+        util.pread2(['ipset', '-N', ipsettmp, 'iptreemap']) 
+        for ip in ips:
+            try:
+                util.pread2(['ipset', '-A', ipsettmp, ip])
+            except CommandException, cex:
+                if cex.reason.rfind('already in set') == -1:
+                   raise
+        util.pread2(['ipset', '-W', ipsettmp, ipsetname]) 
+        util.pread2(['ipset', '-X', ipsettmp]) 
+    except:
+        util.SMlog("Failed to program ipset " + ipsetname)
+        result = False
+
+    return result
+
+@echo 
+def destroy_network_rules_for_vm(session, args):
+    vm_name = args.pop('vmName')
+    vmchain = vm_name
+    
+    delete_rules_for_vm_in_bridge_firewall_chain(vm_name)
+    if vm_name.startswith('i-') or vm_name.startswith('r-'):
+        vmchain =  '-'.join(vm_name.split('-')[:-1])
+
+    destroy_ebtables_rules(vmchain)
+    
+    try:
+        util.pread2(['iptables', '-F', vmchain])
+        util.pread2(['iptables', '-X', vmchain])
+    except:
+        util.SMlog("Ignoring failure to delete  chain " + vmchain)
+    
+    remove_rule_log_for_vm(vm_name)
+    
+    if 1 in [ vm_name.startswith(c) for c in ['r-', 's-', 'v-'] ]:
+        return 'true'
+    
+    try:
+        setscmd = "ipset --save | grep " +  vmchain + " | grep '^-N' | awk '{print $2}'"
+        setsforvm = util.pread2(['/bin/bash', '-c', setscmd]).split('\n')
+        for set in setsforvm:
+            if set != '':
+                util.pread2(['ipset', '-F', set])       
+                util.pread2(['ipset', '-X', set])       
+    except:
+        util.SMlog("Failed to destroy ipsets for %" % vm_name)
+    
+    
+    return 'true'
+
+@echo
+def destroy_ebtables_rules(vm_name):
+    if not os.path.exists('/usr/local/sbin/ebtables'):
+        return 
+    
+    delcmd = "/usr/local/sbin/ebtables-save | grep ROUTING | grep " +  vm_name + " | sed 's/-A/-D/'"
+    delcmds = util.pread2(['/bin/bash', '-c', delcmd]).split('\n')
+    delcmds.pop()
+    for cmd in delcmds:
+        try:
+            dc = cmd.split(' ')
+            dc.insert(0, '/usr/local/sbin/ebtables')
+            dc.insert(1, '-t')
+            dc.insert(2, 'nat')
+            util.pread2(dc)
+        except:
+            util.SMlog("Ignoring failure to delete ebtables rules for vm " + vm_name)
+    chains = [vm_name+"-in", vm_name+"-out"]
+    for chain in chains:
+        try:
+            util.pread2(['/usr/local/sbin/ebtables', '-t', 'nat', '-F', chain])
+            util.pread2(['/usr/local/sbin/ebtables', '-t', 'nat', '-X', chain])
+        except:
+            util.SMlog("Ignoring failure to delete ebtables chain for vm " + vm_name)   
+
+         
+              
+@echo
+def default_ebtables_rules(vm_name, vif, vm_ip, vm_mac):
+    if not os.path.exists('/usr/local/sbin/ebtables'):
+        return 
+    
+    vmchain_in = vm_name + "-in"
+    vmchain_out = vm_name + "-out"
+    
+    for chain in [vmchain_in, vmchain_out]:
+        try:
+            util.pread2(['/usr/local/sbin/ebtables', '-t', 'nat', '-N', chain])
+        except:
+            util.pread2(['/usr/local/sbin/ebtables', '-t',  'nat',  '-F', chain]) 
+
+    try:
+        # -s ! 52:54:0:56:44:32 -j DROP 
+        util.pread2(['/usr/local/sbin/ebtables', '-t', 'nat', '-A', 'PREROUTING', '-i',  vif,  '-j', vmchain_in])
+        util.pread2(['/usr/local/sbin/ebtables', '-t', 'nat', '-A', 'POSTROUTING', '-o',  vif, '-j', vmchain_out])
+    except:
+        util.SMlog("Failed to program default rules")
+        return 'false'
+    
+    try:
+        util.pread2(['/usr/local/sbin/ebtables', '-t', 'nat', '-A', vmchain_in, '-i',  vif, '-s', '!', vm_mac,  '-j', 'DROP'])
+        util.pread2(['/usr/local/sbin/ebtables', '-t', 'nat', '-A', vmchain_in, '-p', 'ARP', '-s', '!', vm_mac, '-j', 'DROP'])
+        util.pread2(['/usr/local/sbin/ebtables', '-t', 'nat', '-A', vmchain_in, '-p', 'ARP', '--arp-mac-src', '!', vm_mac, '-j', 'DROP'])
+        util.pread2(['/usr/local/sbin/ebtables', '-t', 'nat', '-A', vmchain_in, '-p', 'ARP', '--arp-ip-src', '!', vm_ip, '-j', 'DROP']) 
+        util.pread2(['/usr/local/sbin/ebtables', '-t', 'nat', '-A', vmchain_in, '-p', 'ARP', '--arp-op', 'Request', '-j', 'ACCEPT'])   
+        util.pread2(['/usr/local/sbin/ebtables', '-t', 'nat', '-A', vmchain_in, '-p', 'ARP', '--arp-op', 'Reply', '-j', 'ACCEPT'])    
+        util.pread2(['/usr/local/sbin/ebtables', '-t', 'nat', '-A', vmchain_in, '-p', 'ARP',  '-j', 'DROP'])    
+    except:
+        util.SMlog("Failed to program default ebtables IN rules")
+        return 'false'
+   
+    try:
+        util.pread2(['/usr/local/sbin/ebtables', '-t', 'nat', '-A', vmchain_out, '-p', 'ARP', '--arp-op', 'Reply', '--arp-mac-dst', '!', vm_mac, '-j', 'DROP'])
+        util.pread2(['/usr/local/sbin/ebtables', '-t', 'nat', '-A', vmchain_out, '-p', 'ARP', '--arp-ip-dst', '!', vm_ip, '-j', 'DROP']) 
+        util.pread2(['/usr/local/sbin/ebtables', '-t', 'nat', '-A', vmchain_out, '-p', 'ARP', '--arp-op', 'Request', '-j', 'ACCEPT'])   
+        util.pread2(['/usr/local/sbin/ebtables', '-t', 'nat', '-A', vmchain_out, '-p', 'ARP', '--arp-op', 'Reply', '-j', 'ACCEPT'])    
+        util.pread2(['/usr/local/sbin/ebtables', '-t', 'nat', '-A', vmchain_out, '-p', 'ARP',  '-j', 'DROP'])    
+    except:
+        util.SMlog("Failed to program default ebtables OUT rules")
+        return 'false' 
+    
+            
+@echo
+def default_network_rules_systemvm(session, args):
+    vm_name = args.pop('vmName')
+    try:
+        vm = session.xenapi.VM.get_by_name_label(vm_name)
+        if len(vm) != 1:
+             return 'false'
+        vm_rec = session.xenapi.VM.get_record(vm[0])
+        vm_vifs = vm_rec.get('VIFs')
+        vifnums = [session.xenapi.VIF.get_record(vif).get('device') for vif in vm_vifs]
+        domid = vm_rec.get('domid')
+    except:
+        util.SMlog("### Failed to get domid or vif list for vm  ##" + vm_name)
+        return 'false'
+    
+    if domid == '-1':
+        util.SMlog("### Failed to get domid for vm (-1):  " + vm_name)
+        return 'false'
+
+    vifs = ["vif" + domid + "." + v for v in vifnums]
+    #vm_name =  '-'.join(vm_name.split('-')[:-1])
+    vmchain = vm_name
+    if vm_name.startswith('r-'):
+        vmchain = '-'.join(vm_name.split('-')[:-1])
+ 
+    delete_rules_for_vm_in_bridge_firewall_chain(vm_name)
+  
+    try:
+        util.pread2(['iptables', '-N', vmchain])
+    except:
+        util.pread2(['iptables', '-F', vmchain])
+
+  
+    for vif in vifs:
+        try:
+            util.pread2(['iptables', '-A', 'BRIDGE-FIREWALL', '-m', 'physdev', '--physdev-is-bridged', '--physdev-out', vif, '-j', vmchain])
+            util.pread2(['iptables', '-A', 'BRIDGE-FIREWALL', '-m', 'physdev', '--physdev-is-bridged', '--physdev-in', vif, '-j', vmchain])
+        except:
+            util.SMlog("Failed to program default rules")
+            return 'false'
+
+    util.pread2(['iptables', '-A', vmchain, '-j', 'ACCEPT'])
+    
+    if write_rule_log_for_vm(vm_name, '-1', '_ignore_', domid, '_initial_', '-1') == False:
+        util.SMlog("Failed to log default network rules for systemvm, ignoring")
+    return 'true'
+
+
+@echo
+def default_network_rules(session, args):
+    vmName = args.pop('vmName')
+    vm_name = vmName
+    vm_ip = args.pop('vmIP')
+    vm_id = args.pop('vmID')
+    vm_mac = args.pop('vmMAC')
+    
+    try:
+        vm = session.xenapi.VM.get_by_name_label(vm_name)
+        if len(vm) != 1:
+             util.SMlog("### Failed to get record for vm  " + vm_name)
+             return 'false'
+        vm_rec = session.xenapi.VM.get_record(vm[0])
+        domid = vm_rec.get('domid')
+    except:
+        util.SMlog("### Failed to get domid for vm " + vm_name)
+        return 'false'
+    if domid == '-1':     
+        util.SMlog("### Failed to get domid for vm (-1):  " + vm_name)
+        return 'false'
+    
+    vif = "vif" + domid + ".0"
+
+    delete_rules_for_vm_in_bridge_firewall_chain(vm_name)
+
+     
+    vm_name =  '-'.join(vm_name.split('-')[:-1])
+    vmchain = vm_name
+    
+    destroy_ebtables_rules(vm_name)
+    
+    try:
+        util.pread2(['iptables', '-F', vmchain])
+        util.pread2(['iptables', '-X', vmchain])
+    except:
+        util.SMlog('Ignoring failure to delete old rules')
+
+    try:
+        util.pread2(['iptables', '-N', vmchain])
+    except:
+        util.pread2(['iptables', '-F', vmchain])
+
+    try:
+        util.pread2(['iptables', '-A', 'BRIDGE-FIREWALL', '-m', 'physdev', '--physdev-is-bridged', '--physdev-out', vif, '-j', vmchain])
+        util.pread2(['iptables', '-A', 'BRIDGE-FIREWALL', '-m', 'physdev', '--physdev-is-bridged', '--physdev-in', vif, '-j', vmchain])
+        util.pread2(['iptables', '-A', vmchain, '-m', 'state', '--state', 'RELATED,ESTABLISHED', '-j', 'ACCEPT'])
+        #allow dhcp
+        util.pread2(['iptables', '-A', vmchain, '-p', 'udp', '--dport', '67:68', '--sport', '67:68',  '-j', 'ACCEPT'])
+        #don't let vm spoof its ip address
+        util.pread2(['iptables', '-A', vmchain, '-m', 'physdev', '--physdev-is-bridged', '--physdev-in', vif, '--source', vm_ip, '-j', 'RETURN'])
+        util.pread2(['iptables', '-A', vmchain, '-j', 'DROP'])
+    except:
+        util.SMlog("Failed to program default rules for vm " + vm_name)
+        return 'false'
+    
+    default_ebtables_rules(vm_name, vif, vm_ip, vm_mac)
+    
+    if write_rule_log_for_vm(vmName, vm_id, vm_ip, domid, '_initial_', '-1') == False:
+        util.SMlog("Failed to log default network rules, ignoring")
+        
+    util.SMlog("Programmed default rules for vm " + vm_name)
+    return 'true'
+
+def check_domid_changed(session, vmName):
+    curr_domid = '-1'
+    try:
+        vm = session.xenapi.VM.get_by_name_label(vmName)
+        if len(vm) != 1:
+             util.SMlog("### Could not get record for vm ## " + vmName)
+        else:
+            vm_rec = session.xenapi.VM.get_record(vm[0])
+            curr_domid = vm_rec.get('domid')
+    except:
+        util.SMlog("### Failed to get domid for vm  ## " + vmName)
+        
+    
+    logfilename = "/var/run/cloud/" + vmName +".log"
+    if not os.path.exists(logfilename):
+        return ['-1', curr_domid]
+    
+    lines = (line.rstrip() for line in open(logfilename))
+    
+    [_vmName,_vmID,_vmIP,old_domid,_signature,_seqno] = ['_', '-1', '_', '-1', '_', '-1']
+    for line in lines:
+        [_vmName,_vmID,_vmIP,old_domid,_signature,_seqno] = line.split(',')
+        break
+    
+    return [curr_domid, old_domid]
+
+def delete_rules_for_vm_in_bridge_firewall_chain(vmName):
+    vm_name = vmName
+    if vm_name.startswith('i-') or vm_name.startswith('r-'):
+        vm_name =  '-'.join(vm_name.split('-')[:-1])
+    
+    vmchain = vm_name
+    
+    delcmd = "iptables -S BRIDGE-FIREWALL | grep " +  vmchain + " | sed 's/-A/-D/'"
+    delcmds = util.pread2(['/bin/bash', '-c', delcmd]).split('\n')
+    delcmds.pop()
+    for cmd in delcmds:
+        try:
+            dc = cmd.split(' ')
+            dc.insert(0, 'iptables')
+            dc.pop()
+            util.pread2(dc)
+        except:
+              util.SMlog("Ignoring failure to delete rules for vm " + vmName)
+
+  
+def network_rules_for_rebooted_vm(session, vmName):
+    vm_name = vmName
+    [curr_domid, old_domid] = check_domid_changed(session, vmName)
+    
+    if curr_domid == old_domid:
+        return True
+    
+    if old_domid == '-1':
+        return True
+    
+    if curr_domid == '-1':
+        return True
+    
+    util.SMlog("Found a rebooted VM -- reprogramming rules for  " + vmName)
+    
+    delete_rules_for_vm_in_bridge_firewall_chain(vmName)
+    if 1 in [ vm_name.startswith(c) for c in ['r-', 's-', 'v-'] ]:
+        default_network_rules_systemvm(session, {"vmName":vmName})
+        return True
+    
+    vif = "vif" + curr_domid + ".0"
+    vmchain = '-'.join(vm_name.split('-')[:-1])
+
+    util.pread2(['iptables', '-A', 'BRIDGE-FIREWALL', '-m', 'physdev', '--physdev-is-bridged', '--physdev-out', vif, '-j', vmchain])
+    util.pread2(['iptables', '-A', 'BRIDGE-FIREWALL', '-m', 'physdev', '--physdev-is-bridged', '--physdev-in', vif, '-j', vmchain])
+    #change antispoof rule in vmchain
+    try:
+        delcmd = "iptables -S " +  vmchain + " | grep  physdev-in | sed 's/-A/-D/'"
+        inscmd = "iptables -S " +  vmchain + " | grep  physdev-in  | sed -r 's/vif[0-9]+.0/" + vif + "/' | sed 's/-A/-I/'"
+        ipts = []
+        for cmd in [delcmd, inscmd]:
+            cmds = util.pread2(['/bin/bash', '-c', cmd]).split('\n')
+            cmds.pop()
+            for c in cmds:
+                    ipt = c.split(' ')
+                    ipt.insert(0, 'iptables')
+                    ipt.pop()
+                    ipts.append(ipt)
+        
+        for ipt in ipts:
+            try:
+                util.pread2(ipt)
+            except:
+                util.SMlog("Failed to rewrite antispoofing rules for vm " + vmName)
+    except:
+        util.SMlog("No rules found for vm " + vmchain)
+
+
+    rewrite_rule_log_for_vm(vmName, curr_domid)
+    return True
+
+def rewrite_rule_log_for_vm(vm_name, new_domid):
+    logfilename = "/var/run/cloud/" + vm_name +".log"
+    if not os.path.exists(logfilename):
+        return 
+    lines = (line.rstrip() for line in open(logfilename))
+    
+    [_vmName,_vmID,_vmIP,_domID,_signature,_seqno] = ['_', '-1', '_', '-1', '_', '-1']
+    for line in lines:
+        [_vmName,_vmID,_vmIP,_domID,_signature,_seqno] = line.split(',')
+        break
+    
+    write_rule_log_for_vm(_vmName, _vmID, '0.0.0.0', new_domid, _signature, '-1')
+
+def get_rule_log_for_vm(session, vmName):
+    vm_name = vmName;
+    logfilename = "/var/run/cloud/" + vm_name +".log"
+    if not os.path.exists(logfilename):
+        return ''
+    
+    lines = (line.rstrip() for line in open(logfilename))
+    
+    [_vmName,_vmID,_vmIP,_domID,_signature,_seqno] = ['_', '-1', '_', '-1', '_', '-1']
+    for line in lines:
+        [_vmName,_vmID,_vmIP,_domID,_signature,_seqno] = line.split(',')
+        break
+    
+    return ','.join([_vmName, _vmID, _vmIP, _domID, _signature, _seqno])
+
+@echo
+def get_rule_logs_for_vms(session, args):
+    host_uuid = args.pop('host_uuid')
+    try:
+        thishost = session.xenapi.host.get_by_uuid(host_uuid)
+        hostrec = session.xenapi.host.get_record(thishost)
+        vms = hostrec.get('resident_VMs')
+    except:
+        util.SMlog("Failed to get host from uuid " + host_uuid)
+        return ' '
+    
+    result = []
+    try:
+        for name in [session.xenapi.VM.get_name_label(x) for x in vms]:
+            if 1 not in [ name.startswith(c) for c in ['r-', 's-', 'v-', 'i-'] ]:
+                continue
+            network_rules_for_rebooted_vm(session, name)
+            if name.startswith('i-'):
+                log = get_rule_log_for_vm(session, name)
+                result.append(log)
+    except:
+        util.SMlog("Failed to get rule logs, better luck next time!")
+        
+    return ";".join(result)
+
+@echo
+def cleanup_rules_for_dead_vms(session):
+    vms = session.xenapi.VM.get_all()
+    cleaned = 0
+    for vm_name in [session.xenapi.VM.get_name_label(x) for x in vms]:
+        if 1 in [ vm_name.startswith(c) for c in ['r-', 'i-', 's-', 'v-'] ]:
+            vm = session.xenapi.VM.get_by_name_label(vm_name)
+            if len(vm) != 1:
+                continue
+            vm_rec = session.xenapi.VM.get_record(vm[0])
+            state = vm_rec.get('power_state')
+            if state != 'Running' and state != 'Paused':
+                util.SMlog("vm " + vm_name + " is not running, cleaning up")
+                destroy_network_rules_for_vm(session, {'vmName':vm_name})
+                cleaned = cleaned+1
+                
+    util.SMlog("Cleaned up rules for " + str(cleaned) + " vms")
+
+@echo
+def cleanup_rules(session):
+    chainscmd = "iptables-save | grep '^:' | awk '{print $1}' | cut -d':' -f2"
+    chains = util.pread2(['/bin/bash', '-c', chainscmd]).split('\n')
+    cleaned = 0
+    cleanup = []
+    for chain in chains:
+        if 1 in [ chain.startswith(c) for c in ['r-', 'i-', 's-', 'v-'] ]:
+            if chain.startswith('i-') or chain.startswith('r-'):
+                vm_name = chain + '-untagged'
+            else:
+                vm_name = chain
+                
+            vm = session.xenapi.VM.get_by_name_label(vm_name)
+            if len(vm) != 1:
+                util.SMlog("chain " + chain + " does not correspond to a vm, cleaning up")
+                cleanup.append(vm_name)
+                continue
+            vm_rec = session.xenapi.VM.get_record(vm[0])
+            state = vm_rec.get('power_state')
+            if state != 'Running' and state != 'Paused':
+                util.SMlog("vm " + vm_name + " is not running, cleaning up")
+                cleanup.append(vm_name)
+                
+    for vmname in cleanup:
+        destroy_network_rules_for_vm(session, {'vmName':vmname})
+                    
+    util.SMlog("Cleaned up rules for " + str(len(cleanup)) + " chains")                
+
+@echo
+def check_rule_log_for_vm(vmName, vmID, vmIP, domID, signature, seqno):
+    vm_name = vmName;
+    logfilename = "/var/run/cloud/" + vm_name +".log"
+    if not os.path.exists(logfilename):
+        return [True, True, True, True, True, True]
+        
+    lines = (line.rstrip() for line in open(logfilename))
+    
+    [_vmName,_vmID,_vmIP,_domID,_signature,_seqno] = ['_', '-1', '_', '-1', '_', '-1']
+    try:
+        for line in lines:
+            [_vmName,_vmID,_vmIP,_domID,_signature,_seqno] = line.split(',')
+            break
+    except:
+        util.SMlog("Failed to parse log file for vm " + vm_name)
+        remove_rule_log_for_vm(vm_name)
+        return False
+    
+    return [(vm_name != _vmName), \
+        (vmID != _vmID), \
+        (vmIP != _vmIP), \
+        (domID != _domID), \
+        (signature != _signature), \
+        (seqno != _seqno)]
+    
+
+@echo
+def write_rule_log_for_vm(vmName, vmID, vmIP, domID, signature, seqno):
+    vm_name = vmName
+    logfilename = "/var/run/cloud/" + vm_name +".log"
+    util.SMlog("Writing log to " + logfilename)
+    logf = open(logfilename, 'w')
+    output = ','.join([vmName, vmID, vmIP, domID, signature, seqno])
+    result = True
+    try:
+        logf.write(output)
+        logf.write('\n')
+    except:
+        util.SMlog("Failed to write to rule log file " + logfilename)
+        result = False
+        
+    logf.close()
+    
+    return result
+
+@echo
+def remove_rule_log_for_vm(vmName):
+    vm_name = vmName
+    logfilename = "/var/run/cloud/" + vm_name +".log"
+
+    result = True
+    try:
+        os.remove(logfilename)
+    except:
+        util.SMlog("Failed to delete rule log file " + logfilename)
+        result = False
+    
+    return result
+
+@echo
+def network_rules(session, args):
+    vm_name = args.get('vmName')
+    vmName = vm_name
+    vm_ip = args.get('vmIP')
+    vm_id = args.get('vmID')
+    signature = args.pop('signature')
+    seqno = args.pop('seqno')
+    try:
+        vm = session.xenapi.VM.get_by_name_label(vm_name)
+        if len(vm) != 1:
+             util.SMlog("### Could not get record for vm ## " + vm_name)
+             return 'false'
+        vm_rec = session.xenapi.VM.get_record(vm[0])
+        domid = vm_rec.get('domid')
+    except:
+        util.SMlog("### Failed to get domid for vm  ## " + vm_name)
+        return 'false'
+    if domid == '-1':
+        util.SMlog("### Failed to get domid for vm (-1):  " + vm_name)
+        return 'false'
+   
+    vif = "vif" + domid + ".0"
+    vm_name =  '-'.join(vm_name.split('-')[:-1])
+    vmchain = vm_name
+    
+    changes = check_rule_log_for_vm (vmName, vm_id, vm_ip, domid, signature, seqno)
+    
+    if not 1 in changes:
+        util.SMlog("Rules already programmed for vm " + vm_name)
+        return 'true'
+    
+    if changes[1] or changes[2] or changes[3]:
+        util.SMlog("Change detected in vmId or vmIp or domId, resetting default rules")
+        default_network_rules(session, args)
+        
+    rules = args.pop('rules')
+    lines = rules.split(' ')
+
+    util.SMlog("    programming network rules for  IP: " + vm_ip + " vmname=" + vm_name)
+    util.pread2(['iptables', '-F', vmchain])
+    
+    for line in lines:
+        tokens = line.split(':')
+        if len(tokens) != 4:
+          continue
+        protocol = tokens[0]
+        start = tokens[1]
+        end = tokens[2]
+        cidrs = tokens.pop();
+        ips = cidrs.split(",")
+        ips.pop()
+        allow_any = False
+        if  '0.0.0.0/0' in ips:
+            i = ips.index('0.0.0.0/0')
+            del ips[i]
+            allow_any = True
+        range = start + ":" + end
+        if ips:    
+            ipsetname = vm_name + "_" + protocol + "_" + start + "_" + end
+            if start == "-1":
+                ipsetname = vm_name + "_" + protocol + "_any"
+
+            if ipset(ipsetname, protocol, start, end, ips) == False:
+                util.SMlog(" failed to create ipset for rule " + str(tokens))
+
+            if protocol == 'all':
+                iptables = ['iptables', '-I', vmchain, '-m', 'state', '--state', 'NEW', '-m', 'set', '--match-set', ipsetname, 'src', '-j', 'ACCEPT']
+            elif protocol != 'icmp':
+                iptables = ['iptables', '-I', vmchain, '-p',  protocol, '-m', protocol, '--dport', range, '-m', 'state', '--state', 'NEW', '-m', 'set', '--match-set', ipsetname, 'src', '-j', 'ACCEPT']
+            else:
+                range = start + "/" + end
+                if start == "-1":
+                    range = "any"
+                    iptables = ['iptables', '-I', vmchain, '-p',  'icmp', '--icmp-type',  range,  '-m', 'set', '--match-set', ipsetname, 'src', '-j', 'ACCEPT']
+            util.pread2(iptables)
+            util.SMlog(iptables)
+        
+        if allow_any and protocol != 'all':
+            if protocol != 'icmp':
+                iptables = ['iptables', '-I', vmchain, '-p',  protocol, '-m', protocol, '--dport', range, '-m', 'state', '--state', 'NEW', '-j', 'ACCEPT']
+            else:
+                range = start + "/" + end
+                if start == "-1":
+                    range = "any"
+                    iptables = ['iptables', '-I', vmchain, '-p',  'icmp', '--icmp-type',  range, '-j', 'ACCEPT']
+            util.pread2(iptables)
+            util.SMlog(iptables)
+            
+
+    util.pread2(['iptables', '-A', vmchain, '-p', 'udp', '--dport', '67:68', '--sport', '67:68',  '-j', 'ACCEPT'])
+    util.pread2(['iptables', '-I', vmchain, '-m', 'physdev', '--physdev-is-bridged', '--physdev-in', vif, '--source', vm_ip, '-j', 'RETURN'])
+    util.pread2(['iptables', '-A', vmchain, '-j', 'DROP'])
+
+    if write_rule_log_for_vm(vmName, vm_id, vm_ip, domid, signature, seqno) == False:
+        return 'false'
+    
+    return 'true'
+
+
+
+if __name__ == "__main__":
+    XenAPIPlugin.dispatch({"pingtest": pingtest, "setup_heartbeat_sr":setup_heartbeat_sr, "check_heartbeat":check_heartbeat, "heartbeat": heartbeat, "create_secondary_storage_folder":create_secondary_storage_folder, "setup_iscsi":setup_iscsi, "delete_secondary_storage_folder":delete_secondary_storage_folder, "post_create_private_template": post_create_private_template, "find_bond": find_bond, "gethostvmstats": gethostvmstats, "getvncport": getvncport, "getgateway": getgateway, "getnetwork": getnetwork, "preparemigration": preparemigration, "setIptables": setIptables, "patchdomr": patchdomr, "pingdomr": pingdomr, "pingxenserver": pingxenserver,  "ipassoc": ipassoc, "vm_data": vm_data, "savePassword": savePassword, "saveDhcpEntry": saveDhcpEntry, "setFirewallRule": setFirewallRule, "setLoadBalancerRule": setLoadBalancerRule, "createFile": createFile, "deleteFile": deleteFile, "checkMount": checkMount, "checkIscsi": checkIscsi, "backupSnapshot": backupSnapshot, "deleteSnapshotBackup": deleteSnapshotBackup, "createVolumeFromSnapshot": createVolumeFromSnapshot, "networkUsage": networkUsage, "unmountSnapshotsDir": unmountSnapshotsDir, "deleteSnapshotsDir": deleteSnapshotsDir, "validatePreviousSnapshotBackup": validatePreviousSnapshotBackup, "validateSnapshot" : validateSnapshot, "network_rules":network_rules, "can_bridge_firewall":can_bridge_firewall, "default_network_rules":default_network_rules, "destroy_network_rules_for_vm":destroy_network_rules_for_vm, "default_network_rules_systemvm":default_network_rules_systemvm, "get_rule_logs_for_vms":get_rule_logs_for_vms, "setLinkLocalIP":setLinkLocalIP})
+

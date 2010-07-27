@@ -37,7 +37,7 @@ import com.cloud.vm.UserVmVO;
 public class CreateIPForwardingRuleCmd extends BaseCmd {
     public static final Logger s_logger = Logger.getLogger(CreateIPForwardingRuleCmd.class.getName());
 
-    private static final String s_name = "createipforwardingruleresponse";
+    private static final String s_name = "createportforwardingruleresponse";
     private static final List<Pair<Enum, Boolean>> s_properties = new ArrayList<Pair<Enum, Boolean>>();
 
     static {
@@ -107,10 +107,12 @@ public class CreateIPForwardingRuleCmd extends BaseCmd {
             firewallRule = getManagementServer().createPortForwardingRule(userId.longValue(), ipAddressVO, userVM, publicPort, privatePort, protocol);
         } catch (NetworkRuleConflictException ex) {
             throw new ServerApiException(BaseCmd.NET_CONFLICT_IPFW_RULE_ERROR, "Network rule conflict creating a forwarding rule on address:port " + ipAddress + ":" + publicPort + " to virtual machine " + userVM.toString());
+        } catch (IllegalArgumentException argEx) {
+            throw new ServerApiException(BaseCmd.PARAM_ERROR, argEx.getMessage());
         }
 
         if (firewallRule == null) {
-            throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Internal error creating forwarding rule for address " + ipAddress + " and virtual machine " + userVM.toString());
+            throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "The port forwarding rule from public port " + publicPort + " to private port " + privatePort + " for address " + ipAddress + " and virtual machine " + userVM.toString() + " already exists.");
         }
 
         List<Pair<String, Object>> groupsTags = new ArrayList<Pair<String, Object>>();
@@ -123,10 +125,11 @@ public class CreateIPForwardingRuleCmd extends BaseCmd {
         ruleData.add(new Pair<String, Object>(BaseCmd.Properties.PRIVATE_PORT.getName(), firewallRule.getPrivatePort()));
         ruleData.add(new Pair<String, Object>(BaseCmd.Properties.PROTOCOL.getName(), firewallRule.getProtocol()));
         ruleData.add(new Pair<String, Object>(BaseCmd.Properties.VIRTUAL_MACHINE_NAME.getName(), userVM.getName()));
+        ruleData.add(new Pair<String, Object>(BaseCmd.Properties.VIRTUAL_MACHINE_ID.getName(), userVM.getId().toString()));
 
         forwardingTag[0] = ruleData;
 
-        Pair<String, Object> eventTag = new Pair<String, Object>("fowardingrule", forwardingTag);
+        Pair<String, Object> eventTag = new Pair<String, Object>("portforwardingrule", forwardingTag);
         groupsTags.add(eventTag);
         return groupsTags;
     }

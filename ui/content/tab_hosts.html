@@ -79,15 +79,15 @@
 		<div class="grid_header">
 			<div class="gridadmin_hostheader_cell0">
 			<div class="grid_headertitles"></div>
-			</div>
-			<div class="gridadmin_hostheader_cell1">
-				<div class="grid_headertitles">Type</div>
-			</div>
+			</div>			
 			<div class="gridadmin_hostheader_cell1">
 				<div class="grid_headertitles">Zone</div>
 			</div>
 			<div class="gridadmin_hostheader_cell1">
 				<div class="grid_headertitles">Pod</div>
+			</div>
+			<div class="gridadmin_hostheader_cell1">
+				<div class="grid_headertitles">Cluster</div>
 			</div>
 			<div class="gridadmin_hostheader_cell2" style="width:10%;">
 					<div class="grid_headertitles">Hostname</div>
@@ -140,15 +140,15 @@
 		<div class="green_statusbar" id="host_state_bar"></div>
 		<div class="gridadmin_hostrow_cell4">
 			<div class="grid_runningtitles" id="routing_state"></div>
-		</div>
-		<div class="gridadmin_hostrow_cell1">
-			<div class="grid_celltitles" id="routing_hypervisor"><div class="tempbiticons"><img src="images/XEN_icon.gif" /></div></div>
-		</div>
+		</div>		
 		<div class="gridadmin_hostrow_cell1">
 			<div class="grid_celltitles" id="routing_zone"></div>
 		</div>
 		<div class="gridadmin_hostrow_cell1">
 			<div class="grid_celltitles" id="routing_pod"></div>
+		</div>
+		<div class="gridadmin_hostrow_cell1">
+			<div class="grid_celltitles" id="routing_cluster"></div>
 		</div>
 		<div class="gridadmin_hostrow_cell2" style="width:10%;">
 			<div class="grid_celltitles" id="routing_name"></div>
@@ -184,8 +184,9 @@
 	</div>
 	<div class="hostadmin_showdetails_panel" id="host_detail_panel" style="display:none">
     	<div class="host_statisticspanel">
-			<div class="host_statisticslist" id="host_cpu_stat"><div class="hostcpu_icon"></div><p><strong> CPU Total:</strong> 928GB | <strong>CPU Allocated:</strong> 356 GB | <span class="host_statisticspanel_green"> <strong>CPU Used:</strong> 478 GB</span></p></div>
-			<div class="host_statisticslist" id="host_mem_stat"><div class="hostmemory_icon"></div><p><strong> MEM Total:</strong> 928GB | <strong>MEM Allocated:</strong> 356 GB | <span class="host_statisticspanel_green"> <strong>MEM Used:</strong> 478 GB</span></p></div>
+			<div class="host_statisticslist" id="host_cpu_stat"><div class="hostcpu_icon"></div><p><strong> CPU Total:</strong>  | <strong>CPU Allocated:</strong>  | <span class="host_statisticspanel_green"> <strong>CPU Used:</strong></span></p></div>
+			<div class="host_statisticslist" id="host_mem_stat"><div class="hostmemory_icon"></div><p><strong> MEM Total:</strong> | <strong>MEM Allocated:</strong> | <span class="host_statisticspanel_green"> <strong>MEM Used:</strong></span></p></div>
+            <div class="host_statisticslist" id="host_network_stat"><div class="hostnetwork_icon"></div><p><strong> Network read:</strong> | <strong>Network write:</strong></p></div>
         </div>
         <div class="hostadmin_showdetails_grid" style="display:block" >
             <div class="hostadmin_showdetailsheader">
@@ -271,8 +272,24 @@
 				</li>
 				<li>
 					<label for="user_name">Password:</label>
-					<input class="text" type="password" name="host_password" id="host_password"/>
+					<input class="text" type="password" name="host_password" id="host_password" AUTOCOMPLETE="off" />
 					<div id="host_password_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
+				</li>
+				<li>
+				    <label>&nbsp;</label><span><u>Cluster Options</u></span>
+				</li>
+				<li>
+				    <label><input type="radio" name="cluster" value="new_cluster_radio" checked />&nbsp;New cluster:</label>
+				    <input class="text" type="text" id="new_cluster_name"/>
+					<div id="new_cluster_name_errormsg" class="dialog_formcontent_errormsg" style="display:none;" ></div>
+				</li>
+				<li id="existing_cluster_radio_container">
+				    <label><input type="radio" name="cluster" value="existing_cluster_radio" />&nbsp;Join cluster:</label>
+				    <select class="select" id="cluster_select"></select>
+				</li>
+				<li id="no_cluster_radio_container">
+				    <label><input type="radio" name="cluster" value="no_cluster_radio" />&nbsp;Standalone</label>
+				    <span style="padding-left:20px"></span>
 				</li>
 			</ol>
 		</form>

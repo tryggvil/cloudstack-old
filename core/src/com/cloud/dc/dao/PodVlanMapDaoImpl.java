@@ -31,12 +31,20 @@ import com.cloud.utils.db.SearchCriteria;
 public class PodVlanMapDaoImpl extends GenericDaoBase<PodVlanMapVO, Long> implements PodVlanMapDao {
     
 	protected SearchBuilder<PodVlanMapVO> PodSearch;
+	protected SearchBuilder<PodVlanMapVO> VlanSearch;
 	protected SearchBuilder<PodVlanMapVO> PodVlanSearch;
 	
 	@Override
-	public List<PodVlanMapVO> listPodVlanMaps(long podId) {
+	public List<PodVlanMapVO> listPodVlanMapsByPod(long podId) {
 		SearchCriteria sc = PodSearch.create();
     	sc.setParameters("podId", podId);
+    	return listBy(sc);
+	}
+	
+	@Override
+	public List<PodVlanMapVO> listPodVlanMapsByVlan(long vlanDbId) {
+		SearchCriteria sc = VlanSearch.create();
+    	sc.setParameters("vlanDbId", vlanDbId);
     	return listBy(sc);
 	}
 	
@@ -52,6 +60,10 @@ public class PodVlanMapDaoImpl extends GenericDaoBase<PodVlanMapVO, Long> implem
     	PodSearch = createSearchBuilder();
     	PodSearch.and("podId", PodSearch.entity().getPodId(), SearchCriteria.Op.EQ);
         PodSearch.done();
+        
+    	VlanSearch = createSearchBuilder();
+    	VlanSearch.and("vlanDbId", VlanSearch.entity().getVlanDbId(), SearchCriteria.Op.EQ);
+        VlanSearch.done();
         
         PodVlanSearch = createSearchBuilder();
         PodVlanSearch.and("podId", PodVlanSearch.entity().getPodId(), SearchCriteria.Op.EQ);

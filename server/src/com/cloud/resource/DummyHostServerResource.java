@@ -26,12 +26,11 @@ import javax.naming.ConfigurationException;
 import com.cloud.agent.api.Answer;
 import com.cloud.agent.api.Command;
 import com.cloud.agent.api.PingCommand;
-import com.cloud.agent.api.PingComputingCommand;
+import com.cloud.agent.api.PingRoutingCommand;
 import com.cloud.agent.api.StartupCommand;
 import com.cloud.agent.api.StartupRoutingCommand;
-import com.cloud.host.Host.HypervisorType;
 import com.cloud.host.Host.Type;
-import com.cloud.resource.ServerResourceBase;
+import com.cloud.hypervisor.Hypervisor;
 import com.cloud.utils.net.MacAddress;
 import com.cloud.vm.State;
 
@@ -43,7 +42,7 @@ public class DummyHostServerResource extends ServerResourceBase {
 	private String _guid;
 	private String _url;
 	private int _instanceId;
-	private int _prefix = 0x55;
+	private final int _prefix = 0x55;
 	
 	private static volatile int s_nextSequence = 1;
 	
@@ -60,7 +59,7 @@ public class DummyHostServerResource extends ServerResourceBase {
 	@Override
 	public PingCommand getCurrentStatus(long id) {
         HashMap<String, State> newStates = new HashMap<String, State>();
-        return new PingComputingCommand(com.cloud.host.Host.Type.Routing, id, newStates);
+        return new PingRoutingCommand(com.cloud.host.Host.Type.Routing, id, newStates);
 	}
 
 	@Override
@@ -71,12 +70,12 @@ public class DummyHostServerResource extends ServerResourceBase {
 	@Override
 	public StartupCommand[] initialize() {
 		
-        StartupRoutingCommand cmd = new StartupRoutingCommand((Integer)1, (Long)1000L, (Long)1000000L, 
-        		(Long)256L, "hvm", null, null);
+        StartupRoutingCommand cmd = new StartupRoutingCommand(1, 1000L, 1000000L,
+        		256L, "hvm", null, null);
         cmd.setGuid(_guid);
         cmd.setDataCenter(_zone);
         cmd.setPod(_pod);
-        cmd.setHypervisorType(HypervisorType.None);
+        cmd.setHypervisorType(Hypervisor.Type.None);
         cmd.setAgentTag("vmops-simulator");
         cmd.setName(_url);
         cmd.setPrivateIpAddress(this.getHostPrivateIp());
@@ -108,7 +107,7 @@ public class DummyHostServerResource extends ServerResourceBase {
     }
     
     public static int getNextSequenceId() {
-    	return s_nextSequence++; 
+    	return s_nextSequence++;
     }
     
 	public MacAddress getHostMacAddress() {
@@ -123,7 +122,7 @@ public class DummyHostServerResource extends ServerResourceBase {
 	public String getHostPrivateIp() {
 		int id = _instanceId;
 		
-		return "172.16." + 
+		return "172.16." +
 			String.valueOf((id >> 8) & 0xff) + "." +
 			String.valueOf(id & 0xff);
 	}
@@ -150,7 +149,7 @@ public class DummyHostServerResource extends ServerResourceBase {
 		int id = _instanceId;
 		id |= 1 << 15;
 		
-		return "172.16." + 
+		return "172.16." +
 			String.valueOf((id >> 8) & 0xff) + "." +
 			String.valueOf(id & 0xff);
 	}
@@ -159,7 +158,7 @@ public class DummyHostServerResource extends ServerResourceBase {
 		int id = _instanceId;
 		id |= 3 << 14;
 		
-		return "172.16." + 
+		return "172.16." +
 			String.valueOf((id >> 8) & 0xff) + "." +
 			String.valueOf((id) & 0xff);
 	}

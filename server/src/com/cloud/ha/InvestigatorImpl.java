@@ -63,15 +63,19 @@ public class InvestigatorImpl implements Investigator {
             // to verify that the VM is alive, we ask the domR (router) to ping the VM (private IP)
             UserVmVO userVm = _userVmDao.findById(vm.getId());
             Long routerId = userVm.getDomainRouterId();
-            return testUserVM(vm, routerId);
+            if (routerId == null) {
+            	/*TODO: checking vm status for external dhcp mode*/
+            	s_logger.debug("It's external dhcp mode, how to checking the vm is alive?");
+            	return true;
+            }
+            else
+            	return testUserVM(vm, routerId);
         } else if ((vm.getType() == VirtualMachine.Type.DomainRouter) || (vm.getType() == VirtualMachine.Type.ConsoleProxy)) {
             // get the data center IP address, find a host on the pod, use that host to ping the data center IP address
             HostVO vmHost = _hostDao.findById(vm.getHostId());
             List<HostVO> otherHosts = findHostByPod(vm.getPodId(), vm.getHostId());
             for (HostVO otherHost : otherHosts) {
-                if (Host.Type.Storage.equals(otherHost.getType())) {
-                    continue; // storage hosts don't support the PingTest
-                }
+
                 Status vmState = testIpAddress(otherHost.getId(), vm.getPrivateIpAddress());
                 if (vmState == null) {
                     // can't get information from that host, try the next one
@@ -115,9 +119,7 @@ public class InvestigatorImpl implements Investigator {
         List<HostVO> otherHosts = findHostByPod(agent.getPodId(), agent.getId());
         
         for (HostVO otherHost : otherHosts) {
-            if (Host.Type.Storage.equals(otherHost.getType())) {
-                continue; // storage hosts don't support the PingTest
-            }
+
             if (s_logger.isDebugEnabled()) {
                 s_logger.debug("sending ping from (" + otherHost.getId() + ") to agent's host ip address (" + agent.getPrivateIpAddress() + ")");
             }
@@ -171,10 +173,12 @@ public class InvestigatorImpl implements Investigator {
     public boolean stop() {
         return true;
     }
-
+    // Host.status is up and Host.type is routing
     private List<HostVO> findHostByPod(long podId, Long excludeHostId) {
         SearchCriteria sc = _hostDao.createSearchCriteria();
         sc.addAnd("podId", SearchCriteria.Op.EQ, podId);
+        sc.addAnd("status", SearchCriteria.Op.EQ, Status.Up);
+        sc.addAnd("type", SearchCriteria.Op.EQ, Host.Type.Routing);
         if (excludeHostId != null) {
             sc.addAnd("id", SearchCriteria.Op.NEQ, excludeHostId);
         }
@@ -183,13 +187,12 @@ public class InvestigatorImpl implements Investigator {
 
     private Boolean testUserVM(VMInstanceVO vm, Long routerId) {
         DomainRouterVO router = _routerDao.findById(routerId);
-        Long routerHostId = router.getHostId();
-
         String privateIp = vm.getPrivateIpAddress();
         String routerPrivateIp = router.getPrivateIpAddress();
 
         List<HostVO> otherHosts = findHostByPod(router.getPodId(), null);
         for (HostVO otherHost : otherHosts) {
+
             try {
                 Answer pingTestAnswer = _agentMgr.send(otherHost.getId(), new PingTestCommand(routerPrivateIp, privateIp), 30 * 1000);
                 if (pingTestAnswer.getResult()) {
@@ -197,12 +200,7 @@ public class InvestigatorImpl implements Investigator {
                         s_logger.debug("user vm " + vm.getName() + " has been successfully pinged, returning that it is alive");
                     }
                     return Boolean.TRUE;
-                } else {
-                    if (s_logger.isDebugEnabled()) {
-                        s_logger.debug("user vm " + vm.getName() + " could not be pinged, returning that it is unknown");
-                    }
-                    return null;
-                }
+                } 
             } catch (AgentUnavailableException e) {
                 if (s_logger.isDebugEnabled()) {
                     s_logger.debug("Couldn't reach " + e.getAgentId());
@@ -215,8 +213,11 @@ public class InvestigatorImpl implements Investigator {
                 continue;
             }
         }
-        
+        if (s_logger.isDebugEnabled()) {
+            s_logger.debug("user vm " + vm.getName() + " could not be pinged, returning that it is unknown");
+        }
         return null;
+        
     }
 
     private Status testIpAddress(Long hostId, String testHostIp) {

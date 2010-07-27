@@ -44,14 +44,10 @@ import com.cloud.agent.api.PingCommand;
 import com.cloud.agent.api.PingStorageCommand;
 import com.cloud.agent.api.StartupCommand;
 import com.cloud.agent.api.StartupStorageCommand;
-import com.cloud.agent.api.storage.CreateAnswer;
-import com.cloud.agent.api.storage.CreateCommand;
 import com.cloud.agent.api.storage.CreatePrivateTemplateAnswer;
 import com.cloud.agent.api.storage.CreatePrivateTemplateCommand;
 import com.cloud.agent.api.storage.DestroyCommand;
 import com.cloud.agent.api.storage.DownloadCommand;
-import com.cloud.agent.api.storage.ManageVolumeAnswer;
-import com.cloud.agent.api.storage.ManageVolumeCommand;
 import com.cloud.agent.api.storage.PrimaryStorageDownloadCommand;
 import com.cloud.agent.api.storage.ShareAnswer;
 import com.cloud.agent.api.storage.ShareCommand;
@@ -60,7 +56,7 @@ import com.cloud.agent.api.storage.UpgradeDiskCommand;
 import com.cloud.host.Host;
 import com.cloud.resource.ServerResource;
 import com.cloud.resource.ServerResourceBase;
-import com.cloud.storage.StoragePool.StoragePoolType;
+import com.cloud.storage.Storage.StoragePoolType;
 import com.cloud.storage.template.DownloadManager;
 import com.cloud.storage.template.TemplateInfo;
 import com.cloud.utils.NumbersUtil;
@@ -123,9 +119,7 @@ public abstract class StorageResource extends ServerResourceBase implements Serv
 
     @Override
     public Answer executeRequest(final Command cmd) {
-        if (cmd instanceof CreateCommand) {
-            return execute((CreateCommand)cmd);
-        } else if (cmd instanceof DestroyCommand) {
+        if (cmd instanceof DestroyCommand) {
             return execute((DestroyCommand)cmd);
         } else if (cmd instanceof GetFileStatsCommand) {
             return execute((GetFileStatsCommand)cmd);
@@ -147,8 +141,6 @@ public abstract class StorageResource extends ServerResourceBase implements Serv
             return execute((CreatePrivateTemplateCommand)cmd);
         } else if (cmd instanceof ModifyStoragePoolCommand ){
         	return execute ((ModifyStoragePoolCommand) cmd);
-        } else if (cmd instanceof ManageVolumeCommand) {
-        	return execute ((ManageVolumeCommand) cmd);
         } else {
         	s_logger.warn("StorageResource: Unsupported command");
             return Answer.createUnsupportedCommandAnswer(cmd);
@@ -158,37 +150,6 @@ public abstract class StorageResource extends ServerResourceBase implements Serv
 	protected Answer execute(ModifyStoragePoolCommand cmd) {
 		s_logger.warn("Unsupported: network file system mount attempted");
 		return Answer.createUnsupportedCommandAnswer(cmd);
-	}
-	
-	protected Answer execute(ManageVolumeCommand cmd) {
-		final boolean add = cmd.getAdd();
-		final String folder = cmd.getFolder();
-		final String path = cmd.getPath();
-		final String size = String.valueOf(cmd.getSize());
-		
-        final Script command = new Script(_manageVolumePath, _timeout, s_logger);
-        command.add("-f", folder);
-        command.add("-p", path);
-        command.add("-s", size);
-        if (!add)
-        	command.add("-d", "true");
-        
-        if (add)
-        	s_logger.debug("Creating new volume at path: " + path + " with size: " + size + " GB");
-        else
-        	s_logger.debug("Destroying volume at path: " + path);
-
-        final String result = command.execute();
-        
-        if (result != null) {
-        	s_logger.debug("ManageVolumeCommand did not succeed.");
-        	return new ManageVolumeAnswer(cmd, false, result, null);
-        } else {
-        	Long createdSize = null;
-        	if (add)
-        		createdSize = getVolumeSize(path);
-        	return new ManageVolumeAnswer(cmd, true, result, createdSize);
-        }
 	}
 
 	protected ShareAnswer execute(final ShareCommand cmd) {
@@ -203,61 +164,6 @@ public abstract class StorageResource extends ServerResourceBase implements Serv
     	return _downloadManager.handleDownloadCommand(cmd);
 	}
     
-	protected CreateAnswer execute(final CreateCommand cmd) {
-
-        String rootdiskFolder = cmd.getRootdiskFolder();
-		String datadiskFolder = cmd.getDatadiskFolder();
-		String datadiskName = cmd.getDatadiskName();
-
-        int index = rootdiskFolder.lastIndexOf(":/");
-        if (index != -1) {
-            rootdiskFolder = rootdiskFolder.substring(index + 2);
-        }
-
-        index = rootdiskFolder.lastIndexOf('/');
-        if (index == -1) {
-            return new CreateAnswer(cmd, "Incorrect path passed: " + rootdiskFolder);
-        }
-
-        String result = null;
-
-        final String userfs = getUserPath(rootdiskFolder);
-        if (s_logger.isDebugEnabled()) {
-            s_logger.debug("locking " + userfs);
-        }
-        
-        synchronized(userfs) {
-        	String tmpltPath = cmd.getTemplatePath();
-
-        	if (cmd.getRootDiskSizeGB() != 0) {
-        		result = create(rootdiskFolder, cmd.getRootDiskSizeGB());
-        	} else if (cmd.getDataDiskSizeGB() == 0) {
-        		result = create(tmpltPath, rootdiskFolder, userfs, cmd.getDataDiskTemplatePath(), cmd.getLocalPath());
-        	} else {
-        		result = create(tmpltPath, rootdiskFolder, userfs, datadiskFolder, datadiskName, cmd.getDataDiskSizeGB(), cmd.getLocalPath());
-        	}
-        	
-        	if (result != null) {
-        		s_logger.warn("Unable to create." + result);
-
-        		delete(rootdiskFolder, null);
-        		return new CreateAnswer(cmd, result);
-
-        	}
-        }
-
-        try {
-            final List<VolumeVO> vols = getVolumes(rootdiskFolder, datadiskFolder, datadiskName);
-            for (VolumeVO vol: vols) {
-            	vol.setStorageResourceType(getStorageResourceType());
-            }
-            return new CreateAnswer(cmd, vols);
-        } catch(final Throwable th) {
-            delete(rootdiskFolder, null);
-            return new CreateAnswer(cmd, th.getMessage());
-        }
-    }
-
 	public String getSecondaryStorageMountPoint(String uri) {
 		return null;
 	}
@@ -373,7 +279,7 @@ public abstract class StorageResource extends ServerResourceBase implements Serv
         } else if (size.endsWith("M")) {
             multiplier = 1024l * 1024l;
         } else if (size.endsWith("K")){
-        	multiplier = 1024l;          
+        	multiplier = 1024l;
         } else {
         	long num;
         	try {
@@ -381,7 +287,7 @@ public abstract class StorageResource extends ServerResourceBase implements Serv
         	} catch (NumberFormatException e) {
         		s_logger.debug("Unknow size:" + size);
         		return 0;
-        	} 
+        	}
         	return num;
         }
 
@@ -603,7 +509,7 @@ public abstract class StorageResource extends ServerResourceBase implements Serv
         boolean isDeveloper = Boolean.parseBoolean(value);
         
         _instance = (String)params.get("instance");
-       /* 
+       /*
         String guid = (String)params.get("guid");
         if (!isDeveloper && guid == null) {
         	throw new ConfigurationException("Unable to find the guid");

@@ -27,6 +27,7 @@ import org.apache.log4j.Logger;
 import com.cloud.api.BaseCmd;
 import com.cloud.api.ServerApiException;
 import com.cloud.service.ServiceOfferingVO;
+import com.cloud.user.User;
 import com.cloud.utils.Pair;
 
 public class DeleteServiceOfferingCmd extends BaseCmd{
@@ -36,6 +37,7 @@ public class DeleteServiceOfferingCmd extends BaseCmd{
 
     static {
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ID, Boolean.TRUE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.USER_ID, Boolean.FALSE));
     }
 
     @Override
@@ -50,7 +52,11 @@ public class DeleteServiceOfferingCmd extends BaseCmd{
     @Override
     public List<Pair<String, Object>> execute(Map<String, Object> params) {
         Long offeringId = (Long)params.get(BaseCmd.Properties.ID.getName());
-        Boolean removeServiceOfferingResult = false;
+        Long userId = (Long)params.get(BaseCmd.Properties.USER_ID.getName());
+        
+        if (userId == null) {
+            userId = Long.valueOf(User.UID_SYSTEM);
+        }
  
         //Verify service offering id
         ServiceOfferingVO offering = getManagementServer().findServiceOfferingById(offeringId);
@@ -60,18 +66,16 @@ public class DeleteServiceOfferingCmd extends BaseCmd{
     		throw new ServerApiException(BaseCmd.PARAM_ERROR, "unable to find service offering " + offeringId);
     	}
 
+    	boolean success = false;
         try {     
-            getManagementServer().deleteServiceOffering(offeringId);
-            if (getManagementServer().findServiceOfferingById(offeringId).getRemoved() != null) {
-            	removeServiceOfferingResult = true;
-            }
+            success = getManagementServer().deleteServiceOffering(userId, offeringId);
         } catch (Exception ex) {
             s_logger.error("Exception deleting service offering", ex);
             throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Failed to delete service offering " + offeringId + ":  internal error.");
         }
 
         List<Pair<String, Object>> returnValues = new ArrayList<Pair<String, Object>>();
-        if (removeServiceOfferingResult == true) {
+        if (success) {
         	returnValues.add(new Pair<String, Object>(BaseCmd.Properties.SUCCESS.getName(), Boolean.TRUE));
         } else {
         	throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Failed to delete serviceoffering " + offeringId);

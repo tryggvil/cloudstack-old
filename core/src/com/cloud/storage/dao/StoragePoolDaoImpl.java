@@ -18,22 +18,32 @@
 package com.cloud.storage.dao;
 
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import javax.ejb.Local;
+import javax.naming.ConfigurationException;
 
 import org.apache.log4j.Logger;
 
+import com.cloud.storage.StoragePoolDetailVO;
 import com.cloud.storage.StoragePoolVO;
-import com.cloud.storage.StoragePool.StoragePoolType;
+import com.cloud.storage.Storage.StoragePoolType;
+import com.cloud.utils.component.ComponentLocator;
+import com.cloud.utils.db.DB;
 import com.cloud.utils.db.GenericDaoBase;
 import com.cloud.utils.db.SearchBuilder;
 import com.cloud.utils.db.SearchCriteria;
 import com.cloud.utils.db.Transaction;
 import com.cloud.utils.db.SearchCriteria.Op;
+import com.cloud.utils.exception.CloudRuntimeException;
 
-@Local(value={StoragePoolDao.class})
+@Local(value={StoragePoolDao.class}) @DB(txn=false)
 public class StoragePoolDaoImpl extends GenericDaoBase<StoragePoolVO, Long>  implements StoragePoolDao {
     private static final Logger s_logger = Logger.getLogger(StoragePoolDaoImpl.class);
     protected final SearchBuilder<StoragePoolVO> NameSearch;
@@ -43,12 +53,15 @@ public class StoragePoolDaoImpl extends GenericDaoBase<StoragePoolVO, Long>  imp
     protected final SearchBuilder<StoragePoolVO> HostSearch;
     protected final SearchBuilder<StoragePoolVO> HostPathDcPodSearch;
     protected final SearchBuilder<StoragePoolVO> HostPathDcSearch;
+    protected final SearchBuilder<StoragePoolVO> DcPodAnyClusterSearch;
+    protected final SearchBuilder<StoragePoolVO> DeleteLvmSearch;
+    
+    protected final StoragePoolDetailsDao _detailsDao;
 	
-	protected static final String DELETE_PRIMARY_RECORDS  =
-		"DELETE "+
-		"FROM storage_pool "+
-		"WHERE id = ?";
-
+    private final String DetailsSqlPrefix = "SELECT storage_pool.* from storage_pool LEFT JOIN storage_pool_details ON storage_pool.id = storage_pool_details.pool_id WHERE storage_pool.data_center_id = ? and (storage_pool.pod_id = ? or storage_pool.pod_id is null) and (";
+	private final String DetailsSqlSuffix = ") GROUP BY storage_pool_details.pool_id HAVING COUNT(storage_pool_details.name) >= ?";
+	private final String FindPoolTagDetails = "SELECT storage_pool_details.name FROM storage_pool_details WHERE pool_id = ? and value = ?";
+	
     protected StoragePoolDaoImpl() {
     	NameSearch = createSearchBuilder();
         NameSearch.and("name", NameSearch.entity().getName(), SearchCriteria.Op.EQ);
@@ -64,8 +77,27 @@ public class StoragePoolDaoImpl extends GenericDaoBase<StoragePoolVO, Long>  imp
         
     	DcPodSearch = createSearchBuilder();
     	DcPodSearch.and("datacenterId", DcPodSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
-    	DcPodSearch.and("podId", DcPodSearch.entity().getPodId(), SearchCriteria.Op.EQ);
+    	DcPodSearch.op(Op.AND, "nullpod", DcPodSearch.entity().getPodId(), SearchCriteria.Op.NULL);
+    	DcPodSearch.or("podId", DcPodSearch.entity().getPodId(), SearchCriteria.Op.EQ);
+    	DcPodSearch.cp();
+    	DcPodSearch.op(Op.AND, "nullcluster", DcPodSearch.entity().getClusterId(), SearchCriteria.Op.NULL);
+    	DcPodSearch.or("cluster", DcPodSearch.entity().getClusterId(), SearchCriteria.Op.EQ);
+    	DcPodSearch.cp();
     	DcPodSearch.done();
+    	
+    	DcPodAnyClusterSearch = createSearchBuilder();
+        DcPodAnyClusterSearch.and("datacenterId", DcPodAnyClusterSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        DcPodAnyClusterSearch.op(Op.AND, "nullpod", DcPodAnyClusterSearch.entity().getPodId(), SearchCriteria.Op.NULL);
+        DcPodAnyClusterSearch.or("podId", DcPodAnyClusterSearch.entity().getPodId(), SearchCriteria.Op.EQ);
+        DcPodAnyClusterSearch.cp();
+        DcPodAnyClusterSearch.done();
+        
+        DeleteLvmSearch = createSearchBuilder();
+        DeleteLvmSearch.and("ids", DeleteLvmSearch.entity().getId(), SearchCriteria.Op.IN);
+        DeleteLvmSearch.op(SearchCriteria.Op.AND,"LVM", DeleteLvmSearch.entity().getPoolType(), SearchCriteria.Op.EQ);
+        DeleteLvmSearch.or("Filesystem", DeleteLvmSearch.entity().getPoolType(), SearchCriteria.Op.EQ);
+        DeleteLvmSearch.cp();
+        DeleteLvmSearch.done();
         
         HostSearch = createSearchBuilder();
         HostSearch.and("host", HostSearch.entity().getHostAddress(), SearchCriteria.Op.EQ);
@@ -83,6 +115,7 @@ public class StoragePoolDaoImpl extends GenericDaoBase<StoragePoolVO, Long>  imp
         HostPathDcSearch.and("path", HostPathDcSearch.entity().getPath(), SearchCriteria.Op.EQ);
         HostPathDcSearch.done();
 
+        _detailsDao = ComponentLocator.inject(StoragePoolDetailsDaoImpl.class);
     }
     
 	@Override
@@ -144,11 +177,20 @@ public class StoragePoolDaoImpl extends GenericDaoBase<StoragePoolVO, Long>  imp
     }
 
 	@Override
-	public List<StoragePoolVO> listByDataCenterPodId(long datacenterId, long podId) {
-		SearchCriteria sc = DcPodSearch.create();
-        sc.setParameters("datacenterId", datacenterId);
-        sc.setParameters("podId", podId);
-        return listBy(sc);
+	public List<StoragePoolVO> listBy(long datacenterId, long podId, Long clusterId) {
+	    if (clusterId != null) {
+    		SearchCriteria sc = DcPodSearch.create();
+            sc.setParameters("datacenterId", datacenterId);
+            sc.setParameters("podId", podId);
+           
+            sc.setParameters("cluster", clusterId);
+            return listActiveBy(sc);
+	    } else {
+	        SearchCriteria sc = DcPodAnyClusterSearch.create();
+	        sc.setParameters("datacenterId", datacenterId);
+	        sc.setParameters("podId", podId);
+	        return listActiveBy(sc);
+	    }
 	}
 
 	@Override
@@ -168,38 +210,142 @@ public class StoragePoolDaoImpl extends GenericDaoBase<StoragePoolVO, Long>  imp
         return findOneBy(sc);
 	}
 	
+	@Override @DB
+	public StoragePoolVO persist(StoragePoolVO pool, Map<String, String> details) {
+	    Transaction txn = Transaction.currentTxn();
+	    txn.start();
+	    pool = super.persist(pool);
+	    if (details != null) {
+    	    for (Map.Entry<String, String> detail : details.entrySet()) {
+    	        StoragePoolDetailVO vo = new StoragePoolDetailVO(pool.getId(), detail.getKey(), detail.getValue());
+    	        _detailsDao.persist(vo);
+    	    }
+        }
+	    txn.commit();
+	    return pool;
+	}
+	
+	@DB
+	@Override
 	public void deleteStoragePoolRecords(ArrayList<Long> ids)
 	{
+			SearchCriteria sc = DeleteLvmSearch.create();
+			sc.setParameters("ids", ids.toArray());
+			sc.setParameters("LVM", StoragePoolType.LVM);
+			sc.setParameters("Filesystem", StoragePoolType.Filesystem);
+			remove(sc);
+	}
+	
+	@DB
+	@Override
+	public List<StoragePoolVO> findPoolsByDetails(long dcId, long podId, Long clusterId, Map<String, String> details) {
+	    StringBuilder sql = new StringBuilder(DetailsSqlPrefix);
+	    if (clusterId != null) {
+	        sql.append("storage_pool.cluster_id = ? OR storage_pool.cluster_id IS NULL) AND (");
+	    }
+	    Set<Map.Entry<String, String>> entries = details.entrySet();
+	    for (Map.Entry<String, String> detail : details.entrySet()) {
+	        sql.append("((storage_pool_details.name='").append(detail.getKey()).append("') AND (storage_pool_details.value='").append(detail.getValue()).append("')) OR ");
+	    }
+	    sql.delete(sql.length() - 4, sql.length());
+	    sql.append(DetailsSqlSuffix);
+	    Transaction txn = Transaction.currentTxn();
+	    PreparedStatement pstmt = s_initStmt;
+	    try {
+	        pstmt = txn.prepareAutoCloseStatement(sql.toString());
+	        int i = 1;
+	        pstmt.setLong(i++, dcId);
+	        pstmt.setLong(i++, podId);
+	        if (clusterId != null) {
+	            pstmt.setLong(i++, clusterId);
+	        }
+	        pstmt.setInt(i++, details.size());
+	        ResultSet rs = pstmt.executeQuery();
+	        List<StoragePoolVO> pools = new ArrayList<StoragePoolVO>();
+	        while (rs.next()) {
+	            pools.add(toEntityBean(rs, false));
+	        }
+	        return pools;
+	    } catch (SQLException e) {
+	        throw new CloudRuntimeException("Unable to execute " + pstmt.toString(), e);
+	    }
+	}
+	
+	protected Map<String, String> tagsToDetails(String[] tags) {
+	    Map<String, String> details = new HashMap<String, String>(tags.length);
+	    for (String tag: tags) {
+	        details.put(tag, "true");
+	    }
+	    return details;
+	}
+	
+	@Override
+	public List<StoragePoolVO> findPoolsByTags(long dcId, long podId, Long clusterId, String[] tags, Boolean shared) {
+		List<StoragePoolVO> storagePools = null;
+	    if (tags == null || tags.length == 0) {
+	        storagePools = listBy(dcId, podId, clusterId);
+	    } else {
+	        Map<String, String> details = tagsToDetails(tags);
+	        storagePools =  findPoolsByDetails(dcId, podId, clusterId, details);
+	    }
+	    
+	    if (shared == null) {
+	    	return storagePools;
+	    } else {
+	    	List<StoragePoolVO> filteredStoragePools = new ArrayList<StoragePoolVO>(storagePools);
+	    	for (StoragePoolVO pool : storagePools) {
+	    		if (shared != pool.isShared()) {
+	    			filteredStoragePools.remove(pool);
+	    		}
+	    	}
+	    	
+	    	return filteredStoragePools;
+	    }
+	}
+	
+	@Override
+	@DB
+	public List<String> searchForStoragePoolDetails(long poolId, String value){
+		
+	    StringBuilder sql = new StringBuilder(FindPoolTagDetails);
+
 	    Transaction txn = Transaction.currentTxn();
 		PreparedStatement pstmt = null;
-		StoragePoolVO storageVO = null;
-		try
-		{
-		    txn.start();
-			for(Long i: ids)
-			{
-				storageVO = findById(i);
-				
-				if(storageVO != null)
-				{
-					if(storageVO.getPoolType().equals(StoragePoolType.Filesystem)||
-					   storageVO.getPoolType().equals(StoragePoolType.LVM))
-					{
-						//delete the record only if it is a FS type or LVM type
-						pstmt = txn.prepareAutoCloseStatement(DELETE_PRIMARY_RECORDS);
-						pstmt.setLong(1, storageVO.getId());
-						pstmt.executeUpdate();
-					}
-					
-					storageVO = null;
-				}
-			}
-			txn.commit();
-		}
-		catch (Exception e)
-		{
-			txn.rollback();
-			s_logger.warn("Error removing primary records from storage host ref table:", e);
-		}
+	    try {
+	        pstmt = txn.prepareAutoCloseStatement(sql.toString());
+	        pstmt.setLong(1, poolId);
+	        pstmt.setString(2, value);
+
+	        ResultSet rs = pstmt.executeQuery();
+	        List<String> tags = new ArrayList<String>();
+
+	        while (rs.next()) {
+	            tags.add(rs.getString("name"));
+	        }
+	        
+	        return tags;
+	    } catch (SQLException e) {
+	        throw new CloudRuntimeException("Unable to execute " + pstmt.toString(), e);
+	    }
+
+	}
+	
+	@Override
+	public void updateDetails(long poolId, Map<String, String> details) {
+	    if (details != null) {
+	        _detailsDao.update(poolId, details);
+	    }
+    }
+	
+	@Override
+	public Map<String, String> getDetails(long poolId) {
+		return _detailsDao.getDetails(poolId);
+	}
+    
+	@Override
+    public boolean configure(String name, Map<String, Object> params) throws ConfigurationException {
+	    super.configure(name, params);
+	    _detailsDao.configure("DetailsDao", params);
+	    return true;
 	}
 }

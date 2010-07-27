@@ -22,15 +22,21 @@ import java.util.Map;
 import com.cloud.host.Host;
 import com.cloud.vm.State;
 
-public class PingRoutingCommand extends PingComputingCommand {
+public class PingRoutingCommand extends PingCommand {
+    Map<String, State> newStates;
     boolean _gatewayAccessible = true;
     boolean _vnetAccessible = true;
-
+   
     protected PingRoutingCommand() {
     }
     
     public PingRoutingCommand(Host.Type type, long id, Map<String, State> states) {
-        super(type, id, states);
+        super(type, id);
+        this.newStates = states;
+    }
+    
+    public Map<String, State> getNewStates() {
+        return newStates;
     }
 
     public boolean isGatewayAccessible() {

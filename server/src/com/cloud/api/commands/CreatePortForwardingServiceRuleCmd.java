@@ -26,7 +26,6 @@ import org.apache.log4j.Logger;
 
 import com.cloud.api.BaseCmd;
 import com.cloud.api.ServerApiException;
-import com.cloud.async.AsyncJobResult;
 import com.cloud.async.executor.CreateOrUpdateRuleResultObject;
 import com.cloud.network.SecurityGroupVO;
 import com.cloud.serializer.SerializerHelper;
@@ -69,12 +68,12 @@ public class CreatePortForwardingServiceRuleCmd extends BaseCmd {
         String protocol = (String)params.get(BaseCmd.Properties.PROTOCOL.getName());
         Long securityGroupId = (Long)params.get(BaseCmd.Properties.PORT_FORWARDING_SERVICE_ID.getName());
 
-        if (account != null) {
-            SecurityGroupVO sg = getManagementServer().findSecurityGroupById(securityGroupId);
-            if (sg == null) {
-                throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to find port forwarding service with id " + securityGroupId);
-            }
+        SecurityGroupVO sg = getManagementServer().findSecurityGroupById(securityGroupId);
+        if (sg == null) {
+            throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to find port forwarding service with id " + securityGroupId);
+        }
 
+        if (account != null) {
             if (isAdmin(account.getType())) {
                 if (!getManagementServer().isChildDomain(account.getDomainId(), sg.getDomainId())) {
                     throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to find rules for port forwarding service id = " + securityGroupId + ", permission denied.");
@@ -89,7 +88,7 @@ public class CreatePortForwardingServiceRuleCmd extends BaseCmd {
             userId = Long.valueOf(1);
         }
 
-        long jobId = getManagementServer().createOrUpdateRuleAsync(true, userId.longValue(), null, null, securityGroupId, null, publicPort, null, privatePort, protocol, null);
+        long jobId = getManagementServer().createOrUpdateRuleAsync(true, userId.longValue(), sg.getAccountId().longValue(), null, securityGroupId, null, publicPort, null, privatePort, protocol, null);
         long ruleId = 0;
 
         if (jobId == 0) {

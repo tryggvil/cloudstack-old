@@ -1,5 +1,4 @@
 /**
- *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
  * This software is licensed under the GNU General Public License v3 or later.
  * 
@@ -18,6 +17,7 @@
 
 package com.cloud.consoleproxy;
 
+
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Frame;
@@ -28,16 +28,12 @@ import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
 import java.net.Socket;
-import java.net.URL;
-import java.net.URLConnection;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
@@ -75,6 +71,7 @@ public class ConsoleProxyViewer implements java.lang.Runnable, RfbViewer, RfbPro
 	long lastUsedTime = System.currentTimeMillis();
 	int status;
 	boolean dropMe = false;
+	boolean viewerInReuse = false; 
 	
 	String host;
 	int port;
@@ -146,15 +143,20 @@ public class ConsoleProxyViewer implements java.lang.Runnable, RfbViewer, RfbPro
 
 		if(rfbThread != null) {
 			if(rfbThread.isAlive()) {
-				rfbThread.interrupt();
+				dropMe = true;
+				viewerInReuse = true;
+				rfb.close();
+				
 				try {
 					rfbThread.join();
 				} catch (InterruptedException e) {
-					s_logger.warn("Unable to stop RFB thread during initialization: " + e.getMessage());
+					s_logger.warn("InterruptedException while waiting for RFB thread to exit");
 				}
+				viewerInReuse = false;
 			}
 		}
 		
+		dropMe = false;
 		rfbThread = new Thread(this);
 		rfbThread.setName("RFB Thread " + rfbThread.getId() + " >" + host + ":"
 				+ port);
@@ -256,12 +258,21 @@ public class ConsoleProxyViewer implements java.lang.Runnable, RfbViewer, RfbPro
 		
 		// make sure we remove it from the management map upon main thread termination
 		dropMe = true;
-		ConsoleProxy.removeViewer(this);
+		
+		// if we are reusing the viewer object, we shouldn't remove it from the map
+		// this can also prevent deadlock in initProxy() while initProxy tries to join
+		// the thread, as initProxy() is called with ConsoleProxy.connectionMap being locked
+		// while CoonsoleProxy.removeViewer() here will attempt to lock it from another thread
+		if(!viewerInReuse)		
+			ConsoleProxy.removeViewer(this);
 		s_logger.info("RFB thread terminating");
 	}
 	
 	void connectAndAuthenticate() throws Exception {
 		s_logger.info("Initializing...");
+		
+		s_logger.info("Ensure ip route towards host " + host);
+		ConsoleProxy.ensureRoute(host);		
 		
 		s_logger.info("Connecting to " + host + ", port " + port + "...");
 		rfb = new RfbProto(host, port, this);
@@ -304,7 +315,7 @@ public class ConsoleProxyViewer implements java.lang.Runnable, RfbViewer, RfbPro
 		}
 	}
 	
-	void authenticationExternally() throws AuthenticationException {
+	static void authenticationExternally(String tag, String sid) throws AuthenticationException {
 /*		
 		if(ConsoleProxy.management_host != null) {
 			try {
@@ -341,10 +352,10 @@ public class ConsoleProxyViewer implements java.lang.Runnable, RfbViewer, RfbPro
 			s_logger.warn("No external authentication source being setup.");
 		}
 */
-		if(!ConsoleProxy.authenticateConsoleAccess(getTag(), passwordParam)) {
-    		s_logger.warn("External authenticator failed authencation request for vm " + getTag() + " with sid " + passwordParam);
+		if(!ConsoleProxy.authenticateConsoleAccess(tag, sid)) {
+    		s_logger.warn("External authenticator failed authencation request for vm " + tag + " with sid " + sid);
         	
-			throw new AuthenticationException("External authenticator failed request for vm " + getTag() + " with sid " + passwordParam);
+			throw new AuthenticationException("External authenticator failed request for vm " + tag + " with sid " + sid);
 		}
 	}
 	
@@ -1001,9 +1012,11 @@ public class ConsoleProxyViewer implements java.lang.Runnable, RfbViewer, RfbPro
 			"<html>",
 			"<head>",
 			"<script type=\"text/javascript\" language=\"javascript\" src=\"/resource/js/jquery.js\"></script>",
+			"<script type=\"text/javascript\" language=\"javascript\" src=\"/resource/js/cloud.logger.js\"></script>",
 			"<script type=\"text/javascript\" language=\"javascript\" src=\"/resource/js/ajaxviewer.js\"></script>",
 			"<script type=\"text/javascript\" language=\"javascript\" src=\"/resource/js/handler.js\"></script>",
 			"<link rel=\"stylesheet\" type=\"text/css\" href=\"/resource/css/ajaxviewer.css\"></link>",
+			"<link rel=\"stylesheet\" type=\"text/css\" href=\"/resource/css/logger.css\"></link>",
 			"<title>" + title + "</title>",
 			"</head>",
 			"<body>",
@@ -1242,6 +1255,12 @@ public class ConsoleProxyViewer implements java.lang.Runnable, RfbViewer, RfbPro
 		code = ConsoleProxyAjaxKeyMapper.getInstance().getJvmKeyCode(code);
 		switch(event) {
 		case 4 : 	// Key press
+			//
+			// special handling for ' and " (keycode: 222, char code : 39 and 34
+			//
+			if(code == 39 || code == 34) {
+				writeKeyboardEvent(KeyEvent.KEY_PRESSED, 222, (char)code, getAwtModifiers(modifiers));
+			}
 			break;
 
 		case 5 :	// Key down
@@ -1249,9 +1268,11 @@ public class ConsoleProxyViewer implements java.lang.Runnable, RfbViewer, RfbPro
 				code = KeyEvent.VK_DELETE;
 			}
 			
-			writeKeyboardEvent(KeyEvent.KEY_PRESSED, code, 
-				ConsoleProxyAjaxKeyMapper.getInstance().shiftedKeyCharFromKeyCode(code, (modifiers & ConsoleProxyViewer.SHIFT_KEY_MASK) != 0), 
-				getAwtModifiers(modifiers));
+			if(code != 222) {
+				writeKeyboardEvent(KeyEvent.KEY_PRESSED, code, 
+					ConsoleProxyAjaxKeyMapper.getInstance().shiftedKeyCharFromKeyCode(code, (modifiers & ConsoleProxyViewer.SHIFT_KEY_MASK) != 0), 
+					getAwtModifiers(modifiers));
+			}
 			break;
 			
 		case 6 :	// Key Up

@@ -49,6 +49,7 @@ import com.cloud.exception.AgentUnavailableException;
 import com.cloud.exception.OperationTimedoutException;
 import com.cloud.host.Status;
 import com.cloud.utils.concurrency.NamedThreadFactory;
+import com.cloud.agent.api.MaintainCommand;
 
 /**
  *  AgentAttache provides basic commands to be implemented.
@@ -98,7 +99,7 @@ public abstract class AgentAttache {
     protected boolean _maintenance;
     
     public final static String[] s_commandsAllowedInMaintenanceMode =
-        new String[] { MigrateCommand.class.toString(), StopCommand.class.toString(), CheckVirtualMachineCommand.class.toString(), PingTestCommand.class.toString(), CheckHealthCommand.class.toString(), ReadyCommand.class.toString() };
+        new String[] { MaintainCommand.class.toString(), MigrateCommand.class.toString(), StopCommand.class.toString(), CheckVirtualMachineCommand.class.toString(), PingTestCommand.class.toString(), CheckHealthCommand.class.toString(), ReadyCommand.class.toString() };
     protected final static String[] s_commandsNotAllowedInConnectingMode =
         new String[] { StartCommand.class.toString(), StartRouterCommand.class.toString(), CreateCommand.class.toString() };
     static {
@@ -402,6 +403,10 @@ public abstract class AgentAttache {
             throw new OperationTimedoutException(req.getCommands(), _id, seq, wait, false);
         } finally {
             unregisterListener(seq);
+            final Long current = _currentSequence;
+            if (req.executeInSequence() && (current != null && current == seq)) {
+                sendNext(seq);
+            }
         }
     }
     
@@ -424,7 +429,7 @@ public abstract class AgentAttache {
             if (s_logger.isDebugEnabled()) {
                 s_logger.debug(log(req.getSequence(), "Unable to send the next sequence"));
             }
-            cancel(seq);
+            cancel(req.getSequence());
         }
         _currentSequence = req.getSequence();
     }

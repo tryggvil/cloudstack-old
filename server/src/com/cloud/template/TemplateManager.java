@@ -102,7 +102,7 @@ public interface TemplateManager extends Manager {
      * @throws StorageUnavailableException 
      * @throws InvalidParameterValueException 
      */
-    boolean copy(long userId, long templateId, long sourceZoneId, long destZoneId) throws InternalErrorException, StorageUnavailableException, InvalidParameterValueException;
+    boolean copy(long userId, long templateId, long sourceZoneId, long destZoneId, long startEventId) throws InternalErrorException, StorageUnavailableException, InvalidParameterValueException;
     
     /**
      * Deletes a template from secondary storage servers
@@ -111,7 +111,7 @@ public interface TemplateManager extends Manager {
      * @param zoneId - optional. If specified, will only delete the template from the specified zone's secondary storage server.
      * @return true if success
      */
-    boolean delete(long userId, long templateId, Long zoneId) throws InternalErrorException;
+    boolean delete(long userId, long templateId, Long zoneId, long startEventId) throws InternalErrorException;
     
     /**
      * Lists templates in the specified storage pool that are not being used by any VM.

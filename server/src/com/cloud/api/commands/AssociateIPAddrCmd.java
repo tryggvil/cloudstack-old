@@ -27,6 +27,8 @@ import org.apache.log4j.Logger;
 
 import com.cloud.api.BaseCmd;
 import com.cloud.api.ServerApiException;
+import com.cloud.dc.VlanVO;
+import com.cloud.dc.Vlan.VlanType;
 import com.cloud.exception.InsufficientAddressCapacityException;
 import com.cloud.exception.InternalErrorException;
 import com.cloud.exception.InvalidParameterValueException;
@@ -151,10 +153,13 @@ public class AssociateIPAddrCmd extends BaseCmd {
             returnValues.add(new Pair<String, Object>(BaseCmd.Properties.ACCOUNT.getName(), accountTemp.getAccountName()));
             returnValues.add(new Pair<String, Object>(BaseCmd.Properties.DOMAIN_ID.getName(), accountTemp.getDomainId()));
             returnValues.add(new Pair<String, Object>(BaseCmd.Properties.DOMAIN.getName(), getManagementServer().findDomainIdById(accountTemp.getDomainId()).getName()));
+        	VlanVO vlan  = getManagementServer().findVlanById(ipAddress.getVlanDbId());
+        	boolean forVirtualNetworks = vlan.getVlanType().equals(VlanType.VirtualNetwork);
+            returnValues.add(new Pair<String, Object>(BaseCmd.Properties.FOR_VIRTUAL_NETWORK.getName(), forVirtualNetworks));
             //show this info to admin only
             if (isAdmin == true) {
             	returnValues.add(new Pair<String, Object>(BaseCmd.Properties.VLAN_DB_ID.getName(), Long.valueOf(ipAddress.getVlanDbId()).toString()));
-                returnValues.add(new Pair<String, Object>(BaseCmd.Properties.VLAN_ID.getName(), getManagementServer().findVlanById(ipAddress.getVlanDbId()).getVlanId()));
+                returnValues.add(new Pair<String, Object>(BaseCmd.Properties.VLAN_ID.getName(), vlan.getVlanId()));
             }
             embeddedObject.add(new Pair<String, Object>("publicipaddress", new Object[] { returnValues } ));
         } catch (Exception ex) {

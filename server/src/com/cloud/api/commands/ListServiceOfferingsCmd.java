@@ -28,6 +28,7 @@ import com.cloud.api.BaseCmd;
 import com.cloud.api.ServerApiException;
 import com.cloud.server.Criteria;
 import com.cloud.service.ServiceOfferingVO;
+import com.cloud.service.ServiceOffering.GuestIpType;
 import com.cloud.user.Account;
 import com.cloud.utils.Pair;
 import com.cloud.vm.UserVmVO;
@@ -87,7 +88,7 @@ public class ListServiceOfferingsCmd extends BaseCmd {
         //If vmId is present in the list of parameters, verify it
         if (vmId != null) {
         	UserVmVO vmInstance = getManagementServer().findUserVMInstanceById(vmId.longValue());
-            if (vmInstance == null) {
+            if ((vmInstance == null) || (vmInstance.getRemoved() != null)) {
             	throw new ServerApiException(BaseCmd.VM_INVALID_PARAM_ERROR, "unable to find a virtual machine with id " + vmId);
             }
         	if ((account != null) && !isAdmin(account.getType())) {
@@ -106,7 +107,8 @@ public class ListServiceOfferingsCmd extends BaseCmd {
         List<Pair<String, Object>> offeringTags = new ArrayList<Pair<String, Object>>();
         Object[] soTag = new Object[offerings.size()];
         int i = 0;
-        for (ServiceOfferingVO offering : offerings) {
+        for (ServiceOfferingVO offering : offerings) 
+        {
             List<Pair<String, Object>> offeringData = new ArrayList<Pair<String, Object>>();
 
             offeringData.add(new Pair<String, Object>(BaseCmd.Properties.ID.getName(), offering.getId().toString()));
@@ -119,6 +121,8 @@ public class ListServiceOfferingsCmd extends BaseCmd {
             String storageType = offering.getUseLocalStorage() ? "local" : "shared";
             offeringData.add(new Pair<String, Object>(BaseCmd.Properties.STORAGE_TYPE.getName(), storageType));
             offeringData.add(new Pair<String, Object>(BaseCmd.Properties.OFFER_HA.getName(), offering.getOfferHA()));
+            offeringData.add(new Pair<String, Object>(BaseCmd.Properties.USE_VIRTUAL_NETWORK.getName(), (offering.getGuestIpType().equals(GuestIpType.Virtualized))));
+            offeringData.add(new Pair<String, Object>(BaseCmd.Properties.TAGS.getName(), (offering.getTags())));      
 
             soTag[i++] = offeringData;
         }

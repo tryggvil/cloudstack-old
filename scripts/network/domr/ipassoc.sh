@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# $Id: ipassoc.sh 9373 2010-06-09 01:57:36Z edison $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/network/domr/ipassoc.sh $
+# $Id: ipassoc.sh 9804 2010-06-22 18:36:49Z alex $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.1.x/java/scripts/network/domr/ipassoc.sh $
 # ipassoc.sh -- associate/disassociate a public ip with an instance
 #
 #
+# @VERSION@
 usage() {
   printf "Usage:\n %s -A  -i <domR eth1 ip>  -l <public-ip-address>  -r <domr name> [-f] \n" $(basename $0) >&2
   printf " %s -D -i <domR eth1 ip> -l <public-ip-address> -r <domr name> [-f] \n" $(basename $0) >&2
@@ -54,9 +55,9 @@ add_nat_entry() {
   local dRIp=$1
   local pubIp=$2
    ssh -p 3922 -o StrictHostKeyChecking=no -i $cert root@$dRIp "\
-      ip addr add dev eth2 $pubIp
-      iptables -t nat -I POSTROUTING   -j SNAT -o eth2 --to-source $pubIp ;
-      /sbin/arping -c 3 -I eth2 -A -U -s $pubIp $pubIp;
+      ip addr add dev $correctVif $pubIp
+      iptables -t nat -I POSTROUTING   -j SNAT -o $correctVif --to-source $pubIp ;
+      /sbin/arping -c 3 -I $correctVif -A -U -s $pubIp $pubIp;
      "
   if [ $? -gt 0  -a $? -ne 2 ]
   then
@@ -71,8 +72,8 @@ del_nat_entry() {
   local dRIp=$1
   local pubIp=$2
    ssh -p 3922 -o StrictHostKeyChecking=no -i $cert root@$dRIp "\
-      iptables -t nat -D POSTROUTING   -j SNAT -o eth2 --to-source $pubIp;
-      ip addr del dev eth2 $pubIp/32
+      iptables -t nat -D POSTROUTING   -j SNAT -o $correctVif --to-source $pubIp;
+      ip addr del dev $correctVif $pubIp/32
      "
  
   if [ $? -gt 0  -a $? -ne 2 ]
@@ -88,8 +89,9 @@ add_an_ip () {
   local dRIp=$1
   local pubIp=$2
    ssh -p 3922 -o StrictHostKeyChecking=no -i $cert root@$dRIp "\
-      ip addr add dev eth2 $pubIp ;
-      /sbin/arping -c 3 -I eth2 -A -U -s $pubIp $pubIp;
+   	  ifconfig $correctVif up;
+      ip addr add dev $correctVif $pubIp ;
+      /sbin/arping -c 3 -I $correctVif -A -U -s $pubIp $pubIp;
      "
    return $?
 }
@@ -98,7 +100,7 @@ remove_an_ip () {
   local dRIp=$1
   local pubIp=$2
    ssh -p 3922 -o StrictHostKeyChecking=no -i $cert root@$dRIp "\
-      ip addr del dev eth2 $pubIp/32
+      ip addr del dev $correctVif $pubIp/32
      "
   if [ $? -gt 0  -a $? -ne 2 ]
   then
@@ -117,9 +119,10 @@ fflag=
 vflag=
 gflag=
 nflag=
+cflag=
 op=""
 
-while getopts 'fADr:i:a:l:v:g:n:' OPTION
+while getopts 'fADr:i:a:l:v:g:n:c:' OPTION
 do
   case $OPTION in
   A)	Aflag=1
@@ -151,6 +154,9 @@ do
   n)	nflag=1
   		netmask="$OPTARG"
   		;;
+  c)	cflag=1
+  		correctVif="$OPTARG"
+  		;;
   ?)	usage
 		exit 2
 		;;
@@ -164,7 +170,7 @@ then
  exit 2
 fi
 
-if [ "$Aflag$lflag$iflag$rflag" != "1111" ] && [ "$Dflag$lflag$iflag$rflag" != "1111" ]
+if [ "$Aflag$lflag$iflag$cflag" != "1111" ] && [ "$Dflag$lflag$iflag$cflag" != "1111" ]
 then
    exit 2
 fi

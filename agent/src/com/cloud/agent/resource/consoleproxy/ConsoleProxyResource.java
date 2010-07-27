@@ -17,6 +17,7 @@
  */
 package com.cloud.agent.resource.consoleproxy;
 
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,7 +26,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
@@ -43,7 +43,6 @@ import com.cloud.agent.api.ConsoleAccessAuthenticationAnswer;
 import com.cloud.agent.api.ConsoleAccessAuthenticationCommand;
 import com.cloud.agent.api.ConsoleProxyLoadReportCommand;
 import com.cloud.agent.api.PingCommand;
-import com.cloud.agent.api.PingComputingCommand;
 import com.cloud.agent.api.ReadyAnswer;
 import com.cloud.agent.api.ReadyCommand;
 import com.cloud.agent.api.StartupCommand;
@@ -59,7 +58,6 @@ import com.cloud.resource.ServerResourceBase;
 import com.cloud.utils.NumbersUtil;
 import com.cloud.utils.net.NetUtils;
 import com.cloud.utils.script.Script;
-import com.cloud.vm.State;
 
 /**
  * 
@@ -77,8 +75,13 @@ public class ConsoleProxyResource extends ServerResourceBase implements ServerRe
     
     private final Properties _properties = new Properties();
     private Thread _consoleProxyMain = null;
+    
     long _proxyVmId;
     int _proxyPort;
+    
+    String _localgw;
+    String _eth1ip; 
+    String _eth1mask;    
     
     @Override
     public Answer executeRequest(final Command cmd) {
@@ -164,49 +167,58 @@ public class ConsoleProxyResource extends ServerResourceBase implements ServerRe
     
     @Override
     public PingCommand getCurrentStatus(long id) {
-        return new PingComputingCommand(Type.ConsoleProxy, id, new HashMap<String, State>());
+        return new PingCommand(Type.ConsoleProxy, id);
     }
     
     @Override
     public boolean configure(String name, Map<String, Object> params) throws ConfigurationException {
+        _localgw = (String)params.get("localgw");
+    	_eth1mask = (String)params.get("eth1mask");
+    	_eth1ip = (String)params.get("eth1ip");
+        if (_eth1ip != null) {
+        	params.put("private.network.device", "eth1");
+        } else {
+        	s_logger.warn("WARNING: eth1ip parameter is not found!");
+        }
+        
+        String eth2ip = (String) params.get("eth2ip");
+        if (eth2ip != null) {
+        	params.put("public.network.device", "eth2");
+        } else {
+        	s_logger.warn("WARNING: eth2ip parameter is not found!");
+        }
+    	
         super.configure(name, params);
         
         for(Map.Entry<String, Object> entry : params.entrySet()) {
         	_properties.put(entry.getKey(), entry.getValue());
         }
         
-        String value = (String)params.get("consoleproxy.httpListenPort");
-
-        value = (String)params.get("premium");
+        String value = (String)params.get("premium");
         if(value != null && value.equals("premium"))
         	_proxyPort = 443;
-        else
-        	_proxyPort = 80;
-
+        else {
+        	value = (String)params.get("consoleproxy.httpListenPort");
+        	_proxyPort = NumbersUtil.parseInt(value, 80);
+        }
+        
         value = (String)params.get("proxy_vm");
         _proxyVmId = NumbersUtil.parseLong(value, 0);
 
-    	String  eth1ip = (String)params.get("eth1ip");
-        if (eth1ip != null) {
-        	params.put("private.network.device", "eth1");
-        }
-        
-        String  localgw = (String)params.get("localgw");
-        if (localgw != null) {
-        	String eth1mask = (String)params.get("eth1mask");
+        if (_localgw != null) {
         	String internalDns1 = (String)params.get("dns1");
         	String internalDns2 = (String)params.get("dns2");
 
         	if (internalDns1 == null) {
         		s_logger.warn("No DNS entry found during configuration of NfsSecondaryStorage");
         	} else {
-        		addRouteToInternalIp(localgw, eth1ip, eth1mask, internalDns1);
+        		addRouteToInternalIpOrCidr(_localgw, _eth1ip, _eth1mask, internalDns1);
         	}
         	
         	String mgmtHost = (String)params.get("host");
-        	addRouteToInternalIp(localgw, eth1ip, eth1mask, mgmtHost);
+        	addRouteToInternalIpOrCidr(_localgw, _eth1ip, _eth1mask, mgmtHost);
         	if (internalDns2 != null) {
-            	addRouteToInternalIp(localgw, eth1ip, eth1mask, internalDns2);
+        		addRouteToInternalIpOrCidr(_localgw, _eth1ip, _eth1mask, internalDns2);
         	}
         }
         
@@ -217,37 +229,42 @@ public class ConsoleProxyResource extends ServerResourceBase implements ServerRe
         return true;
     }
     
-    private void addRouteToInternalIp(String localgw, String eth1ip, String eth1mask, String destIp) {
-    	if (destIp == null) {
+    private void addRouteToInternalIpOrCidr(String localgw, String eth1ip, String eth1mask, String destIpOrCidr) {
+    	s_logger.debug("addRouteToInternalIp: localgw=" + localgw + ", eth1ip=" + eth1ip + ", eth1mask=" + eth1mask + ",destIp=" + destIpOrCidr);
+    	if (destIpOrCidr == null) {
     		s_logger.debug("addRouteToInternalIp: destIp is null");
 			return;
 		}
-    	if (!NetUtils.isValidIp(destIp)){
-    		s_logger.warn(" destIp is not a valid ip address destIp=" + destIp);
+    	if (!NetUtils.isValidIp(destIpOrCidr) && !NetUtils.isValidCIDR(destIpOrCidr)){
+    		s_logger.warn(" destIp is not a valid ip address or cidr destIp=" + destIpOrCidr);
     		return;
     	}
     	boolean inSameSubnet = false;
-    	if (eth1ip != null && eth1mask != null) {
-    		inSameSubnet = NetUtils.sameSubnet(eth1ip, destIp, eth1mask);
+    	if (NetUtils.isValidIp(destIpOrCidr)) {
+    		if (eth1ip != null && eth1mask != null) {
+    			inSameSubnet = NetUtils.sameSubnet(eth1ip, destIpOrCidr, eth1mask);
+    		} else {
+    			s_logger.warn("addRouteToInternalIp: unable to determine same subnet: _eth1ip=" + eth1ip + ", dest ip=" + destIpOrCidr + ", _eth1mask=" + eth1mask);
+    		}
     	} else {
-			s_logger.warn("addRouteToInternalIp: unable to determine same subnet: eth1ip=" + eth1ip + ", dest ip=" + destIp + ", eth1mask=" + eth1mask);
+            inSameSubnet = NetUtils.isNetworkAWithinNetworkB(destIpOrCidr, NetUtils.ipAndNetMaskToCidr(eth1ip, eth1mask));
     	}
     	if (inSameSubnet) {
-			s_logger.info("addRouteToInternalIp: dest ip " + destIp + " is in the same subnet as eth1 ip " + eth1ip);
+			s_logger.debug("addRouteToInternalIp: dest ip " + destIpOrCidr + " is in the same subnet as eth1 ip " + eth1ip);
     		return;
     	}
     	Script command = new Script("/bin/bash", s_logger);
 		command.add("-c");
-    	command.add("ip route delete " + destIp);
+    	command.add("ip route delete " + destIpOrCidr);
     	command.execute();
 		command = new Script("/bin/bash", s_logger);
 		command.add("-c");
-    	command.add("ip route add " + destIp + " via " + localgw);
+    	command.add("ip route add " + destIpOrCidr + " via " + localgw);
     	String result = command.execute();
     	if (result != null) {
     		s_logger.warn("Error in configuring route to internal ip err=" + result );
     	} else {
-			s_logger.info("addRouteToInternalIp: added route to internal ip=" + destIp + " via " + localgw);
+			s_logger.debug("addRouteToInternalIp: added route to internal ip=" + destIpOrCidr + " via " + localgw);
     	}
     }
     
@@ -320,5 +337,17 @@ public class ConsoleProxyResource extends ServerResourceBase implements ServerRe
 		} catch (AgentControlChannelException e) {
 			s_logger.error("Unable to send out load info due to " + e.getMessage(), e);
 		}
+    }
+    
+    public void ensureRoute(String address) {
+    	if(_localgw != null) {
+			if(s_logger.isDebugEnabled())
+				s_logger.debug("Ensure route for " + address + " via " + _localgw);
+			
+			// this method won't be called in high frequency, serialize access to script execution
+			synchronized(this) {
+				addRouteToInternalIpOrCidr(_localgw, _eth1ip, _eth1mask, address);
+			}
+    	}
     }
 }

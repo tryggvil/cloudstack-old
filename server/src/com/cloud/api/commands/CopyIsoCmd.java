@@ -26,6 +26,9 @@ import org.apache.log4j.Logger;
 
 import com.cloud.api.BaseCmd;
 import com.cloud.api.ServerApiException;
+import com.cloud.async.executor.CopyTemplateResultObject;
+import com.cloud.serializer.SerializerHelper;
+import com.cloud.storage.Storage;
 import com.cloud.storage.VMTemplateVO;
 import com.cloud.user.Account;
 import com.cloud.utils.Pair;
@@ -73,6 +76,11 @@ public class CopyIsoCmd extends BaseCmd {
         if (iso == null) {
             throw new ServerApiException(BaseCmd.PARAM_ERROR, "unable to find ISO with id " + isoId);
         }
+        
+        boolean isIso = Storage.ImageFormat.ISO.equals(iso.getFormat());
+        if (!isIso) {
+        	throw new ServerApiException(BaseCmd.PARAM_ERROR, "Please specify a valid ISO.");
+        }
 
         if (account != null) {
             if (!isAdmin(account.getType())) {
@@ -112,4 +120,13 @@ public class CopyIsoCmd extends BaseCmd {
     	}
     
     }
+    
+    protected long getInstanceIdFromJobSuccessResult(String result) {
+    	CopyTemplateResultObject resultObject = (CopyTemplateResultObject)SerializerHelper.fromSerializedString(result);
+		if (resultObject != null) {
+			return resultObject.getId();
+		}
+
+		return 0;
+	}
 }

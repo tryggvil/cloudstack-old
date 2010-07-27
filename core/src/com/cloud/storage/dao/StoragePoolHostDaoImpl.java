@@ -69,7 +69,7 @@ public class StoragePoolHostDaoImpl extends GenericDaoBase<StoragePoolHostVO, Lo
 	protected static final String DELETE_PRIMARY_RECORDS  =
 		"DELETE "+
 		"FROM storage_pool_host_ref "+
-		"WHERE host_id = ?";	
+		"WHERE host_id = ?";
 	
 	public StoragePoolHostDaoImpl () {
 		PoolSearch = createSearchBuilder();
@@ -86,8 +86,6 @@ public class StoragePoolHostDaoImpl extends GenericDaoBase<StoragePoolHostVO, Lo
 		PoolHostSearch.done();
 
 	}
-	
-
 
 	@Override
 	public List<StoragePoolHostVO> listByPoolId(long id) {
@@ -179,36 +177,36 @@ public class StoragePoolHostDaoImpl extends GenericDaoBase<StoragePoolHostVO, Lo
 	        Transaction txn = Transaction.currentTxn();
 			PreparedStatement pstmt = null;
 			ResultSet rs = null;
-			try 
+			try
 			{
 				 String sql = GET_POOL_IDS;
 				 pstmt = txn.prepareStatement(sql);
 				
 				 pstmt.setLong(1, hostId);
 				 rs = pstmt.executeQuery();
-				 while (rs.next()) 
+				 while (rs.next())
 				 {
 					poolIdsList.add(rs.getLong(1));
 	            }
-			} 
-			catch (Exception e) 
+			}
+			catch (Exception e)
 			{
 				s_logger.warn("Exception getting pool ids: ", e);
-			} 
-			finally 
+			}
+			finally
 			{
-				try 
+				try
 				{
-					if (rs != null) 
+					if (rs != null)
 					{
 						rs.close();
 					}
-					if (pstmt != null) 
+					if (pstmt != null)
 					{
 						pstmt.close();
 					}
-				} 
-				catch (SQLException e) 
+				}
+				catch (SQLException e)
 				{
 				}
 			}
@@ -226,7 +224,20 @@ public class StoragePoolHostDaoImpl extends GenericDaoBase<StoragePoolHostVO, Lo
 		 sc.setParameters("host_id", hostId);
 		 Transaction txn = Transaction.currentTxn();
 		 txn.start();
-		 delete(sc);
+		 remove(sc);
 		 txn.commit();
 	 }
+
+
+
+	@Override
+	public void deleteStoragePoolHostDetails(long hostId, long poolId) {
+		SearchCriteria sc = PoolHostSearch.create();
+		sc.setParameters("host_id", hostId);
+		sc.setParameters("pool_id", poolId);
+		 Transaction txn = Transaction.currentTxn();
+		 txn.start();
+		 remove(sc);
+		 txn.commit();
+	}
 }

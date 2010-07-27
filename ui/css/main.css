@@ -595,7 +595,18 @@ a:hover.vm_create_open {
 	overflow:hidden;
 }
 
-
+#overlay_white{
+	position: absolute;
+	width:99%;
+	height:800px;
+	float:left;
+	background-color: #FFF;
+	z-index:1001;
+	-moz-opacity: 0.8;
+	opacity:.60;
+	filter: alpha(opacity=60);
+	overflow:hidden;
+}
 
 .vmpopup_container {
 	 display:none;
@@ -683,6 +694,29 @@ a:hover.wizardprev_button {
 	margin:0;
 	padding:0;
 }
+
+#wizard_service_offering, #wizard_data_disk_offering {
+	width: 860px;
+	height:150px;
+	float:left;
+	border:1px solid #999;
+	margin:7px 10px 0 0;
+	padding:0;
+	overflow-y:scroll;
+	overflow-y:auto;
+}
+
+#wizard_service_offering li, #wizard_data_disk_offering li {
+	width:820px;
+	height:auto;
+	float:left;
+	border:1px solid #CCC;
+	margin:2px 0 0 10px;
+	display:inline;
+	padding:4px;
+}
+
+
 
 .wizard_step3 {
 	width:858px;
@@ -1511,6 +1545,8 @@ a:hover.search_button {
 	float:left;
 }
 
+
+
 .net_gridleft{
 	margin-right:456px;
 	padding:0;
@@ -2020,6 +2056,52 @@ a:hover.search_button {
 	display:inline;
 }
 
+.netgrid_celltitles .text{
+	height:16px;
+	float:left;
+	background:#FFF repeat top left;
+	color:#333;
+	font-size:10px;
+	text-align:left;
+	border:1px solid #999;
+	margin:0;
+	padding:0;
+}
+
+.netgrid_celltitles .errortext{
+	height:16px;
+	float:left;
+	background: #fbabb3 repeat top left;
+	color:#333;
+	font-size:10px;
+	text-align:left;
+	border:1px solid #999;
+	margin:0;
+	padding:0;
+}
+
+.netgrid_celltitles .errormsg{
+	height:auto;
+	float:left;
+	color:#F00;
+	font-size:10px;
+	text-align:left;
+	font-weight:normal;
+	margin:2px 0 0 0;
+	padding:0;
+}
+.netgrid_celltitles .select{
+	height:18px;
+	float:left;
+	background:#FFF repeat top left;
+	color:#333;
+	font-size:10px;
+	text-align:left;
+	border:1px solid #999;
+	margin:0;
+	padding:0;
+}
+
 .netgrid_celltitles a:link {
 	color: #2c8bbc;
 	text-align:left;
@@ -2027,7 +2109,7 @@ a:hover.search_button {
 	font-weight:normal;
 	display:inline;
 	text-decoration:none;
-	margin-left:5px;
+	margin:0 5px 0 0;
 	padding:0;
 }
 
@@ -2038,7 +2120,7 @@ a:hover.search_button {
 	font-weight:normal;
 	display:inline;
 	text-decoration:none;
-	margin-left:5px;
+	margin:0 5px 0 0;
 	padding:0;
 }
 
@@ -2049,7 +2131,7 @@ a:hover.search_button {
 	font-weight:normal;
 	display:inline;
 	text-decoration:underline;
-	margin-left:5px;
+	margin:0 5px 0 0;
 	padding:0;
 }
 
@@ -2935,6 +3017,20 @@ a:hover.add_hostbutton  {
 	background:url(../images/sprite1.gif) no-repeat -583px -267px;
 }
 
+a.add_publicipbutton {
+	width:106px;
+	height:28px;
+	float:left;
+	margin-left:10px;
+	display:inline;
+	background:url(../images/add_ipbutton.gif) no-repeat top left;
+	padding:0;
+}
+
+a:hover.a.add_publicipbutton {
+	background:url(../images/add_ipbutton_hover.gif) no-repeat top left;
+}
+
 a.add_storagepoolbutton {
 	width:146px;
 	height:36px;
@@ -3048,6 +3144,7 @@ a:hover.add_publicipbutton {
 	height:auto;
 	float:left;
 	width:100%;
+	background:#FFF;
 }
 
 .dbadmin_grid_container {
@@ -3148,18 +3245,27 @@ a:hover.add_publicipbutton {
 /* end hide */ 
 
 .db_vmcontainermidleft {
-	width:125px;
+	width:110px;
 	height:119px;
 	float:left;
 	margin:0;
 	padding:0;
 }
 
-.db_vmicons {
-	width:111px;
-	height:49px;
+.grid_statusicons {
+	width:68px;
+	height:20px;
 	float:left;
-	margin:22px 0 0 10px;
+	margin:10px 0 0 20px;
+	display:inline;
+	padding:0;
+}
+
+.db_vmicons {
+	width:93px;
+	height:41px;
+	float:left;
+	margin:22px 0 0 7px;
 	display:inline;
 	padding:0;
 }
@@ -3177,10 +3283,10 @@ a:hover.add_publicipbutton {
 	width:auto;
 	height:auto;
 	float:left;
-	margin:40px 0 0 15px;
+	margin:30px 0 0 10px;
 	display:inline;
 	padding:0;
-	font-size:12px;
+	font-size:11px;
 	font-weight:normal;
 	text-align:left;
 }
@@ -3190,7 +3296,7 @@ a:hover.add_publicipbutton {
 	height:auto;
 	margin:0;
 	padding:0;
-	font-size:12px;
+	font-size:11px;
 	font-weight:bold;
 	color:#6f900a;
 	text-align:left;
@@ -3235,7 +3341,7 @@ a:hover.add_publicipbutton {
 }
 
 .db_blank {
-	width:2%;
+	width:1%;
 	height:119px;
 	float:left;
 	margin:0;
@@ -3329,7 +3435,7 @@ a:hover.add_publicipbutton {
 }
 
 .loading_animation {
-	width:243px;
+	width:192px;
 	height:24px;
 	float:left;
 	background:url(../images/loading.gif) no-repeat top left;
@@ -4743,7 +4849,7 @@ a:hover.temp_deletebutton{
 }
 
 .host_statisticslist {
-	width:100%;
+	width:95%;
 	height:auto;
 	float:left;
 	margin:10px 0 5px 10px;
@@ -4786,6 +4892,16 @@ a:hover.temp_deletebutton{
 	height:11px;
 	float:left;
 	background:url(../images/cpu_icon.gif) no-repeat top left;
+	margin:0;
+	display:inline;
+	padding:0;
+}
+
+.hostnetwork_icon {
+	width:24px;
+	height:14px;
+	float:left;
+	background:url(../images/hostnetwork_icon.gif) no-repeat top left;
 	margin:0;
 	display:inline;
 	padding:0;
@@ -4885,6 +5001,8 @@ a:hover.temp_deletebutton{
 	border-right:1px solid #f9f9f9;
 	overflow:hidden;
 }
+
+
 .grid_genheader_cell {
 	height:24px;
 	float:left;
@@ -4909,7 +5027,7 @@ a:hover.add_newtemplatebutton {
 }
 
 .loading_gridtable {
-	width:200px;
+	width:auto;
 	height:50px;
 	background:#FFF repeat top left;
 	position:absolute;
@@ -4917,6 +5035,7 @@ a:hover.add_newtemplatebutton {
 	top:300px;
 	left:40%;
 	margin-bottom:10px;
+	opacity:none;
 }
 
 .loading_gridtable p {
@@ -4927,7 +5046,7 @@ a:hover.add_newtemplatebutton {
 	color:#666;
 	font-weight:normal;
 	font-size:25px;
-	margin:10px 0 0 30px;
+	margin:10px 15px 0 30px;
 	display:inline;
 }
 
@@ -5503,6 +5622,24 @@ a:hover.add_newtemplatebutton {
 	padding:0;
 }
 
+.zonetree_thirdlevel {
+	width:400px;
+	height:25px;
+	float:left;
+	margin:0 0 5px 110px;
+	display:inline;
+	padding:0;
+}
+
+.zonetree_thirdlevel_selected {
+	width:400px;
+	height:25px;
+	float:left;
+	margin:0 0 5px 110px;
+	background:#eaf3f5 repeat top left;
+	padding:0;
+}
+
 .zonetree_closedarrows {
 	width:12px;
 	height:14px;
@@ -5552,6 +5689,15 @@ a:hover.add_newtemplatebutton {
 	height:16px;
 	float:left;
 	background:url(../images/zone_ipicon.png) no-repeat top left;
+	font-weight:bold;
+	margin:3px 0 0 5px;
+	padding:0;
+}
+.zonetree_directipicon {
+	width:22px;
+	height:16px;
+	float:left;
+	background:url(../images/zone_directipicon.png) no-repeat top left;
 	font-weight:bold;
 	margin:3px 0 0 5px;
 	padding:0;
@@ -5719,6 +5865,23 @@ a:hover.add_newtemplatebutton {
 	background:url(../images/zone_editzonebutton_hover.gif) no-repeat top left;  
 }
 
+
+.zonedetails_addpublicipbutton {
+	width:131px;
+	height:26px;
+	float:left;
+	background:url(../images/zone_addpubIP.gif) no-repeat top left;  
+	margin:0 5px 0 0;
+	padding:0;
+	cursor:pointer;
+	cursor:hand;
+	text-decoration:none;
+}
+
+.zonedetails_addpublicipbutton:hover {
+	background:url(../images/zone_addpubIP_hover.gif) no-repeat top left;  
+}
+
 .zonedetails_addpodbutton {
 	width:71px;
 	height:26px;
@@ -5751,7 +5914,7 @@ a:hover.add_newtemplatebutton {
 	background:url(../images/zone_editpodbutton_hover.gif) no-repeat top left;
 }
 
-.zonedetails_addipbutton {
+.zonedetails_addvlanipbutton {
 	width:134px;
 	height:26px;
 	float:left;
@@ -5763,8 +5926,25 @@ a:hover.add_newtemplatebutton {
 	text-decoration:none;
 }
 
-.zonedetails_addipbutton:hover {
+.zonedetails_addvlanipbutton:hover {
 	background:url(../images/zone_addipbutton_hover.gif) no-repeat top left;
+
+}
+
+.zonedetails_directipbutton {
+	width:128px;
+	height:26px;
+	float:left;
+	background:url(../images/zone_directipbutton.gif) no-repeat top left;
+	margin:0 5px 0 0;
+	padding:0;
+	cursor:pointer;
+	cursor:hand;
+	text-decoration:none;
+}
+
+.zonedetails_directipbutton:hover {
+	background:url(../images/zone_directipbutton_hover.gif) no-repeat top left;
 
 }
 
@@ -6134,24 +6314,32 @@ a:hover.add_newtemplatebutton {
 
 
 a.add_userbutton {
-	width:146px;
-	height:36px;
+	width:77px;
+	height:22px;
 	float:left;
-	margin-left:10px;
+	margin:3px 0 0 10px;
 	display:inline;
 	background:url(../images/add_userbutton.gif) no-repeat top left;
 	padding:0;
 }
 
+a.add_userbutton:hover {
+	background:url(../images/add_userbutton_hover.gif) no-repeat top left;
+}
 
 a.add_domainbutton {
-	width:88px;
-	height:36px;
+	width:77px;
+	height:22px;
 	float:left;
-	margin-left:10px;
+	margin:3px 0 0 10px;
 	display:inline;
 	background:url(../images/add_domainbutton.gif) no-repeat top left;
 	padding:0;
+}
+
+a.add_domainbutton:hover {
+	background:url(../images/add_domainbutton_hover.gif) no-repeat top left;
+
 }
 
 
@@ -6424,9 +6612,7 @@ a.add_domainbutton {
 	margin:10px 0 0 0;
 	padding:0;
 	display:inline;
-	overflow-y:scroll;
-	overflow-y:auto;
-	overflow-x:hidden;
+	
 }
 
 .rev_wizmid_tempbox {
@@ -6508,19 +6694,26 @@ a.add_domainbutton {
 	padding:0;
 }
 .rev_wiz_reviewbox {
-	width:902px;
-	height:auto;
+	width:870px;
+	height:295px;
 	float:left;
 	margin:0;
 	padding:0;
+	overflow-y:scroll;
+	overflow-y:auto;
+	
 }
 
 .rev_wiz_reviewlist {
-	width:902px;
+	width:830px;
 	height:auto;
 	float:left;
-	margin:0 0 15px 0;
-	padding:0;
+	background:url(../images/tick_arrow.gif) no-repeat top left;
+	background-position: 5px 0;
+	margin:10px 0 5px 10px;
+	border:1px solid #CCC;
+	padding:5px;
+	display:inline;
 }
 
 .rev_wiz_reviewlabel {
@@ -6531,7 +6724,7 @@ a.add_domainbutton {
 	font-size:12px;
 	text-align:left;
 	font-weight:bold;
-	margin:0;
+	margin:0 0 0 30px;
 	padding:0;
 }
 
@@ -6694,6 +6887,18 @@ a.add_domainbutton {
 	padding:0;
 }
 
+.rev_tempsearchpanel .select {
+	width:160px;
+	height:19px;
+	background:#eaeaea repeat top left;
+	border:1px solid #999;
+	font-size:12px;
+	color:#333;
+	margin:0 0 0 5px;
+	display:inline;
+	padding:0;
+}
+
 .rev_tempsearchbox {
 	width:215px;
 	height:21px;
@@ -6701,6 +6906,9 @@ a.add_domainbutton {
 	margin:0;
 	padding:0;
 }
+
+
+
 
 .rev_tempsearchbox ol {
 	width:168px;
@@ -6794,7 +7002,7 @@ a.add_domainbutton {
 	width:15px;
 	height:15px;
 	float:left;
-	margin:0;
+	margin:0 5px 0 0;
 	padding:0;
 }
 
@@ -6806,13 +7014,13 @@ a.add_domainbutton {
 	padding:0;
 }
 .revwiz_formcontent_title {
-	width:700px;
+	width:800px;
 	height:auto;
 	float:left;
 	color:#04263a;
 	font-size:12px;
 	font-weight:bold;
-	margin-top:5px;
+	margin-top:0;
 	padding:0;
 }
 
@@ -6825,6 +7033,20 @@ a.add_domainbutton {
 	padding:2px 2px 0 2px;
 	height: 16px;
 	width: 196px;
+	margin:0;
+	padding:0;
+	color:#333;
+}
+
+.rev_wizformarea .multiple {
+	background-color: #e9f6ff;
+	font: normal 12px Arial, Helvetica, sans-serif;
+	font-weight:normal;
+	float:left;
+	border: 1px solid #61869b;
+	padding:2px 2px 0 2px;
+	height: 80px;
+	width: 300px;
 	margin:0;
 	padding:0;
 	color:#333;
@@ -7060,3 +7282,608 @@ a.add_domainbutton {
 .revwiz_closebutton:hover {
 	background:url(../images/revwiz_closebutton_hover.gif) no-repeat top left;
 }
+
+a.add_networkgroupbutton {
+    width:109px;
+    height:22px;
+    float:left;
+    margin:3px 0 0 10px;
+    display:inline;
+    background: url(../images/addnetgroup_button.gif) no-repeat top left;
+    padding:0;
+}
+
+a:hover.add_networkgroupbutton {
+    background: url(../images/addnetgroup_button_hover.gif) no-repeat top left; 
+}
+
+
+.publicip_panel {
+	width: 970px;
+	height:auto;
+	float:left;
+	margin:0;
+	padding:0;
+}
+
+.ip_descriptionbox {
+	width:964px;
+	min-height:250px;
+	height:auto;
+	float:left;
+	position:relative;
+	margin:0;
+	padding:0;
+}
+
+.ip_searchbutton {
+	width:22px;
+	height:21px;
+	float:left;
+	background:url(../images/ip_searchbutton.gif) no-repeat top left;
+	cursor:pointer;
+	cursor:hand;
+	margin:6px 0 0 5px;
+	display:inline;
+	padding:0;
+}
+
+.ip_descriptionbox_top {
+	width:964px;
+	height:24px;
+	float:left;
+	background:url(../images/ipdescr_boxtop.gif) no-repeat top left;
+	margin:0;
+	padding:0;
+	overflow:hidden;
+}
+
+.ip_descriptionbox_top a {
+	width:auto;
+	height:auto;
+	float:right;
+	color:#2c8bbc;
+	font-size:11px;
+	text-decoration:underline;
+	font-weight:normal;
+	margin:6px 15px 0 0;
+	padding:0;
+}
+
+.ip_descriptionbox_top a:link,ip_descriptionbox_top a:visited  {
+	text-decoration:underline;
+}
+
+.ip_descriptionbox_top a:hover {
+	text-decoration:none;
+}
+
+.ip_descriptionbox_mid {
+	width:964px;
+	height:auto;
+	float:left;
+	background:url(../images/ipdescr_boxmid.gif) repeat-y top left;
+	margin:0;
+	padding:0;
+}
+
+.ip_descriptionbox_bot {
+	width:964px;
+	height:33px;
+	float:left;
+	background:url(../images/ipdescr_boxbot.gif) no-repeat top left;
+	margin:0;
+	padding:0;
+}
+
+.ip_description_contentbox {
+	width:941px;
+	height:auto;
+	float:left;
+	margin:0 0 10px 10px;
+	left:0;
+	top:0;
+	padding:0;
+}
+
+.ip_description_contentbox_top {
+	width:941px;
+	height:33px;
+	float:left;
+	background:url(../images/ipdescr_conttop.gif) no-repeat top left;
+	margin:0;
+	padding:0;
+	overflow:hidden;
+}
+
+.ip_description_contentbox_mid {
+	width:941px;
+	height:auto;
+	float:left;
+	background:url(../images/ipdescr_contmid.gif) repeat-y top left;
+	margin:0;
+	padding:0;
+}
+
+.ip_description_contentbox_mid p {
+	width:auto;
+	height:auto;
+	float:left;
+	margin:0 0 0 15px;
+	display:inline;
+	font-size:12px;
+	font-weight:bold;
+	color:#333;
+	padding:0;
+}
+
+
+.ip_description_contentbox_bot {
+	width:941px;
+	height:14px;
+	float:left;
+	background:url(../images/ipdescr_contbot.gif) no-repeat top left;
+	margin:0;
+	padding:0;
+}
+
+.ip_description_topdetailspanel {
+	width:941px;
+	height:54px;
+	background:url(../images/ip_detailtopbox.gif) no-repeat top left;
+	float:left;
+	margin:0 0 10px 10px;
+	left:0;
+	padding:0;
+}
+
+.ip_description_topdetailspanel a {
+	width:auto;
+	height:auto;
+	color:#2c8bbc;
+	font-size:11px;
+	text-decoration:underline;
+	margin:-2px 0 0 5px;
+	display:inline;
+	padding:0;
+}
+
+.ip_description_topdetailspanel a:link, .ip_description_topdetailspanel a:visited {
+	text-decoration:underline;	
+}
+
+.ip_description_topdetailspanel a:hover {
+	text-decoration:none;	
+}
+
+.ip_description_detailbox {
+	width:231px;
+	height:23px;
+	float:left;
+	margin:2px 0 0 2px;
+	padding:0;
+}
+
+.ip_description_detailbox p {
+	float:left;
+	color:#333;
+	font-size:11px;
+	font-weight:normal;
+	margin:8px 0 0 10px;
+	padding:0;
+}
+
+.ip_description_detailbox span {
+	color:#333;
+	font-size:11px;
+	font-weight:bold;
+	margin:0;
+	padding:0;
+}
+
+.ip_description_titlearea {
+	width:468px;
+	height:auto;
+	float:left;
+	margin:5px 0 0 0;
+	display:inline;
+	padding:0;
+}
+
+.ip_description_titlearea h3{
+	width:350px;
+	height:auto;
+	float:left;
+	color:#333;
+	font-size:14px;
+	font-weight:normal;
+	margin:4px 0 0 0;
+	display:inline;
+	padding:0;
+}
+
+.ip_description_titleicon {
+	width:20px;
+	height:10px;
+	float:left;
+	margin:0 10px 0 10px;
+	display:inline;
+	padding:0;
+}
+
+
+.ip_description_contentarea {
+	width:468px;
+	height:auto;
+	float:left;
+	margin:0 0 0 2px;
+	display:inline;
+	padding:0;
+}
+
+.ip_description_gridarea {
+	width:440px;
+	height:auto;
+	float:left;
+	background:#FFF;
+	margin:5px 0 0 10px;
+	padding:0;
+}
+
+
+.ip_description_managearea {
+	width:439px;
+	height:auto;
+	float:left;
+	background:#FFF;
+	margin:3px 0 0 0;
+	padding:0;
+}
+
+.ip_description_managelist {
+	width:395px;
+	height:23px;
+	float:left;
+	background:#fff9d7 url(../images/ip_managebox_bg.gif) repeat-x top left;
+	border:1px solid #d6d6d6;
+	margin:3px 0 3px 20px;
+	display:inline;
+	padding:0;
+}
+
+.ip_description_manageloading {
+	width:350px;
+	height:23px;
+	float:left;
+	margin:0;
+	padding:0;
+}
+
+.ip_description_manageloading p{
+	width:auto;
+	height:auto;
+	float:left;
+	color:#333;
+	font-size:11px;
+	font-weight:bold;
+	margin:5px 0 0 0;
+	padding:0;
+}
+
+.ip_description_manageloader {
+	width:16px;
+	height:16px;
+	float:left;
+	background:url(../images/loadvm_loader.gif) no-repeat top left;
+	margin:3px 10px  0  10px;
+	padding:0;
+}
+
+.ip_description_managelist_cell {
+	height:15px;
+	float:left;
+	color:#333;
+	font-size:11px;
+	text-align:left;
+	font-weight:normal;
+	margin:0;
+	padding:6px 0 0 5px;
+}
+
+.ip_description_managelist_cell .select {
+	height:16px;
+	float:left;
+	background:#FFF;
+	border:1px solid #CCC;
+	color:#333;
+	font-size:11px;
+	text-align:left;
+	font-weight:normal;
+	margin:-2px 0 0 0;
+	padding:0;
+}
+
+.ip_description_managelist_cell a:link {
+	color: #2c8bbc;
+	text-align:left;
+	font-size:11px;
+	font-weight:normal;
+	display:inline;
+	text-decoration:none;
+	margin:0 5px 0 0;
+	padding:0;
+}
+
+.ip_description_managelist_cell a:visited {
+	color: #2c8bbc;
+	text-align:left;
+	font-size:11px;
+	font-weight:normal;
+	display:inline;
+	text-decoration:none;
+	margin:0 5px 0 0;
+	padding:0;
+}
+
+.ip_description_managelist_cell a:hover {
+	color: #2c8bbc;
+	text-align:left;
+	font-size:11px;
+	font-weight:normal;
+	display:inline;
+	text-decoration:underline;
+	margin:0 5px 0 0;
+	padding:0;
+}
+
+.ip_description_managelist_icon {
+	width:21px;
+	height:18px;
+	float:left;
+	background:url(../images/ip_managebox_icon.gif) no-repeat top left;
+	margin:2px 15px 0 5px;
+	display:inline;
+	padding:0;
+}
+
+#cidr_container {
+	width:120px;
+    height:auto;
+    float:left;
+    margin:0;
+	padding:0;
+}
+
+ 
+
+#account_networkgroup_container {
+	 width:200px;
+	 height:auto;
+	 float:left;
+	 margin:0;
+	 padding:0;
+
+}
+
+.select_directipbg_user {
+	width:423px;
+	height:44px;
+	float:left;
+	background:url(../images/select_ipbg.gif) no-repeat top left;
+	margin:0;
+	padding:0;
+}
+
+.select_directipbg_user ol {
+	width:395px;
+	height:auto;
+	float:left;
+	list-style:none;
+	margin:3px 0 0 12px;
+	display:inline;
+	padding:0;
+}
+
+.select_directipbg_user li {
+	width:390px;
+	height:auto;
+	float:left;
+	margin:0 0 0 5px;
+	display:inline;
+	padding:0;
+}
+
+.select_directipbg_user label {
+	width:auto;
+	height:auto;
+	float:left;
+	color:#FFF;
+	font-size:11px;
+	font-weight:bold;
+	text-align:left;
+	margin:7px 15px 0 0;
+	padding:0;
+}
+
+.select_directipbg_user .select {
+	width: 259px;
+	height:18px;
+	float:left;
+	background:#FFF repeat top left;
+	border:1px solid #CCC;
+	font-size:11px;
+	font-weight:normal;
+	color:#333;
+	padding:1px 0 0 2px;
+	margin:4px 0 0 0;
+}
+
+.select_directipbg_admin {
+	width:770px;
+	height:44px;
+	float:left;
+	background:url(../images/select_ipbg_admin.gif) no-repeat top left;
+	margin:0;
+	padding:0;
+}
+
+.select_directipbg_admin ol {
+	width:auto;
+	height:auto;
+	float:left;
+	list-style:none;
+	margin:3px 0 0 12px;
+	display:inline;
+	padding:0;
+}
+
+.select_directipbg_admin li {
+	width:auto;
+	height:auto;
+	float:left;
+	margin:0 0 0 5px;
+	display:inline;
+	padding:0;
+}
+
+.select_directipbg_admin label {
+	width:auto;
+	height:auto;
+	float:left;
+	color:#FFF;
+	font-size:11px;
+	font-weight:bold;
+	text-align:left;
+	margin:7px 15px 0 0;
+	padding:0;
+}
+
+.select_directipbg_admin .select {
+	width: 170px;
+	height:19px;
+	float:left;
+	background:#FFF repeat top left;
+	border:1px solid #CCC;
+	font-size:11px;
+	font-weight:normal;
+	color:#333;
+	padding:1px 0 0 2px;
+	margin:4px 0 0 10px;
+}
+
+.select_directipbg_admin .text {
+	width: 174px;
+	height:16px;
+	float:left;
+	background:#FFF repeat top left;
+	border:1px solid #CCC;
+	font-size:11px;
+	font-weight:normal;
+	color:#333;
+	padding:1px 0 0 2px;
+	margin:4px 0 0 10px;
+}
+
+
+.select_directipbg_admin .ipwatermark_text  {
+	color:#999;
+	text-align:left;
+	font-size:11px;
+	font-weight:normal;
+	padding:1px 0 0 2px;
+	position:relative;
+}
+
+
+.ip_oricon {
+	width:20px;
+	height:18px;
+	float:left;
+	background:url(../images/ip_ORicon.gif) no-repeat top left;
+	margin:4px 15px 0 0;
+	padding:0;
+}
+
+.select_directip_actions {
+	width:auto;
+	height:auto;
+	float:left;
+	margin:0 0 0 10px;
+	padding:0;
+}
+
+.select_directip_actions a {
+	color:#2c8bbc;
+	font-size:11px;
+	font-weight:normal;
+	float:left;
+	margin:10px 0 0 0;
+	padding:0;
+	text-decoration:underline;
+}
+
+.select_directip_actions a:link, select_directip_actions a:visited {
+	text-decoration:underline;
+}
+
+.select_directip_actions a:hover {
+	text-decoration:none;
+}
+
+.select_directipbg ol {
+	width:395px;
+	height:auto;
+	float:left;
+	list-style:none;
+	margin:3px 0 0 12px;
+	display:inline;
+	padding:0;
+}
+
+.select_directipbg li {
+	width:390px;
+	height:auto;
+	float:left;
+	margin:0 0 0 5px;
+	display:inline;
+	padding:0;
+}
+
+.select_directipbg label {
+	width:auto;
+	height:auto;
+	float:left;
+	color:#FFF;
+	font-size:11px;
+	font-weight:bold;
+	text-align:left;
+	margin:7px 15px 0 0;
+	padding:0;
+}
+
+.select_directipbg .select {
+	width: 259px;
+	height:18px;
+	float:left;
+	background:#FFF repeat top left;
+	border:1px solid #CCC;
+	font-size:11px;
+	font-weight:normal;
+	color:#333;
+	padding:1px 0 0 2px;
+	margin:4px 0 0 0;
+}
+
+/* Instances tab - VM template - "Network Groups" action link - Network Groups dialog (begin) */
+ul.network_groups_list_first_level
+{
+    list-style-type:square;
+    padding-left: 10px;
+}
+
+ul.network_groups_list_second_level 
+{
+	list-style-type:circle;
+	padding-left: 30px;
+}
+/* Instances tab - VM template - "Network Groups" action link - Network Groups dialog (end) */

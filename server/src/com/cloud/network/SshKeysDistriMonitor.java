@@ -31,10 +31,10 @@ import com.cloud.agent.api.Command;
 import com.cloud.agent.api.StartupCommand;
 import com.cloud.agent.api.StartupRoutingCommand;
 import com.cloud.configuration.dao.ConfigurationDao;
-import com.cloud.host.Host;
 import com.cloud.host.HostVO;
 import com.cloud.host.Status;
 import com.cloud.host.dao.HostDao;
+import com.cloud.hypervisor.Hypervisor;
 
 
 
@@ -72,8 +72,8 @@ public class SshKeysDistriMonitor implements Listener {
 	    @Override
 	    public boolean processConnect(HostVO host, StartupCommand cmd) {
 	    	if (cmd instanceof StartupRoutingCommand) {
-	    		if (((StartupRoutingCommand) cmd).getHypervisorType() == Host.HypervisorType.KVM ||
-	    		        ((StartupRoutingCommand) cmd).getHypervisorType() == Host.HypervisorType.XenServer) {
+	    		if (((StartupRoutingCommand) cmd).getHypervisorType() == Hypervisor.Type.KVM ||
+	    		        ((StartupRoutingCommand) cmd).getHypervisorType() == Hypervisor.Type.XenServer) {
 	    			/*TODO: Get the private/public keys here*/
 	    			
 	    			Map<String, String> configs = _configDao.getConfiguration("management-server", new HashMap<String, Object>());

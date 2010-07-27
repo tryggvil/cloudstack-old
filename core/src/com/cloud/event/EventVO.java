@@ -22,6 +22,8 @@ import java.util.Date;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -44,6 +46,10 @@ public class EventVO {
 
 	@Column(name="type")
 	private String type;
+	
+	@Enumerated(value=EnumType.STRING)
+	@Column(name="state")
+    private EventState state = EventState.Completed;
 
 	@Column(name="description")
 	private String description;
@@ -68,6 +74,9 @@ public class EventVO {
 
 	@Column(name="level")
 	private String level = LEVEL_INFO;
+	
+	@Column(name="start_id")
+    private long startId;
 
 	@Column(name="parameters")
 	private String parameters;
@@ -94,6 +103,14 @@ public class EventVO {
 	public void setType(String type) {
 		this.type = type;
 	}
+	public EventState getState() {
+        return state;
+    }
+
+    public void setState(EventState state) {
+        this.state = state;
+    }
+
 	public String getDescription() {
 		return description;
 	}
@@ -142,6 +159,14 @@ public class EventVO {
 	public void setLevel(String level) {
 		this.level = level;
 	}
+	public long getStartId() {
+        return startId;
+    }
+
+    public void setStartId(long startId) {
+        this.startId = startId;
+    }
+
 	public String getParameters() {
 		return parameters;
 	}

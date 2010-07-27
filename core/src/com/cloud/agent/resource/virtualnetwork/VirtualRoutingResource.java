@@ -54,6 +54,7 @@ import com.cloud.agent.api.routing.SetFirewallRuleCommand;
 import com.cloud.agent.api.routing.VmDataCommand;
 import com.cloud.utils.NumbersUtil;
 import com.cloud.utils.component.Manager;
+import com.cloud.utils.net.NetUtils;
 import com.cloud.utils.script.OutputInterpreter;
 import com.cloud.utils.script.Script;
 
@@ -114,15 +115,7 @@ public class VirtualRoutingResource implements Manager {
     }
 
     protected Answer execute(VmDataCommand cmd) {
-    	List<String[]> vmData = new ArrayList<String[]>();    	    	
-    	vmData.add(new String[] {"userdata", "user-data", cmd.getUserData()});
-    	vmData.add(new String[] {"metadata", "service-offering", cmd.getServiceOffering()});
-    	vmData.add(new String[] {"metadata", "availability-zone", cmd.getZoneName()});
-    	vmData.add(new String[] {"metadata", "local-ipv4", cmd.getGuestIP()});
-    	vmData.add(new String[] {"metadata", "local-hostname", cmd.getVmName()});
-    	vmData.add(new String[] {"metadata", "public-ipv4", cmd.getRouterPublicIpAddress()});
-    	vmData.add(new String[] {"metadata", "public-hostname", cmd.getRouterPublicIpAddress()});
-    	vmData.add(new String[] {"metadata", "instance-id", cmd.getVmInstanceName()});
+    	List<String[]> vmData = cmd.getVmData();
     	
     	for (String[] vmDataEntry : vmData) {
     		String folder = vmDataEntry[0];
@@ -365,6 +358,8 @@ public class VirtualRoutingResource implements Manager {
         
         command.add("-n", vlanNetmask);
         
+        command.add("-c", "eth2");
+        
         if (vlanId != null) {
         	command.add("-v", vlanId);
         	command.add("-g", vlanGateway);
@@ -447,6 +442,8 @@ public class VirtualRoutingResource implements Manager {
     	if (isBridgeExists(privBrName)) {
     		deleteBridge(privBrName);
     	}
+    	
+    	
     }
     
     protected Answer execute(final SetFirewallRuleCommand cmd) {

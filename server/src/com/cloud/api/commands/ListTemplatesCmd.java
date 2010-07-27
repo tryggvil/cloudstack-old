@@ -52,7 +52,7 @@ public class ListTemplatesCmd extends BaseCmd {
     	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.NAME, Boolean.FALSE));
     	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.IS_PUBLIC, Boolean.FALSE));
     	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.IS_READY, Boolean.FALSE));
-    	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.TEMPLATE_FILTER, Boolean.FALSE));
+    	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.TEMPLATE_FILTER, Boolean.TRUE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.KEYWORD, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.PAGE, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.PAGESIZE, Boolean.FALSE));
@@ -82,29 +82,9 @@ public class ListTemplatesCmd extends BaseCmd {
         String keyword = (String)params.get(BaseCmd.Properties.KEYWORD.getName());
         Integer page = (Integer)params.get(BaseCmd.Properties.PAGE.getName());
         Integer pageSize = (Integer)params.get(BaseCmd.Properties.PAGESIZE.getName());
-        Long zoneId = (Long)params.get(BaseCmd.Properties.ZONE_ID.getName());        
-        boolean isAdmin = false;
+        Long zoneId = (Long)params.get(BaseCmd.Properties.ZONE_ID.getName());   
         
-        if (templateFilterString == null) {
-        	if ((isPublic != null && isPublic) || (isReady != null && isReady)) {
-        		templateFilterString = "community";
-        	} else {
-        	    if ((account == null) || (account.getType() == Account.ACCOUNT_TYPE_ADMIN)) {
-                    templateFilterString = "all";
-        	    } else {
-        	        // if no parameters are specified and the account is not a root admin, default to listing "My Templates" which is the self filter string
-                    templateFilterString = "self";
-        	    }
-        	}
-        }
-
-        TemplateFilter templateFilter;
-        try {
-        	templateFilter = TemplateFilter.valueOf(templateFilterString);
-        } catch (IllegalArgumentException e) {
-        	throw new ServerApiException(BaseCmd.PARAM_ERROR, "Please specify a valid template filter.");
-        }
-        
+        boolean isAdmin = false;                                        
         Long accountId = null;
         if ((account == null) || account.getType() == Account.ACCOUNT_TYPE_ADMIN) {
             isAdmin = true;
@@ -126,6 +106,13 @@ public class ListTemplatesCmd extends BaseCmd {
             accountName = account.getAccountName();
             domainId = account.getDomainId();
         }       
+        
+        TemplateFilter templateFilter;
+        try {
+        	templateFilter = TemplateFilter.valueOf(templateFilterString);
+        } catch (IllegalArgumentException e) {
+        	throw new ServerApiException(BaseCmd.PARAM_ERROR, "Please specify a valid template filter.");
+        }
 
         Long startIndex = Long.valueOf(0);
         int pageSizeNum = 50;
@@ -173,12 +160,11 @@ public class ListTemplatesCmd extends BaseCmd {
                 templateData.add(new Pair<String, Object>(BaseCmd.Properties.NAME.getName(), template.getName()));
                 templateData.add(new Pair<String, Object>(BaseCmd.Properties.DISPLAY_TEXT.getName(), template.getDisplayText()));
                 templateData.add(new Pair<String, Object>(BaseCmd.Properties.IS_PUBLIC.getName(), Boolean.valueOf(template.isPublicTemplate()).toString()));
-//                templateData.add(new Pair<String, Object>(BaseCmd.Properties.REQUIRES_HVM.getName(), new Boolean(template.requiresHvm()).toString()));
-//                templateData.add(new Pair<String, Object>(BaseCmd.Properties.BITS.getName(), Integer.valueOf(template.getBits()).toString()));
-                templateData.add(new Pair<String, Object>(BaseCmd.Properties.CREATED.getName(), getDateString(template.getCreated())));
+                templateData.add(new Pair<String, Object>(BaseCmd.Properties.CREATED.getName(), getDateString(templateHostRef.getCreated())));
                 templateData.add(new Pair<String, Object>(BaseCmd.Properties.IS_READY.getName(), Boolean.valueOf(templateHostRef.getDownloadState()==Status.DOWNLOADED).toString()));
                 templateData.add(new Pair<String, Object>(BaseCmd.Properties.IS_FEATURED.getName(), Boolean.valueOf(template.isFeatured()).toString()));
                 templateData.add(new Pair<String, Object>(BaseCmd.Properties.PASSWORD_ENABLED.getName(), Boolean.valueOf(template.getEnablePassword()).toString()));
+                templateData.add(new Pair<String, Object>(BaseCmd.Properties.CROSS_ZONES.getName(), Boolean.valueOf(template.isCrossZones()).toString()));
                 
                 GuestOS os = getManagementServer().findGuestOSById(template.getGuestOSId());
                 if (os != null) {
@@ -225,6 +211,11 @@ public class ListTemplatesCmd extends BaseCmd {
                     } else {
                     	templateData.add(new Pair<String, Object>(BaseCmd.Properties.TEMPLATE_STATUS.getName(), "Successfully Installed"));
                     }
+                }
+                
+                long templateSize = templateHostRef.getSize();
+                if (templateSize > 0) {
+                	templateData.add(new Pair<String, Object>(BaseCmd.Properties.SIZE.getName(), templateSize));
                 }
                 
                 AsyncJobVO asyncJob = getManagementServer().findInstancePendingAsyncJob("vm_template", template.getId());

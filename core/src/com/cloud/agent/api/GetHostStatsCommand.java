@@ -17,8 +17,33 @@
  */
 package com.cloud.agent.api;
 
-public class GetHostStatsCommand extends Command {
-    public GetHostStatsCommand() {
+import java.util.List;
+
+public class GetHostStatsCommand extends Command 
+{
+    String hostGuid;
+    String hostName;
+    long hostId;
+    
+    protected GetHostStatsCommand() {
+    }
+    
+    public GetHostStatsCommand(String hostGuid, String hostName, long hostId) {
+        this.hostGuid = hostGuid;
+        this.hostName = hostName;
+        this.hostId = hostId;
+    }
+    
+    public String getHostGuid(){
+    	return this.hostGuid;
+    }
+    
+    public String getHostName(){
+    	return this.hostName;
+    }
+    
+    public long getHostId(){
+    	return this.hostId;
     }
     
     @Override

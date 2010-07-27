@@ -28,8 +28,11 @@ import com.cloud.async.AsyncJobResult;
 import com.cloud.async.AsyncJobVO;
 import com.cloud.async.BaseAsyncJobExecutor;
 import com.cloud.serializer.GsonHelper;
+import com.cloud.server.ManagementServer;
 import com.cloud.storage.Snapshot;
 import com.cloud.storage.SnapshotVO;
+import com.cloud.storage.VolumeVO;
+import com.cloud.storage.Snapshot.SnapshotType;
 import com.cloud.storage.snapshot.SnapshotManager;
 import com.cloud.user.Account;
 import com.google.gson.Gson;
@@ -96,6 +99,9 @@ public class CreateSnapshotExecutor extends BaseAsyncJobExecutor {
 	
 	private CreateSnapshotResultObject composeResultObject(Snapshot snapshot) {
 		CreateSnapshotResultObject resultObject = new CreateSnapshotResultObject();
+		ManagementServer managementServer = getAsyncJobMgr().getExecutorContext().getManagementServer();
+		VolumeVO volume = managementServer.findVolumeById(snapshot.getVolumeId());
+		
 		resultObject.setId(snapshot.getId());
 		long domainId = -1;
 		Account account = getAsyncJobMgr().getExecutorContext().getAccountDao().findById(snapshot.getAccountId());
@@ -107,15 +113,17 @@ public class CreateSnapshotExecutor extends BaseAsyncJobExecutor {
 			if(domainId != -1)
 			{
 				resultObject.setDomainId(domainId);
-				resultObject.setDomain(getAsyncJobMgr().getExecutorContext().getManagementServer().findDomainIdById(domainId).getName());
+				resultObject.setDomainName(getAsyncJobMgr().getExecutorContext().getManagementServer().findDomainIdById(domainId).getName());
 			}
 			
 		}
-		resultObject.setSnapshotType(snapshot.getSnapshotType());
+		String snapshotTypeStr = SnapshotType.values()[snapshot.getSnapshotType()].name();
+		resultObject.setSnapshotType(snapshotTypeStr);
 		resultObject.setVolumeId(snapshot.getVolumeId());
+		resultObject.setVolumeName(volume.getName());
+		resultObject.setVolumeType(volume.getVolumeType());
 		resultObject.setCreated(snapshot.getCreated());
 		resultObject.setName(snapshot.getName());
-		resultObject.setPath(snapshot.getPath());
 		return resultObject;
 	}
 }

@@ -21,38 +21,59 @@ package com.cloud.async.executor;
 public class DeployVMParam extends VMOperationParam {
 	private long accountId;
 	private long dataCenterId;
-	private long serviceOfferingId;
-	private long dataDiskOfferingId;
-	private long rootDiskOfferingId;
+	private long serviceOfferingId;	
 	private long templateId;
+	private Long diskOfferingId;
 	private String domain;
 	private String password;
 	private String displayName;
 	private String group;
 	private String userData;
 	private long domainId;
+	private String [] networkGroups;
 	
 	public DeployVMParam() {
 	}
 	
 	public DeployVMParam(long userId, long accountId, long dataCenterId, 
-		long serviceOfferingId, long dataDiskOfferingId, long templateId,
-		long rootDiskOfferingId, String domain, String password,
-		String displayName, String group, String userData) {
+		long serviceOfferingId, long templateId,
+		Long diskOfferingId, String domain, String password,
+		String displayName, String group, String userData, String [] networkGroups) {
 		
 		setUserId(userId);
 		this.accountId = accountId;
 		this.dataCenterId = dataCenterId;
 		this.serviceOfferingId = serviceOfferingId;
-		this.dataDiskOfferingId = dataDiskOfferingId;
 		this.templateId = templateId;
-		this.rootDiskOfferingId = rootDiskOfferingId;
+		this.diskOfferingId = diskOfferingId;
 		this.domain = domain;
 		this.password = password;
 		this.displayName = displayName;
 		this.group = group;
 		this.userData = userData;
+		this.setNetworkGroups(networkGroups);
 	}
+	
+	public DeployVMParam(long userId, long accountId, long dataCenterId, 
+	        long serviceOfferingId, long templateId,
+	        Long diskOfferingId, String domain, String password,
+	        String displayName, String group, String userData, 
+	        String [] networkGroups, long eventId) {
+	        
+	        setUserId(userId);
+	        this.accountId = accountId;
+	        this.dataCenterId = dataCenterId;
+	        this.serviceOfferingId = serviceOfferingId;
+	        this.templateId = templateId;
+	        this.diskOfferingId = diskOfferingId;
+	        this.domain = domain;
+	        this.password = password;
+	        this.displayName = displayName;
+	        this.group = group;
+	        this.userData = userData;
+	        this.setNetworkGroups(networkGroups);
+	        this.eventId = eventId;
+	    }
 
 	public long getAccountId() {
 		return accountId;
@@ -78,20 +99,12 @@ public class DeployVMParam extends VMOperationParam {
 		this.serviceOfferingId = serviceOfferingId;
 	}
 	
-	public long getDataDiskOfferingId() {
-		return dataDiskOfferingId;
+	public Long getDiskOfferingId() {
+		return diskOfferingId;
 	}
 	
-	public void setDataDiskOfferingId(long dataDiskOfferingId) {
-		this.dataDiskOfferingId = dataDiskOfferingId;
-	}
-	
-	public long getrootDiskOfferingId() {
-		return rootDiskOfferingId;
-	}
-	
-	public void setrootDiskOfferingId(long rootDiskOfferingId) {
-		this.rootDiskOfferingId = rootDiskOfferingId;
+	public void setDiskOfferingId(Long diskOfferingId) {
+		this.diskOfferingId = diskOfferingId;
 	}
 	
 	public long getTemplateId() {
@@ -146,5 +159,13 @@ public class DeployVMParam extends VMOperationParam {
 
 	public String getUserData() {
 		return userData;
+	}
+
+	public void setNetworkGroups(String [] networkGroups) {
+		this.networkGroups = networkGroups;
+	}
+
+	public String [] getNetworkGroup() {
+		return networkGroups;
 	}
 }

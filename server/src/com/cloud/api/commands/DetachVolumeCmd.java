@@ -48,6 +48,10 @@ public class DetachVolumeCmd extends BaseCmd {
         return s_properties;
     }
 
+    public static String getResultObjectName() {
+    	return "volume";
+    }
+    
     @Override
     public List<Pair<String, Object>> execute(Map<String, Object> params) {
     	Account account = (Account) params.get(BaseCmd.Properties.ACCOUNT_OBJ.getName());

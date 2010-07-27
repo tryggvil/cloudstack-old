@@ -46,9 +46,10 @@ public interface DownloadManager extends Manager {
 	 * @param the name if the ISO file if the template being downloaded is an ISO
 	 * @param user username used for authentication to the server
 	 * @param password password used for authentication to the server
+	 * @param maxDownloadSizeInBytes (optional) max download size for the template, in bytes. 
 	 * @return job-id that can be used to interrogate the status of the download.
 	 */
-	public String downloadPublicTemplate(long id, String url, String name, ImageFormat format, boolean hvm, Long accountId, String descr, String cksum, String installPathPrefix, String userName, String passwd);
+	public String downloadPublicTemplate(long id, String url, String name, ImageFormat format, boolean hvm, Long accountId, String descr, String cksum, String installPathPrefix, String userName, String passwd, long maxDownloadSizeInBytes);
 	
 	
 	/**

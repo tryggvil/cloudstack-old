@@ -78,9 +78,12 @@ public class SearchCriteria {
     public enum Func {
         NATIVE("@", 1),
         MAX("MAX(@)", 1),
+        MIN("MIN(@)", 1),
         FIRST("FIRST(@)", 1),
         LAST("LAST(@)", 1),
-        SUM("SUM(@)", 1);
+        SUM("SUM(@)", 1),
+        COUNT("COUNT(@)", 1),
+        DISTINCT("DISTINCT(@)", 1);
         
         private String func;
         private int count;
@@ -113,6 +116,7 @@ public class SearchCriteria {
     private int _counter;
     private HashMap<String, Ternary<SearchCriteria, Attribute, Attribute>> _joins;
     private final ArrayList<Pair<Func, Attribute[]>> _selects;
+    private final ArrayList<Attribute> _groupBys;
     
     protected SearchCriteria(SearchBuilder<?> sb) {
     	this._attrs = sb._attrs;
@@ -128,6 +132,7 @@ public class SearchCriteria {
             }
         }
         _selects = sb._selects;
+        _groupBys = sb._groupBys;
     }
     
     public SelectType getSelect(StringBuilder str, int insertAt) {
@@ -138,8 +143,12 @@ public class SearchCriteria {
         boolean selectOnly = true;
         for (Pair<Func, Attribute[]> select : _selects) {
             String func = select.first().toString() + ",";
-            for (Attribute attr : select.second()) {
-                func = func.replaceFirst("@", attr.table + "." + attr.columnName);
+            if (select.second().length == 0) {
+                func = func.replace("@", "*");
+            } else {
+                for (Attribute attr : select.second()) {
+                    func = func.replaceFirst("@", attr.table + "." + attr.columnName);
+                }
             }
             str.insert(insertAt, func);
             insertAt += func.length();
@@ -169,6 +178,26 @@ public class SearchCriteria {
         Ternary<SearchCriteria, Attribute, Attribute> join = _joins.get(joinName);
         assert (join != null) : "Incorrect join name specified: " + joinName;
         join.first().setParameters(conditionName, params);
+    }
+    
+    public void addJoinAnd(String joinName, String field, Op op, Object... values) {
+        Ternary<SearchCriteria, Attribute, Attribute> join = _joins.get(joinName);
+        assert (join != null) : "Incorrect join name specified: " + joinName;
+        join.first().addAnd(field, op, values);
+    }
+    
+    public void addJoinOr(String joinName, String field, Op op, Object... values) {
+        Ternary<SearchCriteria, Attribute, Attribute> join = _joins.get(joinName);
+        assert (join != null) : "Incorrect join name specified: " + joinName;
+        join.first().addOr(field, op, values);
+    }
+    
+    public SearchCriteria getJoin(String joinName) {
+        return _joins.get(joinName).first();
+    }
+    
+    public List<Attribute> getGroupBy() {
+    	return _groupBys;
     }
     
     public void addAnd(String field, Op op, Object... values) {

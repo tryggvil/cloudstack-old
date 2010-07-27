@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# $Id: mountvm.sh 9132 2010-06-04 20:17:43Z manuel $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/vm/storage/nfs/mountvm.sh $
+# $Id: mountvm.sh 9132 2010-06-04 20:17:43Z manuel $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.1.x/java/scripts/vm/storage/nfs/mountvm.sh $
 # mounvm.sh -- mount a remote nfs directory as the image directory
 #
 #

@@ -80,7 +80,17 @@ public class CopyTemplateResultObject {
 	@Param(name="domainid")
 	private long domainId;
 
+	@Param(name="templatestatus")
+	private String templateStatus;
+
+	public String getTemplateStatus() {
+		return templateStatus;
+	}
 	
+	public void setTemplateStatus(String templateStatus) {
+		this.templateStatus = templateStatus;
+	}
+
 	public long getId() {
 		return id;
 	}
@@ -165,7 +175,7 @@ public class CopyTemplateResultObject {
 		this.passwordEnabled = passwordEnabled;
 	}
 	
-	public ImageFormat Format() {
+	public ImageFormat getFormat() {
 		return format;
 	}
 	

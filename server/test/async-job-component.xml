@@ -101,7 +101,6 @@
         
         <adapters key="com.vmops.agent.manager.allocator.HostAllocator">
             <adapter name="FirstFitRouting" class="com.vmops.agent.manager.allocator.impl.FirstFitRoutingAllocator"/>
-            <adapter name="FirstFitComputing" class="com.vmops.agent.manager.allocator.impl.FirstFitComputingAllocator"/>
             <adapter name="FirstFit" class="com.vmops.agent.manager.allocator.impl.FirstFitAllocator"/>
         </adapters>
         <adapters key="com.vmops.agent.manager.allocator.StorageAllocator">

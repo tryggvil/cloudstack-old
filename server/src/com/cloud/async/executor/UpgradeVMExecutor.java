@@ -27,6 +27,13 @@ import com.cloud.async.AsyncJobVO;
 import com.cloud.async.BaseAsyncJobExecutor;
 import com.cloud.serializer.GsonHelper;
 import com.cloud.server.ManagementServer;
+import com.cloud.service.ServiceOfferingVO;
+import com.cloud.storage.VMTemplateVO;
+import com.cloud.user.Account;
+import com.cloud.vm.UserVm;
+import com.cloud.vm.UserVmVO;
+import com.cloud.vm.VMInstanceVO;
+import com.cloud.vm.VmStats;
 import com.google.gson.Gson;
 
 public class UpgradeVMExecutor extends BaseAsyncJobExecutor {
@@ -49,20 +56,19 @@ public class UpgradeVMExecutor extends BaseAsyncJobExecutor {
 			
 			try {
 				asyncMgr.updateAsyncJobAttachment(job.getId(), "vm_instance", param.getVmId());
-			    String result = managementServer.upgradeVirtualMachine(param.getUserId(), 
-			    	param.getVmId(), param.getServiceOfferingId());
+			    boolean success = managementServer.upgradeVirtualMachine(param.getUserId(), 
+			    	param.getVmId(), param.getServiceOfferingId(), param.getEventId());
 	
-		        if (result.equalsIgnoreCase("Upgrade successful")) {
+		        if (success) {
+		        	//get the upgraded vm to compose the result object
+		        	UserVmVO userVm = managementServer.findUserVMInstanceById(param.getVmId());
 					asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_SUCCEEDED, 0, 
-						"success");
+							composeResultObject(userVm, managementServer));
 					
-		        } else if (result != null){
-					asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_FAILED, 
-						BaseCmd.VM_CHANGE_SERVICE_ERROR, result);
 		        } else {
 					asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_FAILED, 
 						BaseCmd.VM_CHANGE_SERVICE_ERROR, 
-						"failed to change service for virtual machine with id " + param.getVmId());
+						composeResultObject(null, managementServer));
 		        }
 			} catch(Exception e) {
 				s_logger.warn("Unable to upgrade VM " + param.getVmId() + ":" + e.getMessage(), e);
@@ -72,5 +78,56 @@ public class UpgradeVMExecutor extends BaseAsyncJobExecutor {
 			}
 			return true;
 		}
+	}
+	
+	private VmResultObject composeResultObject(UserVmVO vm, ManagementServer ms)
+	{
+		if(vm == null)
+			return null;
+		
+		VmResultObject resultObj = new VmResultObject();
+		Account acct = ms.findAccountById(Long.valueOf(vm.getAccountId()));
+		resultObj.setAccount(acct.getAccountName());
+		
+		ServiceOfferingVO offering = ms.findServiceOfferingById(vm.getServiceOfferingId());
+		resultObj.setCpuSpeed(offering.getSpeed());
+		resultObj.setMemory(offering.getRamSize());
+		if(offering.getDisplayText()!=null)
+			resultObj.setServiceOfferingName(offering.getDisplayText());
+		else
+			resultObj.setServiceOfferingName(offering.getName());
+		resultObj.setServiceOfferingId(vm.getServiceOfferingId());
+		
+		VmStats vmStats = ms.getVmStatistics(vm.getId());
+		if(vmStats != null)
+		{
+			resultObj.setCpuUsed((long) vmStats.getCPUUtilization());
+			resultObj.setNetworkKbsRead((long) vmStats.getNetworkReadKBs());
+			resultObj.setNetworkKbsWrite((long) vmStats.getNetworkWriteKBs());
+		}
+		
+		resultObj.setCreated(vm.getCreated());
+		resultObj.setDisplayName(vm.getDisplayName());
+		resultObj.setDomain(ms.findDomainIdById(acct.getDomainId()).getName());
+		resultObj.setDomainId(acct.getDomainId());
+		resultObj.setHaEnable(vm.isHaEnabled());
+		if(vm.getHostId() != null)
+		{
+			resultObj.setHostId(vm.getHostId());
+			resultObj.setHostName(ms.getHostBy(vm.getHostId()).getName());
+		}
+		resultObj.setIpAddress(vm.getPrivateIpAddress());
+		resultObj.setName(vm.getName());
+		resultObj.setState(vm.getState().toString());
+		resultObj.setZoneId(vm.getDataCenterId());
+		resultObj.setZoneName(ms.findDataCenterById(vm.getDataCenterId()).getName());
+		
+		VMTemplateVO template = ms.findTemplateById(vm.getTemplateId());
+		resultObj.setPasswordEnabled(template.getEnablePassword());
+		resultObj.setTemplateDisplayText(template.getDisplayText());
+		resultObj.setTemplateId(template.getId());
+		resultObj.setTemplateName(template.getName());
+		
+		return resultObj;
 	}
 }

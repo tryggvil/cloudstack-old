@@ -23,14 +23,16 @@ public class DeleteTemplateParam {
 	private long userId;
 	private long templateId;
 	private Long zoneId;
+	private long eventId;
 
 	public DeleteTemplateParam() {
 	}
 
-	public DeleteTemplateParam(long userId, long templateId, Long zoneId) {
+	public DeleteTemplateParam(long userId, long templateId, Long zoneId, long eventId) {
 		this.userId = userId;
 		this.templateId = templateId;
 		this.zoneId = zoneId;
+		this.eventId = eventId;
 	}
 	
 	public long getUserId() {
@@ -44,5 +46,13 @@ public class DeleteTemplateParam {
 	public Long getZoneId() {
 		return zoneId;
 	}
+
+    public void setEventId(long eventId) {
+        this.eventId = eventId;
+    }
+
+    public long getEventId() {
+        return eventId;
+    }
 	
 }

@@ -28,10 +28,12 @@ import com.cloud.async.AsyncJobManager;
 import com.cloud.async.AsyncJobResult;
 import com.cloud.async.AsyncJobVO;
 import com.cloud.configuration.ResourceCount.ResourceType;
+import com.cloud.event.EventState;
 import com.cloud.event.EventTypes;
 import com.cloud.event.EventVO;
 import com.cloud.serializer.GsonHelper;
 import com.cloud.storage.VolumeVO;
+import com.cloud.storage.Volume.VolumeType;
 import com.cloud.utils.db.DB;
 import com.cloud.utils.db.Transaction;
 import com.cloud.vm.UserVmVO;
@@ -74,6 +76,8 @@ public class DestroyVMExecutor extends VMOperationExecutor {
         EventVO event = new EventVO();
         event.setUserId(param.getUserId());
         event.setAccountId(vm.getAccountId());
+        event.setState(EventState.Completed);
+        event.setStartId(param.getEventId());
         event.setType(EventTypes.EVENT_VM_STOP);
         event.setParameters("id="+vm.getId() + "\nvmName=" + vm.getName() + "\nsoId=" + vm.getServiceOfferingId() + "\ntId=" + vm.getTemplateId() + "\ndcId=" + vm.getDataCenterId());
     	
@@ -83,7 +87,7 @@ public class DestroyVMExecutor extends VMOperationExecutor {
 
     	try {
 	    	if(stopped) {
-	        	asyncMgr.getExecutorContext().getVmMgr().completeStopCommand(param.getUserId(), vm, Event.OperationSucceeded);
+	        	asyncMgr.getExecutorContext().getVmMgr().completeStopCommand(param.getUserId(), vm, Event.OperationSucceeded, param.getEventId());
 	        	// completeStopCommand will log the stop event, if we log it here we will end up with duplicated stop event
 	            Transaction txn = Transaction.currentTxn();
 	            txn.start();
@@ -108,22 +112,18 @@ public class DestroyVMExecutor extends VMOperationExecutor {
 	
 		        asyncMgr.getExecutorContext().getVmMgr().cleanNetworkRules(param.getUserId(), vm.getId());
 		        
-		        // Mark the VM's disks as destroyed
-		        List<VolumeVO> volumes = asyncMgr.getExecutorContext().getVolumeDao().findByInstance(param.getVmId());
+		        // Mark the VM's root disk as destroyed
+		        List<VolumeVO> volumes = asyncMgr.getExecutorContext().getVolumeDao().findByInstanceAndType(vm.getId(), VolumeType.ROOT);
 		        for (VolumeVO volume : volumes) {
-		        	asyncMgr.getExecutorContext().getVolumeDao().destroyVolume(volume.getId());
-		            String eventParams = "id=" + volume.getId();
-		            event = new EventVO();
-		            event.setAccountId(volume.getAccountId());
-		            event.setUserId(1L);
-		            event.setType(EventTypes.EVENT_VOLUME_DELETE);
-		            event.setParameters(eventParams);
-		            event.setDescription("Volume deleted");
-		            event.setLevel(EventVO.LEVEL_INFO);
-		            asyncMgr.getExecutorContext().getEventDao().persist(event);
+		        	asyncMgr.getExecutorContext().getStorageMgr().destroyVolume(volume);
 		        }
 		        
-		        asyncMgr.getExecutorContext().getAccountMgr().decrementResourceCount(vm.getAccountId(), ResourceType.volume, new Long(volumes.size()));
+		        // Mark the VM's data disks as detached
+		        volumes = asyncMgr.getExecutorContext().getVolumeDao().findByInstanceAndType(vm.getId(), VolumeType.DATADISK);
+		        for (VolumeVO volume : volumes) {
+		        	asyncMgr.getExecutorContext().getVolumeDao().detachVolume(volume.getId());
+		        }
+		        
 		        txn.commit();
 	        	
 	    		asyncMgr.completeAsyncJob(getJob().getId(),	AsyncJobResult.STATUS_SUCCEEDED, 0, "success");

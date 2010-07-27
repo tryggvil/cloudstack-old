@@ -41,8 +41,6 @@ import javax.naming.ConfigurationException;
 
 import org.apache.log4j.Logger;
 
-import com.cloud.alert.AlertManager;
-import com.cloud.alert.AlertVO;
 import com.cloud.alert.dao.AlertDao;
 import com.cloud.capacity.CapacityVO;
 import com.cloud.capacity.dao.CapacityDao;
@@ -62,14 +60,22 @@ import com.cloud.service.ServiceOffering;
 import com.cloud.service.ServiceOfferingVO;
 import com.cloud.service.dao.ServiceOfferingDao;
 import com.cloud.storage.StoragePoolVO;
-import com.cloud.storage.VolumeVO;
+import com.cloud.storage.Storage.StoragePoolType;
 import com.cloud.storage.dao.StoragePoolDao;
 import com.cloud.storage.dao.VolumeDao;
 import com.cloud.utils.NumbersUtil;
+import com.cloud.utils.Pair;
 import com.cloud.utils.component.ComponentLocator;
 import com.cloud.utils.db.GlobalLock;
 import com.cloud.utils.db.SearchCriteria;
+import com.cloud.vm.ConsoleProxyVO;
+import com.cloud.vm.DomainRouterVO;
+import com.cloud.vm.SecondaryStorageVmVO;
+import com.cloud.vm.State;
 import com.cloud.vm.UserVmVO;
+import com.cloud.vm.dao.ConsoleProxyDao;
+import com.cloud.vm.dao.DomainRouterDao;
+import com.cloud.vm.dao.SecondaryStorageVmDao;
 import com.cloud.vm.dao.UserVmDao;
 import com.cloud.vm.dao.VMInstanceDao;
 import com.sun.mail.smtp.SMTPMessage;
@@ -92,6 +98,9 @@ public class AlertManagerImpl implements AlertManager {
     private ServiceOfferingDao _offeringsDao;
     private CapacityDao _capacityDao;
     private VMInstanceDao _vmDao;
+    private DomainRouterDao _routerDao;
+    private ConsoleProxyDao _consoleProxyDao;
+    private SecondaryStorageVmDao _secStorgaeVmDao;
     private UserVmDao _userVmDao;
     private DataCenterDao _dcDao;
     private HostPodDao _podDao;
@@ -187,7 +196,10 @@ public class AlertManagerImpl implements AlertManager {
             s_logger.error("Unable to get the VM Instance dao.");
             return false;
         }
-
+        _routerDao = locator.getDao(DomainRouterDao.class);
+        _consoleProxyDao = locator.getDao(ConsoleProxyDao.class);
+        _secStorgaeVmDao = locator.getDao(SecondaryStorageVmDao.class);
+        
         _userVmDao = locator.getDao(UserVmDao.class);
         if (_userVmDao == null) {
             s_logger.error("Unable to get the UserVm dao.");
@@ -342,41 +354,49 @@ public class AlertManagerImpl implements AlertManager {
                     offeringsMap.put(offering.getId(), offering);
                 }
                 for (HostVO host : hosts) {
-                    if (host.getType() == Host.Type.SecondaryStorage || host.getType() == Host.Type.ConsoleProxy ) {
+                    if (host.getType() != Host.Type.Routing) {
                         continue;
                     }
                     long cpu = 0;
                     long usedMemory = 0;
-                    if (host.getType() == Host.Type.Routing) {
-                        Integer[] routerAndProxyCount = _vmDao.countRoutersAndProxies(host.getId());
-                        if (routerAndProxyCount[0] != null) {
-                            int routerCount = routerAndProxyCount[0].intValue();
-                            usedMemory += ((long)routerCount * (long)_routerRamSize * 1024L * 1024L);
-                        }
-                        if (routerAndProxyCount[1] != null) {
-                            int proxyCount = routerAndProxyCount[1].intValue();
-                            usedMemory += ((long)proxyCount * (long)_proxyRamSize * 1024L * 1024L);
-                        }
+                    List<DomainRouterVO> domainRouters = _routerDao.listUpByHostId(host.getId());
+                    if (s_logger.isDebugEnabled()) {
+                        s_logger.debug("Found " + domainRouters.size() + " router domains on host " + host.getId());
+                    }
+                    for (DomainRouterVO router : domainRouters) {
+                        usedMemory += router.getRamSize() * 1024L * 1024L;
                     }
 
-                    // Routing/Computing can both host User VMs.
-                    List<UserVmVO> instances = _userVmDao.listByHostId(host.getId());
-                    for (UserVmVO vm : instances) {
+                    List<ConsoleProxyVO> proxys = _consoleProxyDao.listUpByHostId(host.getId());
+                    if (s_logger.isDebugEnabled()) {
+                        s_logger.debug("Found " + proxys.size() + " console proxy on host " + host.getId());
+                    }
+                    for(ConsoleProxyVO proxy : proxys) {
+                        usedMemory += proxy.getRamSize() * 1024L * 1024L;
+                    }
+                    
+                    List<SecondaryStorageVmVO> secStorageVms = _secStorgaeVmDao.listUpByHostId(host.getId());
+                    if (s_logger.isDebugEnabled()) {
+                        s_logger.debug("Found " + secStorageVms.size() + " secondary storage VM on host " + host.getId());
+                    }
+                    for(SecondaryStorageVmVO secStorageVm : secStorageVms) {
+                        usedMemory += secStorageVm.getRamSize() * 1024L * 1024L;
+                    }
+                            
+                    List<UserVmVO> vms = _userVmDao.listUpByHostId(host.getId());
+                    if (s_logger.isDebugEnabled()) {
+                        s_logger.debug("Found " + vms.size() + " user VM on host " + host.getId());
+                    }
+                    
+                    for (UserVmVO vm : vms) {
                         ServiceOffering so = offeringsMap.get(vm.getServiceOfferingId());
-                        usedMemory += (so.getRamSize() * 1024L * 1024L);
-                        cpu += so.getCpu() * so.getSpeed();
+                        usedMemory += so.getRamSize() * 1024L * 1024L;
+                        cpu += so.getCpu() * (so.getSpeed() * 0.99);
                     }
 
-                    // Compute the available memory of the host.  A few notes:
-                    //    1 - hypervisor itself uses 64M
-                    //    2 - be sure to account for dom0 minimum memory
-                    //    3 - there's overhead in the hypervisor when allocating VMs, so allow only 7/8ths of the memory to be allocated to VMs
-                    //    4 - this calculation is here, but also in AgentManagerImpl when a routing/computing host connects, so be sure to keep the code in sync
-                    long staticallyUsedMemory = 64 * 1024L * 1024L;
-                    staticallyUsedMemory += host.getDom0MinMemory();
-                    long availableMemory = (host.getTotalMemory().longValue() - staticallyUsedMemory) * 7L / 8L;
+                    long totalMemory = host.getTotalMemory();
 
-                    CapacityVO newMemoryCapacity = new CapacityVO(host.getId(), host.getDataCenterId(), host.getPodId(), usedMemory, availableMemory, CapacityVO.CAPACITY_TYPE_MEMORY);
+                    CapacityVO newMemoryCapacity = new CapacityVO(host.getId(), host.getDataCenterId(), host.getPodId(), usedMemory, totalMemory, CapacityVO.CAPACITY_TYPE_MEMORY);
                     CapacityVO newCPUCapacity = new CapacityVO(host.getId(), host.getDataCenterId(), host.getPodId(), cpu, (long)(host.getCpus()*host.getSpeed()* _cpuOverProvisioningFactor), CapacityVO.CAPACITY_TYPE_CPU);
                     _capacityDao.persist(newMemoryCapacity);
                     _capacityDao.persist(newCPUCapacity);
@@ -386,11 +406,13 @@ public class AlertManagerImpl implements AlertManager {
                 List<StoragePoolVO> storagePools = _storagePoolDao.listAllActive();
                 for (StoragePoolVO pool : storagePools) {
                     long disk = 0l;
-                    List<VolumeVO> volumes = _volumeDao.findByPool(pool.getId());
-                    for (VolumeVO volume : volumes) {
-                        disk += volume.getSize();
+                    Pair<Long, Long> sizes = _volumeDao.getCountAndTotalByPool(pool.getId());
+                    disk = sizes.second();
+                    int provFactor = 1;
+                    if( pool.getPoolType() == StoragePoolType.NetworkFilesystem ) {
+                        provFactor = _overProvisioningFactor;
                     }
-                    CapacityVO newStorageCapacity = new CapacityVO(pool.getId(), pool.getDataCenterId(), pool.getPodId(), disk, pool.getCapacityBytes() * _overProvisioningFactor, CapacityVO.CAPACITY_TYPE_STORAGE_ALLOCATED);
+                    CapacityVO newStorageCapacity = new CapacityVO(pool.getId(), pool.getDataCenterId(), pool.getPodId(), disk, pool.getCapacityBytes() * provFactor, CapacityVO.CAPACITY_TYPE_STORAGE_ALLOCATED);
                     _capacityDao.persist(newStorageCapacity);
 
                     continue;
@@ -401,8 +423,8 @@ public class AlertManagerImpl implements AlertManager {
                 for (DataCenterVO datacenter : datacenters) {
                     long dcId = datacenter.getId();
 
-                    int totalPublicIPs = _publicIPAddressDao.countIPs(dcId, -1, -1, false);
-                    int allocatedPublicIPs = _publicIPAddressDao.countIPs(dcId, -1, -1, true);
+                    int totalPublicIPs = _publicIPAddressDao.countIPs(dcId, -1, false);
+                    int allocatedPublicIPs = _publicIPAddressDao.countIPs(dcId, -1, true);
 
                     CapacityVO newPublicIPCapacity = new CapacityVO(null, dcId, null, allocatedPublicIPs, totalPublicIPs, CapacityVO.CAPACITY_TYPE_PUBLIC_IP);
                     _capacityDao.persist(newPublicIPCapacity);
@@ -446,31 +468,29 @@ public class AlertManagerImpl implements AlertManager {
 
             try {
                 List<CapacityVO> capacityList = _capacityDao.listAll();
-                Map<String, List<CapacityVO>> capacityDcPodTypeMap = new HashMap<String, List<CapacityVO>>();
+                Map<String, List<CapacityVO>> capacityDcTypeMap = new HashMap<String, List<CapacityVO>>();
 
                 for (CapacityVO capacity : capacityList) {
                     long dataCenterId = capacity.getDataCenterId();
-                    Long podId = capacity.getPodId();
                     short type = capacity.getCapacityType();
-                    String key = "dc" + dataCenterId + "p" + podId + "t" + type;
-                    List<CapacityVO> list = capacityDcPodTypeMap.get(key);
+                    String key = "dc" + dataCenterId + "t" + type;
+                    List<CapacityVO> list = capacityDcTypeMap.get(key);
                     if (list == null) {
                         list = new ArrayList<CapacityVO>();
                     }
                     list.add(capacity);
-                    capacityDcPodTypeMap.put(key, list);
+                    capacityDcTypeMap.put(key, list);
                 }
 
-                for (String keyValue : capacityDcPodTypeMap.keySet()) {
-                    List<CapacityVO> capacityListByDcPod = capacityDcPodTypeMap.get(keyValue);
+                for (String keyValue : capacityDcTypeMap.keySet()) {
+                    List<CapacityVO> capacities = capacityDcTypeMap.get(keyValue);
                     double totalCapacity = 0d;
                     double usedCapacity = 0d;
-                    CapacityVO cap = capacityListByDcPod.get(0);
+                    CapacityVO cap = capacities.get(0);
                     short capacityType = cap.getCapacityType();
                     long dataCenterId = cap.getDataCenterId();
-                    Long podId = cap.getPodId();
 
-                    for (CapacityVO capacity : capacityListByDcPod) {
+                    for (CapacityVO capacity : capacities) {
                         totalCapacity += capacity.getTotalCapacity();
                         usedCapacity += capacity.getUsedCapacity();
                     }
@@ -478,9 +498,7 @@ public class AlertManagerImpl implements AlertManager {
                     double capacityPct = (usedCapacity / totalCapacity);
                     double thresholdLimit = 1.0;
                     DataCenterVO dcVO = _dcDao.findById(dataCenterId);
-                    HostPodVO podVO = _podDao.findById(podId);
                     String dcName = ((dcVO == null) ? "unknown" : dcVO.getName());
-                    String podName = ((podVO == null) ? "unknown" : podVO.getName());
                     String msgSubject = "";
                     String msgContent = "";
                     String totalStr = "";
@@ -491,28 +509,28 @@ public class AlertManagerImpl implements AlertManager {
                     switch (capacityType) {
                     case CapacityVO.CAPACITY_TYPE_MEMORY:
                         thresholdLimit = _memoryCapacityThreshold;
-                        msgSubject = "System Alert: Low Available Memory in availablity zone " + dcName + " for pod " + podName;
+                        msgSubject = "System Alert: Low Available Memory in availablity zone " + dcName;
                         totalStr = formatBytesToMegabytes(totalCapacity);
                         usedStr = formatBytesToMegabytes(usedCapacity);
                         msgContent = "System memory is low, total: " + totalStr + " MB, used: " + usedStr + " MB (" + pctStr + "%)";
                         break;
                     case CapacityVO.CAPACITY_TYPE_CPU:
                         thresholdLimit = _cpuCapacityThreshold;
-                        msgSubject = "System Alert: Low Unallocated CPU in availablity zone " + dcName + " for pod " + podName;
+                        msgSubject = "System Alert: Low Unallocated CPU in availablity zone " + dcName;
                         totalStr = _dfWhole.format(totalCapacity);
                         usedStr = _dfWhole.format(usedCapacity);
                         msgContent = "Unallocated CPU is low, total: " + totalStr + " Mhz, used: " + usedStr + " Mhz (" + pctStr + "%)";
                         break;
                     case CapacityVO.CAPACITY_TYPE_STORAGE:
                         thresholdLimit = _storageCapacityThreshold;
-                        msgSubject = "System Alert: Low Available Storage in availablity zone " + dcName + " for pod " + podName;
+                        msgSubject = "System Alert: Low Available Storage in availablity zone " + dcName;
                         totalStr = formatBytesToMegabytes(totalCapacity);
                         usedStr = formatBytesToMegabytes(usedCapacity);
                         msgContent = "Available storage space is low, total: " + totalStr + " MB, used: " + usedStr + " MB (" + pctStr + "%)";
                         break;
                     case CapacityVO.CAPACITY_TYPE_STORAGE_ALLOCATED:
                         thresholdLimit = _storageAllocCapacityThreshold;
-                        msgSubject = "System Alert: Remaining unallocated Storage is low in availablity zone " + dcName + " for pod " + podName;
+                        msgSubject = "System Alert: Remaining unallocated Storage is low in availablity zone " + dcName;
                         totalStr = formatBytesToMegabytes(totalCapacity);
                         usedStr = formatBytesToMegabytes(usedCapacity);
                         msgContent = "Unallocated storage space is low, total: " + totalStr + " MB, allocated: " + usedStr + " MB (" + pctStr + "%)";
@@ -526,7 +544,7 @@ public class AlertManagerImpl implements AlertManager {
                         break;
                     case CapacityVO.CAPACITY_TYPE_PRIVATE_IP:
                     	thresholdLimit = _privateIPCapacityThreshold;
-                    	msgSubject = "System Alert: Number of unallocated private IPs is low in availablity zone " + dcName + " for pod " + podName;
+                    	msgSubject = "System Alert: Number of unallocated private IPs is low in availablity zone " + dcName;
                     	totalStr = Double.toString(totalCapacity);
                         usedStr = Double.toString(usedCapacity);
                     	msgContent = "Number of unallocated private IPs is low, total: " + totalStr + ", allocated: " + usedStr + " (" + pctStr + "%)";
@@ -534,9 +552,9 @@ public class AlertManagerImpl implements AlertManager {
                     }
 
                     if (capacityPct > thresholdLimit) {
-                        _emailAlert.sendAlert(capacityType, dataCenterId, podId, msgSubject, msgContent);
+                        _emailAlert.sendAlert(capacityType, dataCenterId, null, msgSubject, msgContent);
                     } else {
-                        _emailAlert.clearAlert(capacityType, dataCenterId, podId);
+                        _emailAlert.clearAlert(capacityType, dataCenterId, null);
                     }
                 }
             } catch (Exception ex) {

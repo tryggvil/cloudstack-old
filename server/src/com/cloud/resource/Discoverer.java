@@ -17,11 +17,12 @@
  */
 package com.cloud.resource;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
+import com.cloud.exception.DiscoveryException;
 import com.cloud.host.HostVO;
-import com.cloud.resource.ServerResource;
 import com.cloud.utils.component.Adapter;
 
 /**
@@ -37,7 +38,7 @@ public interface Discoverer extends Adapter {
      * @param password
      * @return ServerResource
      */
-    Map<? extends ServerResource, Map<String, String>> find(long dcId, Long podId, String url, String username, String password);
+    Map<? extends ServerResource, Map<String, String>> find(long dcId, Long podId, Long clusterId, URI uri, String username, String password) throws DiscoveryException;
 
 	void postDiscovery(List<HostVO> hosts, long msId);
 }

@@ -124,7 +124,7 @@ public class AccountManagerImpl implements AccountManager {
 		if (limit != null) {
 			max = limit.getMax().longValue();
 		} else {
-			// If the account has an infinite limit, check the account's parent domain, and then the ROOT domain
+			// If the account has an infinite limit, check the ROOT domain
 			Long domainId = DomainVO.ROOT_DOMAIN;
 			limit = _resourceLimitDao.findByDomainIdAndType(domainId, type);
 	

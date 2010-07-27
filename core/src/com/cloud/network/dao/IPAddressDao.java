@@ -34,23 +34,15 @@ public interface IPAddressDao extends GenericDao<IPAddressVO, String> {
      */
 	public String assignIpAddress(long accountId, long domainId, long vlanDbId, boolean sourceNat);
 	
-	public void unassignIpAddress(String ipAddress);
-	
-	public List<IPAddressVO> listByAccountId(long accountId);
-	
-    public List<IPAddressVO> listByAccountDcId(long accountId, long dcId, boolean sourceNat);
-	
-	public List<IPAddressVO> listByAccountDcId(long accountId, long dcId);
-	
-	public List<IPAddressVO> listByDcId(long dcId);
-	
-	public List<IPAddressVO> listByVlanDbId(long vlanDbId);
+	public void unassignIpAddress(String ipAddress);	
 
-	public List<IPAddressVO> listByAccountIdSourceNat(long accountId, boolean sourceNat);
+	public List<IPAddressVO> listByAccount(long accountId);
 	
 	public List<IPAddressVO> listByDcIdIpAddress(long dcId, String ipAddress);
 	
-	public int countIPs(long dcId, long vlanDbId, long accountId, boolean onlyCountAllocated);
+	public int countIPs(long dcId, long vlanDbId, boolean onlyCountAllocated);
+	
+	public int countIPs(long dcId, String vlanId, String vlanGateway, String vlanNetmask, boolean onlyCountAllocated);
 	
 	public boolean mark(long dcId, String ip);
 }

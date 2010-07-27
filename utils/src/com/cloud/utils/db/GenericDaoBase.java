@@ -210,7 +210,7 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
         }
     }
 
-    @Override @DB(inject=false)
+    @Override @DB(txn=false)
     @SuppressWarnings("unchecked")
     public T createForUpdate(final ID id) {
         final T entity = (T)_enhancer.create();
@@ -226,7 +226,7 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
         return entity;
     }
 
-    @Override @DB(inject=false)
+    @Override @DB(txn=false)
     public T createForUpdate() {
         return createForUpdate(null);
     }
@@ -240,19 +240,19 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
         return s_seqFetcher.getNextSequence(clazz, tg);
     }
 
-    @Override @DB(inject=false)
+    @Override @DB(txn=false)
     public List<T> lock(final SearchCriteria sc, final Filter filter, final boolean exclusive) {
         return search(sc, filter, exclusive, false);
     }
 
-    @Override @DB(inject=false)
+    @Override @DB(txn=false)
     public T lock(final SearchCriteria sc, final boolean exclusive) {
         final Filter filter = new Filter(1);
         final List<T> beans = search(sc, filter, exclusive, true);
         return beans.isEmpty() ? null : beans.get(0);
     }
 
-    @DB(inject=false)
+    @DB(txn=false)
     protected List<T> search(SearchCriteria sc, final Filter filter, final Boolean lock, final boolean cache) {
         if (_removed != null) {
             if (sc == null) {
@@ -282,6 +282,7 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
             }
         }
         
+        addGroupBy(str, sc);
         addFilter(str, filter);
 
         final Transaction txn = Transaction.currentTxn();
@@ -327,7 +328,7 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
         }
     }
     
-    protected List<Object[]> searchAll(SearchCriteria sc, final Filter filter) {
+    public List<Object[]> searchAll(SearchCriteria sc, final Filter filter) {
         String clause = sc != null ? sc.getWhereClause() : null;
         if (clause != null && clause.length() == 0) {
             clause = null;
@@ -346,6 +347,7 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
             }
         }
         
+        addGroupBy(str, sc);
         addFilter(str, filter);
 
         final String sql = str.toString();
@@ -391,7 +393,7 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
         }
     }
     
-    @DB(inject=false)
+    @DB(txn=false)
     protected int addJoinAttributes(int count, PreparedStatement pstmt, List<Ternary<SearchCriteria, Attribute, Attribute>> joins) throws SQLException {
         for (Ternary<SearchCriteria, Attribute, Attribute> join : joins) {
             for (final Pair<Attribute, Object> value : join.first().getValues()) {
@@ -409,7 +411,7 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
         return count;
     }
 
-    @DB(inject=false)
+    @DB(txn=false)
     protected int update(final ID id, final UpdateBuilder ub) {
     	SearchCriteria sc = createSearchCriteria();
     	sc.addAnd(_idAttributes.get(_table)[0], SearchCriteria.Op.EQ, id);
@@ -466,12 +468,12 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
         }
     }
     
-    @DB(inject=false)
+    @DB(txn=false)
     protected Attribute findAttributeByFieldName(String name) {
     	return _allAttributes.get(name);
     }
 
-    @DB(inject=false)
+    @DB(txn=false)
     protected String buildSelectByIdSql(final StringBuilder sql) {
         if (_idField == null) {
             return null;
@@ -491,36 +493,19 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
         return sql.toString();
     }
 
-    @DB(inject=false)
+    @DB(txn=false)
     public Class<T> getEntityBeanType() {
         return _entityBeanType;
     }
 
     protected T findOneBy(final SearchCriteria sc) {
-        final StringBuilder sql = createPartialSelectSql(sc, true);
-        sql.append(sc.getWhereClause()).append(" LIMIT 0, 1");
-        final Transaction txn = Transaction.currentTxn();
-        PreparedStatement pstmt = s_initStmt;
-        try {
-            pstmt = txn.prepareAutoCloseStatement(sql.toString());
-            int i = 0;
-            for (final Pair<Attribute, Object> value : sc.getValues()) {
-            	prepareAttribute(++i, pstmt, value.first(), value.second());
-            }
-
-            final ResultSet rs = pstmt.executeQuery();
-            if (!rs.next()) {
-                return null;
-            }
-            return toEntityBean(rs, true);
-        } catch (final SQLException e) {
-            throw new CloudRuntimeException("DB Exception on: " + pstmt.toString(), e);
-        } catch (final Throwable e) {
-            throw new CloudRuntimeException("Caught: " + pstmt.toString(), e);
-        }
+        Filter filter = new Filter(1);
+        List<T> results = searchAll(sc, filter, null, false);
+        assert results.size() <= 1 : "Didn't the limiting worked?";
+        return results.size() == 0 ? null : results.get(0);
     }
 
-    @DB(inject=false)
+    @DB(txn=false)
     protected T findOneActiveBy(final SearchCriteria sc) {
         if (_removed != null) {
             sc.addAnd(_removed.second().field.getName(), SearchCriteria.Op.NULL);
@@ -528,7 +513,7 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
         return findOneBy(sc);
     }
 
-    @DB(inject=false)
+    @DB(txn=false)
     protected List<T> listActiveBy(final SearchCriteria sc, final Filter filter) {
         if (_removed != null) {
             sc.addAnd(_removed.second().field.getName(), SearchCriteria.Op.NULL);
@@ -536,22 +521,22 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
         return listBy(sc, filter);
     }
 
-    @DB(inject=false)
+    @DB(txn=false)
     protected List<T> listActiveBy(final SearchCriteria sc) {
         return listActiveBy(sc, null);
     }
 
-    @DB(inject=false)
+    @DB(txn=false)
     protected List<T> listBy(final SearchCriteria sc, final Filter filter) {
         return searchAll(sc, filter, null, false);
     }
 
-    @DB(inject=false)
+    @DB(txn=false)
     protected List<T> listBy(final SearchCriteria sc) {
         return listBy(sc, null);
     }
 
-    @Override @DB(inject=false)
+    @Override @DB(txn=false)
     @SuppressWarnings("unchecked")
     public T findById(final ID id) {
         if (_cache != null) {
@@ -562,7 +547,7 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
         }
     }
     
-    @Override @DB(inject=false)
+    @Override @DB(txn=false)
     @SuppressWarnings("unchecked")
     public T findById(final ID id, boolean fresh) {
     	if(!fresh)
@@ -598,7 +583,7 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
         }
     }
 
-    @Override @DB(inject=false)
+    @Override @DB(txn=false)
     public T acquire(ID id) {
     	return acquire(id, _timeoutSeconds);
     }
@@ -628,12 +613,26 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
     	return txn.release(_table + id);
     }
 
-    @Override @DB(inject=false)
+    @Override @DB(txn=false)
     public List<T> listAll() {
         return listAll(null);
     }
 
-    @DB(inject=false)
+    @DB(txn=false)
+    protected void addGroupBy(final StringBuilder sql, SearchCriteria sc) {
+    	List<Attribute> groupBys = sc.getGroupBy();
+    	if(groupBys != null) {
+    		sql.append(" GROUP BY ");
+    		for(int i = 0; i < groupBys.size(); i++) {
+    			Attribute attr = groupBys.get(i);
+    			sql.append(attr.table).append(".").append(attr.columnName);
+    			if(i < groupBys.size() - 1)
+    				sql.append(", ");
+    		}
+    	}
+    }
+    
+    @DB(txn=false)
     protected void addFilter(final StringBuilder sql, final Filter filter) {
         if (filter != null) {
             if (filter.getOrderBy() != null) {
@@ -649,7 +648,7 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
         }
     }
 
-    @Override @DB(inject=false)
+    @Override @DB(txn=false)
     public List<T> listAll(final Filter filter) {
         final StringBuilder sql = createPartialSelectSql(null, false);
         addFilter(sql, filter);
@@ -680,12 +679,12 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
         }
     }
 
-    @Override @DB(inject=false)
+    @Override @DB(txn=false)
     public List<T> listAllActive() {
         return listAllActive(null);
     }
 
-    @Override @DB(inject=false)
+    @Override @DB(txn=false)
     public List<T> listAllActive(final Filter filter) {
         if (_removed == null) {
             return listAll(filter);
@@ -756,7 +755,7 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
         }
     }
 
-    @DB(inject=false)
+    @DB(txn=false)
     protected StringBuilder createPartialSelectSql(SearchCriteria sc, final boolean whereClause) {
         StringBuilder sql = new StringBuilder(_partialSelectSql.first());
         if (sc != null && !sc.isSelectAll()) {
@@ -771,7 +770,7 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
         return sql;
     }
     
-    @DB(inject=false)
+    @DB(txn=false)
     protected void addJoins(StringBuilder str, Collection<Ternary<SearchCriteria, Attribute, Attribute>> joins) {
         int fromIndex = str.lastIndexOf("FROM") + 5;
         if (str.lastIndexOf("WHERE") == -1) {
@@ -795,12 +794,12 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
         str.delete(str.length() - 4, str.length());
     }
 
-    @Override @DB(inject=false)
+    @Override @DB(txn=false)
     public List<T> search(final SearchCriteria sc, final Filter filter) {
         return search(sc, filter, null, false);
     }
 
-    @Override @DB(inject=false)
+    @Override @DB(txn=false)
     public boolean update(final ID id, final T entity) {
         assert Enhancer.isEnhanced(entity.getClass()) : "Entity is not generated by this dao";
 
@@ -809,13 +808,13 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
         return result;
     }
 
-    @DB(inject=false)
+    @DB(txn=false)
     public int update(final T entity, final SearchCriteria sc, Integer rows) {
         final UpdateBuilder ub = getUpdateBuilder(entity);
         return update(ub, sc, rows);
     }
     
-    @DB(inject=false)
+    @DB(txn=false)
     public int update(final T entity, final SearchCriteria sc) {
         final UpdateBuilder ub = getUpdateBuilder(entity);
         return update(ub, sc, null);
@@ -857,8 +856,21 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
                 pstmt.executeUpdate();
 
                 final ResultSet rs = pstmt.getGeneratedKeys();
-                if (rs != null && rs.next()) {
-                    id = (ID)rs.getObject(1);
+                if (id == null) {
+                    if (rs != null && rs.next()) {
+                        id = (ID)rs.getObject(1);
+                    }
+                    try {
+                        if (_idField != null) {
+                            if (id != null) {
+                                _idField.set(entity, id);
+                            } else {
+                                id = (ID)_idField.get(entity);
+                            }
+                        }
+                    } catch (final IllegalAccessException e) {
+                        throw new CloudRuntimeException("Yikes! ", e);
+                    }
                 }
             }
             txn.commit();
@@ -866,23 +878,11 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
             final String sqlStr = pstmt.toString();
             throw new CloudRuntimeException("DB Exception on: " + sqlStr, e);
         }
-        try {
-            if (_idField != null) {
-                if (id != null) {
-                    _idField.set(entity, id);
-                } else {
-                    id = (ID)_idField.get(entity);
-                }
-            } else {
-                return null;
-            }
-        } catch (final IllegalAccessException e) {
-            throw new CloudRuntimeException("Yikes! ", e);
-        }
-        return findById(id);
+        
+        return _idField != null ? findById(id) : null;
     }
 
-    @DB(inject=false)
+    @DB(txn=false)
     protected Object generateValue(final Attribute attr) {
         if (attr.is(Attribute.Flag.Created) || attr.is(Attribute.Flag.Removed)) {
             return new Date();
@@ -903,7 +903,7 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
         }
     }
 
-    @DB(inject=false)
+    @DB(txn=false)
     protected void prepareAttribute(final int j, final PreparedStatement pstmt, final Attribute attr, Object value) throws SQLException {
         if (attr.is(Attribute.Flag.DaoGenerated) && value == null) {
             value = generateValue(attr);
@@ -968,7 +968,7 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
         }
     }
 
-    @DB(inject=false)
+    @DB(txn=false)
     protected int prepareAttributes(final PreparedStatement pstmt, final Object entity, final Attribute[] attrs, final int index) throws SQLException {
         int j = 0;
         for (int i = 0; i < attrs.length; i++) {
@@ -985,7 +985,7 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
         return j;
     }
 
-    @SuppressWarnings("unchecked") @DB(inject=false)
+    @SuppressWarnings("unchecked") @DB(txn=false)
     protected T toEntityBean(final ResultSet result, final boolean cache) throws SQLException {
         final T entity = (T)_factory.newInstance(new UpdateBuilder(_allAttributes));
 
@@ -1002,7 +1002,7 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
         return entity;
     }
 
-    @DB(inject=false)
+    @DB(txn=false)
     protected void toEntityBean(final ResultSet result, final T entity) throws SQLException {
         ResultSetMetaData meta = result.getMetaData();
         for (int index = 1, max = meta.getColumnCount(); index <= max; index++) {
@@ -1031,7 +1031,7 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
         }
     }
     
-    @DB(inject=false)
+    @DB(txn=false)
     protected void setField(final Object entity, final ResultSet rs, ResultSetMetaData meta, final int index) throws SQLException {
         Attribute attr = _allColumns.get(new Pair<String, String>(meta.getTableName(index), meta.getColumnName(index)));
         assert (attr != null) : "How come I can't find " + meta.getCatalogName(index) + "." + meta.getColumnName(index);
@@ -1175,8 +1175,21 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
         }
     }
 
+    @Override
+    public int remove(SearchCriteria sc) {
+        if (_removeSql == null) {
+            return delete(sc);
+        }
+        
+        T vo = createForUpdate();
+        UpdateBuilder ub = getUpdateBuilder(vo);
+        
+        ub.set(vo, _removed.second(), new Date());
+        return update(ub, sc, null);
+    }
+    
     protected Cache _cache;
-    @DB(inject=false)
+    @DB(txn=false)
     protected void createCache(final Map<String, ? extends Object> params) {
         final String value = (String)params.get("cache.size");
 
@@ -1193,7 +1206,7 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
         }
     }
 
-    @Override @DB(inject=false)
+    @Override @DB(txn=false)
     public boolean configure(final String name, final Map<String, Object> params) throws ConfigurationException {
         _name = name;
 
@@ -1209,12 +1222,12 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
         return true;
     }
 
-    @DB(inject=false)
+    @DB(txn=false)
     public String getName() {
         return _name;
     }
     
-    @DB(inject=false)
+    @DB(txn=false)
     public static <T> UpdateBuilder getUpdateBuilder(final T entityObject) {
         final Factory factory = (Factory)entityObject;
         assert(factory != null);
@@ -1222,7 +1235,7 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
     }
     
     @SuppressWarnings("unchecked")
-    @Override @DB(inject=false)
+    @Override @DB(txn=false)
     public SearchBuilder<T> createSearchBuilder() {
         final T entity = (T)_enhancer.create();
         final Factory factory = (Factory)entity;
@@ -1231,7 +1244,7 @@ public abstract class GenericDaoBase<T, ID extends Serializable> implements Gene
         return builder;
     }
     
-    @Override @DB(inject=false)
+    @Override @DB(txn=false)
     public SearchCriteria createSearchCriteria() {
     	SearchBuilder<T> builder = createSearchBuilder();
     	return builder.create();

@@ -111,4 +111,10 @@ public @interface SecondaryTable {
      * <p> Defaults to no additional constraints.
      */
     UniqueConstraint[] uniqueConstraints() default {};
+
+    /**
+     * (Optional) join type (supports inner, left, right) to use
+     * for querying data from the joined tables.
+     */
+    String join() default "";
 }

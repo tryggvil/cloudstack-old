@@ -248,6 +248,7 @@ public class LibvirtVMDef {
 				return _bus;
 			}
 		}
+		
 		private deviceType _deviceType; /*floppy, disk, cdrom*/
 		private diskType _diskType;
 		private String _sourcePath;
@@ -255,6 +256,7 @@ public class LibvirtVMDef {
 		private diskBus _bus;
 		private boolean _readonly = false;
 		private boolean _shareable = false;
+		private boolean _deferAttach = false;
 		public void setDeviceType(deviceType deviceType) {
 			_deviceType = deviceType;
 		}
@@ -279,6 +281,18 @@ public class LibvirtVMDef {
 		public void setSharable() {
 			_shareable = true;
 		}
+		public void setAttachDeferred(boolean deferAttach) {
+			_deferAttach = deferAttach;
+		}
+		public boolean isAttachDeferred() {
+			return _deferAttach;
+		}
+		public String getDiskPath() {
+			return _sourcePath;
+		}
+		public String getDiskLabel() {
+			return _diskLabel;
+		}
 		@Override
         public String toString() {
 			StringBuilder diskBuilder = new StringBuilder();
@@ -292,6 +306,8 @@ public class LibvirtVMDef {
 				diskBuilder.append("<source ");
 				if (_sourcePath != null) {
 					diskBuilder.append("file='" + _sourcePath + "'");
+				} else if (_deviceType == deviceType.CDROM) {
+					diskBuilder.append("file=''");
 				}
 				diskBuilder.append("/>\n");
 			} else if (_diskType == diskType.BLOCK) {
@@ -312,14 +328,14 @@ public class LibvirtVMDef {
 	}
 	
 	public static class interfaceDef {
-		enum netType {
+		enum guestNetType {
 			BRIDGE("bridge"),
 			NETWORK("network"),
 			USER("user"),
 			ETHERNET("ethernet"),
 			INTERNAL("internal");
 			String _type;
-			netType(String type) {
+			guestNetType(String type) {
 				_type = type;
 			}
 			@Override
@@ -341,7 +357,14 @@ public class LibvirtVMDef {
 				return _model;
 			}
 		}
-		private netType _netType; /*bridge, ethernet, network, user, internal*/
+		enum hostNicType {
+			DIRECT_ATTACHED_WITHOUT_DHCP,
+			DIRECT_ATTACHED_WITH_DHCP,
+			VNET,
+			VLAN;
+		}
+		private guestNetType _netType; /*bridge, ethernet, network, user, internal*/
+		private hostNicType _hostNetType; /*Only used by agent java code*/
 		private String _sourceName;
 		private String _networkName;
 		private String _macAddr;
@@ -349,26 +372,41 @@ public class LibvirtVMDef {
 		private String _scriptPath;
 		private nicModel _model;
 		public void defBridgeNet(String brName, String targetBrName, String macAddr, nicModel model) {
-			_netType = netType.BRIDGE;
+			_netType = guestNetType.BRIDGE;
 			_sourceName = brName;
 			_networkName = targetBrName;
 			_macAddr = macAddr;
 			_model = model;
 		}
 		public void defPrivateNet(String networkName, String targetName, String macAddr, nicModel model) {
-			_netType = netType.NETWORK;
+			_netType = guestNetType.NETWORK;
 			_sourceName = networkName;
 			_networkName = targetName;
 			_macAddr = macAddr;
 			_model = model;
 		}
+		
+		public void setHostNetType(hostNicType hostNetType) {
+			_hostNetType = hostNetType;
+		}
+		
+		public hostNicType getHostNetType() {
+			return _hostNetType;
+		}
+		
+		public String getBrName() {
+			return _sourceName;
+		}
+		public guestNetType getNetType() {
+			return _netType;
+		}
 		@Override
         public String toString() {
 			StringBuilder netBuilder = new StringBuilder();
 			netBuilder.append("<interface type='" + _netType +"'>\n");
-			if (_netType == netType.BRIDGE) {
+			if (_netType == guestNetType.BRIDGE) {
 				netBuilder.append("<source bridge='" + _sourceName +"'/>\n");
-			} else if (_netType == netType.NETWORK) {
+			} else if (_netType == guestNetType.NETWORK) {
 				netBuilder.append("<source network='" + _sourceName +"'/>\n");
 			}
 			if (_networkName !=null) {

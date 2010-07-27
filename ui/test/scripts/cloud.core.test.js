@@ -312,6 +312,7 @@ $(document).ready(function() {
 						thisDialog.dialog("close");					
 											
 						$.ajax({
+							type: "POST",
 							data: "command=createUser&username="+encodeURIComponent(username)+"&password="+encodeURIComponent(password)+"&email="+encodeURIComponent(email)+"&firstname="+encodeURIComponent(firstname)+"&lastname="+encodeURIComponent(lastname)+"&account="+account+"&accounttype="+accountType+"&domainid="+domainId+moreCriteria.join("")+"&response=json",
 							dataType: "json",
 							async: false,

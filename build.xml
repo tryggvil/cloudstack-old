@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!---->
-<!-- Copyright 2008 Cloud.Comnc. All Rights Reserved -->
+<!-- Copyright 2008 Cloud.Com Inc. All Rights Reserved -->
 
 <project name="Cloud.com Cloud Stack Build Dispatch" default="help" basedir=".">
     <description>
@@ -9,6 +8,18 @@
         this file.  If you need to create your own targets, modify the 
         developer.xml.
     </description>
+  
+    <dirname property="base.dir" file="${ant.file.Cloud.com Cloud Stack Build Dispatch}"/>
+    <property name="build.dir" location="${base.dir}/build"/>
+
+    <condition property="build-cloud.properties.file" value="${build.dir}/override/build-cloud.properties" else="${build.dir}/build-cloud.properties">
+      <available file="${build.dir}/override/build-cloud.properties" />
+    </condition>
+  
+    <property file="${build-cloud.properties.file}"/>
+  
+    <property name="dist.dir" location="${base.dir}/dist"/>
+    <property name="target.dir" location="${base.dir}/target"/>
 
     <condition property="build.file" value="premium/build-cloud-premium.xml" else="build-cloud.xml">
       <and>
@@ -55,12 +66,13 @@
       </and>
     </condition>
 
-    <import file="build/${build.file}" optional="false" />
-    <import file="build/${docs.file}" optional="true"/>
-    <import file="build/${test.file}" optional="true"/>
-    <import file="build/${package.file}" optional="true"/>
-    <import file="build/${developer.file}" optional="true"/>
-
+    <import file="${base.dir}/plugins/zynga/build.xml" optional='true'/>
+    <import file="${build.dir}/${build.file}" optional="false"/>
+    <import file="${build.dir}/${docs.file}" optional="true"/>
+    <import file="${build.dir}/${test.file}" optional="true"/>
+    <import file="${build.dir}/${package.file}" optional="true"/>
+    <import file="${build.dir}/${developer.file}" optional="true"/>
+  
 </project>
 
 

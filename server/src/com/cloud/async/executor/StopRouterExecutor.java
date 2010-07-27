@@ -45,7 +45,7 @@ public class StopRouterExecutor extends VMOperationExecutor {
 			return true;
 		} else { 
 	    	try {
-				if(managementServer.stopRouter(param.getVmId())) {
+				if(managementServer.stopRouter(param.getVmId(), param.getEventId())) {
 					DomainRouter router = managementServer.findDomainRouterById(param.getVmId());
 					asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_SUCCEEDED, 0, 
 						RouterExecutorHelper.composeResultObject(managementServer, router));

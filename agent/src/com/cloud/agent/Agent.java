@@ -44,7 +44,6 @@ import com.cloud.agent.api.PingCommand;
 import com.cloud.agent.api.ShutdownCommand;
 import com.cloud.agent.api.StartupAnswer;
 import com.cloud.agent.api.StartupCommand;
-import com.cloud.agent.api.StartupComputingCommand;
 import com.cloud.agent.api.UpgradeAnswer;
 import com.cloud.agent.api.UpgradeCommand;
 import com.cloud.agent.transport.Request;

@@ -52,6 +52,7 @@ public class Storage {
     }
     
     public enum FileSystem {
+        Unknown,
         ext3,
         ntfs,
         fat,
@@ -65,12 +66,22 @@ public class Storage {
         hfsp
     }
     
-    public enum Type {
-        Filesystem,         //local directory
-        NetworkFilesystem,  //NFS or CIFS
-        IscsiLUN,           //shared LUN, with a clusterfs overlay
-        IscsiLUNPerVolume,  //for e.g., ZFS Comstar
-        ISO,                // for iso image
-        LVM,                // XenServer local LVM SR
+    public enum StoragePoolType {
+        Filesystem(false), //local directory
+        NetworkFilesystem(true), //NFS or CIFS
+        IscsiLUN(true), //shared LUN, with a clusterfs overlay
+        Iscsi(true), //for e.g., ZFS Comstar
+        ISO(false),    // for iso image
+        LVM(false);    // XenServer local LVM SR
+        
+        boolean shared;
+        
+        StoragePoolType(boolean shared) {
+            this.shared = shared;
+        }
+        
+        public boolean isShared() {
+            return shared;
+        }
     }
 }

@@ -110,6 +110,7 @@ public class ConsoleProxyDaoImpl extends GenericDaoBase<ConsoleProxyVO, Long> im
     protected SearchBuilder<ConsoleProxyVO> DataCenterStatusSearch;
     protected SearchBuilder<ConsoleProxyVO> StateSearch;
     protected SearchBuilder<ConsoleProxyVO> HostSearch;
+    protected SearchBuilder<ConsoleProxyVO> HostUpSearch;
     protected SearchBuilder<ConsoleProxyVO> StateChangeSearch;
     
     protected final Attribute _updateTimeAttr;
@@ -127,6 +128,11 @@ public class ConsoleProxyDaoImpl extends GenericDaoBase<ConsoleProxyVO, Long> im
         HostSearch = createSearchBuilder();
         HostSearch.and("host", HostSearch.entity().getHostId(), SearchCriteria.Op.EQ);
         HostSearch.done();
+        
+        HostUpSearch = createSearchBuilder();
+        HostUpSearch.and("host", HostUpSearch.entity().getHostId(), SearchCriteria.Op.EQ);
+        HostUpSearch.and("states", HostUpSearch.entity().getState(), SearchCriteria.Op.NIN);
+        HostUpSearch.done();        
         
         StateChangeSearch = createSearchBuilder();
         StateChangeSearch.and("id", StateChangeSearch.entity().getId(), SearchCriteria.Op.EQ);
@@ -162,9 +168,16 @@ public class ConsoleProxyDaoImpl extends GenericDaoBase<ConsoleProxyVO, Long> im
     	
     	vm.incrUpdated();
         UpdateBuilder ub = getUpdateBuilder(vm);
+        
+        if(newState == State.Running) {
+        	// save current running host id
+        	ub.set(vm, "lastHostId", vm.getHostId());
+        }
+        
         ub.set(vm, _updateTimeAttr, new Date());
         ub.set(vm, "state", newState);
         ub.set(vm, "hostId", hostId);
+        
         if (newState == State.Stopped) {
         	vm.setActiveSession(0);
         	ub.set(vm, "hostId", null);
@@ -232,6 +245,14 @@ public class ConsoleProxyDaoImpl extends GenericDaoBase<ConsoleProxyVO, Long> im
     public List<ConsoleProxyVO> listByHostId(long hostId) {
         SearchCriteria sc = HostSearch.create();
         sc.setParameters("host", hostId);
+        return listActiveBy(sc);
+    }
+    
+    @Override
+    public List<ConsoleProxyVO> listUpByHostId(long hostId) {
+        SearchCriteria sc = HostUpSearch.create();
+        sc.setParameters("host", hostId);
+        sc.setParameters("states", new Object[] {State.Destroyed, State.Stopped, State.Expunging}); 
         return listActiveBy(sc);
     }
     

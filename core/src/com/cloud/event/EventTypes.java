@@ -59,9 +59,8 @@ public class EventTypes {
 
     // Security Groups
     public static final String EVENT_PORT_FORWARDING_SERVICE_APPLY = "PF.SERVICE.APPLY";
+    public static final String EVENT_PORT_FORWARDING_SERVICE_DELETE = "PF.SERVICE.DELETE";
     public static final String EVENT_PORT_FORWARDING_SERVICE_REMOVE = "PF.SERVICE.REMOVE";
-    public static final String EVENT_SECURITY_GROUP_APPLY = "SECGROUP.APPLY";
-    public static final String EVENT_SECURITY_GROUP_REMOVE = "SECGROUP.REMOVE";
     public static final String EVENT_LOAD_BALANCER_CREATE = "LB.CREATE";
     public static final String EVENT_LOAD_BALANCER_DELETE = "LB.DELETE";
 
@@ -85,12 +84,7 @@ public class EventTypes {
 	public static final String EVENT_VOLUME_CREATE = "VOLUME.CREATE";
 	public static final String EVENT_VOLUME_DELETE = "VOLUME.DELETE";
 	public static final String EVENT_VOLUME_ATTACH = "VOLUME.ATTACH";
-	public static final String EVENT_VOLUME_DETACH = "VOLUME.DETACH";
-	
-	// Service offering Events
-	public static final String SERVICE_OFFERING_CREATE = "SERVICEOFFERING.CREATE";
-	public static final String SERVICE_OFFERING_UPDATE = "SERVICEOFFERING.UPDATE";
-	public static final String SERVICE_OFFERING_DELETE = "SERVICEOFFERING.DELETE";
+	public static final String EVENT_VOLUME_DETACH = "VOLUME.DETACH";	
 	
 	// Domains
 	public static final String EVENT_DOMAIN_CREATE = "DOMAIN.CREATE";
@@ -118,4 +112,27 @@ public class EventTypes {
 	public static final String EVENT_SSVM_STOP = "SSVM.STOP";
 	public static final String EVENT_SSVM_REBOOT = "SSVM.REBOOT";
 	public static final String EVENT_SSVM_HA = "SSVM.HA";
+	
+	// Service Offerings
+	public static final String EVENT_SERVICE_OFFERING_CREATE = "SERVICE.OFFERING.CREATE";
+	public static final String EVENT_SERVICE_OFFERING_EDIT = "SERVICE.OFFERING.EDIT";
+	public static final String EVENT_SERVICE_OFFERING_DELETE = "SERVICE.OFFERING.DELETE";
+	
+	// Pods
+	public static final String EVENT_POD_CREATE = "POD.CREATE";
+	public static final String EVENT_POD_EDIT = "POD.EDIT";
+	public static final String EVENT_POD_DELETE = "POD.DELETE";
+	
+	// Zones
+	public static final String EVENT_ZONE_CREATE = "ZONE.CREATE";
+	public static final String EVENT_ZONE_EDIT = "ZONE.EDIT";
+	public static final String EVENT_ZONE_DELETE = "ZONE.DELETE";
+	
+	// VLANs/IP ranges
+	public static final String EVENT_VLAN_IP_RANGE_CREATE = "VLAN.IP.RANGE.CREATE";
+	public static final String EVENT_VLAN_IP_RANGE_DELETE = "VLAN.IP.RANGE.DELETE";
+	
+	// Configuration Table
+	public static final String EVENT_CONFIGURATION_VALUE_EDIT = "CONFIGURATION.VALUE.EDIT";
+	
 }

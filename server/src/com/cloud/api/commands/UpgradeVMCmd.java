@@ -26,8 +26,10 @@ import org.apache.log4j.Logger;
 
 import com.cloud.api.BaseCmd;
 import com.cloud.api.ServerApiException;
+import com.cloud.exception.InvalidParameterValueException;
 import com.cloud.service.ServiceOfferingVO;
 import com.cloud.user.Account;
+import com.cloud.user.User;
 import com.cloud.utils.Pair;
 import com.cloud.vm.UserVmVO;
 
@@ -47,6 +49,10 @@ public class UpgradeVMCmd extends BaseCmd {
         return s_name;
     }
 
+    public static String getResultObjectName() {
+    	return "virtualmachine";
+    }    
+    
     public List<Pair<Enum, Boolean>> getProperties() {
         return s_properties;
     }
@@ -62,12 +68,7 @@ public class UpgradeVMCmd extends BaseCmd {
         UserVmVO vmInstance = getManagementServer().findUserVMInstanceById(virtualMachineId.longValue());
         if (vmInstance == null) {
         	throw new ServerApiException(BaseCmd.VM_INVALID_PARAM_ERROR, "unable to find a virtual machine with id " + virtualMachineId);
-        }
-
-        ServiceOfferingVO serviceOffering = getManagementServer().findServiceOfferingById(serviceOfferingId);
-        if (serviceOffering == null) {
-        	throw new ServerApiException(BaseCmd.VM_INVALID_PARAM_ERROR, "unable to find a service offering by id " + serviceOfferingId);
-        }
+        }       
 
         if (account != null) {
             if (!isAdmin(account.getType()) && (account.getId().longValue() != vmInstance.getAccountId())) {
@@ -79,12 +80,16 @@ public class UpgradeVMCmd extends BaseCmd {
 
         // If command is executed via 8096 port, set userId to the id of System account (1)
         if (userId == null) {
-            userId = Long.valueOf(1);
+            userId = Long.valueOf(User.UID_SYSTEM);
         }
-
-        long jobId = getManagementServer().upgradeVirtualMachineAsync(userId.longValue(), 
-        	virtualMachineId.longValue(), 
-        	serviceOfferingId.longValue());
+        
+        long jobId = 0;
+        try {
+        	jobId = getManagementServer().upgradeVirtualMachineAsync(userId, virtualMachineId, serviceOfferingId);
+        } catch (InvalidParameterValueException e) {
+        	throw new ServerApiException(BaseCmd.VM_INVALID_PARAM_ERROR, "Failed to  upgrade VM: " + e.getMessage());
+        }
+        	
         if (jobId == 0) {
         	s_logger.warn("Unable to schedule async-job for UpgradeVM comamnd");
         } else {

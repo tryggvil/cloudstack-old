@@ -11,7 +11,7 @@
 	
 	<!--  Style Sheet -->
 	<link rel= "stylesheet" href="css/main.css" type="text/css" />
-	<link rel= "stylesheet" href="css/jquery-ui-1.7.2.custom.css" type="text/css" />
+	<link rel= "stylesheet" href="css/jquery-ui-1.8.2.custom.css" type="text/css" />
 	<link rel= "stylesheet" href="css/logger.css" type="text/css" />
 	
 	<!-- 
@@ -22,8 +22,15 @@
 	<link rel= "stylesheet" href="css/cloud_custom.css" type="text/css" />
 	
 	<!-- Javascripts -->
-	<script type="text/javascript" src="scripts/jquery-1.4.min.js"></script>
-	<script type="text/javascript" src="scripts/jquery-ui-1.7.2.custom.min.js"></script>
+	
+	<!--
+		If you wish to use the minified version for production, uncomment the script
+		tag below and remove/comment out the rest of the javascript below.
+	-->
+	<!-- <script type="text/javascript" src="scripts/cloud.core.min.js"></script> -->
+
+	<script type="text/javascript" src="scripts/jquery-1.4.2.min.js"></script>
+	<script type="text/javascript" src="scripts/jquery-ui-1.8.2.custom.min.js"></script>
 	<script type="text/javascript" src="scripts/date.js"></script>
 	<script type="text/javascript" src="scripts/jquery.cookies.js"></script>
 	<script type="text/javascript" src="scripts/jquery.timers.js"></script>
@@ -35,7 +42,7 @@
 	<!-- cloud.com scripts -->
 	<script type="text/javascript" src="scripts/cloud.logger.js"></script>
 	<script type="text/javascript" src="scripts/cloud.core.js"></script>
-	<script type="text/javascript" src="scripts/cloud.core.instances.js"></script>
+	<script type="text/javascript" src="scripts/cloud.core.instances.js"></script>	
 	<script type="text/javascript" src="scripts/cloud.core.network.js"></script>
 	<script type="text/javascript" src="scripts/cloud.core.templates.js"></script>
 	<script type="text/javascript" src="scripts/cloud.core.events.js"></script>
@@ -72,10 +79,10 @@
 							<input class="text" type="text" name="account_username" id="account_username" />
 						</li>
 						<li><label for="password">Password</label>
-							<input class="text" type="password" name="account_password" id="account_password" />
+							<input class="text" type="password" name="account_password" id="account_password" AUTOCOMPLETE="off" />
 						</li>
 						<li><label for="Domain">Domain</label>
-							<input class="text" type="text" name="account_domain" id="account_domain" value="ROOT"/>
+							<input class="text" type="text" name="account_domain" id="account_domain" value="/"/>
 						</li>
 					</ol>
 					<div class="loginbutton_box">
@@ -114,7 +121,7 @@
         <div class="globalnav_container" id="menutab_role_user" style="display:none">
 			<div id="menutab_dashboard_user" class="menutab_off">Dashboard</div>
             <div id="menutab_vm" class="menutab_off">Instances</div>
-			<div id="menutab_storage" class="menutab_off">Storage</div>
+			<div id="menutab_storage" class="menutab_off">Storage</div>			
 			<div id="menutab_networking" class="menutab_off">Network</div>
 			<div id="menutab_templates" class="menutab_off">Templates</div>
 			<div id="menutab_events" class="menutab_off">Events</div>
@@ -123,7 +130,7 @@
 			<div id="menutab_dashboard_root" class="admin_menutab_off">Dashboard</div>
             <div id="menutab_vm" class="admin_menutab_off">Instances</div>
 			<div id="menutab_hosts" class="admin_menutab_off">Hosts</div>
-			<div id="menutab_storage" class="admin_menutab_off">Storage</div>
+			<div id="menutab_storage" class="admin_menutab_off">Storage</div>			
 			<div id="menutab_networking" class="admin_menutab_off">Network</div>
 			<div id="menutab_templates" class="admin_menutab_off">Templates</div>
 			<div id="menutab_accounts" class="admin_menutab_off">Accounts</div>
@@ -134,7 +141,7 @@
 		<div class="globalnav_container" id="menutab_role_domain" style="display:none">
 			<div id="menutab_dashboard_domain" class="admin_menutab_off">Dashboard</div>
             <div id="menutab_vm" class="admin_menutab_off">Instances</div>
-			<div id="menutab_storage" class="admin_menutab_off">Storage</div>
+			<div id="menutab_storage" class="admin_menutab_off">Storage</div>			
 			<div id="menutab_networking" class="admin_menutab_off">Network</div>
 			<div id="menutab_templates" class="admin_menutab_off">Templates</div>
 			<div id="menutab_accounts" class="admin_menutab_off">Accounts</div>

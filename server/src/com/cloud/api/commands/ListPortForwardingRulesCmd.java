@@ -67,7 +67,7 @@ public class ListPortForwardingRulesCmd extends BaseCmd {
         // if an admin account was passed in, or no account was passed in, make sure we honor the accountName/domainId parameters
         if ((account != null) && isAdmin(account.getType())) {
             if (ipAddressVO.getAccountId() != null) {
-                if ((addrOwner != null) && !getManagementServer().isChildDomain(addrOwner.getDomainId(), account.getDomainId())) {
+                if ((addrOwner != null) && !getManagementServer().isChildDomain(account.getDomainId(), addrOwner.getDomainId())) {
                     throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to list port forwarding rules for address " + ipAddress + ", permission denied for account " + account.getId());
                 }
             } else {

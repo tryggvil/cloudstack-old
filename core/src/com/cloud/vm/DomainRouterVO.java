@@ -27,8 +27,6 @@ import javax.persistence.Table;
 
 import com.cloud.utils.net.NetUtils;
 
-import java.util.List;
-
 /**
  * VirtualMachineRouterVO implements all the fields stored for a domain router.
  */

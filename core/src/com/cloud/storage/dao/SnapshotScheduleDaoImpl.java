@@ -62,7 +62,9 @@ public class SnapshotScheduleDaoImpl extends GenericDaoBase<SnapshotScheduleVO, 
 		SearchCriteria sc = coincidingSchedulesSearch.create();
 	    sc.setParameters("volumeId", volumeId);
 	    sc.setParameters("scheduledTimestamp", date);
-	    return listActiveBy(sc);
+	    // Don't return manual snapshots. They will be executed through another code path.
+        sc.addAnd("policyId", SearchCriteria.Op.NEQ, 1L);
+        return listActiveBy(sc);
 	}
 
 	/**
@@ -72,6 +74,8 @@ public class SnapshotScheduleDaoImpl extends GenericDaoBase<SnapshotScheduleVO, 
     public List<SnapshotScheduleVO> getSchedulesToExecute(Date currentTimestamp) {
         SearchCriteria sc = executableSchedulesSearch.create();
         sc.setParameters("scheduledTimestamp", currentTimestamp);
+        // Don't return manual snapshots. They will be executed through another code path.
+        sc.addAnd("policyId", SearchCriteria.Op.NEQ, 1L);
         return listActiveBy(sc);
     }
     

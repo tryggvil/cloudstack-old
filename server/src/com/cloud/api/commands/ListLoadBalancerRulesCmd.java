@@ -27,6 +27,7 @@ import org.apache.log4j.Logger;
 import com.cloud.api.BaseCmd;
 import com.cloud.api.ServerApiException;
 import com.cloud.domain.DomainVO;
+import com.cloud.network.IPAddressVO;
 import com.cloud.network.LoadBalancerVO;
 import com.cloud.server.Criteria;
 import com.cloud.user.Account;
@@ -43,8 +44,10 @@ public class ListLoadBalancerRulesCmd extends BaseCmd {
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ID, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.DOMAIN_ID, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.PUBLIC_IP, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.NAME, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.KEYWORD, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.VIRTUAL_MACHINE_ID, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.PAGE, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.PAGESIZE, Boolean.FALSE));
     }
@@ -62,12 +65,24 @@ public class ListLoadBalancerRulesCmd extends BaseCmd {
         String accountName = (String)params.get(BaseCmd.Properties.ACCOUNT.getName());
         Long id = (Long)params.get(BaseCmd.Properties.ID.getName());
         Long domainId = (Long)params.get(BaseCmd.Properties.DOMAIN_ID.getName());
+        String publicIp = (String)params.get(BaseCmd.Properties.PUBLIC_IP.getName());
         String name = (String)params.get(BaseCmd.Properties.NAME.getName());
         String keyword = (String)params.get(BaseCmd.Properties.KEYWORD.getName());
+        Long vmId = (Long)params.get(BaseCmd.Properties.VIRTUAL_MACHINE_ID.getName());
         Integer page = (Integer)params.get(BaseCmd.Properties.PAGE.getName());
         Integer pageSize = (Integer)params.get(BaseCmd.Properties.PAGESIZE.getName());
         Long accountId = null;
         boolean isAdmin = false;
+        Account ipAddressOwner = null;
+
+        if (publicIp != null) {
+            IPAddressVO ipAddressVO = getManagementServer().findIPAddressById(publicIp);
+            if (ipAddressVO == null) {
+                throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to find IP address " + publicIp);
+            } else {
+                ipAddressOwner = getManagementServer().findAccountById(ipAddressVO.getAccountId());
+            }
+        }
 
         if ((account == null) || isAdmin(account.getType())) {
             isAdmin = true;
@@ -83,6 +98,10 @@ public class ListLoadBalancerRulesCmd extends BaseCmd {
                     } else {
                         throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to find account " + accountName + " in domain " + domainId);
                     }
+                }
+            } else if (ipAddressOwner != null) {
+                if ((account != null) && !getManagementServer().isChildDomain(account.getDomainId(), ipAddressOwner.getDomainId())) {
+                    throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to list load balancer rules for IP address " + publicIp + ", permission denied.");
                 }
             } else {
                 domainId = ((account == null) ? DomainVO.ROOT_DOMAIN : account.getDomainId());
@@ -108,6 +127,8 @@ public class ListLoadBalancerRulesCmd extends BaseCmd {
         if (keyword == null) {
         	c.addCriteria(Criteria.ID, id);
         	c.addCriteria(Criteria.NAME, name);
+        	c.addCriteria(Criteria.INSTANCEID, vmId);
+        	c.addCriteria(Criteria.IPADDRESS, publicIp);
         	if (isAdmin) {
                 c.addCriteria(Criteria.DOMAINID, domainId);
         	}

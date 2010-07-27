@@ -37,6 +37,8 @@ public interface TemplateDownloader extends Runnable{
 
 	public static enum Status  {UNKNOWN, NOT_STARTED, IN_PROGRESS, ABORTED, UNRECOVERABLE_ERROR, RECOVERABLE_ERROR, DOWNLOAD_FINISHED, POST_DOWNLOAD_FINISHED}
 
+	public static long DEFAULT_MAX_TEMPLATE_SIZE_IN_BYTES = 50L*1024L*1024L*1024L;
+	
 	/**
 	 * Initiate download, resuming a previous one if required
 	 * @param resume resume if necessary
@@ -92,5 +94,7 @@ public interface TemplateDownloader extends Runnable{
 	public void setResume(boolean resume);
 	
 	public boolean isInited();
+	
+	public long getMaxTemplateSizeInBytes();
 
 }

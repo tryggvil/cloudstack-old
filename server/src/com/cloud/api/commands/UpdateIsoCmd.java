@@ -42,6 +42,8 @@ public class UpdateIsoCmd extends BaseCmd {
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.NAME, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.DISPLAY_TEXT, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT_OBJ, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.OS_TYPE_ID, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.BOOTABLE, Boolean.FALSE));
     }
 
     @Override
@@ -56,9 +58,11 @@ public class UpdateIsoCmd extends BaseCmd {
     @Override
     public List<Pair<String, Object>> execute(Map<String, Object> params) {
         Account account = (Account)params.get(BaseCmd.Properties.ACCOUNT_OBJ.getName());
-        String description = (String)params.get(BaseCmd.Properties.DISPLAY_TEXT.getName());
+        String displayText = (String)params.get(BaseCmd.Properties.DISPLAY_TEXT.getName());
         String name = (String)params.get(BaseCmd.Properties.NAME.getName());
         Long isoId = (Long)params.get(BaseCmd.Properties.ID.getName());
+        Long guestOSId = (Long) params.get(BaseCmd.Properties.OS_TYPE_ID.getName());
+        Boolean bootable = (Boolean) params.get(BaseCmd.Properties.BOOTABLE.getName());
 
         VMTemplateVO iso = getManagementServer().findTemplateById(isoId.longValue());
         if ((iso == null) || iso.getFormat() != Storage.ImageFormat.ISO) {
@@ -79,29 +83,30 @@ public class UpdateIsoCmd extends BaseCmd {
                 }
             }
         }
-
-        if (name == null) {
-            name = iso.getName();
-        }
-        if (description == null) {
-            description = iso.getDisplayText();
-        }
-
+        
         // do the update
-        getManagementServer().updateTemplate(isoId, name, description);
+        boolean success = false;
+        try {
+        	success = getManagementServer().updateTemplate(isoId, name, displayText, null, guestOSId, null, bootable);
+        } catch (Exception ex) {
+        	 s_logger.error("Exception editing ISO", ex);
+             throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Failed to update ISO " + isoId + ": " + ex.getMessage());
+        }
 
         VMTemplateVO updatedIso = getManagementServer().findTemplateById(isoId);
-        if (updatedIso != null) {
-            List<Pair<String, Object>> templateData = new ArrayList<Pair<String, Object>>();
-            templateData.add(new Pair<String, Object>(BaseCmd.Properties.ID.getName(), updatedIso.getId().toString()));
-            templateData.add(new Pair<String, Object>(BaseCmd.Properties.NAME.getName(), updatedIso.getName()));
-            templateData.add(new Pair<String, Object>(BaseCmd.Properties.DISPLAY_TEXT.getName(), updatedIso.getDisplayText()));
-            templateData.add(new Pair<String, Object>(BaseCmd.Properties.IS_PUBLIC.getName(), Boolean.valueOf(updatedIso.isPublicTemplate()).toString()));
-            templateData.add(new Pair<String, Object>(BaseCmd.Properties.CREATED.getName(), getDateString(updatedIso.getCreated())));
-            return templateData;
-        }
-        else {
-            throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "internal error registering ISO");
+        if (success) {
+            List<Pair<String, Object>> isoData = new ArrayList<Pair<String, Object>>();
+            isoData.add(new Pair<String, Object>(BaseCmd.Properties.ID.getName(), updatedIso.getId().toString()));
+            isoData.add(new Pair<String, Object>(BaseCmd.Properties.NAME.getName(), updatedIso.getName()));
+            isoData.add(new Pair<String, Object>(BaseCmd.Properties.DISPLAY_TEXT.getName(), updatedIso.getDisplayText()));
+            isoData.add(new Pair<String, Object>(BaseCmd.Properties.IS_PUBLIC.getName(), Boolean.valueOf(updatedIso.isPublicTemplate()).toString()));
+            isoData.add(new Pair<String, Object>(BaseCmd.Properties.CREATED.getName(), getDateString(updatedIso.getCreated())));
+            isoData.add(new Pair<String, Object>(BaseCmd.Properties.FORMAT.getName(), updatedIso.getFormat()));
+            isoData.add(new Pair<String, Object>(BaseCmd.Properties.OS_TYPE_ID.getName(), updatedIso.getGuestOSId()));
+            isoData.add(new Pair<String, Object>(BaseCmd.Properties.BOOTABLE.getName(), updatedIso.isBootable()));
+            return isoData;
+        } else {
+            throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "internal error updating ISO");
         }
     }
 }

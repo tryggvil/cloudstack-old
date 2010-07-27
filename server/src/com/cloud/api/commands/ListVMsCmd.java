@@ -18,6 +18,7 @@
 
 package com.cloud.api.commands;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -30,11 +31,14 @@ import com.cloud.api.ServerApiException;
 import com.cloud.async.AsyncJobVO;
 import com.cloud.domain.DomainVO;
 import com.cloud.host.HostVO;
+import com.cloud.network.security.NetworkGroupVMMapVO;
+import com.cloud.network.security.NetworkGroupVO;
 import com.cloud.server.Criteria;
 import com.cloud.service.ServiceOfferingVO;
 import com.cloud.storage.VMTemplateVO;
 import com.cloud.user.Account;
 import com.cloud.utils.Pair;
+import com.cloud.vm.VmStats;
 import com.cloud.vm.UserVm;
 
 public class ListVMsCmd extends BaseCmd {
@@ -234,7 +238,27 @@ public class ListVMsCmd extends BaseCmd {
             vmData.add(new Pair<String, Object>(BaseCmd.Properties.CPU_NUMBER.getName(), Integer.valueOf(offering.getCpu()).toString()));
             vmData.add(new Pair<String, Object>(BaseCmd.Properties.CPU_SPEED.getName(), Integer.valueOf(offering.getSpeed()).toString()));
             vmData.add(new Pair<String, Object>(BaseCmd.Properties.MEMORY.getName(), Integer.valueOf(offering.getRamSize()).toString()));
-
+            
+            //stats calculation
+            DecimalFormat decimalFormat = new DecimalFormat("#.##");
+            String cpuUsed = null;
+            VmStats vmStats = getManagementServer().getVmStatistics(vmInstance.getId());
+            if (vmStats != null) 
+            {
+                float cpuUtil = (float) vmStats.getCPUUtilization();
+                cpuUsed = decimalFormat.format(cpuUtil) + "%";
+                vmData.add(new Pair<String, Object>(BaseCmd.Properties.CPU_USED.getName(), cpuUsed));
+                
+                long networkKbRead = (long)vmStats.getNetworkReadKBs();
+                vmData.add(new Pair<String, Object>(BaseCmd.Properties.NETWORK_KB_READ.getName(), networkKbRead));
+                
+                long networkKbWrite = (long)vmStats.getNetworkWriteKBs();
+                vmData.add(new Pair<String, Object>(BaseCmd.Properties.NETWORK_KB_WRITE.getName(), networkKbWrite));
+            }
+            
+            //network groups
+            vmData.add(new Pair<String, Object>(BaseCmd.Properties.NETWORK_GROUP_LIST.getName(), getManagementServer().getNetworkGroupsNamesForVm(vmInstance.getId())));
+            
             vmTag[i++] = vmData;
         }
         List<Pair<String, Object>> returnTags = new ArrayList<Pair<String, Object>>();

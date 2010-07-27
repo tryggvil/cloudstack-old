@@ -46,6 +46,7 @@ public class LoadBalancerDaoImpl extends GenericDaoBase<LoadBalancerVO, Long> im
                                                                   "          ip.data_center_id = vm.data_center_id ";
     private final SearchBuilder<LoadBalancerVO> ListByIp;
     private final SearchBuilder<LoadBalancerVO> IpAndPublicPortSearch;
+    private final SearchBuilder<LoadBalancerVO> AccountAndNameSearch;
 
     protected LoadBalancerDaoImpl() {
         ListByIp  = createSearchBuilder();
@@ -56,6 +57,11 @@ public class LoadBalancerDaoImpl extends GenericDaoBase<LoadBalancerVO, Long> im
         IpAndPublicPortSearch.and("ipAddress", IpAndPublicPortSearch.entity().getIpAddress(), SearchCriteria.Op.EQ);
         IpAndPublicPortSearch.and("publicPort", IpAndPublicPortSearch.entity().getPublicPort(), SearchCriteria.Op.EQ);
         IpAndPublicPortSearch.done();
+
+        AccountAndNameSearch = createSearchBuilder();
+        AccountAndNameSearch.and("accountId", AccountAndNameSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
+        AccountAndNameSearch.and("name", AccountAndNameSearch.entity().getName(), SearchCriteria.Op.EQ);
+        AccountAndNameSearch.done();
     }
 
     @Override
@@ -91,6 +97,14 @@ public class LoadBalancerDaoImpl extends GenericDaoBase<LoadBalancerVO, Long> im
         SearchCriteria sc = IpAndPublicPortSearch.create();
         sc.setParameters("ipAddress", ipAddress);
         sc.setParameters("publicPort", publicPort);
+        return findOneActiveBy(sc);
+    }
+
+    @Override
+    public LoadBalancerVO findByAccountAndName(Long accountId, String name) {
+        SearchCriteria sc = AccountAndNameSearch.create();
+        sc.setParameters("accountId", accountId);
+        sc.setParameters("name", name);
         return findOneActiveBy(sc);
     }
 }

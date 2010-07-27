@@ -17,19 +17,37 @@
  */
 package com.cloud.agent.api;
 
+import com.cloud.storage.Storage.StoragePoolType;
+
 public class GetStorageStatsCommand extends Command {
     private String id;
     private String localPath;
+    private StoragePoolType pooltype;
+    
 
     public GetStorageStatsCommand() {
+    }
+
+    public StoragePoolType getPooltype() {
+        return pooltype;
+    }
+
+    public void setPooltype(StoragePoolType pooltype) {
+        this.pooltype = pooltype;
     }
 
     public GetStorageStatsCommand(String id) {
         this.id = id;
     }
     
-    public GetStorageStatsCommand(String id, String localPath) {
+    public GetStorageStatsCommand(String id, StoragePoolType pooltype) {
         this.id = id;
+        this.pooltype = pooltype;
+    }
+    
+    public GetStorageStatsCommand(String id, StoragePoolType pooltype, String localPath) {
+        this.id = id;
+        this.pooltype = pooltype;
         this.localPath = localPath;
     }
 

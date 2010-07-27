@@ -148,7 +148,7 @@ public class ConsoleProxyAjaxKeyMapper {
         js2javaCodeMap.put(new Integer(220), new Integer(KeyEvent.VK_BACK_SLASH));
         
         js2javaCodeMap.put(new Integer(186), new Integer(KeyEvent.VK_SEMICOLON));
-        js2javaCodeMap.put(new Integer(222), new Integer(KeyEvent.VK_QUOTE));			// special in KVM
+        js2javaCodeMap.put(new Integer(222), new Integer(KeyEvent.VK_QUOTE));
         js2javaCodeMap.put(new Integer(13), new Integer(KeyEvent.VK_ENTER));
         
         js2javaCodeMap.put(new Integer(190), new Integer(KeyEvent.VK_PERIOD));

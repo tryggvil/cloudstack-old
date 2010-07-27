@@ -71,31 +71,11 @@ public class ListSnapshotsCmd extends BaseCmd {
         String interval = (String)params.get(BaseCmd.Properties.INTERVAL_TYPE.getName());
         String snapshotType = (String)params.get(BaseCmd.Properties.SNAPSHOT_TYPE.getName());
         Account account = (Account)params.get(BaseCmd.Properties.ACCOUNT_OBJ.getName());
-        String keyword = (String)params.get(BaseCmd.Properties.KEYWORD.getName());
         String accountName = (String)params.get(BaseCmd.Properties.ACCOUNT.getName());
         Long domainId = (Long)params.get(BaseCmd.Properties.DOMAIN_ID.getName());
+        String keyword = (String)params.get(BaseCmd.Properties.KEYWORD.getName());
         Integer page = (Integer)params.get(BaseCmd.Properties.PAGE.getName());
         Integer pageSize = (Integer)params.get(BaseCmd.Properties.PAGESIZE.getName());
-        Long accountId = null;
-
-        if ((account == null) || isAdmin(account.getType())) {
-            // validate domainId before proceeding
-            if (domainId != null) {
-                if ((account != null) && !getManagementServer().isChildDomain(account.getDomainId(), domainId)) {
-                    throw new ServerApiException(BaseCmd.PARAM_ERROR, "Invalid domain id (" + domainId + ") given, unable to list snapshot policies.");
-                }
-                if (accountName != null) {
-                    Account userAccount = getManagementServer().findAccountByName(accountName, domainId);
-                    if (userAccount != null) {
-                        accountId = userAccount.getId();
-                    } else {
-                        throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to find account " + accountName + " in domain " + domainId);
-                    }
-                }
-            }
-        } else {
-            accountId = account.getId();
-        }
 
         //Verify parameters
         if(volumeId != null){
@@ -103,12 +83,23 @@ public class ListSnapshotsCmd extends BaseCmd {
         	if (volume == null) {
         		throw new ServerApiException (BaseCmd.SNAPSHOT_INVALID_PARAM_ERROR, "unable to find a volume with id " + volumeId);
         	}
-        	Long volumeAccountId = volume.getAccountId();
-            if ((accountId != null) && (accountId.longValue() != volumeAccountId.longValue())) {
-                throw new ServerApiException(BaseCmd.SNAPSHOT_INVALID_PARAM_ERROR, "unable to find a volume with id " + volumeId + " for this account");
-            }
+        	checkAccountPermissions(params, volume.getAccountId(), volume.getDomainId(), "volume", volumeId);
         }
-
+        
+        Long accountId = null;
+        if ((account == null) || isAdmin(account.getType())) {
+        	if(account != null && account.getType() == Account.ACCOUNT_TYPE_DOMAIN_ADMIN)
+        		accountId = account.getId();
+            if (domainId != null && accountName != null) {
+                Account userAccount = getManagementServer().findAccountByName(accountName, domainId);
+                if (userAccount != null) {
+                    accountId = userAccount.getId();
+                }
+            }
+        } else {
+            accountId = account.getId();
+        }
+            
         Long startIndex = Long.valueOf(0);
         int pageSizeNum = 50;
     	if (pageSize != null) {
@@ -162,7 +153,6 @@ public class ListSnapshotsCmd extends BaseCmd {
             snapshotData.add(new Pair<String, Object>(BaseCmd.Properties.VOLUME_TYPE.getName(), volume.getVolumeType()));
             snapshotData.add(new Pair<String, Object>(BaseCmd.Properties.CREATED.getName(), snapshot.getCreated()));
             snapshotData.add(new Pair<String, Object>(BaseCmd.Properties.NAME.getName(), snapshot.getName()));
-            snapshotData.add(new Pair<String, Object>(BaseCmd.Properties.PATH.getName(), snapshot.getPath()));
             
             AsyncJobVO asyncJob = getManagementServer().findInstancePendingAsyncJob("snapshot", snapshot.getId());
             if(asyncJob != null) {

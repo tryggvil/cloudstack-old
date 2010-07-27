@@ -31,6 +31,7 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
 import com.cloud.async.AsyncInstanceCreateStatus;
+import com.cloud.storage.Storage.StoragePoolType;
 import com.cloud.utils.db.GenericDao;
 import com.google.gson.annotations.Expose;
 
@@ -46,10 +47,6 @@ public class VolumeVO implements Volume {
     @Column(name="name")
     String name;
     
-    @Expose
-    @Column(name="name_label")
-    String nameLabel;
-    
     @Column(name="pool_id")
     Long poolId;
 
@@ -61,6 +58,10 @@ public class VolumeVO implements Volume {
     
     @Column(name="instance_id")
     Long instanceId = null;
+    
+    @Expose
+    @Column(name="device_id")
+    Long deviceId = null;
     
     @Expose
     @Column(name="size")
@@ -101,9 +102,6 @@ public class VolumeVO implements Volume {
     @Column(name="mirror_vol")
     Long mirrorVolume;
     
-    @Column(name="template_name")
-    String templateName;
-    
     @Column(name="template_id")
     Long templateId;
     
@@ -119,6 +117,11 @@ public class VolumeVO implements Volume {
     @Column(name="mirror_state")
     @Enumerated(EnumType.STRING)
 	MirrorState mirrorState = Volume.MirrorState.NOT_MIRRORED;
+    
+    @Expose
+    @Column(name="pool_type")
+    @Enumerated(EnumType.STRING)
+    StoragePoolType poolType;
     
     @Column(name=GenericDao.REMOVED_COLUMN)
     Date removed;
@@ -136,10 +139,56 @@ public class VolumeVO implements Volume {
     @Column(name="updated")
     @Temporal(value=TemporalType.TIMESTAMP)
     Date updated;
+
+    @Column(name="recreatable")
+    boolean recreatable;
     
-    public VolumeVO(String name, long size, String folder, String path, String iscsiName, String hostIp, Long mirrorVolume, Volume.MirrorState state, Volume.VolumeType type) {
-    	this(null, name, -1, -1, -1, -1, null, type, folder, path, iscsiName, size);
+    /**
+     * Constructor for data disk.
+     * @param type
+     * @param instanceId
+     * @param name
+     * @param dcId
+     * @param podId
+     * @param accountId
+     * @param domainId
+     * @param size
+     */
+    public VolumeVO(VolumeType type, long instanceId, String name, long dcId, long podId, long accountId, long domainId, long size) {
+        this.volumeType = type;
+        this.name = name;
+        this.dataCenterId = dcId;
+        this.podId = podId;
+        this.accountId = accountId;
+        this.domainId = domainId;
+        this.instanceId = instanceId;
+        this.size = size;
+        this.status = AsyncInstanceCreateStatus.Creating;
+        this.templateId = null;
+        this.mirrorState = MirrorState.NOT_MIRRORED;
+        this.mirrorVolume = null;
+        this.storageResourceType = StorageResourceType.STORAGE_POOL;
+        this.poolType = null;
     }
+
+    /**
+     * Constructor for volume based on a template.
+     * 
+     * @param type
+     * @param instanceId
+     * @param templateId
+     * @param name
+     * @param dcId
+     * @param podId
+     * @param accountId
+     * @param domainId
+     */
+    public VolumeVO(VolumeType type, long instanceId, long templateId, String name, long dcId, long podId, long accountId, long domainId, boolean recreatable) {
+        this(type, instanceId, name, dcId, podId, accountId, domainId, 0l);
+        this.templateId = templateId;
+        this.recreatable = recreatable;
+    }
+    
     
     public VolumeVO(Long id, String name, long dcId, long podId, long accountId, long domainId, Long instanceId, String folder, String path, long size, Volume.VolumeType vType) {
         this.id = id;
@@ -154,22 +203,11 @@ public class VolumeVO implements Volume {
         this.dataCenterId = dcId;
         this.volumeType = vType;
         this.status = AsyncInstanceCreateStatus.Created;
+        this.recreatable = false;
     }
-
-    public VolumeVO(Long id, String name, long dcId, long podId, long accountId, long domainId, Long instanceId, Volume.VolumeType vType, String folder, String path, String iscsiName, long size) {
-        this.id = id;
-        this.name = name;
-        this.accountId = accountId;
-        this.domainId = domainId;
-        this.instanceId = instanceId;
-        this.folder = folder;
-        this.path = path;
-        this.size = size;
-        this.podId = podId;
-        this.dataCenterId = dcId;
-        this.volumeType = vType;
-        this.iscsiName = iscsiName;
-        this.status = AsyncInstanceCreateStatus.Created;
+    
+    public boolean isRecreatable() {
+        return recreatable;
     }
     
     public String getIscsiName() {
@@ -196,13 +234,16 @@ public class VolumeVO implements Volume {
     }
     
     @Override
-    public String getNameLabel() {
-    	return nameLabel;
-    }
-
-    @Override
     public long getAccountId() {
         return accountId;
+    }
+    
+    public void setPoolType(StoragePoolType poolType) {
+        this.poolType = poolType;
+    }
+    
+    public StoragePoolType getPoolType() {
+        return poolType;
     }
 
     @Override
@@ -237,7 +278,15 @@ public class VolumeVO implements Volume {
     	return instanceId;
     }
     
-	@Override
+	public Long getDeviceId() {
+        return deviceId;
+    }
+
+    public void setDeviceId(Long deviceId) {
+        this.deviceId = deviceId;
+    }
+
+    @Override
 	public VolumeType getVolumeType() {
 		return volumeType;
 	}
@@ -248,10 +297,6 @@ public class VolumeVO implements Volume {
 
 	public void setName(String name) {
 		this.name = name;
-	}
-	
-	public void setNameLabel(String nameLabel) {
-		this.nameLabel = nameLabel;
 	}
 	
 	public void setFolder(String folder) {
@@ -294,7 +339,7 @@ public class VolumeVO implements Volume {
 		this.dataCenterId = dataCenterId;
 	}
 
-	public void setVType(VolumeType type) {
+	public void setVolumeType(VolumeType type) {
 		volumeType = type;
 	}
 	
@@ -305,10 +350,6 @@ public class VolumeVO implements Volume {
 	public Date getCreated() {
 		return created;
 	}
-	
-//	public void setCreated(Date created) {
-//		this.created = created;
-//	}
 	
 	public void setDestroyed(boolean destroyed) {
 		this.destroyed = destroyed;
@@ -338,14 +379,6 @@ public class VolumeVO implements Volume {
 		this.diskOfferingId = diskOfferingId;
 	}
 
-	public String getTemplateName() {
-		return templateName;
-	}
-
-	public void setTemplateName(String templateName) {
-		this.templateName = templateName;
-	}
-
 	public Long getTemplateId() {
 		return templateId;
 	}
@@ -368,12 +401,6 @@ public class VolumeVO implements Volume {
 
 	public void setMirrorVolume(Long mirrorVolume) {
 		this.mirrorVolume = mirrorVolume;
-	}
-
-	@Override
-	public long getStorageResourceId() {
-		// TODO Auto-generated method stub
-		return 0;
 	}
 
 	@Override
@@ -457,5 +484,10 @@ public class VolumeVO implements Volume {
 	    protected String getIscsiName() {
 	        return iqn + ":lu:" + lun;
 	    }
+	}
+	
+	@Override
+    public String toString() {
+	    return new StringBuilder("Vol[").append(id).append("|vm=").append(instanceId).append("|").append(volumeType).append("]").toString();
 	}
 }

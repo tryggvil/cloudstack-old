@@ -17,36 +17,29 @@
  */
 package com.cloud.agent.api.storage;
 
-import java.util.ArrayList;
-import java.util.List;
-
+import com.cloud.agent.api.to.VolumeTO;
+import com.cloud.storage.StoragePoolVO;
+import com.cloud.storage.VMTemplateStoragePoolVO;
 import com.cloud.storage.VolumeVO;
 
 public class DestroyCommand extends StorageCommand {
-    String volume;
-    List<VolumeVO> volumes;
+    VolumeTO volume;
     
     protected DestroyCommand() {
     }
     
-    public DestroyCommand(String parent, List<VolumeVO> volumes) {
-        this.volume = parent;
-        this.volumes = volumes;
-    }
-        
-    public DestroyCommand(String parent, VolumeVO volume) {
-        this.volume = parent;
-        this.volumes = new ArrayList<VolumeVO>();
-        this.volumes.add(volume);
-    }
-    public List<VolumeVO> getVolumes() {
-    	return volumes;
-    }
-
-    public String getVolumeName() {
-        return volume;
+    public DestroyCommand(StoragePoolVO pool, VolumeVO volume) {
+         this.volume = new VolumeTO(volume, pool);
     }
     
+    public DestroyCommand(StoragePoolVO pool, VMTemplateStoragePoolVO templatePoolRef) {
+    	this.volume = new VolumeTO(templatePoolRef, pool);
+    }
+    
+    public VolumeTO getVolume() {
+    	return volume;
+    }
+
     @Override
     public boolean executeInSequence() {
         return true;

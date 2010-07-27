@@ -93,11 +93,11 @@ public class VMInstanceVO implements VirtualMachine {
     @Column(name="guest_os_id", nullable=false, length=17)
     private long guestOSId;
     
-    @Column(name="pool_id", nullable=true, length=17)
-    private long  poolId;
-    
     @Column(name="host_id", updatable=true, nullable=true)
 	private Long hostId;
+    
+    @Column(name="last_host_id", updatable=true, nullable=true)
+    private Long lastHostId;
 
     @Column(name="pod_id", updatable=true, nullable=false)
     private long podId;
@@ -188,7 +188,7 @@ public class VMInstanceVO implements VirtualMachine {
         this.storageIp = null;
         this.updated = 0;
         this.updateTime = new Date();
-        if (displayName != null) 
+        if (displayName != null)
     		this.displayName = displayName;
         else if (type == Type.User)
         	this.displayName = name;
@@ -259,6 +259,11 @@ public class VMInstanceVO implements VirtualMachine {
 	@Override
 	public State getState() {
 		return state;
+	}
+	
+	// don't use this directly, use VM state machine instead, this method is added for migration tool only
+	public void setState(State state) {
+		this.state = state;
 	}
 	
 	@Override
@@ -334,6 +339,19 @@ public class VMInstanceVO implements VirtualMachine {
 		return hostId;
 	}
 	
+	@Override
+	public Long getLastHostId() {
+		return lastHostId;
+	}
+	
+	public void setLastHostId(Long lastHostId) {
+		this.lastHostId = lastHostId;
+	}
+	
+	public void setHostId(Long hostId) {
+		this.hostId = hostId;
+	}
+	
     @Override
     public boolean isHaEnabled() {
         return haEnabled;
@@ -386,11 +404,11 @@ public class VMInstanceVO implements VirtualMachine {
 		this.mirroredVols = mirroredVols;
 	}
 	
-	
     @Override
     public String getDisplayName() {
         return displayName;
     }
+    
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
     }
@@ -399,20 +417,13 @@ public class VMInstanceVO implements VirtualMachine {
     public String getGroup() {
         return group;
     }
+    
     public void setGroup(String group) {
         this.group = group;
     }
 	
     @Override
 	public String toString() {
-    	return new StringBuilder("[").append(type.toString()).append(", ").append(instanceName).append("]").toString();
-    }
-
-    public void setPoolId(long poolId) {
-        this.poolId = poolId;
-    }
-
-    public long getPoolId() {
-        return poolId;
+    	return new StringBuilder("[").append(type.toString()).append("|").append(instanceName).append("]").toString();
     }
 }

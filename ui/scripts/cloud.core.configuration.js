@@ -121,6 +121,12 @@ function showConfigurationTab() {
 		//zone	
 		var rightPanel = $("#submenu_content_zones #right_panel_detail_title");
 		var rightContent = $("#submenu_content_zones #right_panel_detail_content");
+			
+		function clearRightPanel() {
+		    rightPanel.empty();
+		    rightContent.empty();	
+		    $("#submenu_content_zones").find("#action_edit_zone, #action_add_pod, #action_edit_pod, #action_add_publicip_vlan, #action_add_directip_vlan, #action_delete").hide();				
+		}	
 					
 		function zoneObjectToRightPanel(obj) {
 	        rightPanel.html("<strong>Zone:</strong> "+sanitizeXSS(obj.name));					
@@ -132,12 +138,11 @@ function showConfigurationTab() {
 				+ "<p><span>Internal DNS 2:</span> "+((obj.internaldns2 == null) ? "" : obj.internaldns2) +"</p>";			
 			if (getNetworkType() != "vnet") 
 				rightContentHtml += "<p><span>VLAN:</span> "+((obj.vlan == null) ? "" : obj.vlan) +"</p>";			
-			rightContentHtml += "<p><span>Guest CIDR:</span> "+obj.guestcidraddress+"</p>";
-			
+			rightContentHtml += "<p><span>Guest CIDR:</span> "+obj.guestcidraddress+"</p>";			
 			
 			rightContent.data("id", obj.id).html(rightContentHtml);		
 			
-			$("#submenu_content_zones #action_edit_pod").hide();			
+			$("#submenu_content_zones").find("#action_edit_pod, #action_add_directip_vlan").hide();			
 			
 			var buttons = $("#submenu_content_zones #action_delete, #submenu_content_zones #action_edit_zone, #submenu_content_zones #action_add_pod, #submenu_content_zones #action_add_publicip_vlan").data("type", "zone").show();			
 			buttons.data("id", obj.id);			
@@ -152,19 +157,28 @@ function showConfigurationTab() {
 		
 		function podObjectToRightPanel(obj) {		    
 			rightPanel.html("<strong>Pod:</strong> " + sanitizeXSS(obj.name));
+						
 			var rightContentHtml = 
 				"<p><span>POD:</span> "+sanitizeXSS(obj.name)+"</p>"
-				+ "<p><span>CIDR:</span> "+obj.cidr+"</p>"
-				+ "<p><span>IP Range:</span> "+obj.ipRange+"</p>";
+				+ "<p><span>Private CIDR:</span> "+obj.cidr+"</p>"
+				+ "<p><span>Private IP Range:</span> "+obj.ipRange+"</p>"
+				+ "<p><span>Gateway:</span> "+obj.gateway+"</p>";
+								
 			rightContent.data("id", obj.id).html(rightContentHtml);
-			$("#submenu_content_zones #action_edit_zone, #submenu_content_zones #action_add_pod, #submenu_content_zones #action_add_publicip_vlan").hide();
-			var buttons = $("#submenu_content_zones #action_delete, #submenu_content_zones #action_edit_pod").data("type", "pod").show();
-			buttons.data("id", obj.id);
+			
+			$("#submenu_content_zones").find("#action_edit_zone, #action_add_pod, #action_add_publicip_vlan").hide();
+			var buttons = $("#submenu_content_zones").find("#action_delete, #action_edit_pod").data("type", "pod").show();
+			buttons.data("id", obj.id);		
+			buttons.data("zoneid", obj.zoneid);
 			buttons.data("name", obj.name);
 			buttons.data("cidr", obj.cidr);
 			buttons.data("startip", obj.startip);	
 			buttons.data("endip", obj.endip);	
-			buttons.data("ipRange", obj.ipRange);	
+			buttons.data("ipRange", obj.ipRange);		
+			buttons.data("gateway", obj.gateway);	
+			if (getDirectAttachUntaggedEnabled() == "true") {
+				$("#submenu_content_zones #action_add_directip_vlan").data("type", "pod").data("id", obj.id).data("name", obj.name).data("zoneid", obj.zoneid).show();
+			}
 		}
 		
 		$("#submenu_content_zones #action_delete").bind("click", function(event) {
@@ -345,31 +359,38 @@ function showConfigurationTab() {
 			var id = $(this).data("id");
 			
 			$("#dialog_add_pod").find("#add_pod_zone_name").text($(this).data("name"));
-			$("#dialog_add_pod #add_pod_name, #dialog_add_pod #add_pod_cidr, #dialog_add_pod #add_pod_startip, #dialog_add_pod #add_pod_endip").val("");
+			$("#dialog_add_pod #add_pod_name, #dialog_add_pod #add_pod_cidr, #dialog_add_pod #add_pod_startip, #dialog_add_pod #add_pod_endip, #add_pod_gateway").val("");
 			
 			$("#dialog_add_pod")
 			.dialog('option', 'buttons', { 				
-				"Add": function() {					
+				"Add": function() {		
+				    var thisDialog = $(this);
+							
 					// validate values
 					var isValid = true;					
-					isValid &= validateString("Name", $(this).find("#add_pod_name"), $(this).find("#add_pod_name_errormsg"));
-					isValid &= validateCIDR("CIDR", $(this).find("#add_pod_cidr"), $(this).find("#add_pod_cidr_errormsg"));	
-					isValid &= validateIp("Start IP Range", $(this).find("#add_pod_startip"), $(this).find("#add_pod_startip_errormsg"));  //required
-					isValid &= validateIp("End IP Range", $(this).find("#add_pod_endip"), $(this).find("#add_pod_endip_errormsg"), true);  //optional
+					isValid &= validateString("Name", thisDialog.find("#add_pod_name"), thisDialog.find("#add_pod_name_errormsg"));
+					isValid &= validateCIDR("CIDR", thisDialog.find("#add_pod_cidr"), thisDialog.find("#add_pod_cidr_errormsg"));	
+					isValid &= validateIp("Start IP Range", thisDialog.find("#add_pod_startip"), thisDialog.find("#add_pod_startip_errormsg"));  //required
+					isValid &= validateIp("End IP Range", thisDialog.find("#add_pod_endip"), thisDialog.find("#add_pod_endip_errormsg"), true);  //optional
+					isValid &= validateIp("Gateway", thisDialog.find("#add_pod_gateway"), thisDialog.find("#add_pod_gateway_errormsg"));  //required when creating
 					if (!isValid) return;			
 
-                    var name = trim($(this).find("#add_pod_name").val());
-					var cidr = trim($(this).find("#add_pod_cidr").val());
-					var startip = trim($(this).find("#add_pod_startip").val());
-					var endip = trim($(this).find("#add_pod_endip").val());					
+                    var name = trim(thisDialog.find("#add_pod_name").val());
+					var cidr = trim(thisDialog.find("#add_pod_cidr").val());
+					var startip = trim(thisDialog.find("#add_pod_startip").val());
+					var endip = trim(thisDialog.find("#add_pod_endip").val());	    //optional
+					var gateway = trim(thisDialog.find("#add_pod_gateway").val());			
 
-					if (endip != null) {
-						endip = "&endIp="+encodeURIComponent(endip);
-					} else {
-						endip = "";
-					}
+                    var array1 = [];
+                    array1.push("&zoneId="+id);
+                    array1.push("&name="+encodeURIComponent(name));
+                    array1.push("&cidr="+encodeURIComponent(cidr));
+                    array1.push("&startIp="+encodeURIComponent(startip));
+                    if (endip != null && endip.length > 0)
+                        array1.push("&endIp="+encodeURIComponent(endip));
+                    array1.push("&gateway="+encodeURIComponent(gateway));			
 					
-					$(this).dialog("close"); 
+					thisDialog.dialog("close"); 
 					
 					var template = $("#pod_template").clone(true);
 					var loadingImg = template.find(".adding_loading");										
@@ -383,7 +404,7 @@ function showConfigurationTab() {
 			        template.fadeIn("slow");
 					
 					$.ajax({
-						data: "command=createPod&zoneId="+id+"&name="+encodeURIComponent(name)+"&cidr="+encodeURIComponent(cidr)+"&startIp="+encodeURIComponent(startip)+endip+"&response=json",
+						data: "command=createPod&response=json"+array1.join(""),
 						dataType: "json",
 						success: function(json) {
 							var pod = json.createpodresponse;
@@ -395,8 +416,7 @@ function showConfigurationTab() {
 								$("#dialog_confirmation")
 									.html("<p>You have successfully added your first Zone and Pod.  After clicking 'OK', this UI will automatically refresh to give you access to the rest of cloud features.</p>")
 									.dialog('option', 'buttons', { 
-										"OK": function() { 
-											var dialogBox = $(this);
+										"OK": function() { 											
 											$(this).dialog("close");
 											window.location.reload();
 										} 
@@ -417,34 +437,138 @@ function showConfigurationTab() {
 			}).dialog("open");
 		});
 		
+		$("#submenu_content_zones #action_add_directip_vlan").bind("click", function(event) {  
+		    var thisLink = $(this);		    
+		    var podid = thisLink.data("id");
+		    var podname = thisLink.data("name");
+		    var zoneid = thisLink.data("zoneid");
+		    		 
+		    $("#dialog_add_vlan_for_pod").find("#pod_name_label").text(podname);
+		    
+		    $("#dialog_add_vlan_for_pod")
+		    .dialog('option', 'buttons', {
+		        "Add": function() {             
+		            var thisDialog = $(this);		
+				    					
+					// validate values
+					var isValid = true;						
+					isValid &= validateIp("Gateway", thisDialog.find("#gateway"), thisDialog.find("#gateway_errormsg"));
+					isValid &= validateIp("Netmask", thisDialog.find("#netmask"), thisDialog.find("#netmask_errormsg"));
+					isValid &= validateIp("Start IP Range", thisDialog.find("#startip"), thisDialog.find("#startip_errormsg"));   //required
+					isValid &= validateIp("End IP Range", thisDialog.find("#endip"), thisDialog.find("#endip_errormsg"), true);  //optional
+					if (!isValid) return;							
+													
+					var gateway = trim(thisDialog.find("#gateway").val());
+					var netmask = trim(thisDialog.find("#netmask").val());
+					var startip = trim(thisDialog.find("#startip").val());
+					var endip = trim(thisDialog.find("#endip").val());		
+					
+					var array1 = [];
+					array1.push("&vlan=untagged");	
+					array1.push("&zoneid=" + zoneid);
+					array1.push("&podId=" + podid);	
+					array1.push("&forVirtualNetwork=false"); //direct VLAN	
+					array1.push("&gateway="+encodeURIComponent(gateway));
+					array1.push("&netmask="+encodeURIComponent(netmask));	
+					array1.push("&startip="+encodeURIComponent(startip));
+					if(endip != null && endip.length > 0)
+					    array1.push("&endip="+encodeURIComponent(endip));
+										
+					thisDialog.dialog("close"); 
+										
+					var template = $("#vlan_ip_range_template").clone(true);					
+					//direct untagged VLAN is under pod(2nd level). So, make direct untagged VLAN 3rd level.
+					template.find("#row_container .zonetree_secondlevel").removeClass().addClass("zonetree_thirdlevel");
+					
+					var loadingImg = template.find(".adding_loading");	
+					loadingImg.find(".adding_text").text("Adding a direct IP range....");										
+					var row_container = template.find("#row_container");
+														
+					$("#zone_" + zoneid).find("#pod_" + podid).find("#directip_ranges_container").prepend(template.show());						
+																	            
+		            loadingImg.show();  
+                    row_container.hide();             
+			        template.fadeIn("slow");					
+					
+					$.ajax({
+						data: "command=createVlanIpRange&response=json" + array1.join(""),
+						dataType: "json",
+						success: function(json) {						    
+							var vlan = json.createvlaniprangeresponse;
+							template.attr("id", "publicip_range_"+vlan.id);
+							vlanIpRangeJSONToTemplate(vlan, template);
+							loadingImg.hide(); 								                            
+                            row_container.show();    
+						},
+					    error: function(XMLHttpResponse) {						        
+					        handleError(XMLHttpResponse);			    
+						    template.slideUp("slow", function() {
+								$(this).remove();
+							});
+					    }
+					});		        
+		        },
+		        "Cancel": function() {
+		            $(this).dialog("close");
+		        }		    
+		    }).dialog("open");
+		    
+		    return false;
+		});
+		
 		$("#submenu_content_zones #action_edit_pod").bind("click", function(event) {             
-			var id = $(this).data("id");	
-			var dialogEditPod = $("#dialog_edit_pod");					
-			dialogEditPod.find("#edit_pod_name").val($(this).data("name"));
-			dialogEditPod.find("#edit_pod_cidr").val($(this).data("cidr"));								
-			dialogEditPod.find("#edit_pod_startip").val($(this).data("startip")); 
-			dialogEditPod.find("#edit_pod_endip").val($(this).data("endip"));   
+			var id = $(this).data("id");		
+			var zoneid = $(this).data("zoneid");
+			var dialogEditPod = $("#dialog_edit_pod");	
+						
+			var oldName = $(this).data("name");				
+			dialogEditPod.find("#edit_pod_name").val(oldName);
+			
+			var oldCidr = $(this).data("cidr");
+			dialogEditPod.find("#edit_pod_cidr").val(oldCidr);	
+			
+			var oldStartip = $(this).data("startip");							
+			dialogEditPod.find("#edit_pod_startip").val(oldStartip); 
+			
+			var oldEndip = $(this).data("endip");
+			dialogEditPod.find("#edit_pod_endip").val(oldEndip);  
+			
+			var oldGateway = $(this).data("gateway"); 
+			dialogEditPod.find("#edit_pod_gateway").val(oldGateway);
 						
 			dialogEditPod
 			.dialog('option', 'buttons', { 				
-				"Change": function() { 					    				
+				"Change": function() { 	
+				    var thisDialog = $(this);
+								    				
 				    // validate values
 					var isValid = true;					
-					isValid &= validateString("Name", dialogEditPod.find("#edit_pod_name"), dialogEditPod.find("#edit_pod_name_errormsg"));
-					isValid &= validateCIDR("CIDR", dialogEditPod.find("#edit_pod_cidr"), dialogEditPod.find("#edit_pod_cidr_errormsg"));	
-					isValid &= validateIp("Start IP Range", dialogEditPod.find("#edit_pod_startip"), dialogEditPod.find("#edit_pod_startip_errormsg"));  //required
-					isValid &= validateIp("End IP Range", dialogEditPod.find("#edit_pod_endip"), dialogEditPod.find("#edit_pod_endip_errormsg"), true);  //optional
+					isValid &= validateString("Name", thisDialog.find("#edit_pod_name"), thisDialog.find("#edit_pod_name_errormsg"));
+					isValid &= validateCIDR("CIDR", thisDialog.find("#edit_pod_cidr"), thisDialog.find("#edit_pod_cidr_errormsg"));	
+					isValid &= validateIp("Start IP Range", thisDialog.find("#edit_pod_startip"), dialogEditPod.find("#edit_pod_startip_errormsg"));  //required
+					isValid &= validateIp("End IP Range", dialogEditPod.find("#edit_pod_endip"), thisDialog.find("#edit_pod_endip_errormsg"), true);  //optional
+					isValid &= validateIp("Gateway", thisDialog.find("#edit_pod_gateway"), thisDialog.find("#edit_pod_gateway_errormsg"), true);  //optional when editing
 					if (!isValid) return;			
-
-                    var name = trim(dialogEditPod.find("#edit_pod_name").val());
-					var cidr = trim(dialogEditPod.find("#edit_pod_cidr").val());
-					var startip = trim(dialogEditPod.find("#edit_pod_startip").val());
-					var endip = trim(dialogEditPod.find("#edit_pod_endip").val());					
-
-                    var moreCriteria = [];	
-					if (endip != null && endip.length > 0) {
-						moreCriteria.push("&endIp="+encodeURIComponent(endip));
-					} 
+                  
+                    var newName = trim(thisDialog.find("#edit_pod_name").val());
+					var newCidr = trim(thisDialog.find("#edit_pod_cidr").val());
+					var newStartip = trim(thisDialog.find("#edit_pod_startip").val());
+					var newEndip = trim(thisDialog.find("#edit_pod_endip").val());	
+					var newIpRange = getIpRange(newStartip, newEndip);	
+					var newGateway = trim(thisDialog.find("#edit_pod_gateway").val());				
+                        
+                    var array1 = [];	
+                    array1.push("&id="+id);
+                    if(newName != oldName)
+                        array1.push("&name="+encodeURIComponent(newName));
+                    if(newCidr != oldCidr)
+                        array1.push("&cidr="+encodeURIComponent(newCidr));
+                    if(newStartip != oldStartip)
+                        array1.push("&startIp="+encodeURIComponent(newStartip));    
+                    if(newEndip != oldEndip && newEndip != null && newEndip.length > 0)  
+						array1.push("&endIp="+encodeURIComponent(newEndip));	
+					if(newGateway != oldGateway && newGateway != null && newGateway.length > 0)				             
+					    array1.push("&gateway="+encodeURIComponent(newGateway)); 
 					
 					$(this).dialog("close"); 
 					
@@ -458,14 +582,14 @@ function showConfigurationTab() {
 			        template.fadeIn("slow");
 					
 					$.ajax({
-						data: "command=updatePod&id="+id+"&name="+encodeURIComponent(name)+"&cidr="+encodeURIComponent(cidr)+"&startIp="+encodeURIComponent(startip)+moreCriteria.join("")+"&response=json",
+						data: "command=updatePod&response=json"+array1.join(""),
 						dataType: "json",
-						success: function(json) {						    
-						    var ipRange = getIpRange(startip, endip);							   
-							var obj = {"id": id, "name": name, "cidr": cidr, "startip": startip, "endip": endip, "ipRange": ipRange};  
+						success: function(json) {						   				    
+						    var newIpRange = getIpRange(newStartip, newEndip);											   
+							var obj = {"id": id, "zoneid": zoneid, "name": newName, "cidr": newCidr, "startip": newStartip, "endip": newEndip, "ipRange": newIpRange, "gateway": newGateway};  
 					        podObjectToRightPanel(obj);					
-							var podName = $("#pod_"+id).find("#pod_name").text(name);
-							podName.data("id", id).data("name", sanitizeXSS(name)).data("cidr", cidr).data("startip", startip).data("endip", endip).data("ipRange", ipRange);	
+							var podName = $("#pod_"+id).find("#pod_name").text(newName);
+							podName.data("id", id).data("name", sanitizeXSS(newName)).data("cidr", newCidr).data("startip", newStartip).data("endip", newEndip).data("ipRange", newIpRange).data("gateway", newGateway);	
 							loadingImg.hide(); 								                            
                             row_container.show();							
 						},
@@ -482,41 +606,99 @@ function showConfigurationTab() {
 			}).dialog("open");			
 		});
 				
-		$("#submenu_content_zones #action_add_publicip_vlan").bind("click", function(event) {
+		$("#submenu_content_zones #action_add_publicip_vlan").bind("click", function(event) {			
 			var id = $(this).data("id");
-			$("#dialog_add_publicip_vlan #add_publicip_vlan_vlan_container").hide();
-			$("#dialog_add_publicip_vlan #add_publicip_vlan_tagged, #dialog_add_publicip_vlan #add_publicip_vlan_vlan, #dialog_add_publicip_vlan #add_publicip_vlan_gateway, #dialog_add_publicip_vlan #add_publicip_vlan_netmask, #dialog_add_publicip_vlan #add_publicip_vlan_startip, #dialog_add_publicip_vlan #add_publicip_vlan_endip").val("");
-			$("#dialog_add_publicip_vlan").find("#add_publicip_vlan_zone_name").text($(this).data("name"));
 			
-			$("#dialog_add_publicip_vlan")
-			.dialog('option', 'buttons', { 				
-				"Add": function() { 					
+			// reset dialog
+			dialogAddVlanForZone.find("#add_publicip_vlan_vlan_container, #add_publicip_vlan_domain_container, #add_publicip_vlan_account_container").hide();
+			dialogAddVlanForZone.find("#add_publicip_vlan_tagged, #add_publicip_vlan_vlan, #add_publicip_vlan_gateway, #add_publicip_vlan_netmask, #add_publicip_vlan_startip, #add_publicip_vlan_endip, #add_publicip_vlan_account").val("");
+			dialogAddVlanForZone.find("#add_publicip_vlan_zone_name").text($(this).data("name"));
+					
+			if (getNetworkType() == 'vnet') {
+				$("#add_publicip_vlan_type_container").hide();
+			} else {	
+				dialogAddVlanForZone.find("#add_publicip_vlan_pod_container").show();	
+				dialogAddVlanForZone.find("#add_publicip_vlan_type").change();
+				$("#add_publicip_vlan_type_container").show();
+				var podSelect = dialogAddVlanForZone.find("#add_publicip_vlan_pod").empty();		
+				$.ajax({
+					data: "command=listPods&zoneId="+id+"&response=json",
+					dataType: "json",
+					async: false,
+					success: function(json) {
+						var pods = json.listpodsresponse.pod;						
+						if (pods != null && pods.length > 0) {
+							for (var i = 0; i < pods.length; i++) {
+								podSelect.append("<option value='" + pods[i].id + "'>" + sanitizeXSS(pods[i].name) + "</option>"); 
+							}
+						} else {
+							podSelect.append("<option value=''>No available pods</option>"); 
+						}
+					}
+				});
+				
+				var domainSelect = dialogAddVlanForZone.find("#add_publicip_vlan_domain").empty();	
+				$.ajax({
+					data: "command=listDomains&response=json",
+					dataType: "json",
+					async: false,
+					success: function(json) {
+						var domains = json.listdomainsresponse.domain;						
+						if (domains != null && domains.length > 0) {
+							for (var i = 0; i < domains.length; i++) {
+								domainSelect.append("<option value='" + domains[i].id + "'>" + sanitizeXSS(domains[i].name) + "</option>"); 
+							}
+						} 
+					}
+				});
+			}
+
+			dialogAddVlanForZone
+			.dialog('option', 'buttons', { 	
+				"Add": function() { 	
+				    var thisDialog = $(this);							
 					// validate values
 					var isValid = true;					
-					var isTagged = $(this).find("#add_publicip_vlan_tagged").val() == "tagged";
-					if (isTagged) {
-						isValid &= validateNumber("VLAN", $(this).find("#add_publicip_vlan_vlan"), $(this).find("#add_publicip_vlan_vlan_errormsg"), 2, 4095);
+					var isTagged = false;
+					var isDirect = false;
+					if (getNetworkType() == "vlan") {
+						isDirect = thisDialog.find("#add_publicip_vlan_type").val() == "false";
+						isTagged = thisDialog.find("#add_publicip_vlan_tagged").val() == "tagged";
 					}
-					isValid &= validateIp("Gateway", $(this).find("#add_publicip_vlan_gateway"), $(this).find("#add_publicip_vlan_gateway_errormsg"));
-					isValid &= validateIp("Netmask", $(this).find("#add_publicip_vlan_netmask"), $(this).find("#add_publicip_vlan_netmask_errormsg"));
-					isValid &= validateIp("Start IP Range", $(this).find("#add_publicip_vlan_startip"), $(this).find("#add_publicip_vlan_startip_errormsg"));   //required
-					isValid &= validateIp("End IP Range", $(this).find("#add_publicip_vlan_endip"), $(this).find("#add_publicip_vlan_endip_errormsg"), true);  //optional
+					if (isDirect && isTagged) {
+						isValid &= validateString("Account", thisDialog.find("#add_publicip_vlan_account"), thisDialog.find("#add_publicip_vlan_account_errormsg"), false);
+					} 
+					if (isTagged) {
+						isValid &= validateNumber("VLAN", thisDialog.find("#add_publicip_vlan_vlan"), thisDialog.find("#add_publicip_vlan_vlan_errormsg"), 2, 4095);
+					}
+					isValid &= validateIp("Gateway", thisDialog.find("#add_publicip_vlan_gateway"), thisDialog.find("#add_publicip_vlan_gateway_errormsg"));
+					isValid &= validateIp("Netmask", thisDialog.find("#add_publicip_vlan_netmask"), thisDialog.find("#add_publicip_vlan_netmask_errormsg"));
+					isValid &= validateIp("Start IP Range", thisDialog.find("#add_publicip_vlan_startip"), thisDialog.find("#add_publicip_vlan_startip_errormsg"));   //required
+					isValid &= validateIp("End IP Range", thisDialog.find("#add_publicip_vlan_endip"), thisDialog.find("#add_publicip_vlan_endip_errormsg"), true);  //optional
 					if (!isValid) return;							
 					
-					var vlan = trim($(this).find("#add_publicip_vlan_vlan").val());
+					var vlan = trim(thisDialog.find("#add_publicip_vlan_vlan").val());
 					if (isTagged) {
 						vlan = "&vlan="+vlan;
 					} else {
 						vlan = "&vlan=untagged";
 					}
-					var gateway = trim($(this).find("#add_publicip_vlan_gateway").val());
-					var netmask = trim($(this).find("#add_publicip_vlan_netmask").val());
-					var startip = trim($(this).find("#add_publicip_vlan_startip").val());
-					var endip = trim($(this).find("#add_publicip_vlan_endip").val());					
+					var directParams = "";
+					if (isDirect && isTagged) {
+						directParams = "&domainId="+trim(thisDialog.find("#add_publicip_vlan_domain").val())+"&account="+trim(thisDialog.find("#add_publicip_vlan_account").val());
+					} else if (isDirect && !isTagged) {
+						directParams = "&podId="+trim(thisDialog.find("#add_publicip_vlan_pod").val());
+					}
+					var type = "true";
+					if (getNetworkType() == "vlan") type = trim(thisDialog.find("#add_publicip_vlan_type").val());
+					var gateway = trim(thisDialog.find("#add_publicip_vlan_gateway").val());
+					var netmask = trim(thisDialog.find("#add_publicip_vlan_netmask").val());
+					var startip = trim(thisDialog.find("#add_publicip_vlan_startip").val());
+					var endip = trim(thisDialog.find("#add_publicip_vlan_endip").val());					
 					
-					$(this).dialog("close"); 
+					thisDialog.dialog("close"); 
 										
-					var template = $("#publicip_range_template").clone(true);
+					var template = $("#vlan_ip_range_template").clone(true);
 					var loadingImg = template.find(".adding_loading");										
 					var row_container = template.find("#row_container");
 					
@@ -528,12 +710,12 @@ function showConfigurationTab() {
 			        template.fadeIn("slow");					
 					
 					$.ajax({
-						data: "command=createVlanIpRange&name=Public&zoneId="+id+vlan+"&gateway="+encodeURIComponent(gateway)+"&netmask="+encodeURIComponent(netmask)+"&startip="+encodeURIComponent(startip)+"&endip="+encodeURIComponent(endip)+"&response=json",
+						data: "command=createVlanIpRange&forVirtualNetwork="+type+"&zoneId="+id+vlan+directParams+"&gateway="+encodeURIComponent(gateway)+"&netmask="+encodeURIComponent(netmask)+"&startip="+encodeURIComponent(startip)+"&endip="+encodeURIComponent(endip)+"&response=json",
 						dataType: "json",
 						success: function(json) {
 							var vlan = json.createvlaniprangeresponse;
 							template.attr("id", "publicip_range_"+vlan.id);
-							publipIpRangeJSONToTemplate(vlan, template);
+							vlanIpRangeJSONToTemplate(vlan, template);
 							loadingImg.hide(); 								                            
                             row_container.show();    
 						},
@@ -582,24 +764,38 @@ function showConfigurationTab() {
 					$("#submenu_content_zones .zonetree_firstlevel_selected").removeClass().addClass("zonetree_firstlevel");
 					$("#submenu_content_zones .zonetree_secondlevel_selected").removeClass().addClass("zonetree_secondlevel");
 					target.parent(".zonetree_secondlevel").removeClass().addClass("zonetree_secondlevel_selected");
-					
-					var obj = {"id": target.data("id"), "name": target.data("name"), "cidr": target.data("cidr"), "startip": target.data("startip"), "endip": target.data("endip"), "ipRange": target.data("ipRange")};
+										
+					var obj = {"id": target.data("id"), "zoneid": target.data("zoneid"), "name": target.data("name"), "cidr": target.data("cidr"), "startip": target.data("startip"), "endip": target.data("endip"), "ipRange": target.data("ipRange"), "gateway": target.data("gateway")};
 					podObjectToRightPanel(obj);
 					
 					break;
-				case "publicip_range_name" :
+				case "vlan_ip_range_name" :
 					$("#submenu_content_zones .zonetree_firstlevel_selected").removeClass().addClass("zonetree_firstlevel");
 					$("#submenu_content_zones .zonetree_secondlevel_selected").removeClass().addClass("zonetree_secondlevel");
 					target.parent(".zonetree_secondlevel").removeClass().addClass("zonetree_secondlevel_selected");
 					
-					rightPanel.html("<strong>Public VLAN IP Range</strong>");
+					var title = "<strong>Public VLAN IP Range</strong>";
+					var isDirect = target.data("forVirtualNetwork") == "false";
+					var isTagged = target.data("vlan") != "untagged";
+					if (isDirect) {
+						title = "<strong>Direct VLAN IP Range</strong>";
+					}
+					var rightPanelHtmlForDirect = "";
+					if (isDirect && isTagged) {
+						rightPanelHtmlForDirect = "<p><span>Domain ID:</span> "+target.data("domainId")+"</p><p><span>Account:</span> "+target.data("account")+"</p>"
+					} else if (isDirect && !isTagged) {
+						rightPanelHtmlForDirect = "<p><span>Pod:</span> "+target.data("podname")+"</p>";
+					}
+					
+					rightPanel.html(title);
 					var rightContentHtml = 
 						"<p><span>VLAN ID:</span> "+target.data("vlan")+"</p>"
+						+ rightPanelHtmlForDirect
 						+ "<p><span>Gateway:</span> "+target.data("gateway")+"</p>"
 						+ "<p><span>Netmask:</span> "+target.data("netmask")+"</p>"
 						+ "<p><span>IP Range:</span> "+target.data("name")+"</p>";
 					rightContent.data("id", target.data("id")).html(rightContentHtml);
-					$("#submenu_content_zones #action_edit_zone, #submenu_content_zones #action_add_pod, #submenu_content_zones #action_edit_pod, #submenu_content_zones #action_add_publicip_vlan").hide();
+					$("#submenu_content_zones").find("#action_edit_zone, #action_add_pod, #action_edit_pod, #action_add_publicip_vlan, #action_add_directip_vlan").hide();
 					$("#submenu_content_zones #action_delete").data("id", target.data("id")).data("name", target.data("name")).data("type", "publicip_range").show();
 					
 					break;
@@ -609,7 +805,7 @@ function showConfigurationTab() {
 			return false;
 		});
 		
-		function publipIpRangeJSONToTemplate(json, template) {
+		function vlanIpRangeJSONToTemplate(json, template) {
 			template.data("id", json.id);
 			var vlanName = json.id;
 			var vlanDisplayName = vlanName;
@@ -623,13 +819,30 @@ function showConfigurationTab() {
 					vlanDisplayName = ranges[0] + " - " + ranges[1];
 				}
 			}
-			template.find("#publicip_range_name")
+			var isDirect = json.forvirtualnetwork == "false";
+			var isTagged = json.vlan != "untagged";
+			if (isDirect) {
+				template.find(".zonetree_ipicon").removeClass().addClass("zonetree_directipicon");
+				template.find("#vlan_ip_range_type").text("Direct IP Range:");
+			}
+			else {
+			    template.find("#vlan_ip_range_type").text("Public IP Range:");
+			}
+			template.find("#vlan_ip_range_name")
 				.html(vlanName)
 				.data("id", json.id)
 				.data("name", vlanDisplayName)
 				.data("vlan", json.vlan)
+				.data("forVirtualNetwork", json.forvirtualnetwork)
 				.data("gateway", json.gateway)
 				.data("netmask", json.netmask);
+				
+			if (isDirect && isTagged) {
+				template.find("#vlan_ip_range_name").data("domainId", json.domainid); //json.domainid might be null.
+				template.find("#vlan_ip_range_name").data("account", json.account);   //json.account might be null.
+			} else if (isDirect && !isTagged) {
+				template.find("#vlan_ip_range_name").data("podname", json.podname);   //json.podname might be null.
+			}
 		}
 		
 		function getIpRange(startip, endip) {
@@ -648,23 +861,48 @@ function showConfigurationTab() {
 			template.data("id", json.id).data("name", json.name);
 			
 			var podName = template.find("#pod_name").text(json.name);
-			podName.data("id", json.id)
-			podName.data("name", json.name)
-			podName.data("cidr", json.cidr)
-			podName.data("startip", json.startip)
-			podName.data("endip", json.endip)
-			podName.data("ipRange", ipRange);				
+			podName.data("id", json.id);
+			podName.data("zoneid", json.zoneid);
+			podName.data("name", json.name);
+			podName.data("cidr", json.cidr);
+			podName.data("startip", json.startip);
+			podName.data("endip", json.endip);
+			podName.data("ipRange", ipRange);		
+			podName.data("gateway", json.gateway);
+								
+			$.ajax({
+				data: "command=listVlanIpRanges&zoneid="+json.zoneid+"&podid="+json.id+"&response=json",
+				dataType: "json",
+				success: function(json) {				    
+					var ranges = json.listvlaniprangesresponse.vlaniprange;
+					var grid = template.find("#directip_ranges_container").empty();
+					if (ranges != null && ranges.length > 0) {					    
+						for (var i = 0; i < ranges.length; i++) {	
+						    if(ranges[i].forvirtualnetwork == "false" && ranges[i].vlan == "untagged") { //direct untagged VLAN should be under pod, instead of under zone.						    		    
+							    var rangeTemplate = $("#vlan_ip_range_template").clone(true).attr("id", "publicip_range_"+ranges[i].id);
+							    vlanIpRangeJSONToTemplate(ranges[i], rangeTemplate);
+							    grid.append(rangeTemplate.show());
+							    							    					    
+							    //direct untagged VLAN is under pod(2nd level). So, make direct untagged VLAN 3rd level.
+							    rangeTemplate.find("#row_container .zonetree_secondlevel").removeClass().addClass("zonetree_thirdlevel");
+							}
+						}
+					}
+				}
+			});						
 		}
 		
 		function zoneJSONToTemplate(json, template) {
-			template.data("id", json.id).data("name", sanitizeXSS(json.name));
+		    var zoneid = json.id;
+			template.data("id", zoneid).data("name", sanitizeXSS(json.name));
 			template.find("#zone_name")
 				.text(json.name)
-				.data("id", json.id)
+				.data("id", zoneid)
 				.data("name", sanitizeXSS(json.name))
 				.data("dns1", json.dns1)
 				.data("internaldns1", json.internaldns1)
 				.data("guestcidraddress", json.guestcidraddress);
+				
 			if (json.dns2 != undefined) {
 				template.find("#zone_name").data("dns2", json.dns2);
 			}
@@ -676,7 +914,7 @@ function showConfigurationTab() {
 			}	
 			
 			$.ajax({
-				data: "command=listPods&zoneId="+json.id+"&response=json",
+				data: "command=listPods&zoneid="+zoneid+"&response=json",
 				dataType: "json",
 				success: function(json) {
 					var pods = json.listpodsresponse.pod;
@@ -693,15 +931,17 @@ function showConfigurationTab() {
 			});
 			
 			$.ajax({
-				data: "command=listVlanIpRanges&zoneId="+json.id+"&response=json",
+				data: "command=listVlanIpRanges&zoneId="+zoneid+"&response=json",
 				dataType: "json",
 				success: function(json) {
 					var ranges = json.listvlaniprangesresponse.vlaniprange;
 					var grid = template.find("#publicip_ranges_container").empty();
 					if (ranges != null && ranges.length > 0) {					    
-						for (var i = 0; i < ranges.length; i++) {
-							var rangeTemplate = $("#publicip_range_template").clone(true).attr("id", "publicip_range_"+ranges[i].id);
-							publipIpRangeJSONToTemplate(ranges[i], rangeTemplate);
+						for (var i = 0; i < ranges.length; i++) {						    
+						    if(ranges[i].forvirtualnetwork == "false" && ranges[i].vlan == "untagged") //direct untagged VLAN should be under pod, instead of under zone.
+						        continue;
+							var rangeTemplate = $("#vlan_ip_range_template").clone(true).attr("id", "publicip_range_"+ranges[i].id);
+							vlanIpRangeJSONToTemplate(ranges[i], rangeTemplate);
 							grid.append(rangeTemplate.show());
 						}
 					}
@@ -711,6 +951,8 @@ function showConfigurationTab() {
 		}
 		// If the network type is vnet, don't show any vlan stuff.
 		if (getNetworkType() == "vnet") {
+			$("#action_add_publicip_vlan").removeClass().addClass("zonedetails_addpublicipbutton");
+			$("#dialog_add_vlan_for_zone").attr("title", "Add Public IP Range");
 			$("#dialog_edit_zone #edit_zone_container, #dialog_add_zone #add_zone_container").hide();
 		}
 		activateDialog($("#dialog_add_zone").dialog({ 
@@ -728,32 +970,85 @@ function showConfigurationTab() {
 		activateDialog($("#dialog_add_pod").dialog({ 
 			autoOpen: false,
 			modal: true,
+			width:320,
 			zIndex: 2000
 		}));
 		
 		activateDialog($("#dialog_edit_pod").dialog({ 
 			autoOpen: false,
+			width: 320,
 			modal: true,
 			zIndex: 2000
 		}));
 		
-		activateDialog($("#dialog_add_publicip_vlan").dialog({ 
+		activateDialog($("#dialog_add_vlan_for_zone").dialog({ 
 			autoOpen: false,
 			modal: true,
 			zIndex: 2000
 		}));
-		
-		if (getNetworkType() != "vnet") {
-			$("#dialog_add_publicip_vlan #add_publicip_vlan_tagged").change(function(event) {
-				if ($(this).val() == "tagged") {
-					$("#dialog_add_publicip_vlan #add_publicip_vlan_vlan_container").show();
+			
+		activateDialog($("#dialog_add_vlan_for_pod").dialog({ 
+			autoOpen: false,
+			modal: true,
+			zIndex: 2000
+		}));	
+						
+		//direct VLAN shows only "tagged" option while public VLAN shows both "tagged" and "untagged" option. 		
+		var dialogAddVlanForZone = $("#dialog_add_vlan_for_zone");
+				
+		dialogAddVlanForZone.find("#add_publicip_vlan_type").change(function(event) {
+		    var addPublicipVlanTagged = dialogAddVlanForZone.find("#add_publicip_vlan_tagged").empty();
+		   	
+			if ($(this).val() == "false") { //direct VLAN (only tagged option)				
+				addPublicipVlanTagged.append('<option value="tagged">tagged</option>');
+								
+				dialogAddVlanForZone.find("#add_publicip_vlan_vlan_container").show();
+				dialogAddVlanForZone.find("#add_publicip_vlan_domain_container").show();
+				dialogAddVlanForZone.find("#add_publicip_vlan_account_container").show();
+				dialogAddVlanForZone.find("#add_publicip_vlan_pod_container").hide();
+				
+			} else { //public VLAN				
+				addPublicipVlanTagged.append('<option value="untagged">untagged</option>').append('<option value="tagged">tagged</option>');
+				
+				if (dialogAddVlanForZone.find("#add_publicip_vlan_tagged") == "tagged") {
+					dialogAddVlanForZone.find("#add_publicip_vlan_vlan_container").show();
+					dialogAddVlanForZone.find("#add_publicip_vlan_domain_container").hide();
+					dialogAddVlanForZone.find("#add_publicip_vlan_account_container").hide();
+					dialogAddVlanForZone.find("#add_publicip_vlan_pod_container").hide();
 				} else {
-					$("#dialog_add_publicip_vlan #add_publicip_vlan_vlan_container").hide();
+					dialogAddVlanForZone.find("#add_publicip_vlan_vlan_container").hide();
+					dialogAddVlanForZone.find("#add_publicip_vlan_domain_container").hide();
+					dialogAddVlanForZone.find("#add_publicip_vlan_account_container").hide();
+					dialogAddVlanForZone.find("#add_publicip_vlan_pod_container").hide();
+				}
+			} 
+			return false;
+		});
+				
+		if (getNetworkType() != "vnet") {
+			dialogAddVlanForZone.find("#add_publicip_vlan_tagged").change(function(event) {
+				if (dialogAddVlanForZone.find("#add_publicip_vlan_type").val() == "false") { //direct VLAN (only tagged option)						
+					dialogAddVlanForZone.find("#add_publicip_vlan_vlan_container").show();
+					dialogAddVlanForZone.find("#add_publicip_vlan_domain_container").show();
+					dialogAddVlanForZone.find("#add_publicip_vlan_account_container").show();
+					dialogAddVlanForZone.find("#add_publicip_vlan_pod_container").hide();					
+				} else {
+					if ($(this).val() == "tagged") {
+						dialogAddVlanForZone.find("#add_publicip_vlan_vlan_container").show();
+						dialogAddVlanForZone.find("#add_publicip_vlan_domain_container").hide();
+						dialogAddVlanForZone.find("#add_publicip_vlan_account_container").hide();
+						dialogAddVlanForZone.find("#add_publicip_vlan_pod_container").hide();
+					} else {
+						dialogAddVlanForZone.find("#add_publicip_vlan_vlan_container").hide();
+						dialogAddVlanForZone.find("#add_publicip_vlan_domain_container").hide();
+						dialogAddVlanForZone.find("#add_publicip_vlan_account_container").hide();
+						dialogAddVlanForZone.find("#add_publicip_vlan_pod_container").hide();
+					}
 				}
 				return false;
 			});
 		} else {
-			$("#dialog_add_publicip_vlan #add_publicip_vlan_container").hide();
+			dialogAddVlanForZone.find("#add_publicip_vlan_container").hide();
 		}
 		
 		$("#action_add_zone").bind("click", function(event) {		    
@@ -860,6 +1155,7 @@ function showConfigurationTab() {
 			currentSubMenu = $(this);
 			var container = $("#submenu_content_zones").show();
 			$("#submenu_content_global, #submenu_content_service, #submenu_content_disk").hide();
+			clearRightPanel();
 			$.ajax({
 				data: "command=listZones&available=true&response=json",
 				dataType: "json",
@@ -971,6 +1267,8 @@ function showConfigurationTab() {
 			template.find("#service_cpu").text(json.cpunumber + " x " + convertHz(json.cpuspeed));
 			template.find("#service_memory").text(convertBytes(parseInt(json.memory)*1024*1024));			
 			template.find("#service_offerha").text(toBooleanText(json.offerha));
+			template.find("#service_networktype").text((json.usevirtualnetwork=="true")? "Public":"Direct");
+			template.find("#service_tags").text(json.tags);
 			
 			setDateField(json.created, template.find("#service_created"));			
 		}
@@ -1018,7 +1316,8 @@ function showConfigurationTab() {
 					isValid &= validateString("Display Text", thisDialog.find("#add_service_display"), thisDialog.find("#add_service_display_errormsg"));
 					isValid &= validateNumber("# of CPU Core", thisDialog.find("#add_service_cpucore"), thisDialog.find("#add_service_cpucore_errormsg"), 1, 1000);		
 					isValid &= validateNumber("CPU", thisDialog.find("#add_service_cpu"), thisDialog.find("#add_service_cpu_errormsg"), 100, 100000);		
-					isValid &= validateNumber("Memory", thisDialog.find("#add_service_memory"), thisDialog.find("#add_service_memory_errormsg"), 64, 1000000);							
+					isValid &= validateNumber("Memory", thisDialog.find("#add_service_memory"), thisDialog.find("#add_service_memory_errormsg"), 64, 1000000);	
+					isValid &= validateString("Tags", thisDialog.find("#add_service_tags"), thisDialog.find("#add_service_tags_errormsg"), true);	//optional							
 					if (!isValid) return;										
 										
 					var submenuContent = $("#submenu_content_service");                  
@@ -1030,31 +1329,39 @@ function showConfigurationTab() {
                     rowContainer.hide();                                   
                     submenuContent.find("#grid_content").prepend(template.fadeIn("slow"));    
 										
-					var moreCriteria = [];						
+					var array1 = [];						
 					var name = trim(thisDialog.find("#add_service_name").val());
-					moreCriteria.push("&name="+encodeURIComponent(name));	
+					array1.push("&name="+encodeURIComponent(name));	
 					
 					var display = trim(thisDialog.find("#add_service_display").val());
-					moreCriteria.push("&displayText="+encodeURIComponent(display));	
+					array1.push("&displayText="+encodeURIComponent(display));	
 					
 					var storagetype = trim(thisDialog.find("#add_service_storagetype").val());
-					moreCriteria.push("&storageType="+storagetype);	
+					array1.push("&storageType="+storagetype);	
 					
 					var core = trim(thisDialog.find("#add_service_cpucore").val());
-					moreCriteria.push("&cpuNumber="+core);	
+					array1.push("&cpuNumber="+core);	
 					
 					var cpu = trim(thisDialog.find("#add_service_cpu").val());
-					moreCriteria.push("&cpuSpeed="+cpu);	
+					array1.push("&cpuSpeed="+cpu);	
 					
 					var memory = trim(thisDialog.find("#add_service_memory").val());
-					moreCriteria.push("&memory="+memory);	
+					array1.push("&memory="+memory);	
 						
 					var offerha = thisDialog.find("#add_service_offerha").val();	
-					moreCriteria.push("&offerha="+offerha);								
+					array1.push("&offerha="+offerha);								
+										
+					var networkType = thisDialog.find("#add_service_networktype").val();
+					var useVirtualNetwork = (networkType=="direct")? false:true;
+					array1.push("&usevirtualnetwork="+useVirtualNetwork);		
+					
+					var tags = trim(thisDialog.find("#add_service_tags").val());
+					if(tags != null && tags.length > 0)
+					    array1.push("&tags="+encodeURIComponent(tags));		
 					
 					thisDialog.dialog("close");
 					$.ajax({
-						data: "command=createServiceOffering"+moreCriteria.join("")+"&response=json",
+						data: "command=createServiceOffering"+array1.join("")+"&response=json",
 						dataType: "json",
 						success: function(json) {
 							var offering = json.createserviceofferingresponse;							
@@ -1099,7 +1406,8 @@ function showConfigurationTab() {
 					var isValid = true;					
 					isValid &= validateString("Name", thisDialog.find("#add_disk_name"), thisDialog.find("#add_disk_name_errormsg"));
 					isValid &= validateString("Description", thisDialog.find("#add_disk_description"), thisDialog.find("#add_disk_description_errormsg"));
-					isValid &= validateNumber("Disk size", thisDialog.find("#add_disk_disksize"), thisDialog.find("#add_disk_disksize_errormsg"), 1, null); 	
+					isValid &= validateNumber("Disk size", thisDialog.find("#add_disk_disksize"), thisDialog.find("#add_disk_disksize_errormsg"), 1, null); 
+					isValid &= validateString("Tags", thisDialog.find("#add_disk_tags"), thisDialog.find("#add_disk_tags_errormsg"), true);	//optional	
 					if (!isValid) return;		
 					
 					var submenuContent = $("#submenu_content_disk");                  
@@ -1110,14 +1418,24 @@ function showConfigurationTab() {
                     loadingImg.show();  
                     rowContainer.hide();                                   
                     submenuContent.find("#grid_content").prepend(template.fadeIn("slow"));    		
-										
+						
+					var array1 = [];					
 					var name = trim(thisDialog.find("#add_disk_name").val());
-					var description = trim(thisDialog.find("#add_disk_description").val());				
+					array1.push("&name="+encodeURIComponent(name));
+					
+					var description = trim(thisDialog.find("#add_disk_description").val());	
+					array1.push("&displaytext="+encodeURIComponent(description));
+								
 					var disksize = trim(thisDialog.find("#add_disk_disksize").val());
+					array1.push("&disksize="+disksize);
+					
+					var tags = trim(thisDialog.find("#add_disk_tags").val());
+					if(tags != null && tags.length > 0)
+					    array1.push("&tags="+encodeURIComponent(tags));		
 							
 					thisDialog.dialog("close");
 					$.ajax({
-						data: "command=createDiskOffering&name="+encodeURIComponent(name)+"&displaytext="+encodeURIComponent(description)+"&disksize="+disksize+"&isMirrored=false&response=json",
+						data: "command=createDiskOffering&isMirrored=false&response=json" + array1.join(""),
 						dataType: "json",
 						success: function(json) {						   
 							var offering = json.creatediskofferingresponse;							
@@ -1213,6 +1531,7 @@ function showConfigurationTab() {
 								success: function(json) {									   				    
 									template.find("#disk_description").text(display);
 									template.find("#disk_name").text(name);
+									template.data("diskName", name);
 								}
 							});
 						}, 
@@ -1262,7 +1581,8 @@ function showConfigurationTab() {
 			template.find("#disk_id").text(json.id);			
 			template.find("#disk_name").text(json.name);
 			template.find("#disk_description").text(json.displaytext);
-  		    template.find("#disk_disksize").text(json.disksize + " GB");
+  		    template.find("#disk_disksize").text(convertBytes(json.disksize));
+  		    template.find("#disk_tags").text(json.tags);
  			template.find("#disk_domain").text(json.domain); 			
  		    template.find("#disk_ismirrored").text(json.ismirrored);	
 		}

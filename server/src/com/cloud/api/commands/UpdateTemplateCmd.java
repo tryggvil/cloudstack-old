@@ -38,8 +38,11 @@ public class UpdateTemplateCmd extends BaseCmd {
     static {
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT_OBJ, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ID, Boolean.TRUE));
-        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.NAME, Boolean.TRUE));
-        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.DISPLAY_TEXT, Boolean.TRUE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.NAME, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.DISPLAY_TEXT, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.FORMAT, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.OS_TYPE_ID, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.PASSWORD_ENABLED, Boolean.FALSE));
     }
 
     @Override
@@ -57,8 +60,10 @@ public class UpdateTemplateCmd extends BaseCmd {
         Account account = (Account)params.get(BaseCmd.Properties.ACCOUNT_OBJ.getName());
         String name = (String)params.get(BaseCmd.Properties.NAME.getName());
         String displayText = (String)params.get(BaseCmd.Properties.DISPLAY_TEXT.getName());
-        Boolean editTemplateResult = false;
-
+        String format = (String)params.get(BaseCmd.Properties.FORMAT.getName());
+        Long guestOSId = (Long) params.get(BaseCmd.Properties.OS_TYPE_ID.getName());
+        Boolean passwordEnabled = (Boolean)params.get(BaseCmd.Properties.PASSWORD_ENABLED.getName());
+        
         VMTemplateVO template = getManagementServer().findTemplateById(templateId.longValue());
         if (template == null) {
             throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "unable to find template with id " + templateId);
@@ -81,20 +86,29 @@ public class UpdateTemplateCmd extends BaseCmd {
             throw new ServerApiException(BaseCmd.PARAM_ERROR, "unable to update template with id " + templateId);
         }
 
+        
+        boolean success = false;
         try {
-        	getManagementServer().updateTemplate(templateId, name, displayText);
-        	editTemplateResult = true;
+        	success = getManagementServer().updateTemplate(templateId, name, displayText, format, guestOSId, passwordEnabled, null);
         } catch (Exception ex) {
         	 s_logger.error("Exception editing template", ex);
-             throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Failed to update template " + templateId + ":  internal error.");
+             throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Failed to update template " + templateId + ": " + ex.getMessage());
         }
 
-        List<Pair<String, Object>> returnValues = new ArrayList<Pair<String, Object>>();
-        if (editTemplateResult == true) {
-        	returnValues.add(new Pair<String, Object>(BaseCmd.Properties.SUCCESS.getName(), new Boolean(true)));
+        VMTemplateVO updatedTemplate = getManagementServer().findTemplateById(templateId);
+        if (success) {
+            List<Pair<String, Object>> templateData = new ArrayList<Pair<String, Object>>();
+            templateData.add(new Pair<String, Object>(BaseCmd.Properties.ID.getName(), updatedTemplate.getId().toString()));
+            templateData.add(new Pair<String, Object>(BaseCmd.Properties.NAME.getName(), updatedTemplate.getName()));
+            templateData.add(new Pair<String, Object>(BaseCmd.Properties.DISPLAY_TEXT.getName(), updatedTemplate.getDisplayText()));
+            templateData.add(new Pair<String, Object>(BaseCmd.Properties.IS_PUBLIC.getName(), Boolean.valueOf(updatedTemplate.isPublicTemplate()).toString()));
+            templateData.add(new Pair<String, Object>(BaseCmd.Properties.CREATED.getName(), getDateString(updatedTemplate.getCreated())));
+            templateData.add(new Pair<String, Object>(BaseCmd.Properties.FORMAT.getName(), updatedTemplate.getFormat()));
+            templateData.add(new Pair<String, Object>(BaseCmd.Properties.OS_TYPE_ID.getName(), updatedTemplate.getGuestOSId()));
+            templateData.add(new Pair<String, Object>(BaseCmd.Properties.PASSWORD_ENABLED.getName(), updatedTemplate.getEnablePassword()));
+            return templateData;
         } else {
-        	throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Failed to edit template " + templateId);
+            throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "internal error updating template");
         }
-        return returnValues;
     }
 }

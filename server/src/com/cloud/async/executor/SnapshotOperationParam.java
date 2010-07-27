@@ -29,29 +29,32 @@ public class SnapshotOperationParam {
 	private long policyId = 0;
 	private long volumeId;
 	private String name = null;
+	private long eventId;
 	
 	public SnapshotOperationParam() {
 	}
 	
 	// Used for delete snapshot
-	public SnapshotOperationParam(long userId, long volumeId, long snapshotId, long policyId) {
+	public SnapshotOperationParam(long userId, long accountId, long volumeId, long snapshotId, long policyId) {
 		setUserId(userId);
+		setAccountId(accountId);
 		setVolumeId(volumeId);
 		this.snapshotId = snapshotId;
 		this.policyId = policyId;
 	}
 	
 	// Used to create a snapshot
-    public SnapshotOperationParam(long userId, long volumeId, List<Long> policyIds) {
+    public SnapshotOperationParam(long userId, long accountId, long volumeId, List<Long> policyIds) {
         setUserId(userId);
+        setAccountId(accountId);
         setVolumeId(volumeId);
         this.policyIds = policyIds;
     }
     
     // Used for CreateVolumeFromSnapshot
-	public SnapshotOperationParam(long accountId, long userId, long volumeId, long snapshotId, String volumeName) {
-	    setAccountId(accountId);
+	public SnapshotOperationParam(long userId, long accountId, long volumeId, long snapshotId, String volumeName) {
 	    setUserId(userId);
+	    setAccountId(accountId);
         setVolumeId(volumeId);
         this.snapshotId = snapshotId;
 	    setName(volumeName);
@@ -104,4 +107,12 @@ public class SnapshotOperationParam {
 	private void setName(String name) {
 	    this.name = name;
 	}
+	
+    public void setEventId(long eventId) {
+        this.eventId = eventId;
+    }
+
+    public long getEventId() {
+        return eventId;
+    }
 }

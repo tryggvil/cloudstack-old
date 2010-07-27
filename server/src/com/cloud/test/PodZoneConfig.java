@@ -42,133 +42,7 @@ public class PodZoneConfig {
 		System.exit(0);
     }
 	
-	private void printUsage() {
-		System.out.println("Usage to add pod: ./add_pod_or_zone.sh pod podName zoneName CIDR");
-		System.out.println("Usage to add zone: ./add_pod_or_zone.sh zone zoneName gateway netmask dns1 [dns2] [dns3] [dns4]");
-		System.exit(1);
-	}
-	
-//	public void run(String[] args) {
-//		if (args.length == 0) printUsage();
-//		
-//		String podOrZone = args[0];
-//		
-//		if (podOrZone.equals("pod")) {
-//			if (args.length != 4) printUsage();
-//			
-//			String podName = args[1];
-//			String zoneName = args[2];
-//			String cidr = args[3];
-//						
-//			if (!validZone(zoneName)) printError("Please specify a valid zone.");
-//			long dcId = getZoneId(zoneName);
-//			
-//			// Get the individual cidrAddress and cidrSize values
-//			String cidrAddress = null;
-//			String cidrSize = null;
-//			if (IPRangeConfig.validCIDR(cidr)) {
-//				String[] cidrPair = cidr.split("\\/");
-//				cidrAddress = cidrPair[0];
-//				cidrSize = cidrPair[1];
-//			} else {
-//				printError("Please enter a valid CIDR for pod: " + podName);
-//			}
-//			
-//			if (cidrAddress == null || cidrSize == null) printError("Please enter a valid CIDR for pod: " + podName);
-//			
-//			HashMap<Long, Vector<Object>> currentPodCidrSubnets = getCurrentPodCidrSubnets(dcId);
-//			Vector<Object> newCidrPair = new Vector<Object>();
-//			newCidrPair.add(0, cidrAddress);
-//			newCidrPair.add(1, new Long(Long.parseLong(cidrSize)));
-//			currentPodCidrSubnets.put(new Long(-1), newCidrPair);
-//			String result = checkPodCidrSubnets(dcId, currentPodCidrSubnets);
-//			if (!result.equals("success")) printError(result);
-//			
-//			savePod(true, -1, podName, dcId, cidr, -1 , -1);
-//		} else if (podOrZone.equals("zone")) {
-//			if (args.length < 5) printUsage();
-//			
-//			String zoneName = args[1];
-//			String gateway = args[2];
-//			String netmask = args[3];
-//			String dns1 = args[4];
-//			String dns2 = null;
-//			String dns3 = null;
-//			String dns4 = null;
-//			
-//			if (args.length >= 6) dns2 = args[5];
-//			if (args.length >= 7) dns3 = args[6];
-//			if (args.length == 8) dns4 = args[7];
-//			
-//			// Check IP validity for gateway, netmask, and DNS addresses
-//			if (!IPRangeConfig.validIP(gateway)) printError("Please enter a valid gateway address.");
-//			if (!IPRangeConfig.validIP(netmask)) printError("Please enter a valid netmask.");
-//			if (dns1 != null  && !IPRangeConfig.validIP(dns1)) printError("Please enter a valid IP address for DNS1");
-//			if (dns2 != null  && !IPRangeConfig.validIP(dns2)) printError("Please enter a valid IP address for DNS2");
-//			if (dns3 != null  && !IPRangeConfig.validIP(dns3)) printError("Please enter a valid IP address for DNS3");
-//			if (dns4 != null  && !IPRangeConfig.validIP(dns4)) printError("Please enter a valid IP address for DNS4");
-//
-//			saveZone(true, -1, zoneName, dns1, dns2, dns3, dns4, -1, -1);
-//		} else {
-//			printUsage();
-//		}
-//	}
-	
-	
-	
-	public List<String> savePodGUI(String podName, String zoneName, String cidr) {
-		// Check if the zone is valid
-		if (!validZone(zoneName)) return DatabaseConfig.genReturnList("false", "Please specify a valid zone.");
-		long dcId = getZoneId(zoneName);
-		
-		// Check if the pod already exists
-		if (getPodId(podName, zoneName) != -1) return DatabaseConfig.genReturnList("false", "A pod in with that name already exists in zone " + zoneName + ". Please specify a different pod name. ");
-		
-		// Get the individual cidrAddress and cidrSize values
-		String cidrAddress = null;
-		String cidrSize = null;
-		if (IPRangeConfig.validCIDR(cidr)) {
-			String[] cidrPair = cidr.split("\\/");
-			cidrAddress = cidrPair[0];
-			cidrSize = cidrPair[1];
-		} else {
-			return DatabaseConfig.genReturnList("false", "Please enter a valid CIDR for pod: " + podName);
-		}
-		
-		// Check if the CIDR is valid
-		if (cidrAddress == null || cidrSize == null) return DatabaseConfig.genReturnList("false", "Please enter a valid CIDR for pod: " + podName);
-		
-		// Check if the CIDR conflicts with the Guest Network or other pods
-		HashMap<Long, Vector<Object>> currentPodCidrSubnets = getCurrentPodCidrSubnets(dcId);
-		Vector<Object> newCidrPair = new Vector<Object>();
-		newCidrPair.add(0, cidrAddress);
-		newCidrPair.add(1, new Long(Long.parseLong(cidrSize)));
-		currentPodCidrSubnets.put(new Long(-1), newCidrPair);
-		String result = checkPodCidrSubnets(dcId, currentPodCidrSubnets);
-		if (!result.equals("success")) return DatabaseConfig.genReturnList("false", result);
-		
-		savePod(false, -1, podName, dcId, cidr, -1, -1);
-		
-		return DatabaseConfig.genReturnList("true", "");
-	}
-	
-	public List<String> saveZoneGUI(String zoneName, String gateway, String netmask, String dns1, String dns2, String dns3, String dns4, String guestNetworkCidr) {
-		
-		// Check IP validity for gateway, netmask, and DNS addresses
-		if (!IPRangeConfig.validIP(gateway)) return DatabaseConfig.genReturnList("false", "Please enter a valid gateway address.");
-		if (!IPRangeConfig.validIP(netmask)) return DatabaseConfig.genReturnList("false", "Please enter a valid netmask.");
-		if (dns1 != null  && !IPRangeConfig.validIP(dns1)) return DatabaseConfig.genReturnList("false", "Please enter a valid IP address for DNS1");
-		if (dns2 != null  && !IPRangeConfig.validIP(dns2)) return DatabaseConfig.genReturnList("false", "Please enter a valid IP address for DNS2");
-		if (dns3 != null  && !IPRangeConfig.validIP(dns3)) return DatabaseConfig.genReturnList("false", "Please enter a valid IP address for DNS3");
-		if (dns4 != null  && !IPRangeConfig.validIP(dns4)) return DatabaseConfig.genReturnList("false", "Please enter a valid IP address for DNS4");
-		if (guestNetworkCidr != null  && !IPRangeConfig.validCIDR(guestNetworkCidr)) return DatabaseConfig.genReturnList("false", "Please enter a valid guest network cidr");
-		
-		saveZone(false, -1, zoneName, dns1, dns2, dns3, dns4, -1, -1,guestNetworkCidr);
-		
-		return DatabaseConfig.genReturnList("true", "");
-	}
-	
-	public void savePod(boolean printOutput, long id, String name, long dcId, String cidr, int vlanStart, int vlanEnd) {
+	public void savePod(boolean printOutput, long id, String name, long dcId, String gateway, String cidr, int vlanStart, int vlanEnd) {
 		// Check that the cidr was valid
 		if (!IPRangeConfig.validCIDR(cidr)) printError("Please enter a valid CIDR for pod: " + name);
 		
@@ -178,39 +52,11 @@ public class PodZoneConfig {
 		String cidrSize = cidrPair[1];
 
 		String sql = null;
-		if (id != -1) sql = "INSERT INTO `cloud`.`host_pod_ref` (id, name, data_center_id, cidr_address, cidr_size) " + "VALUES ('" + id + "','" + name + "','" + dcId + "','" + cidrAddress + "','" + cidrSize + "')";
-		else sql = "INSERT INTO `cloud`.`host_pod_ref` (name, data_center_id, cidr_address, cidr_size) " + "VALUES ('" + name + "','" + dcId + "','" + cidrAddress + "','" + cidrSize + "')";
+		if (id != -1) sql = "INSERT INTO `cloud`.`host_pod_ref` (id, name, data_center_id, gateway, cidr_address, cidr_size) " + "VALUES ('" + id + "','" + name + "','" + dcId + "','" + gateway + "','" + cidrAddress + "','" + cidrSize + "')";
+		else sql = "INSERT INTO `cloud`.`host_pod_ref` (name, data_center_id, gateway, cidr_address, cidr_size) " + "VALUES ('" + name + "','" + dcId + "','" + gateway + "','" + cidrAddress + "','" + cidrSize + "')";
 			
         DatabaseConfig.saveSQL(sql, "Failed to save pod due to exception. Please contact Cloud Support.");
         
-        /*
-        // Hardcode the vnet range to be the full range
-        int begin = 0x64;
-        int end = 64000;
-        
-        // If vnet arguments were passed in, use them
-        if (vlanStart != -1 && vlanEnd != -1) {
-            begin = vlanStart;
-            end = vlanEnd;
-        }
-        
-        long podId = getPodId(name, dcId);
-        String insertVlan = "INSERT INTO `vmops`.`op_pod_vlan_alloc` (vlan, data_center_id, pod_id) VALUES ( ?, ?, ?)";
-
-        Transaction txn = Transaction.currentTxn();
-        try {
-            PreparedStatement stmt = txn.prepareAutoCloseStatement(insertVlan);
-            for (int i = begin; i <= end; i++) {
-                stmt.setString(1, Integer.toString(i));
-                stmt.setLong(2, dcId);
-                stmt.setLong(3, podId);
-                stmt.addBatch();
-            }
-            stmt.executeBatch();
-        } catch (SQLException ex) {
-            printError("Error creating vlan for the pod. Please contact Cloud Support.");
-        }
-        */
         if (printOutput) System.out.println("Successfuly saved pod.");
 	}
 	
@@ -340,7 +186,7 @@ public class PodZoneConfig {
 		"Unable to start DB connection to read vlan DB id. Please contact Cloud Support.");
     }
 	
-	public List<String> modifyVlan(String zone, boolean add, String vlanId, String vlanGateway, String vlanNetmask, String pod, String vlanType) {
+	public List<String> modifyVlan(String zone, boolean add, String vlanId, String vlanGateway, String vlanNetmask, String pod, String vlanType, String ipRange) {
     	// Check if the zone is valid
     	long zoneId = getZoneId(zone);
     	if (zoneId == -1)
@@ -376,7 +222,7 @@ public class PodZoneConfig {
     		*/
     		
     		// Everything was fine, so persist the VLAN
-    		saveVlan(zoneId, podId, vlanId, vlanGateway, vlanNetmask, vlanType);
+    		saveVlan(zoneId, podId, vlanId, vlanGateway, vlanNetmask, vlanType, ipRange);
             if (podId != null) {
             	long vlanDbId = getVlanDbId(zone, vlanId);
             	String sql = "INSERT INTO `cloud`.`pod_vlan_map` (pod_id, vlan_db_id) " + "VALUES ('" + podId + "','" + vlanDbId  + "')";
@@ -494,8 +340,8 @@ public class PodZoneConfig {
 		DatabaseConfig.saveSQL(sql, "Failed to delete zone due to exception. Please contact Cloud Support.");
 	}
 	
-	public void saveVlan(long zoneId, Long podId, String vlanId, String vlanGateway, String vlanNetmask, String vlanType) {
-		String sql = "INSERT INTO `cloud`.`vlan` (vlan_id, vlan_gateway, vlan_netmask, data_center_id, vlan_type) " + "VALUES ('" + vlanId + "','" + vlanGateway + "','" + vlanNetmask + "','" + zoneId + "','" + vlanType + "')";
+	public void saveVlan(long zoneId, Long podId, String vlanId, String vlanGateway, String vlanNetmask, String vlanType, String ipRange) {
+		String sql = "INSERT INTO `cloud`.`vlan` (vlan_id, vlan_gateway, vlan_netmask, data_center_id, vlan_type, description) " + "VALUES ('" + vlanId + "','" + vlanGateway + "','" + vlanNetmask + "','" + zoneId + "','" + vlanType + "','" + ipRange + "')";
         DatabaseConfig.saveSQL(sql, "Failed to save vlan due to exception. Please contact Cloud Support.");
 	}
 	

@@ -40,7 +40,6 @@ import com.cloud.host.dao.DetailsDao;
 import com.cloud.host.dao.HostDao;
 import com.cloud.service.ServiceOffering;
 import com.cloud.service.dao.ServiceOfferingDao;
-import com.cloud.storage.DiskOfferingVO;
 import com.cloud.storage.GuestOSCategoryVO;
 import com.cloud.storage.GuestOSVO;
 import com.cloud.storage.StoragePoolHostVO;
@@ -53,10 +52,13 @@ import com.cloud.utils.NumbersUtil;
 import com.cloud.utils.component.ComponentLocator;
 import com.cloud.vm.ConsoleProxyVO;
 import com.cloud.vm.DomainRouterVO;
+import com.cloud.vm.SecondaryStorageVmVO;
 import com.cloud.vm.UserVm;
 import com.cloud.vm.UserVmVO;
+import com.cloud.vm.VmCharacteristics;
 import com.cloud.vm.dao.ConsoleProxyDao;
 import com.cloud.vm.dao.DomainRouterDao;
+import com.cloud.vm.dao.SecondaryStorageVmDao;
 import com.cloud.vm.dao.UserVmDao;
 
 /**
@@ -72,6 +74,7 @@ public class FirstFitAllocator implements HostAllocator {
     protected ServiceOfferingDao _offeringDao;
     protected DomainRouterDao _routerDao;
     protected ConsoleProxyDao _consoleProxyDao;
+    protected SecondaryStorageVmDao _secStorgaeVmDao;
     protected StoragePoolHostDao _storagePoolHostDao;
     protected ConfigurationDao _configDao;
     protected GuestOSDao _guestOSDao;
@@ -80,8 +83,7 @@ public class FirstFitAllocator implements HostAllocator {
     protected String _allocationAlgorithm = "random";
     
 	@Override
-	public Host allocateTo(ServiceOffering offering,
-			DiskOfferingVO diskOffering, Type type, DataCenterVO dc,
+	public Host allocateTo(VmCharacteristics vm, ServiceOffering offering, Type type, DataCenterVO dc,
 			HostPodVO pod, StoragePoolVO sp, VMTemplateVO template,
 			Set<Host> avoid) {
 
@@ -89,26 +91,28 @@ public class FirstFitAllocator implements HostAllocator {
             // FirstFitAllocator should be used for user VMs only since it won't care whether the host is capable of routing or not
             return null;
         }
+        
+        s_logger.debug("Looking for hosts associated with storage pool " + sp.getId());
 
         List<StoragePoolHostVO> poolhosts = _storagePoolHostDao.listByPoolId(sp.getId());
         List<HostVO> hosts = new ArrayList<HostVO>();
         for( StoragePoolHostVO poolhost : poolhosts ){
             hosts.add(_hostDao.findById(poolhost.getHostId()));
-        }                
+        }
         
         long podId = pod.getId();
         List<HostVO> podHosts = new ArrayList<HostVO>(hosts.size());
         Iterator<HostVO> it = hosts.iterator();
         while (it.hasNext()) {
         	HostVO host = it.next();
-        	if (host.getPodId() == podId) {
-        		it.remove();
+        	if (host.getPodId() == podId && !avoid.contains(host)) {
+        	    if (s_logger.isDebugEnabled()) {
+        	        s_logger.debug("Adding host " + host + " as possible pod host");
+        	    }
         		podHosts.add(host);
         	}
         }
         
-        podHosts.addAll(hosts);
-
         return allocateTo(offering, template, avoid, podHosts);
     }
 
@@ -145,32 +149,45 @@ public class FirstFitAllocator implements HostAllocator {
                 }
                 continue;
             }
-            // hypervisor itself uses 64M
-            long usedMemory = 64 * 1024L * 1024L;
 
-            // for one VM, there are extra memory, whose size is about 1/8 of its memory size, used
-            // by hypervisor for it
-            List<DomainRouterVO> domainRouters = _routerDao.listByHostId(host.getId());
+            long usedMemory = 0;
+            double totalSpeed = 0d;
+
+            List<DomainRouterVO> domainRouters = _routerDao.listUpByHostId(host.getId());
             if (s_logger.isDebugEnabled()) {
                 s_logger.debug("Found " + domainRouters.size() + " router domains on host " + host.getId());
             }
             for (DomainRouterVO router : domainRouters) {
-                usedMemory += (router.getRamSize() * 1024L * 1024L) * 1.1;
+                usedMemory += router.getRamSize() * 1024L * 1024L;
             }
-            for(ConsoleProxyVO proxy : _consoleProxyDao.listByHostId(host.getId())) {
-                usedMemory += (proxy.getRamSize() * 1024L * 1024L) * 1.1;
+
+            List<ConsoleProxyVO> proxys = _consoleProxyDao.listUpByHostId(host.getId());
+            if (s_logger.isDebugEnabled()) {
+                s_logger.debug("Found " + proxys.size() + " console proxy on host " + host.getId());
+            }
+            for(ConsoleProxyVO proxy : proxys) {
+                usedMemory += proxy.getRamSize() * 1024L * 1024L;
+            }
+            
+            List<SecondaryStorageVmVO> secStorageVms = _secStorgaeVmDao.listUpByHostId(host.getId());
+            if (s_logger.isDebugEnabled()) {
+                s_logger.debug("Found " + secStorageVms.size() + " secondary storage VM on host " + host.getId());
+            }
+            for(SecondaryStorageVmVO secStorageVm : secStorageVms) {
+                usedMemory += secStorageVm.getRamSize() * 1024L * 1024L;
             }
             		
-            List<UserVmVO> vms = _vmDao.listByHostId(host.getId());
-            s_logger.debug("Found " + vms.size() + " on host " + host.getId());
-            usedMemory += host.getDom0MinMemory();
-            double totalSpeed = 0d;
+            List<UserVmVO> vms = _vmDao.listUpByHostId(host.getId());
+            if (s_logger.isDebugEnabled()) {
+                s_logger.debug("Found " + vms.size() + " user VM on host " + host.getId());
+            }
+            
             for (UserVmVO vm : vms) {
                 ServiceOffering so = _offeringDao.findById(vm.getServiceOfferingId());
                 if (s_logger.isDebugEnabled()) {
                     s_logger.debug("vm " + vm.getId() + ": speed=" + (so.getCpu() * so.getSpeed()) + "Mhz, RAM=" + so.getRamSize() + "MB");
                 }
-                usedMemory += (so.getRamSize() * 1024L * 1024L) * 1.1;
+                usedMemory += so.getRamSize() * 1024L * 1024L;
                 totalSpeed += so.getCpu() * (so.getSpeed() * 0.99);
             }
 
@@ -179,7 +196,7 @@ public class FirstFitAllocator implements HostAllocator {
                 double desiredSpeed = offering.getCpu() * (offering.getSpeed() * 0.99);
                 long coreSpeed = host.getSpeed();
                 s_logger.debug("Host " + host.getId() + ": available speed=" + availableSpeed + "Mhz, core speed=" + coreSpeed + "Mhz, used speed=" + totalSpeed + "Mhz, desired speed=" + desiredSpeed +
-                        "Mhz, desired cores: " + offering.getCpu() + ", available cores: " + host.getCpus() + ", RAM=" + (host.getTotalMemory() - host.getDom0MinMemory()) +
+                        "Mhz, desired cores: " + offering.getCpu() + ", available cores: " + host.getCpus() + ", RAM=" + host.getTotalMemory() +
                         ", avail RAM=" + (host.getTotalMemory() - usedMemory) + ", desired RAM=" + (offering.getRamSize() * 1024L * 1024L));
             }
 
@@ -321,9 +338,10 @@ public class FirstFitAllocator implements HostAllocator {
         _hostDao = locator.getDao(HostDao.class);
         _hostDetailsDao = locator.getDao(DetailsDao.class);
         _vmDao = locator.getDao(UserVmDao.class);
-        _routerDao = locator.getDao(DomainRouterDao.class);
         _offeringDao = locator.getDao(ServiceOfferingDao.class);
+        _routerDao = locator.getDao(DomainRouterDao.class);
         _consoleProxyDao = locator.getDao(ConsoleProxyDao.class);
+        _secStorgaeVmDao = locator.getDao(SecondaryStorageVmDao.class);
         _storagePoolHostDao  = locator.getDao(StoragePoolHostDao.class);
         _configDao = locator.getDao(ConfigurationDao.class);
         _guestOSDao = locator.getDao(GuestOSDao.class);

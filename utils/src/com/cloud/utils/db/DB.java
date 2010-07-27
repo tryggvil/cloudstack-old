@@ -24,16 +24,40 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+/**
+ * Annotates a method or a class as using the in-memory transaction.
+ * Running with assertions on, will find all classes that are
+ * not using this but is using in-memory transactions.
+ * 
+ * There are only three circumstances where you should use this.
+ * 1. Annotate method that starts and commits DB transactions.
+ *    Transaction txn = Transaction.currentTxn();
+ *    txn.start();
+ *    ...
+ *    txn.commit();
+ * 
+ * 2. Annotate methods that uses a DAO's acquire method.
+ *    _dao.acquire(id);
+ *    ...
+ *    _dao.release(id);
+ * 
+ * 3. Annotate methods that are inside a DAO but doesn't use
+ *    the Transaction class.  Generally, these are methods
+ *    that are utility methods for setting up searches.  In
+ *    this case use @DB(txn=false) to annotate the method.
+ *    While this is not required, it helps when you're debugging
+ *    the code and it saves on method calls during runtime.
+ *
+ */
 @Target({TYPE, METHOD})
 @Retention(RUNTIME)
 public @interface DB {
     /**
-     * (Optional) Whether the property is a unique key.  This is a
-     * shortcut for the UniqueConstraint annotation at the table
-     * level and is useful for when the unique key constraint is
-     * only a single field. This constraint applies in addition
-     * to any constraint entailed by primary key mapping and
-     * to constraints specified at the table level.
+     * (Optional) Specifies that the method
+     * does not use transaction.  This is useful for
+     * utility methods within DAO classes which are
+     * automatically marked with @DB.  By marking txn=false,
+     * the method is not surrounded with transaction code.
      */
-    boolean inject() default true;
+    boolean txn() default true;
 }

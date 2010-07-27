@@ -36,9 +36,8 @@ import com.cloud.storage.StorageLayer;
 public class LocalTemplateDownloader extends TemplateDownloaderBase implements TemplateDownloader {
     public static final Logger s_logger = Logger.getLogger(LocalTemplateDownloader.class);
     
-    
-    public LocalTemplateDownloader(StorageLayer storageLayer, String downloadUrl, String toDir, DownloadCompleteCallback callback) {
-        super(storageLayer, downloadUrl, toDir, callback);
+    public LocalTemplateDownloader(StorageLayer storageLayer, String downloadUrl, String toDir, long maxTemplateSizeInBytes, DownloadCompleteCallback callback) {
+        super(storageLayer, downloadUrl, toDir, maxTemplateSizeInBytes, callback);
         String filename = downloadUrl.substring(downloadUrl.lastIndexOf(File.separator));
         _toFile = toDir.endsWith(File.separator) ? (toDir + filename) : (toDir + File.separator + filename);
     }
@@ -143,10 +142,10 @@ public class LocalTemplateDownloader extends TemplateDownloaderBase implements T
             }
         }
     }
-
+    
     public static void main(String[] args) {
         String url ="file:///home/ahuang/Download/E3921_P5N7A-VM_manual.zip";
-        TemplateDownloader td = new LocalTemplateDownloader(null, url,"/tmp/mysql", null);
+        TemplateDownloader td = new LocalTemplateDownloader(null, url,"/tmp/mysql", TemplateDownloader.DEFAULT_MAX_TEMPLATE_SIZE_IN_BYTES, null);
         long bytes = td.download(true, null);
         if (bytes > 0) {
             System.out.println("Downloaded  (" + bytes + " bytes)" + " in " + td.getDownloadTime()/1000 + " secs");

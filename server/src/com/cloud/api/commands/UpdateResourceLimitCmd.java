@@ -30,6 +30,7 @@ import com.cloud.configuration.ResourceLimitVO;
 import com.cloud.configuration.ResourceCount.ResourceType;
 import com.cloud.domain.DomainVO;
 import com.cloud.exception.InvalidParameterValueException;
+import com.cloud.server.Criteria;
 import com.cloud.user.Account;
 import com.cloud.utils.Pair;
 
@@ -65,6 +66,24 @@ public class UpdateResourceLimitCmd extends BaseCmd {
         Long max = (Long) params.get(BaseCmd.Properties.MAX.getName());
         Long accountId = null;
 
+        if (max == null) {
+        	max = new Long(-1);
+        } else if (max < -1) {
+        	throw new ServerApiException(BaseCmd.PARAM_ERROR, "Please specify either '-1' for an infinite limit, or a limit that is at least '0'.");
+        }
+        
+        // Map resource type
+        ResourceType resourceType;
+        try {
+        	resourceType = ResourceType.values()[type];
+        } catch (ArrayIndexOutOfBoundsException e) {
+        	throw new ServerApiException(BaseCmd.PARAM_ERROR, "Please specify a valid resource type.");
+        }               
+        
+        if (accountName==null && domainId != null && !domainId.equals(DomainVO.ROOT_DOMAIN)) {
+        	throw new ServerApiException(BaseCmd.PARAM_ERROR, "Resource limits must be made for an account or the ROOT domain.");
+        }
+        
         if (account != null) {
             if (domainId != null) {
                 if (!getManagementServer().isChildDomain(account.getDomainId(), domainId)) {
@@ -72,6 +91,21 @@ public class UpdateResourceLimitCmd extends BaseCmd {
                 }
             } else if (account.getType() == Account.ACCOUNT_TYPE_ADMIN) {
                 domainId = DomainVO.ROOT_DOMAIN; // for root admin, default to root domain if domain is not specified
+            }                 
+            
+            if (account.getType() == Account.ACCOUNT_TYPE_DOMAIN_ADMIN) {
+            	// If there is an existing ROOT domain limit, make sure its max isn't being exceeded
+            	Criteria c = new Criteria();
+             	c.addCriteria(Criteria.DOMAINID, DomainVO.ROOT_DOMAIN);
+             	c.addCriteria(Criteria.TYPE, resourceType);
+            	List<ResourceLimitVO> currentRootDomainLimits = getManagementServer().searchForLimits(c);
+            	ResourceLimitVO currentRootDomainLimit = (currentRootDomainLimits.size() == 0) ? null : currentRootDomainLimits.get(0);
+            	if (currentRootDomainLimit != null) {
+            		long currentRootDomainMax = currentRootDomainLimits.get(0).getMax();
+            		if ((max == -1 && currentRootDomainMax != -1) || max > currentRootDomainMax) {
+            			throw new ServerApiException(BaseCmd.PARAM_ERROR, "The current ROOT domain limit for resource type " + resourceType + " is " + currentRootDomainMax + " and cannot be exceeded.");
+            		}
+            	}
             }
         } else if (domainId == null) {
             domainId = DomainVO.ROOT_DOMAIN; // for system commands, default to root domain if domain is not specified
@@ -86,16 +120,8 @@ public class UpdateResourceLimitCmd extends BaseCmd {
             }
             accountId = userAccount.getId();
             domainId = userAccount.getDomainId();
-        }
+        }               
 
-        // Map resource type
-        ResourceType resourceType;
-        try {
-        	resourceType = ResourceType.values()[type];
-        } catch (ArrayIndexOutOfBoundsException e) {
-        	throw new ServerApiException(BaseCmd.PARAM_ERROR, "Please specify a valid resource type.");
-        }
-        
         ResourceLimitVO limit = null;
         try {
         	if (accountId != null) domainId = null;

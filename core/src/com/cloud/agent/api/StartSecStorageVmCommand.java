@@ -70,9 +70,15 @@ public class StartSecStorageVmCommand extends AbstractStartCommand {
 	}
 	
 	public String getBootArgs() {
-		String basic = " eth0ip=" + "0.0.0.0" + " eth0mask=" + "255.255.255.0" + " eth1ip="
-        + secStorageVm.getPrivateIpAddress() + " eth1mask=" + secStorageVm.getPrivateNetmask() + " eth2ip="
-        + secStorageVm.getPublicIpAddress() + " eth2mask=" + secStorageVm.getPublicNetmask() + " gateway=" + secStorageVm.getGateway()
+		String eth1Ip = (secStorageVm.getPrivateIpAddress() == null)? "0.0.0.0":secStorageVm.getPrivateIpAddress();
+		String eth1NetMask = (secStorageVm.getPrivateNetmask() == null) ? "0.0.0.0":secStorageVm.getPrivateNetmask();
+		String eth2Ip = (secStorageVm.getPublicIpAddress() == null)?"0.0.0.0" : secStorageVm.getPublicIpAddress();
+		String eth2NetMask = (secStorageVm.getPublicNetmask() == null) ? "0.0.0.0":secStorageVm.getPublicNetmask();
+		String gateWay = (secStorageVm.getGateway() == null) ? "0.0.0.0" : secStorageVm.getGateway();
+		
+		String basic = " eth0ip=" + secStorageVm.getGuestIpAddress() + " eth0mask=" + secStorageVm.getGuestNetmask() + " eth1ip="
+        + eth1Ip + " eth1mask=" + eth1NetMask + " eth2ip="
+        + eth2Ip + " eth2mask=" + eth2NetMask + " gateway=" + gateWay
 		+ " dns1=" + secStorageVm.getDns1() + " type=secstorage" + " name=" + secStorageVm.getName() + " template=domP";
 		if (secStorageVm.getDns2() != null) {
 			basic = basic + " dns2=" + secStorageVm.getDns2();
@@ -88,6 +94,9 @@ public class StartSecStorageVmCommand extends AbstractStartCommand {
 		basic = basic + " resource=com.cloud.storage.resource.NfsSecondaryStorageResource";
 		basic = basic + " instance=SecStorage";
 		basic = basic + " sslcopy=" + Boolean.toString(sslCopy);
+		if (secStorageVm.getPrivateIpAddress() == null || secStorageVm.getPublicIpAddress() == null) {
+			basic = basic + " bootproto=dhcp";
+		}
 		return basic;
 	}
 }

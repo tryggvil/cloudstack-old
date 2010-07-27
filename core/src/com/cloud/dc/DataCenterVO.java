@@ -24,6 +24,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import javax.persistence.TableGenerator;
 
 @Entity
 @Table(name="data_center")
@@ -62,7 +63,8 @@ public class DataCenterVO {
     private String guestNetworkCidr = null;
 
     @Column(name="mac_address", updatable = false, nullable=false)
-    private final long macAddress = 1;
+    @TableGenerator(name="mac_address_sq", table="data_center", pkColumnName="id", valueColumnName="mac_address", allocationSize=1)
+    private long macAddress = 1;
     
     public DataCenterVO(Long id, String name, String description, String dns1, String dns2, String dns3, String dns4, String vnet, String guestCidr) {
         this.id = id;

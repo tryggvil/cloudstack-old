@@ -19,10 +19,10 @@ package com.cloud.storage.dao;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.cloud.storage.StoragePoolVO;
 import com.cloud.utils.db.GenericDao;
-import com.cloud.utils.db.Transaction;
 /**
  * Data Access Object for storage_pool table
  */
@@ -39,7 +39,7 @@ public interface StoragePoolDao extends GenericDao<StoragePoolVO, Long> {
 	 * @param podId the id of the pod
 	 * @return the list of storage pools in the datacenter
 	 */
-	List<StoragePoolVO> listByDataCenterPodId(long datacenterId, long podId);
+	List<StoragePoolVO> listBy(long datacenterId, long podId, Long clusterId);
     
 	/**
 	 * Set capacity of storage pool in bytes
@@ -55,6 +55,9 @@ public interface StoragePoolDao extends GenericDao<StoragePoolVO, Long> {
 	 */
     void updateAvailable(long id, long available);
         
+    
+    StoragePoolVO persist(StoragePoolVO pool, Map<String, String> details);
+    
     /**
      * Find pool by name.
      * 
@@ -63,6 +66,16 @@ public interface StoragePoolDao extends GenericDao<StoragePoolVO, Long> {
      */
     List<StoragePoolVO> findPoolByName(String name);
     
+    /**
+     * Find pools by the pod that matches the details.
+     * 
+     * @param podId pod id to find the pools in.
+     * @param details details to match.  All must match for the pool to be returned.
+     * @return List of StoragePoolVO
+     */
+    List<StoragePoolVO> findPoolsByDetails(long dcId, long podId, Long clusterId, Map<String, String> details);
+    
+    List<StoragePoolVO> findPoolsByTags(long dcId, long podId, Long clusterId, String[] tags, Boolean shared);
     
     /**
      * Find pool by UUID.
@@ -78,6 +91,12 @@ public interface StoragePoolDao extends GenericDao<StoragePoolVO, Long> {
     
     List<StoragePoolVO> listPoolByHostPath(String host, String path);
     
-    public void deleteStoragePoolRecords(ArrayList<Long> ids);
+    void deleteStoragePoolRecords(ArrayList<Long> ids);
+    
+    void updateDetails(long poolId, Map<String, String> details);
+    
+    Map<String, String> getDetails(long poolId);
+
+	List<String> searchForStoragePoolDetails(long poolId, String value);
     
 }

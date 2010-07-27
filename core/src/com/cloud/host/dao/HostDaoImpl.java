@@ -42,14 +42,16 @@ import com.cloud.info.RunningHostCountInfo;
 import com.cloud.utils.DateUtil;
 import com.cloud.utils.component.ComponentLocator;
 import com.cloud.utils.db.Attribute;
+import com.cloud.utils.db.DB;
 import com.cloud.utils.db.Filter;
 import com.cloud.utils.db.GenericDaoBase;
 import com.cloud.utils.db.SearchBuilder;
 import com.cloud.utils.db.SearchCriteria;
 import com.cloud.utils.db.Transaction;
 import com.cloud.utils.db.UpdateBuilder;
+import com.cloud.utils.db.SearchCriteria.Func;
 
-@Local(value = { HostDao.class })
+@Local(value = { HostDao.class }) @DB(txn=false)
 @TableGenerator(name="host_req_sq", table="host", pkColumnName="id", valueColumnName="sequence", allocationSize=1)
 public class HostDaoImpl extends GenericDaoBase<HostVO, Long> implements HostDao {
     private static final Logger s_logger = Logger.getLogger(HostDaoImpl.class);
@@ -75,6 +77,8 @@ public class HostDaoImpl extends GenericDaoBase<HostVO, Long> implements HostDao
     protected final SearchBuilder<HostVO> SequenceSearch;
     protected final SearchBuilder<HostVO> DirectlyConnectedSearch;
     protected final SearchBuilder<HostVO> UnmanagedDirectConnectSearch;
+    protected final SearchBuilder<HostVO> MaintenanceCountSearch;
+    protected final SearchBuilder<HostVO> ClusterSearch;
     
     protected final Attribute _statusAttr;
     protected final Attribute _msIdAttr;
@@ -85,12 +89,19 @@ public class HostDaoImpl extends GenericDaoBase<HostVO, Long> implements HostDao
 
     public HostDaoImpl() {
         _vmHostDao = ComponentLocator.inject(VmHostDaoImpl.class);
+    
+        MaintenanceCountSearch = createSearchBuilder();
+        MaintenanceCountSearch.and("pod", MaintenanceCountSearch.entity().getPodId(), SearchCriteria.Op.EQ);
+        MaintenanceCountSearch.select(Func.COUNT);
+        MaintenanceCountSearch.and("status", MaintenanceCountSearch.entity().getStatus(), SearchCriteria.Op.IN);
+        MaintenanceCountSearch.done();
         
         TypePodDcStatusSearch = createSearchBuilder();
         HostVO entity = TypePodDcStatusSearch.entity();
         TypePodDcStatusSearch.and("type", entity.getType(), SearchCriteria.Op.EQ);
         TypePodDcStatusSearch.and("pod", entity.getPodId(), SearchCriteria.Op.EQ);
         TypePodDcStatusSearch.and("dc", entity.getDataCenterId(), SearchCriteria.Op.EQ);
+        TypePodDcStatusSearch.and("cluster", entity.getClusterId(), SearchCriteria.Op.EQ);
         TypePodDcStatusSearch.and("status", entity.getStatus(), SearchCriteria.Op.EQ);
         TypePodDcStatusSearch.done();
 
@@ -143,6 +154,10 @@ public class HostDaoImpl extends GenericDaoBase<HostVO, Long> implements HostDao
         DcSearch.and("dc", DcSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
         DcSearch.done();
         
+        ClusterSearch = createSearchBuilder();
+        ClusterSearch.and("cluster", ClusterSearch.entity().getClusterId(), SearchCriteria.Op.EQ);
+        ClusterSearch.done();
+        
         PodSearch = createSearchBuilder();
         PodSearch.and("pod", PodSearch.entity().getPodId(), SearchCriteria.Op.EQ);
         PodSearch.done();
@@ -185,6 +200,21 @@ public class HostDaoImpl extends GenericDaoBase<HostVO, Long> implements HostDao
         _sequenceAttr = _allAttributes.get("sequence");
         
         assert (_statusAttr != null && _msIdAttr != null && _pingTimeAttr != null && _sequenceAttr != null) : "Couldn't find one of these attributes";
+    }
+    
+    @Override
+    public long countBy(long podId, Status... statuses) {
+        SearchCriteria sc = MaintenanceCountSearch.create();
+        
+        sc.setParameters("status", (Object[])statuses);
+        sc.setParameters("pod", podId);
+        
+        List<Object[]> rs = searchAll(sc, null);
+        if (rs.size() == 0) {
+            return 0;
+        }
+        
+        return (Long)(rs.get(0)[0]);
     }
     
     @Override
@@ -242,13 +272,27 @@ public class HostDaoImpl extends GenericDaoBase<HostVO, Long> implements HostDao
     }
 
     @Override
-    public List<HostVO> listBy(Host.Type type, long podId, long dcId) {
+    public List<HostVO> listBy(Host.Type type, Long clusterId, Long podId, long dcId) {
         SearchCriteria sc = TypePodDcStatusSearch.create();
         sc.setParameters("type", type.toString());
-        sc.setParameters("pod", podId);
+        if (podId != null) {
+            sc.setParameters("pod", podId);
+        }
+        if (clusterId != null) {
+            sc.setParameters("cluster", clusterId);
+        }
         sc.setParameters("dc", dcId);
         sc.setParameters("status", Status.Up.toString());
 
+        return listActiveBy(sc);
+    }
+    
+    @Override
+    public List<HostVO> listByCluster(long clusterId) {
+        SearchCriteria sc = ClusterSearch.create();
+        
+        sc.setParameters("cluster", clusterId);
+        
         return listActiveBy(sc);
     }
     
@@ -299,15 +343,24 @@ public class HostDaoImpl extends GenericDaoBase<HostVO, Long> implements HostDao
             return false;
         }
         
-        SearchCriteria sc = null;
+        SearchBuilder<HostVO> sb = createSearchBuilder();
+        sb.and("status", sb.entity().getStatus(), SearchCriteria.Op.EQ);
+        sb.and("id", sb.entity().getId(), SearchCriteria.Op.EQ);
+        if (newStatus.checkManagementServer()) {
+            sb.and("ping", sb.entity().getLastPinged(), SearchCriteria.Op.EQ);
+            sb.op(SearchCriteria.Op.AND, "nullmsid", sb.entity().getManagementServerId(), SearchCriteria.Op.NULL);
+            sb.or("msid", sb.entity().getManagementServerId(), SearchCriteria.Op.EQ);
+            sb.closeParen();
+        }
+        sb.done();
         
-        sc = IdStatusSearch.create();
+        SearchCriteria sc = sb.create();
         
-        sc.setParameters("states", oldStatus);
+        sc.setParameters("status", oldStatus);
         sc.setParameters("id", host.getId());
         if (newStatus.checkManagementServer()) {
-        	sc.addAnd(_msIdAttr, SearchCriteria.Op.EQ, msId);
-        	sc.addAnd(_pingTimeAttr, SearchCriteria.Op.EQ, oldPingTime);
+        	sc.setParameters("ping", oldPingTime);
+        	sc.setParameters("msid", msId);
         }
         
         UpdateBuilder ub = getUpdateBuilder(host);
@@ -342,11 +395,14 @@ public class HostDaoImpl extends GenericDaoBase<HostVO, Long> implements HostDao
     @Override
     public boolean disconnect(HostVO host, Event event, long msId) {
         host.setDisconnectedOn(new Date());
-        
+        if(event!=null && event.equals(Event.Remove)) {
+            host.setGuid(null);
+            host.setClusterId(null);
+        }
         return updateStatus(host, event, msId);
     }
 
-    @Override
+    @Override @DB
     public boolean connect(HostVO host, long msId) {
         Transaction txn = Transaction.currentTxn();
         long id = host.getId();
@@ -363,7 +419,7 @@ public class HostDaoImpl extends GenericDaoBase<HostVO, Long> implements HostDao
     @Override
     public HostVO findByGuid(String guid) {
         SearchCriteria sc = GuidSearch.create("guid", guid);
-        return findOneBy(sc);
+        return findOneActiveBy(sc);
     }
 
     @Override
@@ -449,7 +505,7 @@ public class HostDaoImpl extends GenericDaoBase<HostVO, Long> implements HostDao
         return true;
     }
     
-    @Override
+    @Override @DB
     public HostVO persist(HostVO host) {
         Transaction txn = Transaction.currentTxn();
         txn.start();
@@ -463,7 +519,7 @@ public class HostDaoImpl extends GenericDaoBase<HostVO, Long> implements HostDao
         return dbHost;
     }
     
-    @Override
+    @Override @DB
     public boolean update(Long hostId, HostVO host) {
         Transaction txn = Transaction.currentTxn();
         txn.start();
@@ -480,7 +536,7 @@ public class HostDaoImpl extends GenericDaoBase<HostVO, Long> implements HostDao
         return persisted;
     }
 
-    @Override
+    @Override @DB
     public List<RunningHostCountInfo> getRunningHostCounts(Date cutTime) {
     	String sql = "select * from (select h.data_center_id, h.type, count(*) as count from host as h INNER JOIN mshost as m ON h.mgmt_server_id=m.msid " +
     		  "where h.status='Up' and h.type='Computing' and m.last_update > ? " +

@@ -30,6 +30,7 @@ import org.apache.log4j.Logger;
 
 import com.cloud.storage.LaunchPermissionVO;
 import com.cloud.storage.VMTemplateVO;
+import com.cloud.storage.Storage.FileSystem;
 import com.cloud.storage.Storage.ImageFormat;
 import com.cloud.utils.DateUtil;
 import com.cloud.utils.db.GenericDaoBase;
@@ -37,6 +38,7 @@ import com.cloud.utils.db.SearchBuilder;
 import com.cloud.utils.db.SearchCriteria;
 import com.cloud.utils.db.Transaction;
 import com.cloud.utils.exception.CloudRuntimeException;
+import com.cloud.storage.Storage;
 
 @Local(value={LaunchPermissionDao.class})
 public class LaunchPermissionDaoImpl extends GenericDaoBase<LaunchPermissionVO, Long> implements LaunchPermissionDao {
@@ -119,7 +121,7 @@ public class LaunchPermissionDaoImpl extends GenericDaoBase<LaunchPermissionVO, 
                 boolean isPublic = rs.getBoolean(4);
                 String value = rs.getString(5);
                 ImageFormat format = ImageFormat.valueOf(value);
-                String type = rs.getString(6);
+                String filesystem = rs.getString(6);
                 boolean requiresHVM = rs.getBoolean(7);
                 int bits = rs.getInt(8);
                 String url = rs.getString(9);
@@ -139,7 +141,7 @@ public class LaunchPermissionDaoImpl extends GenericDaoBase<LaunchPermissionVO, 
                 if (isPublic) {
                     continue; // if it's public already, skip adding it to permitted templates as this for private templates only
                 }
-                VMTemplateVO template = new VMTemplateVO(id, uniqueName, name, format, isPublic, featured, type, url, createdDate, requiresHVM, bits, templateAccountId, checksum, displayText, enablePassword, guestOSId, true);
+                VMTemplateVO template = new VMTemplateVO(id, uniqueName, name, format, isPublic, featured, FileSystem.valueOf(filesystem), url, createdDate, requiresHVM, bits, templateAccountId, checksum, displayText, enablePassword, guestOSId, true);
                 permittedTemplates.add(template);
             }
         } catch (Exception e) {

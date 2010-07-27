@@ -25,4 +25,6 @@ import com.cloud.utils.db.GenericDao;
  * Data Access Object for service_offering table
  */
 public interface ServiceOfferingDao extends GenericDao<ServiceOfferingVO, Long> {
+    ServiceOfferingVO findByName(String name);
+    ServiceOfferingVO persistSystemServiceOffering(ServiceOfferingVO vo);
 }

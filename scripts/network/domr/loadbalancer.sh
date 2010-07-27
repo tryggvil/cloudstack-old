@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# $Id: loadbalancer.sh 9373 2010-06-09 01:57:36Z edison $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/network/domr/loadbalancer.sh $
+# $Id: loadbalancer.sh 9804 2010-06-22 18:36:49Z alex $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.1.x/java/scripts/network/domr/loadbalancer.sh $
 # loadbalancer.sh -- reconfigure loadbalancer rules
 #
 #
+# @VERSION@
 
 usage() {
   printf "Usage: %s:  -i <domR eth1 ip>  -a <added public ip address> -d <removed> -f <load balancer config> -r <firewall IP> -u <firewall username> -y <firewall password> -z <firewall enable password> \n" $(basename $0) >&2

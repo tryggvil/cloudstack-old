@@ -88,17 +88,25 @@
                 <div class="grid_headertitles">
                     ID</div>
             </div>
-            <div class="grid_genheader_cell" style="width: 10%;">
+            <div class="grid_genheader_cell" style="width: 8%;">
                 <div class="grid_headertitles">
                     Zone</div>
             </div>
-            <div class="grid_genheader_cell" style="width: 10%;">
+            <div class="grid_genheader_cell" style="width: 8%;">
                 <div class="grid_headertitles">
                     Pod</div>
             </div>
-            <div class="grid_genheader_cell" style="width: 10%;">
+            <div class="grid_genheader_cell" style="width: 6%;">
+                <div class="grid_headertitles">
+                    Cluster</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 8%;">
                 <div class="grid_headertitles">
                     Name</div>
+            </div>
+            <div class="grid_genheader_cell" style="width: 6%;">
+                <div class="grid_headertitles">
+                    Type</div>
             </div>
             <div class="grid_genheader_cell" style="width: 10%;">
                 <div class="grid_headertitles">
@@ -112,11 +120,11 @@
                 <div class="grid_headertitles">
                     Statistics</div>
             </div>
-            <div class="grid_genheader_cell" style="width: 10%;">
+            <div class="grid_genheader_cell" style="width: 9%;">
                 <div class="grid_headertitles">
-                    Created</div>
+                    Tags</div>
             </div>
-			<div class="grid_genheader_cell" style="width:10%;">
+			<div class="grid_genheader_cell" style="width:5%;">
 				<div class="grid_headertitles">Actions</div>
 			</div>
         </div>
@@ -158,16 +166,24 @@
             <div class="netgrid_celltitles" id="pool_id">
             </div>
         </div>
-        <div class="grid_smallgenrow_cell" style="width: 10%;">
+        <div class="grid_smallgenrow_cell" style="width: 8%;">
             <div class="netgrid_celltitles" id="pool_zone">
             </div>
         </div>
-        <div class="grid_smallgenrow_cell" style="width: 10%;">
+        <div class="grid_smallgenrow_cell" style="width: 8%;">
             <div class="netgrid_celltitles" id="pool_pod">
             </div>
         </div>
-        <div class="grid_smallgenrow_cell" style="width: 10%;">
+        <div class="grid_smallgenrow_cell" style="width: 6%;">
+            <div class="netgrid_celltitles" id="pool_cluster">
+            </div>
+        </div>        
+        <div class="grid_smallgenrow_cell" style="width: 8%;">
             <div class="netgrid_celltitles" id="pool_name">
+            </div>
+        </div>
+        <div class="grid_smallgenrow_cell" style="width: 6%;">
+            <div class="netgrid_celltitles" id="pool_type">
             </div>
         </div>
         <div class="grid_smallgenrow_cell" style="width: 10%;">
@@ -182,11 +198,11 @@
             <div class="netgrid_celltitles" id="pool_statistics">
             </div>
         </div>
-        <div class="grid_smallgenrow_cell" style="width: 10%;">
-            <div class="netgrid_celltitles" id="pool_created">
-                16/02/2010</div>
+        <div class="grid_smallgenrow_cell" style="width: 9%;">
+            <div class="netgrid_celltitles" id="pool_tags">
+            </div>
         </div>
-		<div class="grid_smallgenrow_cell" style="width:10%;">
+		<div class="grid_smallgenrow_cell" style="width:5%;">
 		    <div class="netgrid_celltitles">			   
 			    <span><a href="#" id="delete_link">Delete</a></span>               
 		    </div>
@@ -215,6 +231,14 @@
                     <option value="default">Please wait...</option>
                 </select>
             </li>
+            <li id="pool_cluster_container">
+                <label for="pool_cluster">
+                    Cluster:</label>
+                <select class="select" id="pool_cluster">                    
+                </select>
+                <div id="pool_cluster_errormsg" class="dialog_formcontent_errormsg" style="display: none;">
+                </div>
+            </li>
             <li>
                 <label for="user_name">Name:</label>
                 <input class="text" type="text" name="add_pool_name" id="add_pool_name" />
@@ -222,8 +246,8 @@
                 </div>
             </li>
             <li>
-                <label for="add_pool_nfs_server">Protocol:</label>
-				<select class="select" name="add_pool_protocol" id="add_pool_protocol">
+                <label for="add_pool_protocol">Protocol:</label>
+				<select class="select" id="add_pool_protocol">
                     <option value="nfs">NFS</option>
 					<option value="iscsi">ISCSI</option>
                 </select>
@@ -240,7 +264,7 @@
                 <input class="text" type="text" name="add_pool_path" id="add_pool_path" />
                 <div id="add_pool_path_errormsg" class="dialog_formcontent_errormsg" style="display: none;">
                 </div>
-            </li>
+            </li>            
 			<li id="add_pool_iqn_container" style="display:none">
                 <label for="add_pool_iqn">
                     Target IQN:</label>
@@ -253,6 +277,13 @@
                     LUN #:</label>
                 <input class="text" type="text" name="add_pool_lun" id="add_pool_lun" />
                 <div id="add_pool_lun_errormsg" class="dialog_formcontent_errormsg" style="display: none;">
+                </div>
+            </li>
+            <li id="add_pool_tags_container">
+                <label for="add_pool_tags">
+                    Tags:</label>
+                <input class="text" type="text" id="add_pool_tags" />
+                <div id="add_pool_tags_errormsg" class="dialog_formcontent_errormsg" style="display: none;">
                 </div>
             </li>
         </ol>
@@ -294,31 +325,8 @@
                         </li>
                         <li>
                             <label for="filter">
-                                State:</label>
-                            <select class="select" id="adv_search_state">
-                                <option value=""></option>
-                                <option value="Creating">Creating</option>
-                                <option value="Starting">Starting</option>
-                                <option value="Running">Running</option>
-                                <option value="Stopping">Stopping</option>
-                                <option value="Stopped">Stopped</option>
-                                <option value="Destroyed">Destroyed</option>
-                                <option value="Expunging">Expunging</option>
-                                <option value="Migrating">Migrating</option>
-                                <option value="Error">Error</option>
-                                <option value="Unknown">Unknown</option>
-                            </select>
-                        </li>
-                        <li>
-                            <label for="filter">
                                 Zone:</label>
                             <select class="select" id="adv_search_zone">
-                            </select>
-                        </li>
-                        <li>
-                            <label for="filter">
-                                Pod:</label>
-                            <select class="select" id="adv_search_pod">
                             </select>
                         </li>
                         <li id="adv_search_domain_li" style="display: none;">
@@ -526,7 +534,7 @@
                             <label for="filter">
                                 Name:</label>
                             <input class="text" type="text" name="adv_search_name" id="adv_search_name" />
-                        </li>
+                        </li>                      
                         <li>
                             <label for="filter">
                                 Zone:</label>
@@ -578,11 +586,11 @@
                 Loading...</p>
         </div>
         <div class="grid_header">
-            <div class="grid_genheader_cell" style="width: 5%;">
+            <div class="grid_genheader_cell" style="width: 4%;">
                 <div class="grid_headertitles">
                     ID</div>
             </div>
-            <div class="grid_genheader_cell" style="width: 13%;">
+            <div class="grid_genheader_cell" style="width: 12%;">
                 <div class="grid_headertitles">
                     Name</div>
             </div>
@@ -616,14 +624,11 @@
                     Storage</div>
             </div>
             <div class="grid_genheader_cell" id="volume_account_header" style="display: none;
-                width: 10%;">
+                width: 11%; border:0;">
                 <div class="grid_headertitles">
                     Account</div>
             </div>
-            <div class="grid_genheader_cell" style="width: 15%;">
-                <div class="grid_headertitles">
-                </div>
-            </div>
+            
         </div>
         <div id="grid_content">
         </div>
@@ -668,12 +673,12 @@
         <div class="result_closebutton" id="close_button">
         </div>
     </div>
-    <div id="row_container" style="height: 45px;">
-        <div class="grid_smallgenrow_cell" style="width: 5%;">
+    <div id="row_container">
+        <div class="grid_smallgenrow_cell" style="width: 4%;">
             <div class="netgrid_celltitles" id="volume_id">
                 ID</div>
         </div>
-        <div class="grid_smallgenrow_cell" style="width: 13%;">
+        <div class="grid_smallgenrow_cell" style="width: 12%;">
             <div class="netgrid_celltitles" id="volume_name">
                 Name</div>
         </div>
@@ -706,13 +711,13 @@
             <div class="netgrid_celltitles" id="volume_hostname">
             </div>
         </div>
-        <div class="grid_smallgenrow_cell" id="volume_account_container" style="width: 10%;
-            display: none;">
+        <div class="grid_smallgenrow_cell" id="volume_account_container" style="width: 11%;
+            display: none; border:0;">
             <div class="netgrid_celltitles" id="volume_account">
                 account</div>
         </div>
         <div id="grid_links_container" style="display: block">
-            <div class="grid_links">
+            <div class="grid_links" style="margin:5px 0 0 5px; display:inline;">
                 <div id="volume_action_snapshot_grid" class="vm_botactionslinks_down" style="display:none">
                     snapshots
                 </div>                
@@ -732,7 +737,7 @@
                     <a id="volume_action_delete" href="#">delete</a> |
                 </div>
                 <div style="display: none; float: left" id="volume_action_create_template_span">
-                    <a id="volume_action_create_template" href="#">create template</a> |
+                    <a id="volume_action_create_template" href="#">create template</a> 
                 </div>
             </div>
         </div>
@@ -1295,8 +1300,8 @@
 <!-- Create Snapshot Dialog (end) -->
 <!--*** Volume (end) *** -->
 
-<!--*** Snapshot (begin) *** -->
-<div class="maincontent" style="display: none;" id="submenu_content_snapshot">
+<!-- Snapshot (begin) -->
+ <div class="maincontent" style="display: none;" id="submenu_content_snapshot">
     <div id="maincontent_title">
         <div class="maintitle_icon">
             <img src="images/accountstitle_icons.gif" title="routers" />
@@ -1410,7 +1415,7 @@
 
 <!-- Snapshot Template (begin) -->
 <div id="snapshot_template" style="display: none">
-    <div class="adding_loading" style="height: 25px; display: none;">
+    <div class="adding_loading" style="display: none;">
         <div class="adding_animation">
         </div>
         <div class="adding_text">
@@ -1418,35 +1423,35 @@
         </div>
     </div>
     <div id="row_container">
-        <div class="hostadmin_showdetailsrow_cell" style="width: 5%">
+        <div class="grid_smallgenrow_cell" style="width: 5%">
             <div class="netgrid_celltitles" id="id">
             </div>
         </div>
-        <div class="hostadmin_showdetailsrow_cell" style="width: 20%">
+        <div class="grid_smallgenrow_cell" style="width: 20%">
             <div class="netgrid_celltitles" id="name">
             </div>
         </div>    
-        <div class="hostadmin_showdetailsrow_cell" style="width: 10%">
+        <div class="grid_smallgenrow_cell" style="width: 10%">
             <div class="netgrid_celltitles" id="volume">
             </div>
         </div>    
-         <div class="hostadmin_showdetailsrow_cell" style="width: 8%">
+        <div class="grid_smallgenrow_cell" style="width: 8%">
             <div class="netgrid_celltitles" id="interval_type">
             </div>
         </div>    
-        <div class="hostadmin_showdetailsrow_cell" style="width: 10%">
+       <div class="grid_smallgenrow_cell" style="width: 10%">
             <div class="netgrid_celltitles" id="created">
             </div>
         </div>
-        <div class="hostadmin_showdetailsrow_cell" style="width: 10%" id="snapshot_account_container">
+       <div class="grid_smallgenrow_cell" style="width: 10%" id="snapshot_account_container">
             <div class="netgrid_celltitles" id="account">
             </div>
         </div>
-        <div class="hostadmin_showdetailsrow_cell" style="width: 10%" id="snapshot_domain_container">
+        <div class="grid_smallgenrow_cell" style="width: 10%" id="snapshot_domain_container">
             <div class="netgrid_celltitles" id="domain">
             </div>
         </div>        
-        <div class="hostadmin_showdetailsrow_cell" style="width: 22%">
+        <div class="grid_smallgenrow_cell" style="width: 22%">
             <div class="netgrid_celltitles" id="detail_action">
                 <span>
                     <a id="snapshot_action_create_volume" href="#">Create Volume</a>

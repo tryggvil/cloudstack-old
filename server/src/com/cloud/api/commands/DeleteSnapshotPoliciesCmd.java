@@ -41,8 +41,10 @@ public class DeleteSnapshotPoliciesCmd extends BaseCmd {
     private static final List<Pair<Enum, Boolean>> s_properties = new ArrayList<Pair<Enum, Boolean>>();
 
     static {
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.DOMAIN_ID, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT_OBJ, Boolean.FALSE));
-    	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ID, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ID, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.IDS, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.USER_ID, Boolean.FALSE));
     }
@@ -56,8 +58,7 @@ public class DeleteSnapshotPoliciesCmd extends BaseCmd {
 
     @Override
     public List<Pair<String, Object>> execute(Map<String, Object> params) {
-    	Account account = (Account)params.get(BaseCmd.Properties.ACCOUNT_OBJ.getName());
-        Long policyId = (Long)params.get(BaseCmd.Properties.ID.getName());
+    	Long policyId = (Long)params.get(BaseCmd.Properties.ID.getName());
         String policyIds = (String)params.get(BaseCmd.Properties.IDS.getName());
         Long userId = (Long)params.get(BaseCmd.Properties.USER_ID.getName());
 
@@ -98,18 +99,8 @@ public class DeleteSnapshotPoliciesCmd extends BaseCmd {
                 throw new ServerApiException(BaseCmd.PARAM_ERROR, "Policy id given: " + policy + " does not belong to a valid volume");
             }
             
-            if (account != null) {
-                if (!isAdmin(account.getType())) {
-                    if (account.getId() != volume.getAccountId()) {
-                        throw new ServerApiException(BaseCmd.SNAPSHOT_INVALID_PARAM_ERROR, "unable to find a snapshot policy with id " + policy + " for this account");
-                    }
-                } else {
-                    Account snapshotOwner = getManagementServer().findAccountById(volume.getAccountId());
-                    if ((snapshotOwner == null) || !getManagementServer().isChildDomain(account.getDomainId(), snapshotOwner.getDomainId())) {
-                        throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to delete snapshot policy " + policy + ", permission denied.");
-                    }
-                }
-            }
+            // If an account was passed in, make sure that it matches the account of the volume
+            checkAccountPermissions(params, volume.getAccountId(), volume.getDomainId(), "volume", volume.getId());
         }
         
         try {

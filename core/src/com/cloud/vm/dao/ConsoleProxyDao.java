@@ -36,6 +36,7 @@ public interface ConsoleProxyDao extends GenericDao<ConsoleProxyVO, Long> {
     public List<ConsoleProxyVO> getProxyListInStates(State... states);
     
     public List<ConsoleProxyVO> listByHostId(long hostId);
+    public List<ConsoleProxyVO> listUpByHostId(long hostId);
     
     public List<ConsoleProxyLoadInfo> getDatacenterProxyLoadMatrix();
     public List<ConsoleProxyLoadInfo> getDatacenterVMLoadMatrix();

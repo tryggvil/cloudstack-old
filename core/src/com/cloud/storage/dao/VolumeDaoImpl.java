@@ -17,6 +17,8 @@
  */
 package com.cloud.storage.dao;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -33,36 +35,45 @@ import com.cloud.storage.Volume;
 import com.cloud.storage.VolumeVO;
 import com.cloud.storage.Volume.MirrorState;
 import com.cloud.storage.Volume.VolumeType;
+import com.cloud.utils.Pair;
+import com.cloud.utils.db.DB;
 import com.cloud.utils.db.GenericDaoBase;
 import com.cloud.utils.db.SearchBuilder;
 import com.cloud.utils.db.SearchCriteria;
 import com.cloud.utils.db.Transaction;
+import com.cloud.utils.db.SearchCriteria.Func;
 import com.cloud.utils.db.SearchCriteria.Op;
 import com.cloud.utils.exception.CloudRuntimeException;
 
-@Local (value={VolumeDao.class})
+@Local(value=VolumeDao.class) @DB(txn=false)
 public class VolumeDaoImpl extends GenericDaoBase<VolumeVO, Long> implements VolumeDao {
     private static final Logger s_logger = Logger.getLogger(VolumeDaoImpl.class);
-    protected SearchBuilder<VolumeVO> PathAndHostIdSearch;
-    protected SearchBuilder<VolumeVO> AccountIdSearch;
-    protected SearchBuilder<VolumeVO> AccountPodSearch;
-    protected SearchBuilder<VolumeVO> TemplateZoneSearch;
-    protected SearchBuilder<VolumeVO> HostIdSearch;
-    protected SearchBuilder<VolumeVO> PoolIdSearch;
-    protected SearchBuilder<VolumeVO> InstanceIdSearch;
-    protected SearchBuilder<VolumeVO> InstanceAndTypeSearch;
-    protected SearchBuilder<VolumeVO> InstanceIdDestroyedSearch;
-    protected SearchBuilder<VolumeVO> DetachedDestroyedSearch;
-    protected SearchBuilder<VolumeVO> HostIdAndMirrStateSearch;
-    protected SearchBuilder<VolumeVO> HostIdVmIdVolTypeSearch;
-    protected SearchBuilder<VolumeVO> HostIdVmIdSearch;
-    protected SearchBuilder<VolumeVO> MirrorSearch;
+    protected final SearchBuilder<VolumeVO> DetachedAccountIdSearch;
+    protected final SearchBuilder<VolumeVO> AccountIdSearch;
+    protected final SearchBuilder<VolumeVO> AccountPodSearch;
+    protected final SearchBuilder<VolumeVO> TemplateZoneSearch;
+    protected final SearchBuilder<VolumeVO> TotalSizeByPoolSearch;
+    protected final SearchBuilder<VolumeVO> InstanceIdSearch;
+    protected final SearchBuilder<VolumeVO> InstanceAndTypeSearch;
+    protected final SearchBuilder<VolumeVO> InstanceIdDestroyedSearch;
+    protected final SearchBuilder<VolumeVO> InstanceIdCreatedSearch;
+    protected final SearchBuilder<VolumeVO> DetachedDestroyedSearch;
+    protected final SearchBuilder<VolumeVO> MirrorSearch;
+    protected final SearchBuilder<VolumeVO> ActiveTemplateSearch;
+    protected final SearchBuilder<VolumeVO> RemovedButNotDestroyedSearch;
 
     protected static final String SELECT_VM_SQL = "SELECT DISTINCT instance_id from volumes v where v.host_id = ? and v.mirror_state = ?";
     protected static final String SELECT_VM_ID_SQL = "SELECT DISTINCT instance_id from volumes v where v.host_id = ?";
 
-    
     @Override
+    public List<VolumeVO> listRemovedButNotDestroyed() {
+        SearchCriteria sc = RemovedButNotDestroyedSearch.create();
+        sc.setParameters("destroyed", false);
+        
+        return searchAll(sc, null, null, false);
+    }
+    
+    @Override @DB
     public List<Long> findVmsStoredOnHost(long hostId) {
         Transaction txn = Transaction.currentTxn();
         PreparedStatement pstmt = null;
@@ -83,7 +94,15 @@ public class VolumeDaoImpl extends GenericDaoBase<VolumeVO, Long> implements Vol
             throw new CloudRuntimeException("Caught: " + SELECT_VM_SQL, e);
         }
     }
-
+    
+    @Override
+    public List<VolumeVO> findDetachedByAccount(long accountId) {
+    	SearchCriteria sc = DetachedAccountIdSearch.create();
+    	sc.setParameters("accountId", accountId);
+    	sc.setParameters("destroyed", false);
+    	return listActiveBy(sc);
+    }
+    
     @Override
     public List<VolumeVO> findByAccount(long accountId) {
         SearchCriteria sc = AccountIdSearch.create();
@@ -99,14 +118,15 @@ public class VolumeDaoImpl extends GenericDaoBase<VolumeVO, Long> implements Vol
 	    return listActiveBy(sc);
 	}
     
-    @Override
-    public VolumeVO findByPath(long hostId, String path) {
-        SearchCriteria sc = PathAndHostIdSearch.create();
-        sc.setParameters("path", path);
-        sc.setParameters("hostId", hostId);
-        return findOneActiveBy(sc);
+    @Override 
+    public List<VolumeVO> findCreatedByInstance(long id) {
+        SearchCriteria sc = InstanceIdCreatedSearch.create();
+        sc.setParameters("instanceId", id);
+        sc.setParameters("status", AsyncInstanceCreateStatus.Created);
+        sc.setParameters("destroyed", false);
+        return listActiveBy(sc);
     }
-
+    
 	@Override
 	public List<VolumeVO> findByInstanceAndType(long id, VolumeType vType) {
         SearchCriteria sc = InstanceAndTypeSearch.create();
@@ -123,7 +143,7 @@ public class VolumeDaoImpl extends GenericDaoBase<VolumeVO, Long> implements Vol
 		return listBy(sc);
 	}
 	
-	@Override 
+	@Override
 	public List<VolumeVO> findByDetachedDestroyed() {
 		SearchCriteria sc = DetachedDestroyedSearch.create();
 		sc.setParameters("destroyed", true);
@@ -150,7 +170,7 @@ public class VolumeDaoImpl extends GenericDaoBase<VolumeVO, Long> implements Vol
 		return listBy(sc);
 	}
 
-	@Override
+	@Override @DB
 	public List<Long> findVMInstancesByStorageHost(long hostId, Volume.MirrorState mirrState) {
 		
 		Transaction txn = Transaction.currentTxn();
@@ -175,16 +195,6 @@ public class VolumeDaoImpl extends GenericDaoBase<VolumeVO, Long> implements Vol
 	}
 
 	@Override
-	public VolumeVO findMirrorVolumeByTypeAndInstance(long hostId, long vmId, VolumeType vType) {
-		SearchCriteria sc = HostIdVmIdVolTypeSearch.create();
-        sc.setParameters("hostId", hostId);
-        sc.setParameters("instanceId", vmId);
-        sc.setParameters("vType", vType.toString());
-
-	    return findOneBy(sc);
-	}
-
-	@Override
 	public List<VolumeVO> findStrandedMirrorVolumes() {
 		SearchCriteria sc = MirrorSearch.create();
         sc.setParameters("mirrorState", MirrorState.ACTIVE.toString());
@@ -192,23 +202,33 @@ public class VolumeDaoImpl extends GenericDaoBase<VolumeVO, Long> implements Vol
 	    return listBy(sc);
 	}
 	
+	@Override
+	public boolean isAnyVolumeActivelyUsingTemplateOnPool(long templateId, long poolId) {
+	    SearchCriteria sc = ActiveTemplateSearch.create();
+	    sc.setParameters("template", templateId);
+	    sc.setParameters("pool", poolId);
+	    
+	    List<Object[]> results = this.searchAll(sc, null);
+	    if (results.size() == 0) {
+	        return false;
+	    }
+	    
+	    Object[] counts = results.get(0);
+	    return ((BigInteger) counts[0]).longValue() > 0;
+	}
+	
     @Override
     public void deleteVolumesByInstance(long instanceId) {
-        Transaction txn = Transaction.currentTxn();
-        try {
-        	PreparedStatement stmt = txn.prepareAutoCloseStatement("delete from volumes where instance_id=?");
-        	stmt.setLong(1, instanceId);
-        	stmt.execute();
-        } catch(Exception e) {
-        	s_logger.error("Unable to delete volumes by VM instance", e);
-        }
+        SearchCriteria sc = InstanceIdSearch.create();
+        sc.setParameters("instanceId", instanceId);
+        delete(sc);
     }
     
     @Override
-    public void attachVolume(long volumeId, long vmId, String nameLabel) {
+    public void attachVolume(long volumeId, long vmId, long deviceId) {
     	VolumeVO volume = createForUpdate(volumeId);
     	volume.setInstanceId(vmId);
-    	volume.setNameLabel(nameLabel);
+    	volume.setDeviceId(deviceId);
     	volume.setUpdated(new Date());
     	update(volumeId, volume);
     }
@@ -217,7 +237,7 @@ public class VolumeDaoImpl extends GenericDaoBase<VolumeVO, Long> implements Vol
     public void detachVolume(long volumeId) {
     	VolumeVO volume = createForUpdate(volumeId);
     	volume.setInstanceId(null);
-    	volume.setNameLabel("detached");
+        volume.setDeviceId(null);
     	volume.setUpdated(new Date());
     	update(volumeId, volume);
     }
@@ -242,6 +262,12 @@ public class VolumeDaoImpl extends GenericDaoBase<VolumeVO, Long> implements Vol
         AccountIdSearch.and("destroyed", AccountIdSearch.entity().getDestroyed(), SearchCriteria.Op.EQ);
         AccountIdSearch.done();
         
+        DetachedAccountIdSearch = createSearchBuilder();
+        DetachedAccountIdSearch.and("accountId", DetachedAccountIdSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
+        DetachedAccountIdSearch.and("destroyed", DetachedAccountIdSearch.entity().getDestroyed(), SearchCriteria.Op.EQ);
+        DetachedAccountIdSearch.and("instanceId", DetachedAccountIdSearch.entity().getInstanceId(), SearchCriteria.Op.NULL);
+        DetachedAccountIdSearch.done();
+        
         AccountPodSearch = createSearchBuilder();
         AccountPodSearch.and("account", AccountPodSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
         AccountPodSearch.and("pod", AccountPodSearch.entity().getPodId(), SearchCriteria.Op.EQ);
@@ -254,11 +280,20 @@ public class VolumeDaoImpl extends GenericDaoBase<VolumeVO, Long> implements Vol
         TemplateZoneSearch.and("zone", TemplateZoneSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
         TemplateZoneSearch.done();
         
-        PoolIdSearch = createSearchBuilder();
-        PoolIdSearch.and("poolId", PoolIdSearch.entity().getPoolId(), SearchCriteria.Op.EQ);
-        PoolIdSearch.done();
+        TotalSizeByPoolSearch = createSearchBuilder();
+        TotalSizeByPoolSearch.select(Func.SUM, TotalSizeByPoolSearch.entity().getSize());
+        TotalSizeByPoolSearch.select(Func.COUNT, (Object[])null);
+        TotalSizeByPoolSearch.and("poolId", TotalSizeByPoolSearch.entity().getPoolId(), SearchCriteria.Op.EQ);
+        TotalSizeByPoolSearch.and("removed", TotalSizeByPoolSearch.entity().getRemoved(), SearchCriteria.Op.NULL);
+        TotalSizeByPoolSearch.done();
         
       
+        InstanceIdCreatedSearch = createSearchBuilder();
+        InstanceIdCreatedSearch.and("instanceId", InstanceIdCreatedSearch.entity().getInstanceId(), SearchCriteria.Op.EQ);
+        InstanceIdCreatedSearch.and("status", InstanceIdCreatedSearch.entity().getStatus(), SearchCriteria.Op.EQ);
+        InstanceIdCreatedSearch.and("destroyed", InstanceIdCreatedSearch.entity().getDestroyed(), SearchCriteria.Op.EQ);
+        InstanceIdCreatedSearch.done();
+        
         InstanceIdSearch = createSearchBuilder();
         InstanceIdSearch.and("instanceId", InstanceIdSearch.entity().getInstanceId(), SearchCriteria.Op.EQ);
         InstanceIdSearch.done();
@@ -282,13 +317,28 @@ public class VolumeDaoImpl extends GenericDaoBase<VolumeVO, Long> implements Vol
         MirrorSearch.and("mirrorVolume", MirrorSearch.entity().getMirrorVolume(), Op.NULL);
         MirrorSearch.and("mirrorState", MirrorSearch.entity().getMirrorState(), Op.EQ);
         MirrorSearch.done();
-       
+        
+        ActiveTemplateSearch = createSearchBuilder();
+        ActiveTemplateSearch.and("pool", ActiveTemplateSearch.entity().getPoolId(), SearchCriteria.Op.EQ);
+        ActiveTemplateSearch.and("template", ActiveTemplateSearch.entity().getTemplateId(), SearchCriteria.Op.EQ);
+        ActiveTemplateSearch.and("removed", ActiveTemplateSearch.entity().getRemoved(), SearchCriteria.Op.NULL);
+        ActiveTemplateSearch.selectField(Func.COUNT);
+        ActiveTemplateSearch.done();
+        
+        RemovedButNotDestroyedSearch = createSearchBuilder();
+        RemovedButNotDestroyedSearch.and("destroyed", RemovedButNotDestroyedSearch.entity().getDestroyed(), SearchCriteria.Op.EQ);
+        RemovedButNotDestroyedSearch.and("removed", RemovedButNotDestroyedSearch.entity().getRemoved(), SearchCriteria.Op.NNULL);
+        RemovedButNotDestroyedSearch.done();
 	}
 
-	@Override
-	public List<VolumeVO> findByPool(long poolId) {
-        SearchCriteria sc = PoolIdSearch.create();
+	@Override @DB(txn=false)
+	public Pair<Long, Long> getCountAndTotalByPool(long poolId) {
+        SearchCriteria sc = TotalSizeByPoolSearch.create();
         sc.setParameters("poolId", poolId);
-        return listActiveBy(sc);
+        List<Object[]> results = searchAll(sc, null);
+        Object[] objs = results.get(0);
+        long size = (objs[0] == null) ? 0 : ((BigDecimal)objs[0]).longValue();
+        long count = (Long)objs[1];
+        return new Pair<Long, Long>(count, size);
 	}
 }

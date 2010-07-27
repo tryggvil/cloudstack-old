@@ -194,6 +194,10 @@ public class Attribute {
         flags = flag.setFalse(flags);
     }
     
+    public Field getField() {
+        return field;
+    }
+    
     public Object get(Object entity) {
         try {
             return field.get(entity);

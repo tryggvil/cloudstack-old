@@ -113,7 +113,7 @@ public class UserDaoImpl extends GenericDaoBase<UserVO, Long> implements UserDao
     }
     
     @Override
-    public void update(long id, String username, String password, String firstname, String lastname, String email, Long accountId, String timezone)
+    public void update(long id, String username, String password, String firstname, String lastname, String email, Long accountId, String timezone, String apiKey, String secretKey)
     {
         UserVO dbUser = getUser(username);
         if ((dbUser == null) || (dbUser.getId().longValue() == id)) {
@@ -125,6 +125,8 @@ public class UserDaoImpl extends GenericDaoBase<UserVO, Long> implements UserDao
             ub.setEmail(email);
             ub.setAccountId(accountId);
             ub.setTimezone(timezone);
+            ub.setApiKey(apiKey);
+            ub.setSecretKey(secretKey);
             update(id, ub);
         }
         else

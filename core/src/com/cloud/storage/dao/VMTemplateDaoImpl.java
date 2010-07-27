@@ -23,7 +23,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -34,7 +33,6 @@ import org.apache.log4j.Logger;
 
 import com.cloud.domain.DomainVO;
 import com.cloud.storage.Storage;
-import com.cloud.storage.VMTemplateHostVO;
 import com.cloud.storage.VMTemplateVO;
 import com.cloud.storage.VMTemplateZoneVO;
 import com.cloud.storage.template.TemplateConstants;
@@ -60,10 +58,11 @@ public class VMTemplateDaoImpl extends GenericDaoBase<VMTemplateVO, Long> implem
 	protected static final String SELECT_ALL_IN_ZONE =
 		"SELECT t.id, t.unique_name, t.name, t.public, t.featured, t.type, t.hvm, t.bits, t.url, t.format, t.created, t.removed, t.account_id, " +
 		"t.checksum, t.display_text, t.enable_password, t.guest_os_id, t.bootable, t.prepopulate, t.cross_zones FROM vm_template t, template_zone_ref tz where t.removed is null and tz.removed is null and t.id = tz.template_id and tz.zone_id=?  ";
-	
+    
     protected SearchBuilder<VMTemplateVO> TemplateNameSearch;
     protected SearchBuilder<VMTemplateVO> UniqueNameSearch;
     protected SearchBuilder<VMTemplateVO> AccountIdSearch;
+    protected SearchBuilder<VMTemplateVO> NameSearch;
 
     protected SearchBuilder<VMTemplateVO> PublicSearch;
     private String routerTmpltName;
@@ -85,6 +84,13 @@ public class VMTemplateDaoImpl extends GenericDaoBase<VMTemplateVO, Long> implem
 		return findOneBy(sc);
 	}
 
+	@Override
+	public VMTemplateVO findByTemplateName(String templateName) {
+		SearchCriteria sc = NameSearch.create();
+		sc.setParameters("name", templateName);
+		return findOneBy(sc);
+	}
+	
 	@Override
 	public VMTemplateVO findRoutingTemplate() {
 		SearchCriteria sc = UniqueNameSearch.create();
@@ -152,6 +158,8 @@ public class VMTemplateDaoImpl extends GenericDaoBase<VMTemplateVO, Long> implem
 		TemplateNameSearch.and("name", TemplateNameSearch.entity().getName(), SearchCriteria.Op.EQ);
 		UniqueNameSearch = createSearchBuilder();
 		UniqueNameSearch.and("uniqueName", UniqueNameSearch.entity().getUniqueName(), SearchCriteria.Op.EQ);
+		NameSearch = createSearchBuilder();
+		NameSearch.and("name", NameSearch.entity().getName(), SearchCriteria.Op.EQ);
 
 		AccountIdSearch = createSearchBuilder();
 		AccountIdSearch.and("accountId", AccountIdSearch.entity().getAccountId(), SearchCriteria.Op.EQ);

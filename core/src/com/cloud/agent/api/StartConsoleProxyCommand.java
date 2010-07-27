@@ -78,9 +78,15 @@ public class StartConsoleProxyCommand extends AbstractStartCommand {
 	}
 	
 	public String getBootArgs() {
-		String basic = " eth0ip=" + "0.0.0.0" + " eth0mask=" + "255.255.255.0" + " eth1ip="
-        + proxy.getPrivateIpAddress() + " eth1mask=" + proxy.getPrivateNetmask() + " eth2ip="
-        + proxy.getPublicIpAddress() + " eth2mask=" + proxy.getPublicNetmask() + " gateway=" + proxy.getGateway()
+		String eth1Ip = (proxy.getPrivateIpAddress() == null)? "0.0.0.0":proxy.getPrivateIpAddress();
+		String eth1NetMask = (proxy.getPrivateNetmask() == null) ? "0.0.0.0":proxy.getPrivateNetmask();
+		String eth2Ip = (proxy.getPublicIpAddress() == null)?"0.0.0.0" : proxy.getPublicIpAddress();
+		String eth2NetMask = (proxy.getPublicNetmask() == null) ? "0.0.0.0":proxy.getPublicNetmask();
+		String gateWay = (proxy.getGateway() == null) ? "0.0.0.0" : proxy.getGateway();
+		
+		String basic = " eth0ip=" + proxy.getGuestIpAddress() + " eth0mask=" + proxy.getGuestNetmask() + " eth1ip="
+        + eth1Ip + " eth1mask=" + eth1NetMask + " eth2ip="
+        + eth2Ip + " eth2mask=" + eth2NetMask + " gateway=" + gateWay
 		+ " dns1=" + proxy.getDns1() + " type=consoleproxy"+ " name=" + proxy.getName() + " template=domP";
 		if (proxy.getDns2() != null) {
 			basic = basic + " dns2=" + proxy.getDns2();
@@ -88,6 +94,9 @@ public class StartConsoleProxyCommand extends AbstractStartCommand {
 		basic = basic + " host=" + mgmt_host + " port=" + mgmt_port;
 		if(sslEnabled)
 			basic = basic + " premium=true";
+		if (proxy.getPrivateIpAddress() == null || proxy.getPublicIpAddress() == null) {
+			basic = basic + " bootproto=dhcp";
+		}
 		return basic;
 	}
 }

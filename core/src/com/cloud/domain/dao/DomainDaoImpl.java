@@ -57,41 +57,29 @@ public class DomainDaoImpl extends GenericDaoBase<DomainVO, Long> implements Dom
 		DomainPairSearch.done();
 	}
 	
-	public List<DomainVO> findDomainsLike(String domain) {
-        SearchCriteria sc = DomainNameLikeSearch.create();
-        sc.setParameters("name", "%" + domain + "%");
-        return listActiveBy(sc);
-    }
-	
-    public List<DomainVO> findDomainsLike(Long parentId, String domain) {
-    	if(parentId == null)
-    		return findDomainsLike(domain);
-    		
-        SearchCriteria sc = ParentDomainNameLikeSearch.create();
-        sc.setParameters("name", "%" + domain + "%");
-        sc.setParameters("parent", parentId);
-        return listActiveBy(sc);
-    }
-	
     public void update(Long id, String domainName) {
         DomainVO ub = createForUpdate();
         ub.setName(domainName);
         update(id, ub);
     }
     
-    private static String allocPath(DomainVO parentDomain) {
-    	long nextChildSeq = parentDomain.getNextChildSeq();
-    	String path = parentDomain.getPath();
-    	if(path.length() == 0) {
-    		return String.valueOf(nextChildSeq) + "/";
-    	} else {
-    		return path + String.valueOf(nextChildSeq) + "/";
-    	}
+    private static String allocPath(DomainVO parentDomain, String name) {
+        String parentPath = parentDomain.getPath();
+        return parentPath + name + "/";
     }
 
     @Override
     public synchronized DomainVO create(DomainVO domain) {
-    	
+        // make sure domain name is valid
+        String domainName = domain.getName();
+        if (domainName != null) {
+            if (domainName.contains("/")) {
+                throw new IllegalArgumentException("Domain name contains one or more invalid characters.  Please enter a name without '/' characters.");
+            }
+        } else {
+            throw new IllegalArgumentException("Domain name is null.  Please specify a valid domain name.");
+        }
+
     	long parent = DomainVO.ROOT_DOMAIN;
     	if(domain.getParent() != null && domain.getParent().longValue() >= DomainVO.ROOT_DOMAIN) {
     		parent = domain.getParent().longValue();
@@ -114,10 +102,10 @@ public class DomainDaoImpl extends GenericDaoBase<DomainVO, Long> implements Dom
     	try {
     		txn.start();
     		
-            domain.setPath(allocPath(parentDomain));
+            domain.setPath(allocPath(parentDomain, domain.getName()));
             domain.setLevel(parentDomain.getLevel() + 1);
             
-            parentDomain.setNextChildSeq(parentDomain.getNextChildSeq() + 1);
+            parentDomain.setNextChildSeq(parentDomain.getNextChildSeq() + 1); // FIXME:  remove sequence number?
             parentDomain.setChildCount(parentDomain.getChildCount() + 1);
             persist(domain);
             update(parentDomain.getId(), parentDomain);
@@ -197,20 +185,9 @@ public class DomainDaoImpl extends GenericDaoBase<DomainVO, Long> implements Dom
     }
 
     @Override
-    public DomainVO findDomainByName(String domainName) {
+    public DomainVO findDomainByPath(String domainPath) {
         SearchCriteria sc = createSearchCriteria();
-        sc.addAnd("name", SearchCriteria.Op.EQ, domainName);
-        return findOneActiveBy(sc);
-    }
-    
-    @Override
-    public DomainVO findDomainByName(Long parentId, String domainName) {
-    	if(parentId == null)
-    		return findDomainByName(domainName);
-    	
-        SearchCriteria sc = createSearchCriteria();
-        sc.addAnd("name", SearchCriteria.Op.EQ, domainName);
-        sc.addAnd("parent", SearchCriteria.Op.EQ, parentId);
+        sc.addAnd("path", SearchCriteria.Op.EQ, domainPath);
         return findOneActiveBy(sc);
     }
 

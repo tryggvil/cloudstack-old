@@ -87,13 +87,13 @@ public class ListIsosCmd extends BaseCmd {
 
     	boolean isAdmin = false;
 
-    	if (isoFilterString == null) {
-    		isoFilterString = "self";
-        }
-    	
     	TemplateFilter isoFilter;
         try {
-        	isoFilter = TemplateFilter.valueOf(isoFilterString);
+        	if (isoFilterString == null) {
+        		isoFilter = TemplateFilter.selfexecutable;
+        	} else {
+        		isoFilter = TemplateFilter.valueOf(isoFilterString);
+        	}
         } catch (IllegalArgumentException e) {
         	throw new ServerApiException(BaseCmd.PARAM_ERROR, "Please specify a valid template filter.");
         }
@@ -171,8 +171,7 @@ public class ListIsosCmd extends BaseCmd {
             }
         }
 
-        Object[] iTag = new Object[numTags];
-        int i = 0;
+        List<Object> isoTagList = new ArrayList<Object>();
         List<Pair<String, Object>> isoTags = new ArrayList<Pair<String, Object>>();
         for (VMTemplateVO iso : isos) {
         	List<VMTemplateHostVO> isoHosts = isoHostsMap.get(iso.getId());
@@ -186,10 +185,11 @@ public class ListIsosCmd extends BaseCmd {
         		isoData.add(new Pair<String, Object>(BaseCmd.Properties.NAME.getName(), iso.getName()));
         		isoData.add(new Pair<String, Object>(BaseCmd.Properties.DISPLAY_TEXT.getName(), iso.getDisplayText()));
         		isoData.add(new Pair<String, Object>(BaseCmd.Properties.IS_PUBLIC.getName(), Boolean.valueOf(iso.isPublicTemplate()).toString()));
-        		isoData.add(new Pair<String, Object>(BaseCmd.Properties.CREATED.getName(), getDateString(iso.getCreated())));
+        		isoData.add(new Pair<String, Object>(BaseCmd.Properties.CREATED.getName(), getDateString(isoHost.getCreated())));
         		isoData.add(new Pair<String, Object>(BaseCmd.Properties.IS_READY.getName(), Boolean.valueOf(isoHost.getDownloadState()==Status.DOWNLOADED).toString()));
         		isoData.add(new Pair<String, Object>(BaseCmd.Properties.BOOTABLE.getName(), Boolean.valueOf(iso.isBootable()).toString()));
         		isoData.add(new Pair<String, Object>(BaseCmd.Properties.IS_FEATURED.getName(), Boolean.valueOf(iso.isFeatured()).toString()));
+        		isoData.add(new Pair<String, Object>(BaseCmd.Properties.CROSS_ZONES.getName(), Boolean.valueOf(iso.isCrossZones()).toString()));
         		
         		GuestOS os = getManagementServer().findGuestOSById(iso.getGuestOSId());
 	            if(os != null) {
@@ -237,14 +237,24 @@ public class ListIsosCmd extends BaseCmd {
                 	}
                 }
 
+                long isoSize = isoHost.getSize();
+                if (isoSize > 0) {
+                	isoData.add(new Pair<String, Object>(BaseCmd.Properties.SIZE.getName(), isoSize));
+                }
+                
                 AsyncJobVO asyncJob = getManagementServer().findInstancePendingAsyncJob("vm_template", iso.getId());
                 if(asyncJob != null) {
                 	isoData.add(new Pair<String, Object>(BaseCmd.Properties.JOB_ID.getName(), asyncJob.getId().toString()));
                 	isoData.add(new Pair<String, Object>(BaseCmd.Properties.JOB_STATUS.getName(), String.valueOf(asyncJob.getStatus())));
                 }
 
-                iTag[i++] = isoData;
+                isoTagList.add(isoData);     
         	}
+        }
+        
+        Object[] iTag = new Object[isoTagList.size()];
+        for (int i = 0; i < isoTagList.size(); i++) {
+        	iTag[i] = isoTagList.get(i);
         }
         
         Pair<String, Object> isoTag = new Pair<String, Object>("iso", iTag);

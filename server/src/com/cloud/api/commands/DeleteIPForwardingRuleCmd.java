@@ -38,7 +38,7 @@ import com.cloud.utils.Pair;
 public class DeleteIPForwardingRuleCmd extends BaseCmd {
     public static final Logger s_logger = Logger.getLogger(DeleteIPForwardingRuleCmd.class.getName());
 
-    private static final String s_name = "deleteipforwardingruleresponse";
+    private static final String s_name = "deleteportforwardingruleresponse";
     private static final List<Pair<Enum, Boolean>> s_properties = new ArrayList<Pair<Enum, Boolean>>();
 
     static {

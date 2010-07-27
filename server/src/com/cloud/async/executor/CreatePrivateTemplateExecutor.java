@@ -83,7 +83,12 @@ public class CreatePrivateTemplateExecutor extends VolumeOperationExecutor {
             Object resultObject = null;
 			try {
 		        // Check that the resource limit for templates won't be exceeded
-				VolumeVO volume = managerServer.findVolumeById(volumeId);
+				VolumeVO volume = managerServer.findAnyVolumeById(volumeId);
+				
+				if (volume == null) {
+					throw new InvalidParameterValueException("Could not find active volume with ID " + volumeId);
+				}
+				
 		    	AccountVO account = (AccountVO) managerServer.findAccountById(volume.getAccountId());
 		        if (accountManager.resourceLimitExceeded(account, ResourceType.template)) {
 		            details += ", reason: The maximum number of templates for the specified account has been exceeded.";
@@ -174,9 +179,7 @@ public class CreatePrivateTemplateExecutor extends VolumeOperationExecutor {
 		resultObject.setName(template.getName());
 		resultObject.setDisplayText(template.getDisplayText());
 		resultObject.setPublic(template.isPublicTemplate());
-//		resultObject.setRequiresHvm(template.requiresHvm());
-//		resultObject.setBits(template.getBits());
-		resultObject.setCreated(template.getCreated());
+		resultObject.setCreated(templateHostRef.getCreated());
 		resultObject.setReady(templateHostRef != null && templateHostRef.getDownloadState() == Status.DOWNLOADED);
 		resultObject.setPasswordEnabled(template.getEnablePassword());
 		ManagementServer managerServer = getAsyncJobMgr().getExecutorContext().getManagementServer();
@@ -191,7 +194,6 @@ public class CreatePrivateTemplateExecutor extends VolumeOperationExecutor {
         
         Account owner = managerServer.findAccountById(template.getAccountId());
         if (owner != null) {
-//        	resultObject.setAccountId(owner.getId());
         	resultObject.setAccount(owner.getAccountName());
         	resultObject.setDomainId(owner.getDomainId());
         	resultObject.setDomainName(managerServer.findDomainIdById(owner.getDomainId()).getName());

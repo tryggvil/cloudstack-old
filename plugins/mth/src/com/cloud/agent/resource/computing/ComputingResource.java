@@ -65,7 +65,8 @@ import com.cloud.agent.api.StartupCommand;
 import com.cloud.agent.api.StartupComputingCommand;
 import com.cloud.agent.api.StopAnswer;
 import com.cloud.agent.api.StopCommand;
-import com.cloud.host.Host.HypervisorType;
+import com.cloud.hypervisor.Hypervisor;
+import com.cloud.hypervisor.Hypervisor.Type;
 import com.cloud.resource.ServerResource;
 import com.cloud.resource.ServerResourceBase;
 import com.cloud.storage.Volume;
@@ -1173,7 +1174,7 @@ public class ComputingResource extends ServerResourceBase implements ServerResou
         final StartupComputingCommand cmd = new StartupComputingCommand((Integer)info.get(0), (Long)info.get(1), (Long)info.get(2), (Long)info.get(4), (String)info.get(3), ports, changes);
         fillNetworkInformation(cmd);
         cmd.setIqn(getIQN());
-        cmd.setHypervisorType(HypervisorType.Xen);
+        cmd.setHypervisorType(Hypervisor.Type.Xen);
         return new StartupCommand[] {cmd};
     }
     

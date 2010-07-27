@@ -27,6 +27,8 @@ import org.apache.log4j.Logger;
 import com.cloud.api.BaseCmd;
 import com.cloud.api.ServerApiException;
 import com.cloud.service.ServiceOfferingVO;
+import com.cloud.service.ServiceOffering.GuestIpType;
+import com.cloud.user.User;
 import com.cloud.utils.Pair;
 
 public class CreateServiceOfferingCmd extends BaseCmd{
@@ -42,13 +44,18 @@ public class CreateServiceOfferingCmd extends BaseCmd{
 		s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.MEMORY, Boolean.TRUE));
 		s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.STORAGE_TYPE, Boolean.FALSE));
 		s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.OFFER_HA, Boolean.FALSE));
+		s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.USE_VIRTUAL_NETWORK, Boolean.FALSE));
+		s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.USER_ID, Boolean.FALSE));
+		s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.TAGS, Boolean.FALSE));
 	}
 	
-	public String getName() {
+	@Override
+    public String getName() {
 		return _name;
 	}
 	
-	public List<Pair<Enum, Boolean>> getProperties (){
+	@Override
+    public List<Pair<Enum, Boolean>> getProperties (){
 		return s_properties;
 	}
 	
@@ -66,9 +73,14 @@ public class CreateServiceOfferingCmd extends BaseCmd{
 		Long memory = (Long)params.get(BaseCmd.Properties.MEMORY.getName());
 		String storageType = (String) params.get(BaseCmd.Properties.STORAGE_TYPE.getName());
 		Boolean offerHA = (Boolean) params.get(BaseCmd.Properties.OFFER_HA.getName());
+		Boolean useVirtualNetwork = (Boolean) params.get(BaseCmd.Properties.USE_VIRTUAL_NETWORK.getName());
+		Long userId = (Long)params.get(BaseCmd.Properties.USER_ID.getName());
+		String tags = (String)params.get(BaseCmd.Properties.TAGS.getName());
 
-		Long serviceOfferingResponse = null;
-
+		if (userId == null) {
+            userId = Long.valueOf(User.UID_SYSTEM);
+        }
+		
 		if (name.length() == 0) {
 			throw new ServerApiException(BaseCmd.PARAM_ERROR, "Failed to create service offering: specify the name that has non-zero length");
 		}
@@ -100,26 +112,27 @@ public class CreateServiceOfferingCmd extends BaseCmd{
 			throw new ServerApiException(BaseCmd.PARAM_ERROR, "Valid pool types are: 'local' and 'shared'");
 		}
 
-		if(offerHA == null)
+		if (offerHA == null) {
 			offerHA = false;
+		}
+		
+		if (useVirtualNetwork == null) {
+			useVirtualNetwork = Boolean.TRUE;
+		}
 		
 		ServiceOfferingVO offering = null;
 		try {
-			serviceOfferingResponse = getManagementServer().createServiceOffering(null, name, cpuNumber.intValue(), memory.intValue(), cpuSpeed.intValue(), displayText, localStorageRequired, offerHA);
-			
-			if (serviceOfferingResponse != null) {
-				offering = getManagementServer().findServiceOfferingById(serviceOfferingResponse);
-			}
+			offering = getManagementServer().createServiceOffering(userId, name, cpuNumber.intValue(), memory.intValue(), cpuSpeed.intValue(), displayText, localStorageRequired, offerHA, useVirtualNetwork, tags);
 		} catch (Exception ex) {
 			s_logger.error("Exception creating service offering", ex);
 	        throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Failed to create service offering " + name + ":  internal error.");
-		} 
+		}
 
 		List<Pair<String, Object>> returnValues = new ArrayList<Pair<String, Object>>();
-        if (serviceOfferingResponse == null) {
+        if (offering == null) {
             throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Failed to create service offering " + name);
         } else {
-            returnValues.add(new Pair<String, Object>(BaseCmd.Properties.ID.getName(), serviceOfferingResponse.toString()));
+            returnValues.add(new Pair<String, Object>(BaseCmd.Properties.ID.getName(), offering.getId()));
             returnValues.add(new Pair<String, Object>(BaseCmd.Properties.NAME.getName(), offering.getName()));
             returnValues.add(new Pair<String, Object>(BaseCmd.Properties.DISPLAY_TEXT.getName(), offering.getDisplayText()));
             returnValues.add(new Pair<String, Object>(BaseCmd.Properties.CPU_NUMBER.getName(), Integer.valueOf(offering.getCpu()).toString()));
@@ -129,6 +142,8 @@ public class CreateServiceOfferingCmd extends BaseCmd{
             storageType = offering.getUseLocalStorage() ? "local" : "shared";
             returnValues.add(new Pair<String, Object>(BaseCmd.Properties.STORAGE_TYPE.getName(), storageType));
             returnValues.add(new Pair<String, Object>(BaseCmd.Properties.OFFER_HA.getName(), offering.getOfferHA()));
+            returnValues.add(new Pair<String, Object>(BaseCmd.Properties.USE_VIRTUAL_NETWORK.getName(), (offering.getGuestIpType().equals(GuestIpType.Virtualized))));
+            returnValues.add(new Pair<String, Object>(BaseCmd.Properties.TAGS.getName(), offering.getTags()));
         }
         return returnValues;
 	}

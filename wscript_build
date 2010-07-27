@@ -10,6 +10,9 @@ import Utils,Node,Options,Logs,Scripting,Environment,Build,Configure
 from os import unlink as _unlink, makedirs as _makedirs, getcwd as _getcwd, chdir as _chdir
 from os.path import abspath as _abspath, basename as _basename, dirname as _dirname, exists as _exists, isdir as _isdir, split as _split, join as _join, sep, pathsep, pardir
 from glob import glob as _glob
+try: set([1,2,3])
+except Exception: from Sets import set
+import re
 import zipfile,tarfile
 try:
   from os import chmod as _chmod,chown as _chown
@@ -25,6 +28,7 @@ required_env = [
 	"AGENTSIMULATORCLASSPATH",
 	"SYSTEMJAVADIR",
 	"USAGELOG",
+	"PLUGINJAVADIR",
 ]
 for e in required_env:
 	if e not in bld.env: raise Utils.WafError("configure required: new variable %s added"%e)
@@ -37,51 +41,77 @@ filelist = bld.path.ant_glob
 sccsinfo = _join(sourcedir,"sccs-info")
 if _exists(sccsinfo): bld.install_files("${DOCDIR}","sccs-info")
 
+tgen = bld(features='subst', name='configure-info', source="configure-info.in", target="configure-info")
+def gen_configure_info():
+	lines = []
+	for key,val in sorted(bld.env.get_merged_dict().items()):
+		if "CLASSPATH" in key:
+			lines.append("  %s:"%key)
+			for v in val.split(pathsep):
+				lines.append("     %s"%v)
+			continue
+		lines.append("  %s:	%s"%(key,val))
+	return "\n".join(lines)
+tgen.dict = {"CONFIGUREVARS":gen_configure_info()}
+bld.install_files("${DOCDIR}","configure-info")
+
 # ==================== Java compilation ===========================
 
-def runant(*args):
-	if buildpremium: anttgt = "sendjarfiles-premium"
-	else: anttgt = "sendjarfiles-oss"
+sfl = lambda filespec: filelist(filespec,src=True,bld=False,dir=False,flat=True)
 
-	environ = dict(os.environ)
-	environ["CATALINA_HOME"] = bld.env.TOMCATHOME 
-	environ["ANT_HOME"] = _join(sourcedir,"tools","ant","apache-ant-1.8.0")
-	if bld.env.DISTRO == "Windows":
-		stanzas = [
-			_join(environ["ANT_HOME"],"bin\\ant.bat"),
-			"-Dimpl.version=%s"%bld.env.Specification_Version,
-			"-Dwaf.classpath=\"%s\""%(bld.env.CLASSPATH.replace(os.pathsep,",")),
-			"-Dtarget.dir=%s"%_join(builddir,"ant"),
-			"-Dwaf.artifacts=%s"%builddir,
-			anttgt,
-		]
-	else:
-		stanzas = [
-			_join(environ["ANT_HOME"],"bin/ant"),
-			"-Dimpl.version=%s"%bld.env.Specification_Version,
-			"-Dwaf.classpath=%s"%(bld.env.CLASSPATH.replace(os.pathsep,",")),
-			"-Dtarget.dir=%s"%_join(builddir,"ant"),
-			"-Dwaf.artifacts=%s"%builddir,
-			anttgt,
-		]
-	Utils.exec_command(" ".join(stanzas),cwd=sourcedir,env=environ,log=True)
-	return 0
+# discover ant targets and properties
+antxmlfiles = _glob(_join("build","*.xml")) + _glob(_join("build","*.properties"))
+if buildpremium: antxmlfiles += _glob(_join("build","premium","*.xml")) + _glob(_join("cloudstack-proprietary","build","*.xml"))
+targets,antprops = Utils.discover_ant_targets_and_properties(antxmlfiles)
 
-jartgts = 'cloud-utils.jar cloud-core.jar cloud-server.jar cloud-agent.jar cloud-console-common.jar cloud-test.jar cloud-agent-simulator.jar cloud-console-proxy.jar VMOpsConsoleApplet.jar'
-if buildpremium: jartgts = jartgts + ' cloud-premium.jar cloud-usage.jar cloud-core-extras.jar cloud-console-proxy-premium.jar'
+javac_env = bld.env.copy()
+# FIXME trigger recompilation / cache avoidance when debuglevel changes
+if antprops.get('debuglevel',None): javac_env.append_value("JAVACFLAGS",["-g:%s"%antprops['debuglevel']])
+Implementation_Version = bld.env.VERSION
+buildnumber = Utils.getbuildnumber()
+if buildnumber: Implementation_Version += "." + buildnumber
 
-tgen = bld(rule=runant, name='compilejava', source='build.xml', always=True, target=jartgts)
+# compile .class files using waf
+classpathentries = [ _join(builddir,x[2]) for x in targets ]
+javawclasspath = pathsep.join( classpathentries + [ _abspath(x) for x in bld.env.CLASSPATH.split(pathsep) ] )
+#for entry in javawclasspath.split(pathsep):
+	#print entry
+	#assert os.path.exists(entry)
+javac_tgens = [
+		bld( features='javac', name=name, srcdir=srcdir, outdir=classdir,
+		after=" ".join(deps), classpath=javawclasspath, env=javac_env )
+	for name,srcdir,classdir,jarpath,deps in targets ]
+[ bld.process_after(tgen) for tgen in javac_tgens ]
 
-bld.install_files('${JAVADIR}','cloud-utils.jar')
-bld.install_files('${JAVADIR}','cloud-core.jar')
-bld.install_files('${JAVADIR}','cloud-server.jar')
-bld.install_files('${JAVADIR}','cloud-agent.jar')
-bld.install_files('${JAVADIR}','cloud-test.jar')
-bld.install_files('${JAVADIR}','cloud-agent-simulator.jar')
-if buildpremium:
-	bld.install_files('${JAVADIR}','cloud-premium.jar')
-	bld.install_files('${JAVADIR}','cloud-usage.jar')
-	bld.install_files('${JAVADIR}','cloud-core-extras.jar')
+# compile jar files using ant
+# ant only needs to be reinvoked if the version with build number changes
+# we here trim all the depended targets from the target list:
+build_targets = [ x[0] for x in targets ]
+nondep_build_targets = list ( set([ x[0] for x in targets ]) - set([ x for dependencies in [ y[4] for y in targets ] for x in dependencies ]) )
+ant_sources = " ".join(antxmlfiles + [ sfl(x[1] + "/**/*.java") for x in targets ])
+ant_jars = [ x[3] for x in targets ]
+
+# because build-console-viewer does not use compile-java macro, we have to hardcode it here
+
+ant_args = [
+	"-Dimpl.version=%s"%Implementation_Version,
+	"-Dtarget.dir=%s"%Utils.relpath(_join(builddir,"target")),
+	"-Ddist.dir=%s"%Utils.relpath(_join(builddir,"ant-dist")),
+]
+if not buildpremium: ant_args += ["-DOSS=true"]
+
+# this is to trigger recompilation / cache avoidance if the relevant environment for ant changes
+tgen = bld(features='subst', name='version-info', source="version-info.in", target="version-info")
+tgen.dict = { "Implementation_Version":Implementation_Version,"JAVACFLAGS":javac_env.JAVACFLAGS,"ant_args":ant_args }
+build_targets += ["version-info"]
+ant_sources += " version-info"
+
+bld.path.ensure_dir_node_from_path("target/jar")
+tgen = bld(rule=Utils.runant, name='runant', source=ant_sources, target=ant_jars, anttgts = nondep_build_targets, antargs=ant_args, after=build_targets)
+bld.process_after(tgen)
+
+# install jar files
+[ bld.install_files('${JAVADIR}',jar) for jar in ant_jars if _basename(jar).startswith("cloud-") ]
 
 # ======================= End Java compilation ======================
 
@@ -114,9 +144,9 @@ if bld.env.DISTRO not in ['Windows','Mac']:
 		target='vnet/%s-vnetd'%bld.env.PACKAGE,
 		install_path="${SBINDIR}"
 		)
-	bld.install_as("${SBINDIR}/%s-vn"%bld.env.PACKAGE,   "vnet/vn",   chmod=0755)
-	obj = bld(features = 'py',name='vnetpy')
-	obj.find_sources_in_dirs('vnet/lib', exts=['.py'])
+	
+	obj = bld(features = 'py',name='pythonmodules')
+	obj.find_sources_in_dirs('python/lib', exts=['.py'])
 
 # ===================== End C / Python compilation ==========================
 
@@ -129,15 +159,68 @@ if buildpremium: bld.install_files('${PREMIUMJAVADIR}','thirdparty/*.jar')
 # =================== End 3rdparty/dep install ========================
 
 
+# =================== Build install declaratoin of console proxy project ========
+
+# -> binary unsubstitutable files
+start_path = bld.path.find_dir("console-proxy")
+bld.install_files("${CPLIBDIR}",
+	start_path.ant_glob("images/**",src=True,bld=False,dir=False,flat=True),
+	cwd=start_path,relative_trick=True)
+
+# -> source files with tokens
+patterns = 'console-proxy/css/** console-proxy/js/** console-proxy/ui/** console-proxy/scripts/**'
+src_files = Utils.to_list(filelist(patterns,flat=True))
+subst_files = [ x+".subst" for x in src_files ]
+inst_files = [ Utils.relpath(x,"console-proxy") for x in src_files ]
+for src,tgt,inst in zip(src_files,subst_files,inst_files):
+	tgen = bld(features='subst', source=src, target=tgt)
+	tgen.dict = bld.env.get_merged_dict()
+	bld.path.find_or_declare(tgt)
+	bld.install_as("${CPLIBDIR}/%s"%inst, tgt)
+
+# -> configuration
+if not Options.options.PRESERVECONFIG:
+	bld.install_files_filtered("${CPSYSCONFDIR}",filelist("console-proxy/conf.dom0/*"))
+
+# ================== End console proxy ===================
+
+
 # ================ Creation of patch.tgz's ============================
 
+# done here because the patches require substituted files
+patterns = "patches/**"
+src_files = Utils.to_list(filelist(patterns,flat=True))
+subst_files = [ x+".subst" for x in src_files ]
+inst_files = src_files
+for src,tgt,inst in zip(src_files,subst_files,inst_files):
+	tgen = bld(features='subst', name='patchsubst', source=src, target=tgt)
+	tgen.dict = bld.env.get_merged_dict()
+	bld.path.find_or_declare(tgt)
+
+# this is a clever little thing
+# given a list of nodes, build or source
+# construct a tar file containing them
+# rooted in the parameter root =, specified in the task generator
+# and renaming the names of the files according to a rename(x) function passed to the task generator as well
+# if a build node's result of rename() has the same name as a source node, the build node will take precedence
+# for as long as the build node appears later than the source node (this is an implementation detail of waf we are relying on)
 def tar_up(task):
 	tgt = task.outputs[0].bldpath(task.env)
 	if _exists(tgt): _unlink(tgt)
 	z = tarfile.open(tgt,"w:gz")
+	fileset = {}
 	for inp in task.inputs:
 		src = inp.srcpath(task.env)
-		srcname = "/".join(src.split("/")[6:]) # we anchor the paths to the root
+		if src.startswith(".."):
+			srcname = Utils.relpath(src,_join("..",".")) # file in source dir
+		else:
+			srcname = Utils.relpath(src,_join(task.env.variant(),".")) # file in artifacts dir
+		if task.generator.rename: srcname = task.generator.rename(srcname)
+		for dummy in task.generator.root.split("/"):
+			splittedname = srcname.split("/")
+			srcname = "/".join(splittedname[1:])
+		fileset[srcname] = src
+	for srcname,src in fileset.items():
 		ti = tarfile.TarInfo(srcname)
 		ti.mode = 0755
 		ti.size = os.path.getsize(src)
@@ -148,15 +231,21 @@ def tar_up(task):
 	return 0
 
 if bld.env.DISTRO != "Windows":
-	for virttech in ["xenserver","kvm"]:
-		patchfiles = filelist('scripts/network/domr/%s/patches/**'%virttech,src=True,bld=False,dir=False,flat=True)
+	for virttech in [ _basename(x) for x in _glob(_join("patches","*")) ]:
+		if virttech == "shared":
+			continue
+		patchfiles = filelist('patches/%s/** patches/shared/**'%virttech,src=True,bld=True,dir=False,flat=True)
 		tgen = bld(
 			rule   = tar_up,
 			source = patchfiles,
 			target = '%s-patch.tgz'%virttech,
 			name   = '%s-patch_tgz'%virttech,
+			root = "patches/%s"%virttech,
+			rename = lambda x: re.sub(".subst$","",x),
+			after = 'patchsubst',
 		)
-		bld.install_as("${AGENTLIBDIR}/scripts/vm/hypervisor/%s/patch/patch.tgz"%virttech, "%s-patch.tgz"%virttech)
+		bld.process_after(tgen)
+		bld.install_as("${AGENTLIBDIR}/scripts/vm/hypervisor/%s/patch.tgz"%virttech, "%s-patch.tgz"%virttech)
 
 # ================== End creation of patch.tgz's ====================
 
@@ -208,8 +297,8 @@ patterns = Utils.to_list(
 )
 premiumpatterns = patterns + ["console-proxy-premium/certs/**"]
 
-artifacts = "VMOpsConsoleApplet.jar " + " ".join( "cloud-%s.jar"%j for j in "console-proxy console-common agent utils core".split() )
-premiumartifacts = artifacts + " cloud-console-proxy-premium.jar"
+artifacts = "target/jar/VMOpsConsoleApplet.jar " + " ".join( "target/jar/cloud-%s.jar"%j for j in "console-proxy console-common agent utils core".split() )
+premiumartifacts = artifacts + " target/jar/cloud-console-proxy-premium.jar"
 
 sources = " ".join( [ filelist(x,src=True,bld=False,dir=False,flat=True) for x in patterns ] )
 premiumsources = " ".join( [ filelist(x,src=True,bld=False,dir=False,flat=True) for x in premiumpatterns ] )
@@ -229,6 +318,7 @@ def zip_up(task):
 		if inp.id&3==Node.BUILD:
 			src = inp.bldpath(task.env)
 			srcname = "/".join(src.split("/")[1:])
+			if srcname.startswith("target/jar"): srcname = "/".join(srcname.split("/")[2:]) # chop off target/jar
 		else:
 			src = inp.srcpath(task.env)
 			srcname = "/".join(src.split("/")[2:])
@@ -244,7 +334,7 @@ def zip_up(task):
 if bld.env.DISTRO not in ["Windows","Mac"]:
 	tgen = bld(
 		rule   = copydeps,
-		source = 'wscript',
+		source = 'wscript_configure',
 		target = systems,
 		name   = 'getsystemjars',
 	)
@@ -253,7 +343,7 @@ if bld.env.DISTRO not in ["Windows","Mac"]:
 		source = " ".join( [sources,artifacts,deps,systems] ),
 		target = 'systemvm.zip',
 		name   = 'systemvm_zip',
-		after  = 'copydeps getsystemjars compilejava',
+		after  = 'copydeps getsystemjars runant',
 	)
 	bld.process_after(tgen)
 if buildpremium:
@@ -262,22 +352,15 @@ if buildpremium:
 		source = " ".join( [premiumsources,premiumartifacts,thirdparties] ),
 		target = 'systemvm-premium.zip',
 		name   = 'systemvm-premium_zip',
-		after  = 'compilejava',
+		after  = 'runant',
 	)
 	bld.process_after(tgen)
 
-if bld.env.DISTRO in [ "Windows", "Mac"]:
-	pass
-else:
-	bld.install_files("${AGENTLIBDIR}/scripts/vm/hypervisor", "systemvm.zip")
+if bld.env.DISTRO not in [ "Windows", "Mac"]:
+	bld.install_files("${AGENTLIBDIR}/vms", "systemvm.zip")
 
 if buildpremium:
-	if bld.env.DISTRO in [ "Windows", "Mac"]:
-		bld.install_files("${AGENTLIBDIR}/scripts/vm/hypervisor/kvm/patch", "systemvm-premium.zip")
-		bld.install_files("${AGENTLIBDIR}/scripts/vm/hypervisor/xenserver/patch", "systemvm-premium.zip")
-	else:
-		bld.install_files("${AGENTLIBDIR}/scripts/vm/hypervisor", "systemvm-premium.zip")
-		
+	bld.install_files("${AGENTLIBDIR}/vms", "systemvm-premium.zip")
 
 # ================== End systemvm patch creation ====================
 
@@ -292,6 +375,7 @@ else:
 		("${MSLOGDIR}",0770,x),
 		("${AGENTLOGDIR}",0770,x),
 		("${USAGELOGDIR}",0770,x),
+		("${CPLOGDIR}",0770,x),
 		("${LOCALSTATEDIR}/cache/${MSPATH}",0770,x),
 		("${LOCALSTATEDIR}/cache/${MSPATH}/temp",0770,x),
 		("${LOCALSTATEDIR}/cache/${MSPATH}/work",0770,x),
@@ -306,9 +390,10 @@ else:
 	
 	for a,mode,owner in directories:
 		s = bld.subst_add_destdir(a,bld)
-		bld.install_dir(a)
-		bld.setownership(a,owner[0],owner[1],mode)
-
+		if Options.is_install:
+			bld.install_dir(a)
+			bld.setownership(a,owner[0],owner[1],mode)
+	
 	# 8. create environment symlinks
 	symlinks = [
 		('${MSENVIRON}/bin', '${TOMCATHOME}/bin'),
@@ -321,24 +406,32 @@ else:
 		("${AGENTLIBDIR}/images", '${CPLIBDIR}/images'),
 		("${AGENTLIBDIR}/js", '${CPLIBDIR}/js'),
 		("${AGENTLIBDIR}/ui", '${CPLIBDIR}/ui'),
-		("${AGENTLIBDIR}/scripts/vm/hypervisor/xenserver/patch/systemvm.zip","${AGENTLIBDIR}/scripts/vm/hypervisor/systemvm.zip"),
-		("${AGENTLIBDIR}/scripts/vm/hypervisor/kvm/patch/systemvm.zip","${AGENTLIBDIR}/scripts/vm/hypervisor/systemvm.zip"),
 	]
-	if buildpremium:
-		symlinks = symlinks + [
-			("${AGENTLIBDIR}/scripts/vm/hypervisor/xenserver/patch/systemvm-premium.zip","${AGENTLIBDIR}/scripts/vm/hypervisor/systemvm-premium.zip"),
-			("${AGENTLIBDIR}/scripts/vm/hypervisor/kvm/patch/systemvm-premium.zip","${AGENTLIBDIR}/scripts/vm/hypervisor/systemvm-premium.zip"),
-		]
-
+	
 	for lnk,dst in symlinks: bld.symlink_as(lnk,Utils.subst_vars(dst,bld.env))
 
 # ================== End empty directory / symlink creation on install target =====================
+
+
+# =================== Subst / installation of agent scripts project ========
+
+src_files = Utils.to_list(filelist("scripts/**",flat=True))
+subst_files = [ x+".subst" for x in src_files ]
+inst_files = src_files
+for src,tgt,inst in zip(src_files,subst_files,inst_files):
+	tgen = bld(features='subst', name='scriptssubst', source=src, target=tgt)
+	tgen.dict = bld.env.get_merged_dict()
+	bld.path.find_or_declare(tgt)
+	bld.install_as("${AGENTLIBDIR}/%s"%inst, tgt, chmod=0755)
+
+# ================== End agent scripts ===================
 
 
 # ================== Subst / installation of scripts in bin directories ========================
 
 bld.install_files_filtered("${LIBEXECDIR}","*/libexec/*",chmod=0755)
 bld.install_files_filtered("${BINDIR}","*/bindir/*",chmod=0755)
+bld.install_files_filtered("${SBINDIR}","*/sbindir/*",chmod=0755)
 
 # ================== End subst / installation of scripts in bin directories ========================
 
@@ -346,58 +439,92 @@ bld.install_files_filtered("${BINDIR}","*/bindir/*",chmod=0755)
 # ================== Installation of scripts / bindirs / configuration files ===========================
 
 # build / install declarations of test project
-proj = 'test'
-start_path = bld.path.find_dir("test/scripts")
-bld.install_files('${LIBDIR}/${PACKAGE}/test',
-	start_path.ant_glob("**",src=True,bld=False,dir=False,flat=True),
-	postpone=False,cwd=start_path,relative_trick=True)
-start_path = bld.path.find_dir("test/metadata")
-bld.install_files('${SHAREDSTATEDIR}/${PACKAGE}/test',
-	start_path.ant_glob("**",src=True,bld=False,dir=False,flat=True),
-	postpone=False,cwd=start_path,relative_trick=True)
-bld.install_files('${SYSCONFDIR}/%s/%s'%(bld.env.PACKAGE,proj),'%s/conf/*'%proj) # install config
+if buildpremium:
+	proj = 'test'
+	start_path = bld.path.find_dir("test/scripts")
+	bld.install_files('${LIBDIR}/${PACKAGE}/test',
+		start_path.ant_glob("**",src=True,bld=False,dir=False,flat=True),
+		cwd=start_path,relative_trick=True)
+	start_path = bld.path.find_dir("test/metadata")
+	bld.install_files('${SHAREDSTATEDIR}/${PACKAGE}/test',
+		start_path.ant_glob("**",src=True,bld=False,dir=False,flat=True),
+		cwd=start_path,relative_trick=True)
+	if not Options.options.PRESERVECONFIG:
+		bld.install_files('${SYSCONFDIR}/%s/%s'%(bld.env.PACKAGE,proj),'%s/conf/*'%proj) # install config
 
-# build / install declarations of server project
-bld.install_files("${MSENVIRON}/webapps/client/WEB-INF",'server/web.xml') # install web.xml file
+# build / install declarations of server project <- this is actually now in client project
+bld.install_files("${MSENVIRON}/webapps/client/WEB-INF",'client/WEB-INF/web.xml') # install web.xml file
+if not Options.options.PRESERVECONFIG:
+	bld.install_files_filtered("${SERVERSYSCONFDIR}","server/conf/*")
 
 # build / install declarations of agent project
 proj = 'agent'
 start_path = bld.path.find_dir(proj)
 bld.install_files("${AGENTLIBDIR}",
 	start_path.ant_glob("storagepatch/**",src=True,bld=False,dir=False,flat=True),
-	postpone=False,cwd=start_path,relative_trick=True)
-bld.install_files_filtered("${AGENTSYSCONFDIR}","%s/conf/*"%proj)
+	cwd=start_path,relative_trick=True)
+if not Options.options.PRESERVECONFIG:
+	bld.install_files_filtered("${AGENTSYSCONFDIR}","%s/conf/*"%proj)
 bld.install_files_filtered("${BINDIR}","%s/bindir/*"%proj,chmod=0755)
 
 # build / install declarations of client UI project
-proj = 'ui'
-start_path = bld.path.find_dir("ui")
-patterns = '*.html *.ico content/** css/** images/** scripts/** test/**'
-bld.install_files("${MSENVIRON}/webapps/client",
-	start_path.ant_glob(patterns,src=True,bld=False,dir=False,flat=True),
-	postpone=False,cwd=start_path,relative_trick=True)
 
-# build / install declarations of agent scripts project
-start_path = bld.path.find_dir("scripts")
-globs = ["**/*.sh","**/*.py","**/*.exp"]
-for glb in globs:
-	bld.install_files("${AGENTLIBDIR}/scripts",
-		start_path.ant_glob(glb,src=True,bld=False,dir=False,flat=True),
-		postpone=False,cwd=start_path,relative_trick=True,chmod=0755)
-def m(x,mode):
-	filez = start_path.ant_glob(x,src=True,bld=False,dir=False,flat=True)
-	bld.install_files("${AGENTLIBDIR}/scripts",filez,postpone=False,
-		cwd=start_path,relative_trick=True,chmod=mode)
-m("network/domr/id_rsa",0600)
-bld.setownership("${AGENTLIBDIR}/scripts/network/domr/id_rsa",bld.env.MSUSER,"root")
-m("util/qemu-ifup",0755)
-m("vm/hypervisor/xenserver/patch/**",0755)
-m("vm/hypervisor/xenserver/patch/patch",0644)
+# -> binary unsubstitutable files
+start_path = bld.path.find_dir("ui")
+bld.install_files("${MSENVIRON}/webapps/client",
+	start_path.ant_glob("*.ico **/*png **/*jpg **/*gif",src=True,bld=False,dir=False,flat=True),
+	cwd=start_path,relative_trick=True)
+
+# -> source files with tokens
+patterns = 'ui/*html ui/**/*html ui/**/*js ui/**/*css'
+src_files = Utils.to_list(filelist(patterns,flat=True))
+subst_files = [ x+".subst" for x in src_files ]
+inst_files = [ Utils.relpath(x,"ui") for x in src_files ]
+for src,tgt,inst in zip(src_files,subst_files,inst_files):
+	tgen = bld(features='subst', source=src, target=tgt)
+	tgen.dict = bld.env.get_merged_dict()
+	bld.path.find_or_declare(tgt)
+	bld.install_as("${MSENVIRON}/webapps/client/%s"%inst, tgt)
+
+# -> minification of UI files
+def minifyjs(task):
+	tgt = task.outputs[0].bldpath(task.env)
+	inputfiles = []
+	outputfile = ['--js_output_file',tgt]
+	for inp in task.inputs:
+		src = inp.srcpath(task.env)
+		inputfiles.append(src)
+	newinputfiles = []
+	for inputfile in inputfiles:
+		if inputfile not in newinputfiles:
+			newinputfiles.append('--js')
+			newinputfiles.append(inputfile)
+	compilerjar = _join(sourcedir,'tools','gcc','compiler.jar')
+	return Utils.exec_command(["java",'-jar',compilerjar] + newinputfiles + outputfile,log=True)
+
+javascripts = [
+	['ui/scripts/jquery-1.4.2.min.js','ui/scripts/date.js'],
+	Utils.to_list(filelist('ui/scripts/jquery*js')),
+	['ui/scripts/cloud.core.js','ui/scripts/cloud.core.callbacks.js'],
+	Utils.to_list(filelist('ui/scripts/cloud*js')),
+]
+sourcefiles = []
+for lst in javascripts:
+	for x in lst:
+		if x not in sourcefiles: sourcefiles.append(x)
+tgen = bld(
+	rule   = minifyjs,
+	source = sourcefiles,
+	target = 'ui/scripts/cloud.min.js',
+	name   = 'minifyjs',
+)
+bld.install_files("${MSENVIRON}/webapps/client/scripts", "ui/scripts/cloud.min.js")
 
 # substitute and install generic tomcat config
-bld.install_files_filtered("${MSCONF}",filelist("*/tomcatconf/*"))
-bld.install_files("${MSCONF}",'client/tomcatconf/db.properties',chmod=0640)
-bld.setownership("${MSCONF}/db.properties","root",bld.env.MSUSER)
+if not Options.options.PRESERVECONFIG:
+	bld.install_files_filtered("${MSCONF}",filelist("*/tomcatconf/*"))
+	bld.install_files("${MSCONF}",'client/tomcatconf/db.properties',chmod=0640)
+	bld.setownership("${MSCONF}/db.properties","root",bld.env.MSUSER)
 
 # apply distro-specific config on top of the 'all' generic cloud-management config
 distrospecificdirs=_glob(_join("*","distro",bld.env.DISTRO.lower(),"*"))
@@ -407,16 +534,40 @@ for dsdir in distrospecificdirs:
 	dsdirwithvar = _join("${%s}"%varname)
 	files = filelist('%s/**'%dsdir,src=True,bld=False,dir=False,flat=True)
 	mode = 0644
-	if "SYSCONFDIR" in dsdir: mode = 0755
-	bld.install_files_filtered(dsdirwithvar, files, postpone=False, cwd=start_path, relative_trick=True,chmod=mode)
+	if "SYSCONFDIR" in dsdir:
+		mode = 0755
+		if Options.options.PRESERVECONFIG: continue
+	bld.install_files_filtered(dsdirwithvar, files,  cwd=start_path, relative_trick=True,chmod=mode)
 
 # build / install declarations of usage
 if buildpremium:
-	bld.install_files_filtered("${USAGESYSCONFDIR}","usage/conf/*")
-	bld.install_files("${USAGESYSCONFDIR}",'client/tomcatconf/db.properties',chmod=0640)
-	bld.setownership("${USAGESYSCONFDIR}/db.properties","root",bld.env.MSUSER)
+	if not Options.options.PRESERVECONFIG:
+		bld.install_files_filtered("${USAGESYSCONFDIR}","usage/conf/*")
+		bld.symlink_as("${USAGESYSCONFDIR}/db.properties",Utils.subst_vars("${MSCONF}/db.properties",bld.env))
 
 # install db data files
 bld.install_files_filtered("${SETUPDATADIR}",filelist("*/db/*",excl=Node.exclude_regs + "\ncloud-gate"))
 
 # ================== End installation of scripts / bindirs / configuration files ===========================
+
+
+# ====================== Feature-specific plugins ========================
+
+for plugin in _glob(_join("plugins","*")):
+	if not _exists(_join(plugin,"build.xml")): continue
+	pluginname = _basename(plugin)
+	target = 'target/jar/cloud-%s.jar' % pluginname
+	sources = filelist( '%s/**/*.java' % plugin.replace(sep,"/") , src=True, bld=False, dir=False )
+	tgen = bld(rule=lambda x: runant("compile-%s"%pluginname), name='compile_%s'%pluginname, source=sources, target=target, after='runant')
+	bld.install_files('${PLUGINJAVADIR}',target)
+
+# ====================== End feature-specific plugins ====================
+
+
+# ====================== Vendor-specific plugins ========================
+
+for vendor in _glob(_join("vendor","*")):
+	if not Options.options.PRESERVECONFIG:
+		bld.install_files_filtered("${MSCONF}/%s"%vendor,filelist("%s/tomcatconf/*"%vendor))
+
+# ====================== End vendor-specific plugins ====================

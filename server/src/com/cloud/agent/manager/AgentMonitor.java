@@ -83,7 +83,8 @@ public class AgentMonitor extends Thread implements Listener {
         }
         while (!_stop) {
             try {
-                Thread.sleep(_pingTimeout * 1000);
+                // check every 60 seconds
+                Thread.sleep(60 * 1000);
             } catch (InterruptedException e) {
                 s_logger.info("Who woke me from my slumber?");
             }

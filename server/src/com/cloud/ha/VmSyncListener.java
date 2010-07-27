@@ -27,10 +27,9 @@ import com.cloud.agent.api.AgentControlAnswer;
 import com.cloud.agent.api.AgentControlCommand;
 import com.cloud.agent.api.Answer;
 import com.cloud.agent.api.Command;
-import com.cloud.agent.api.PingComputingCommand;
+import com.cloud.agent.api.PingRoutingCommand;
 import com.cloud.agent.api.StartupCommand;
-import com.cloud.agent.api.StartupComputingCommand;
-import com.cloud.agent.api.StartupStorageCommand;
+import com.cloud.agent.api.StartupRoutingCommand;
 import com.cloud.exception.AgentUnavailableException;
 import com.cloud.host.HostVO;
 import com.cloud.host.Status;
@@ -87,8 +86,8 @@ public class VmSyncListener implements Listener {
     public boolean processCommand(long agentId, long seq, Command[] req) {
         boolean processed = false;
         for (Command cmd : req) {
-            if (cmd instanceof PingComputingCommand) {
-                PingComputingCommand ping = (PingComputingCommand)cmd;
+            if (cmd instanceof PingRoutingCommand) {
+                PingRoutingCommand ping = (PingRoutingCommand)cmd;
                 if (ping.getNewStates().size() > 0) {
                     List<Command> commands = _haMgr.deltaSync(agentId, ping.getNewStates());
                     if (commands.size() > 0) {
@@ -117,13 +116,13 @@ public class VmSyncListener implements Listener {
     
     @Override
     public boolean processConnect(HostVO agent, StartupCommand cmd) {
-        if (!(cmd instanceof StartupComputingCommand)) {
+        if (!(cmd instanceof StartupRoutingCommand)) {
             return true;
         }
         
         long agentId = agent.getId();
         
-        StartupComputingCommand startup = (StartupComputingCommand)cmd;
+        StartupRoutingCommand startup = (StartupRoutingCommand)cmd;
         
         List<Command> commands = _haMgr.fullSync(agentId, startup.getVmStates());
         s_logger.debug("Sending clean commands to the agent");

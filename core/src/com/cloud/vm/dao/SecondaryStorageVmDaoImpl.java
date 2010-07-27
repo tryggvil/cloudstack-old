@@ -45,6 +45,7 @@ public class SecondaryStorageVmDaoImpl extends GenericDaoBase<SecondaryStorageVm
     protected SearchBuilder<SecondaryStorageVmVO> DataCenterStatusSearch;
     protected SearchBuilder<SecondaryStorageVmVO> StateSearch;
     protected SearchBuilder<SecondaryStorageVmVO> HostSearch;
+    protected SearchBuilder<SecondaryStorageVmVO> HostUpSearch;
     protected SearchBuilder<SecondaryStorageVmVO> ZoneSearch;
     protected SearchBuilder<SecondaryStorageVmVO> StateChangeSearch;
     
@@ -63,6 +64,11 @@ public class SecondaryStorageVmDaoImpl extends GenericDaoBase<SecondaryStorageVm
         HostSearch = createSearchBuilder();
         HostSearch.and("host", HostSearch.entity().getHostId(), SearchCriteria.Op.EQ);
         HostSearch.done();
+        
+        HostUpSearch = createSearchBuilder();
+        HostUpSearch.and("host", HostUpSearch.entity().getHostId(), SearchCriteria.Op.EQ);
+        HostUpSearch.and("states", HostUpSearch.entity().getState(), SearchCriteria.Op.NIN);
+        HostUpSearch.done();
         
         ZoneSearch = createSearchBuilder();
         ZoneSearch.and("zone", ZoneSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
@@ -102,6 +108,11 @@ public class SecondaryStorageVmDaoImpl extends GenericDaoBase<SecondaryStorageVm
     	
     	vm.incrUpdated();
         UpdateBuilder ub = getUpdateBuilder(vm);
+    	if(newState == State.Running) {
+        	// save current running host id
+        	ub.set(vm, "lastHostId", vm.getHostId());
+    	}
+    	
         ub.set(vm, _updateTimeAttr, new Date());
         ub.set(vm, "state", newState);
         ub.set(vm, "hostId", hostId);
@@ -164,6 +175,13 @@ public class SecondaryStorageVmDaoImpl extends GenericDaoBase<SecondaryStorageVm
         return listActiveBy(sc);
     }
     
+    @Override
+    public List<SecondaryStorageVmVO> listUpByHostId(long hostId) {
+        SearchCriteria sc = HostUpSearch.create();
+        sc.setParameters("host", hostId);
+        sc.setParameters("states", new Object[] {State.Destroyed, State.Stopped, State.Expunging});        
+        return listActiveBy(sc);
+    }
     
     @Override
     public List<Long> getRunningSecStorageVmListByMsid(long msid) {

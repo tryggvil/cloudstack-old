@@ -43,6 +43,7 @@ import com.cloud.vm.UserVmVO;
  *
  */
 public interface NetworkManager extends Manager {
+    public static final int DEFAULT_ROUTER_VM_RAMSIZE = 128;            // 128M
     public static final boolean USE_POD_VLAN = false;
     /**
      * Assigns a router to the user.
@@ -70,11 +71,13 @@ public interface NetworkManager extends Manager {
 
     /**
      * create a DHCP server/user data server for directly connected VMs
+     * @param userId the user id of the user creating the router.
+     * @param accountId the account id of the user creating the router.
      * @param dcId data center id the router should live in.
      * @param domain domain name of this network.
      * @return DomainRouterVO if created.  null if not.
      */
-	DomainRouterVO createDhcpServerForDirectlyAttachedGuests(DataCenterVO dc, HostPodVO pod, VlanVO vlan) throws ConcurrentOperationException;
+	DomainRouterVO createDhcpServerForDirectlyAttachedGuests(long userId, long accountId, DataCenterVO dc, HostPodVO pod, Long candidateHost, VlanVO vlan) throws ConcurrentOperationException;
     
     /**
     /*
@@ -94,17 +97,17 @@ public interface NetworkManager extends Manager {
      */
     boolean savePasswordToRouter(long routerId, String vmIpAddress, String password);
     
-    DomainRouterVO startRouter(long routerId);
+    DomainRouterVO startRouter(long routerId, long eventId);
     
     boolean releaseRouter(long routerId);
     
     boolean destroyRouter(long routerId);
     
-    boolean stopRouter(long routerId);
+    boolean stopRouter(long routerId, long eventId);
     
     boolean getRouterStatistics(long vmId, Map<String, long[]> netStats, Map<String, long[]> diskStats);
 
-    boolean rebootRouter(long routerId);
+    boolean rebootRouter(long routerId, long eventId);
     /**
      * @param hostId get all of the virtual machine routers on a host.
      * @return collection of VirtualMachineRouter
@@ -195,17 +198,17 @@ public interface NetworkManager extends Manager {
      * 
      * @throws ConcurrentOperationException if multiple starts are being attempted.
      */
-	public DomainRouterVO addVirtualMachineToGuestNetwork(UserVmVO vm, String password) throws ConcurrentOperationException;
-	
-	/**
-	 * Finds a VLAN in the specified zone that already has allocated IP addresses, but is not completely used up.
-	 * If all VLANs with allocated IP addresses are completely used up, returns an arbitrary VLAN that is empty.
-	 * @param zoneId
-	 * @return Database ID of VLAN to use
-	 */
-	public long findNextVlan(long zoneId);
+	public DomainRouterVO addVirtualMachineToGuestNetwork(UserVmVO vm, String password) throws ConcurrentOperationException;	
 
     String createZoneVlan(DomainRouterVO router);
-	
+    
+    /**
+     * Lists IP addresses that belong to VirtualNetwork VLANs
+     * @param accountId - account that the IP address should belong to
+     * @param dcId - zone that the IP address should belong to
+     * @param sourceNat - (optional) true if the IP address should be a source NAT address
+     * @return - list of IP addresses
+     */
+    List<IPAddressVO> listPublicIpAddressesInVirtualNetwork(long accountId, long dcId, Boolean sourceNat);	
 	
 }

@@ -87,6 +87,12 @@ public class UpdateTemplatePermissionsCmd extends BaseCmd {
         if (templateId == Long.valueOf(1)) {
             throw new ServerApiException(BaseCmd.PARAM_ERROR, "unable to update permissions for template with id " + templateId);
         }
+        
+        boolean isAdmin = ((account == null) || isAdmin(account.getType()));
+        boolean allowPublicUserTemplates = Boolean.parseBoolean(getManagementServer().getConfigurationValue("allow.public.user.templates"));        
+        if (!isAdmin && !allowPublicUserTemplates && isPublic != null && isPublic) {
+        	throw new ServerApiException(BaseCmd.PARAM_ERROR, "Only private templates can be created.");
+        }
 
         // package up the accountNames as a list
         List<String> accountNameList = new ArrayList<String>();

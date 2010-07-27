@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.cloud.storage.Volume;
-import com.cloud.storage.StoragePool.StoragePoolType;
+import com.cloud.storage.Storage.StoragePoolType;
 import com.cloud.storage.template.TemplateInfo;
 
 
@@ -50,12 +50,11 @@ public class StartupStorageCommand extends StartupCommand {
     }
     
 
-    public StartupStorageCommand(String parent, StoragePoolType fsType, Map<String, TemplateInfo> templateInfo, long totalSize,
-			StoragePoolInfo poolInfo) {
+    public StartupStorageCommand(String parent, StoragePoolType fsType, Map<String, TemplateInfo> templateInfo, StoragePoolInfo poolInfo) {
 		super();
 		this.parent = parent;
 		this.templateInfo = templateInfo;
-		this.totalSize = totalSize;
+		this.totalSize = poolInfo.capacityBytes;
 		this.poolInfo = poolInfo;
 		this.fsType = fsType;
 	}

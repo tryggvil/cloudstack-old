@@ -18,9 +18,6 @@
 
 package com.cloud.dc.dao;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -30,31 +27,32 @@ import javax.naming.ConfigurationException;
 
 import org.apache.log4j.Logger;
 
-import com.cloud.dc.DataCenterVO;
-import com.cloud.dc.HostPodVO;
+import com.cloud.dc.AccountVlanMapVO;
 import com.cloud.dc.PodVlanMapVO;
 import com.cloud.dc.Vlan;
 import com.cloud.dc.VlanVO;
 import com.cloud.dc.Vlan.VlanType;
 import com.cloud.network.dao.IPAddressDao;
-import com.cloud.utils.NumbersUtil;
 import com.cloud.utils.Pair;
 import com.cloud.utils.component.ComponentLocator;
 import com.cloud.utils.db.GenericDaoBase;
 import com.cloud.utils.db.SearchBuilder;
 import com.cloud.utils.db.SearchCriteria;
-import com.cloud.utils.db.Transaction;
 
 @Local(value={VlanDao.class})
 public class VlanDaoImpl extends GenericDaoBase<VlanVO, Long> implements VlanDao {
     
-	private static final Logger s_logger = Logger.getLogger(VlanDaoImpl.class);
 	protected SearchBuilder<VlanVO> ZoneVlanIdSearch;
 	protected SearchBuilder<VlanVO> ZoneSearch;
 	protected SearchBuilder<VlanVO> ZoneTypeSearch;
+	protected SearchBuilder<VlanVO> ZoneTypeAllPodsSearch;
+	protected SearchBuilder<VlanVO> ZoneTypePodSearch;
+
+
 	protected PodVlanMapDaoImpl _podVlanMapDao = new PodVlanMapDaoImpl();
+	protected AccountVlanMapDao _accountVlanMapDao = new AccountVlanMapDaoImpl();
 	protected IPAddressDao _ipAddressDao = null;
-	
+	 	
     @Override
     public VlanVO findByZoneAndVlanId(long zoneId, String vlanId) {
     	SearchCriteria sc = ZoneVlanIdSearch.create();
@@ -97,7 +95,7 @@ public class VlanDaoImpl extends GenericDaoBase<VlanVO, Long> implements VlanDao
 	@Override
 	public List<VlanVO> listVlansForPod(long podId) {
 		//FIXME: use a join statement to improve the performance (should be minor since we expect only one or two
-		List<PodVlanMapVO> vlanMaps = _podVlanMapDao.listPodVlanMaps(podId);
+		List<PodVlanMapVO> vlanMaps = _podVlanMapDao.listPodVlanMapsByPod(podId);
 		List<VlanVO> result  = new ArrayList<VlanVO>();
 		for (PodVlanMapVO pvmvo: vlanMaps) {
 			result.add(findById(pvmvo.getVlanDbId()));
@@ -108,11 +106,25 @@ public class VlanDaoImpl extends GenericDaoBase<VlanVO, Long> implements VlanDao
 	@Override
 	public List<VlanVO> listVlansForPodByType(long podId, VlanType vlanType) {
 		//FIXME: use a join statement to improve the performance (should be minor since we expect only one or two)
-		List<PodVlanMapVO> vlanMaps = _podVlanMapDao.listPodVlanMaps(podId);
+		List<PodVlanMapVO> vlanMaps = _podVlanMapDao.listPodVlanMapsByPod(podId);
 		List<VlanVO> result  = new ArrayList<VlanVO>();
 		for (PodVlanMapVO pvmvo: vlanMaps) {
 			VlanVO vlan =findById(pvmvo.getVlanDbId());
 			if (vlan.getVlanType() == vlanType) {
+				result.add(vlan);
+			}
+		}
+		return result;
+	}
+	
+	@Override
+	public List<VlanVO> listVlansForAccountByType(Long zoneId, long accountId, VlanType vlanType) {
+		//FIXME: use a join statement to improve the performance (should be minor since we expect only one or two)
+		List<AccountVlanMapVO> vlanMaps = _accountVlanMapDao.listAccountVlanMapsByAccount(accountId);
+		List<VlanVO> result  = new ArrayList<VlanVO>();
+		for (AccountVlanMapVO acvmvo: vlanMaps) {
+			VlanVO vlan =findById(acvmvo.getVlanDbId());
+			if (vlan.getVlanType() == vlanType && (zoneId == null || vlan.getDataCenterId() == zoneId)) {
 				result.add(vlan);
 			}
 		}
@@ -137,37 +149,68 @@ public class VlanDaoImpl extends GenericDaoBase<VlanVO, Long> implements VlanDao
 				throw new ConfigurationException("Unable to get " + IPAddressDao.class.getName());
 			}
 		}
+        ZoneTypeAllPodsSearch = createSearchBuilder();
+        ZoneTypeAllPodsSearch.and("zoneId", ZoneTypeAllPodsSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        ZoneTypeAllPodsSearch.and("vlanType", ZoneTypeAllPodsSearch.entity().getVlanType(), SearchCriteria.Op.EQ);
+        
+        SearchBuilder<PodVlanMapVO> PodVlanSearch = _podVlanMapDao.createSearchBuilder();
+        PodVlanSearch.and("podId", PodVlanSearch.entity().getPodId(), SearchCriteria.Op.NNULL);
+        ZoneTypeAllPodsSearch.join("vlan", PodVlanSearch, PodVlanSearch.entity().getVlanDbId(), ZoneTypeAllPodsSearch.entity().getId());
+        
+        ZoneTypeAllPodsSearch.done();
+        PodVlanSearch.done();
+        
+        ZoneTypePodSearch = createSearchBuilder();
+        ZoneTypePodSearch.and("zoneId", ZoneTypePodSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        ZoneTypePodSearch.and("vlanType", ZoneTypePodSearch.entity().getVlanType(), SearchCriteria.Op.EQ);
+        
+        SearchBuilder<PodVlanMapVO> PodVlanSearch2 = _podVlanMapDao.createSearchBuilder();
+        PodVlanSearch2.and("podId", PodVlanSearch2.entity().getPodId(), SearchCriteria.Op.EQ);
+        ZoneTypePodSearch.join("vlan", PodVlanSearch2,  PodVlanSearch2.entity().getVlanDbId(), ZoneTypePodSearch.entity().getId());
+        PodVlanSearch2.done();
+        ZoneTypePodSearch.done();
+
 		return result;
 	}
 	
 	private VlanVO findNextVlan(long zoneId, Vlan.VlanType vlanType) {
-		List<VlanVO> vlans = listByZoneAndType(zoneId, vlanType);
-		VlanVO result = null;
-		for (VlanVO vlan : vlans) {
+		List<VlanVO> allVlans = listByZoneAndType(zoneId, vlanType);
+		List<VlanVO> emptyVlans = new ArrayList<VlanVO>();
+		List<VlanVO> fullVlans = new ArrayList<VlanVO>();
+		
+		// Try to find a VLAN that is partially allocated
+		for (VlanVO vlan : allVlans) {
 			long vlanDbId = vlan.getId();
 			
-			int countOfAllocatedIps = _ipAddressDao.countIPs(zoneId, vlanDbId, -1, true);
-			int countOfAllIps = _ipAddressDao.countIPs(zoneId, vlanDbId, -1, false);
+			int countOfAllocatedIps = _ipAddressDao.countIPs(zoneId, vlanDbId, true);
+			int countOfAllIps = _ipAddressDao.countIPs(zoneId, vlanDbId, false);
 			
 			if ((countOfAllocatedIps > 0) && (countOfAllocatedIps < countOfAllIps)) {
-				result = vlan;
-				break;
+				return vlan;
+			} else if (countOfAllocatedIps == 0) {
+				emptyVlans.add(vlan);
+			} else if (countOfAllocatedIps == countOfAllIps) {
+				fullVlans.add(vlan);
 			}
 		}
 		
-		if (result == null) {
-			for (VlanVO vlan : vlans) {
-				long vlanDbId = vlan.getId();
-				
-				int countOfAllocatedIps = _ipAddressDao.countIPs(zoneId, vlanDbId, -1, true);
-				if (countOfAllocatedIps == 0) {
-					result = vlan;
-					break;
+		if (emptyVlans.isEmpty()) {
+			return null;
+		}
+		
+		// Try to find an empty VLAN with the same tag/subnet as a VLAN that is full
+		for (VlanVO fullVlan : fullVlans) {
+			for (VlanVO emptyVlan : emptyVlans) {
+				if (fullVlan.getVlanId().equals(emptyVlan.getVlanId()) && 
+					fullVlan.getVlanGateway().equals(emptyVlan.getVlanGateway()) &&
+					fullVlan.getVlanNetmask().equals(emptyVlan.getVlanNetmask())) {
+					return emptyVlan;
 				}
 			}
 		}
 		
-		return result;
+		// Return a random empty VLAN
+		return emptyVlans.get(0);
 	}
 
 	@Override
@@ -181,6 +224,37 @@ public class VlanDaoImpl extends GenericDaoBase<VlanVO, Long> implements VlanDao
 			return null;
 		}
 		return new Pair<String, VlanVO>(ipAddress, vlan);
+	}
+
+	@Override
+	public boolean zoneHasDirectAttachUntaggedVlans(long zoneId) {
+		SearchCriteria sc = ZoneTypeAllPodsSearch.create();
+    	sc.setParameters("zoneId", zoneId);
+    	sc.setParameters("vlanType", VlanType.DirectAttached);
+    	
+        return listBy(sc).size() > 0;
+	}
+
+
+	@Override
+	public Pair<String, VlanVO> assignPodDirectAttachIpAddress(long zoneId,
+			long podId, long accountId, long domainId) {
+		SearchCriteria sc = ZoneTypePodSearch.create();
+    	sc.setParameters("zoneId", zoneId);
+    	sc.setParameters("vlanType", VlanType.DirectAttached);
+    	sc.setJoinParameters("vlan", "podId", podId);
+    	
+    	VlanVO vlan = findOneBy(sc);
+    	if (vlan == null) {
+    		return null;
+    	}
+    	
+    	String ipAddress = _ipAddressDao.assignIpAddress(accountId, domainId, vlan.getId(), false);
+    	if (ipAddress == null) {
+    		return null;
+    	}
+		return new Pair<String, VlanVO>(ipAddress, vlan);
+
 	}
     
 }

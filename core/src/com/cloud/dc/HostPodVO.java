@@ -25,6 +25,8 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
+import com.cloud.utils.NumbersUtil;
+
 @Entity
 @Table(name = "host_pod_ref")
 public class HostPodVO {
@@ -37,6 +39,9 @@ public class HostPodVO {
 
 	@Column(name = "data_center_id")
 	private long dataCenterId;
+	
+	@Column(name = "gateway")
+	private String gateway;
 
 	@Column(name = "cidr_address")
 	private String cidrAddress;
@@ -47,9 +52,10 @@ public class HostPodVO {
 	@Column(name = "description")
 	private String description;
 
-	public HostPodVO(String name, long dcId, String cidrAddress, long cidrSize, String description) {
+	public HostPodVO(String name, long dcId, String gateway, String cidrAddress, long cidrSize, String description) {
 		this.name = name;
 		this.dataCenterId = dcId;
+		this.gateway = gateway;
 		this.cidrAddress = cidrAddress;
 		this.cidrSize = cidrSize;
 		this.description = description;
@@ -96,6 +102,14 @@ public class HostPodVO {
 	public void setCidrSize(long cidrSize) {
 		this.cidrSize = cidrSize;
 	}
+	
+	public String getGateway() {
+		return gateway;
+	}
+	
+	public void setGateway(String gateway) {
+		this.gateway = gateway;
+	}
 
 	public String getDescription() {
 		return description;
@@ -103,5 +117,24 @@ public class HostPodVO {
 
 	public void setDescription(String description) {
 		this.description = description;
+	}
+	
+	// Use for comparisons only.
+	public HostPodVO(Long id) {
+	    this.id = id;
+	}
+	
+	@Override
+    public int hashCode() {
+	    return  NumbersUtil.hash(id);
+	}
+	
+	@Override
+    public boolean equals(Object obj) {
+	    if (obj instanceof HostPodVO) {
+	        return id == ((HostPodVO)obj).id;
+	    } else {
+	        return false;
+	    }
 	}
 }

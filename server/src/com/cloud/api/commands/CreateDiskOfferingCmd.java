@@ -45,11 +45,14 @@ public class CreateDiskOfferingCmd extends BaseCmd {
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT_OBJ, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.USER_ID, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.DOMAIN_ID, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.TAGS, Boolean.FALSE));
     }
 
+    @Override
     public String getName() {
         return s_name;
     }
+    @Override
     public List<Pair<Enum, Boolean>> getProperties() {
         return s_properties;
     }
@@ -64,6 +67,7 @@ public class CreateDiskOfferingCmd extends BaseCmd {
         String displayText = (String)params.get(BaseCmd.Properties.DISPLAY_TEXT.getName());
         Long numGB = (Long) params.get(BaseCmd.Properties.DISK_SIZE.getName());
         Boolean isMirrored = (Boolean)params.get(BaseCmd.Properties.IS_MIRRORED.getName());
+        String tags = (String)params.get(BaseCmd.Properties.TAGS.getName());
 
         if (isMirrored == null) {
             isMirrored = Boolean.FALSE;
@@ -74,7 +78,7 @@ public class CreateDiskOfferingCmd extends BaseCmd {
 
         DiskOfferingVO diskOffering = null;
         try {
-        	diskOffering = getManagementServer().createDiskOffering(domainId.longValue(), name, displayText, numGB.intValue(), isMirrored.booleanValue());
+        	diskOffering = getManagementServer().createDiskOffering(domainId.longValue(), name, displayText, numGB.intValue(), isMirrored.booleanValue(), tags);
         } catch (InvalidParameterValueException ex) {
         	throw new ServerApiException (BaseCmd.VM_INVALID_PARAM_ERROR, ex.getMessage());
         }
@@ -89,9 +93,10 @@ public class CreateDiskOfferingCmd extends BaseCmd {
         returnValues.add(new Pair<String, Object>(BaseCmd.Properties.DOMAIN.getName(), getManagementServer().findDomainIdById(diskOffering.getDomainId()).getName()));
         returnValues.add(new Pair<String, Object>(BaseCmd.Properties.NAME.getName(), diskOffering.getName()));
         returnValues.add(new Pair<String, Object>(BaseCmd.Properties.DISPLAY_TEXT.getName(), diskOffering.getDisplayText()));
-        returnValues.add(new Pair<String, Object>(BaseCmd.Properties.DISK_SIZE.getName(), diskOffering.getDiskSize() / 1024));
-        returnValues.add(new Pair<String, Object>(BaseCmd.Properties.IS_MIRRORED.getName(), diskOffering.getMirrored()));
-
+        returnValues.add(new Pair<String, Object>(BaseCmd.Properties.DISK_SIZE.getName(), diskOffering.getDiskSizeInBytes()));
+        returnValues.add(new Pair<String, Object>(BaseCmd.Properties.IS_MIRRORED.getName(), diskOffering.isMirrored()));
+        returnValues.add(new Pair<String, Object>(BaseCmd.Properties.CREATED.getName(), diskOffering.getCreated()));
+        returnValues.add(new Pair<String, Object>(BaseCmd.Properties.TAGS.getName(), diskOffering.getTags()));
         return returnValues;
     }
 }

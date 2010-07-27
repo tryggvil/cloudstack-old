@@ -27,6 +27,7 @@ import org.apache.log4j.Logger;
 import com.cloud.api.BaseCmd;
 import com.cloud.api.ServerApiException;
 import com.cloud.dc.HostPodVO;
+import com.cloud.user.User;
 import com.cloud.utils.Pair;
 
 public class DeletePodCmd extends BaseCmd {
@@ -37,6 +38,7 @@ public class DeletePodCmd extends BaseCmd {
 
     static {
     	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ID, Boolean.TRUE));
+    	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.USER_ID, Boolean.FALSE));
     }
 
     public String getName() {
@@ -49,6 +51,11 @@ public class DeletePodCmd extends BaseCmd {
     @Override
     public List<Pair<String, Object>> execute(Map<String, Object> params) {
     	Long podId = (Long) params.get(BaseCmd.Properties.ID.getName());
+    	Long userId = (Long)params.get(BaseCmd.Properties.USER_ID.getName());
+    	
+    	if (userId == null) {
+            userId = Long.valueOf(User.UID_SYSTEM);
+        }
     	
     	//verify parameters
     	HostPodVO pod = getManagementServer().findHostPodById(podId);
@@ -57,7 +64,7 @@ public class DeletePodCmd extends BaseCmd {
     	}
 
         try {
-             getManagementServer().deletePod(podId);
+             getManagementServer().deletePod(userId, podId);
         } catch (Exception ex) {
             s_logger.error("Exception deleting pod", ex);
             throw new ServerApiException(BaseCmd.INTERNAL_ERROR, ex.getMessage());

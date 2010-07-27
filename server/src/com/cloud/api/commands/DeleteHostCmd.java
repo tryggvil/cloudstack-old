@@ -67,7 +67,6 @@ public class DeleteHostCmd extends BaseCmd {
     		throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Failed to delete the host " + hostId.toString() + ". Current host status is " + host.getStatus());
     	}
         
-        
         if (success == false) {
             throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Failed to delete the host with id " + hostId.toString());
         }

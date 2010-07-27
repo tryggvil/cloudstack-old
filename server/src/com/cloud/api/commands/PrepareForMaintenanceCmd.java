@@ -26,6 +26,7 @@ import org.apache.log4j.Logger;
 
 import com.cloud.api.BaseCmd;
 import com.cloud.api.ServerApiException;
+import com.cloud.exception.InvalidParameterValueException;
 import com.cloud.host.HostVO;
 import com.cloud.utils.Pair;
 
@@ -61,8 +62,13 @@ public class PrepareForMaintenanceCmd extends BaseCmd {
     		throw new ServerApiException(BaseCmd.PARAM_ERROR, "Host with id " + hostId.toString() + " doesn't exist");
     	}
         
-        long jobId = getManagementServer().prepareForMaintenanceAsync(hostId);
-        
+    	long jobId = 0;
+    	try {
+    		jobId = getManagementServer().prepareForMaintenanceAsync(hostId);
+    	} catch (InvalidParameterValueException e) {
+    		throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to prepare host for maintenance: " + e.getMessage());
+    	}
+    	
         if(jobId == 0) {
         	s_logger.warn("Unable to schedule async-job for PrepareForMaintenance comamnd");
         } else {

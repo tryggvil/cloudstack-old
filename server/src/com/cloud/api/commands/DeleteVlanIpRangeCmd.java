@@ -29,6 +29,7 @@ import com.cloud.api.BaseCmd;
 import com.cloud.api.ServerApiException;
 import com.cloud.dc.VlanVO;
 import com.cloud.exception.InvalidParameterValueException;
+import com.cloud.user.User;
 import com.cloud.utils.Pair;
 
 public class DeleteVlanIpRangeCmd extends BaseCmd {
@@ -39,6 +40,7 @@ public class DeleteVlanIpRangeCmd extends BaseCmd {
 
     static {
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ID, Boolean.TRUE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.USER_ID, Boolean.FALSE));
     }
 
     public String getName() {
@@ -51,52 +53,23 @@ public class DeleteVlanIpRangeCmd extends BaseCmd {
     @Override
     public List<Pair<String, Object>> execute(Map<String, Object> params) {
     	Long vlanDbId = (Long) params.get(BaseCmd.Properties.ID.getName());
-    	String startIp = null;
-    	String endIp = null;
-		
-		//Verify input parameters
-    	VlanVO vlan = getManagementServer().findVlanById(vlanDbId);
-    	if (vlan == null) {
-    		throw new ServerApiException(BaseCmd.PARAM_ERROR, "unable to find vlan with id " + vlanDbId);
-    	}
+    	Long userId = (Long)params.get(BaseCmd.Properties.USER_ID.getName());
     	
-    	String vlanDescription = vlan.getDescription();
-    	if (vlanDescription != null) {
-    		StringTokenizer st = new StringTokenizer(vlan.getDescription(), "-");
-    		int count = st.countTokens();
-    		if (count < 1) {
-    			throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Can't get start ip address from vlan description");
-    		}
-    		startIp = st.nextToken();
-    		if (count == 2) {
-    			endIp = st.nextToken();
-    		}
-
-    		try {
-    			getManagementServer().changePublicIPRange(false, vlan.getId(), startIp, endIp);
-    		} catch (InvalidParameterValueException e) {
-    			throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Unable to delete public IP range");
-    		}
-    	}
+    	if (userId == null) {
+            userId = Long.valueOf(User.UID_SYSTEM);
+        }
     	
-    	//delete vlan
+    	// Delete the VLAN and its public IP addresses
+    	boolean success = false;
         try {
-             getManagementServer().deleteVlan(vlanDbId);
-        } catch (InvalidParameterValueException ex) {
-        	//rollback ip address deletion if vlan delete fails
-        	if (vlanDescription != null) {
-        		try {
-        			getManagementServer().changePublicIPRange(true, vlan.getId(), startIp, endIp);
-        		} catch (InvalidParameterValueException e) {
-        			throw new ServerApiException (BaseCmd.INTERNAL_ERROR, "Unable to delete a vlan, and delete public ip addresses rollback failed");
-        		}
-        	}
+             success = getManagementServer().deleteVlanAndPublicIpRange(userId, vlanDbId);
+        } catch (InvalidParameterValueException ex) {        	
             s_logger.error("Exception deleting VLAN", ex);
-            throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Failed to delete VLAN with ID " + vlanDbId + ":  internal error.");
+            throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Failed to delete VLAN: " + ex.getMessage());
         }
     	 
         List<Pair<String, Object>> returnValues = new ArrayList<Pair<String, Object>>();
-        returnValues.add(new Pair<String, Object>(BaseCmd.Properties.SUCCESS.getName(), "true"));
+        returnValues.add(new Pair<String, Object>(BaseCmd.Properties.SUCCESS.getName(), success));
         return returnValues;
     }
 }

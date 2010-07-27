@@ -1,0 +1,247 @@
+---------------------------------------------------------------------
+QUICK GUIDE TO DEVELOPING, BUILDING AND INSTALLING FROM SOURCE
+---------------------------------------------------------------------
+
+
+It all starts with waf.
+
+./waf --help should be your first discovery point to find out both the
+configure-time options and the different processes that you can run
+using waf.  Your second discovery point should be the files:
+
+1. wscript:  contains the processes you can run when invoking waf
+2. wscript_build: contains a manifest of *what* is built and installed
+
+Your normal development process should be:
+
+1. ./waf configure --prefix=/some/path, ONCE
+2. ./waf, then hack, then ./waf, then hack, then ./waf
+3. ./waf install, then hack, then ./waf install
+
+In detail:
+
+1. ./waf configure --prefix=/some/path
+    
+    You run this command *once*, in preparation to building, or every
+    time you need to change a configure-time variable.
+        
+    This runs configure() in wscript, which takes care of setting the
+    variables and options that waf will use for compilation and
+    installation, including the installation directory (PREFIX).
+    
+    If you have already configured your source, and you are reconfiguring
+    it, then you *must* run ./waf clean so the source files are rebuilt
+    with the proper variables.  Otherwise, ./waf install will install
+    stale files.
+    
+    For convenience reasons, if you forget to run configure, waf
+    will proceed with some default configuration options.  By
+    default, PREFIX is /usr/local, but you can set it e.g. to
+    /home/yourusername/cloudstack if you plan to do a non-root
+    install.  Be ware that you can later install the stack as a
+    regular user, but most components need to *run* as root.
+    
+    ./waf showconfig displays the values of the configure-time options
+    
+2. ./waf
+    
+    You run this command to trigger compilation of the modified files.
+    
+    This runs the contents of wscript_build, which takes care of
+    discovering and describing what needs to be built, which
+    build products / sources need to be installed, and where.
+    
+3. ./waf install
+    
+    You run this command when you want to install the CloudStack.
+    
+    If you are going to install for production, you should run this
+    process as root.  If, conversely, you only want to install the
+    stack as your own user and in a directory that you have write
+    permission, it's fine to run waf install as your own user.
+    
+    This runs the contents of wscript_build, with an option variable
+    Options.is_install = True.  When this variable is set, waf will
+    install the files described in wscript_build.  For convenience
+    reasons, when you run install, any files that need to be recompiled
+    will also be recompiled prior to installation.
+    
+    --------------------
+    
+    WARNING: each time you do ./waf install, the configuration files
+    in the installation directory are *overwritten*.
+    
+    There are, however, two ways to get around this:
+
+       a) ./waf install has an option --preserve-config.  If you pass
+          this option when installing, configuration files are never
+          overwritten.
+          
+          This option is useful when you have modified source files and
+          you need to deploy them on a system that already has the
+          CloudStack installed and configured, but you do *not* want to
+          overwrite the existing configuration of the CloudStack.
+          
+          If, however, you have reconfigured and rebuilt the source
+          since the last time you did ./waf install, then you are
+          advised to replace the configuration files and set the
+          components up again, because some configuration files
+          in the source use identifiers that may have changed during
+          the last ./waf configure.  So, if this is your case, check
+          out the next way:
+          
+       b) Every configuration file can be overridden in the source
+          without touching the original.
+          
+          - Look for said config file X (or X.in) in the source, then
+          - create an override/ folder in the folder that contains X, then
+          - place a file named X (or X.in) inside override/, then
+          - put the desired contents inside X (or X.in)
+          
+          Now, every time you run ./waf install, the file that will be
+          installed is path/to/override/X.in, instead of /path/to/X.in.
+          
+          This option is useful if you are developing the CloudStack
+          and constantly reinstalling it.  It guarantees that every
+          time you install the CloudStack, the installation will have
+          the correct configuration and will be ready to run.
+    
+
+=== Running the CloudStack components from source (for debugging / coding) ===
+
+It is not technically possible to run the CloudStack components from
+the source.  That, however, is fine -- you do not have to stop and start
+the services each time you run ./waf install.  Each component can be run
+independently:
+
+- Management Server
+
+    Execute ./waf install as your current user (or as root if the
+    installation path is only writable by root).
+    
+    Then execute ./waf run as your current user (or as root if the
+    installation path is only writable by root).  Alternatively,
+    you can use ./waf debug and this will run with debugging enabled.
+    
+    This will compile the stack, reinstall it, then run the Management
+    Server in the installed environment, as your current user, in
+    the foreground.
+    
+    NOTE: if you have not yet deployed a database to the local MySQL
+    server, you should ./waf deploydb_kvm once so the database is
+    deployed.  Failure to do that will cause the Management Server
+    to fail on startup.
+    
+    WARNING: if any CloudStack configuration files have been
+    already configured / altered, they will be *overwritten* by this
+    process.  Append --preserve-config to ./waf install to prevent this
+    from happening.  Or resort to the override method discussed
+    above (search for "override" in this document).
+    
+- Agent:
+
+    Execute ./waf install as your current user (or as root if the
+    installation path is only writable by root).
+    
+    Then execute $LIBEXECDIR/agent-runner as root
+    
+    These steps, will compile, reinstall and run the Agent in the
+    foreground.  You must run this runner as root.
+    
+    WARNING: if any CloudStack configuration files have been
+    already configured / altered, they will be *overwritten* by this
+    process.  Append --preserve-config to ./waf install to prevent this
+    from happening.  Or resort to the override method discussed
+    above (search for "override" in this document).
+    
+- Console Proxy:
+
+    Execute ./waf install as your current user (or as root if the
+    installation path is only writable by root).
+    
+    Then execute $LIBEXECDIR/console-proxy-runner as root
+    
+    These steps, will compile, reinstall and run the Console Proxy in the
+    foreground.  You must run this runner as root.
+    
+    WARNING: if any CloudStack configuration files have been
+    already configured / altered, they will be *overwritten* by this
+    process.  Append --preserve-config to ./waf install to prevent this
+    from happening.  Or resort to the override method discussed
+    above (search for "override" in this document).
+
+
+---------------------------------------------------------------------
+UNDERSTANDING THE BUILD SYSTEM
+---------------------------------------------------------------------
+
+
+=== Why waf ===
+
+The CloudStack uses waf to build itself.  waf is a relative newcomer
+to the build system world; it borrows concepts from SCons and
+other later-generation build systems:
+
+- waf is very flexible and rich; unlike other build systems, it covers
+  the entire life cycle, from compilation to installation to
+  uninstallation.  it also supports dist (create source tarball),
+  distcheck (check that the source tarball compiles and installs),
+  autoconf-like checks for dependencies at compilation time,
+  and more.
+
+- waf is self-contained.  A single file, distributed with the project,
+  enables everything to be built, with only a dependency on Python,
+  which is freely available and shipped in all Linux computers.
+
+- waf also supports building projects written in multiple languages
+  (in the case of the CloudStack, we build from C, Java and Python).
+
+- since waf is written in Python, the entire library of the Python
+  language is available to use in the build process.
+
+
+=== What happens when waf runs ===
+
+When you run waf, this happens behind the scenes:
+
+- When you run waf for the first time, it unpacks itself to a hidden
+  directory .waf-1.X.Y.MD5SUM, including the main program and all
+  the Python libraries it provides and needs.
+  
+- Immediately after unpacking itself, waf reads the wscript file
+  at the root of the source directory.  After parsing this file and
+  loading the functions defined here, it reads wscript_build and
+  generates a function build() based on it.
+  
+- After loading the build scripts as explained above, waf calls
+  the functions you specified in the command line.
+  
+So, for example, ./waf configure build install will:
+
+* call configure() from wscript,
+* call build() loaded from the contents of wscript_build,
+* call build() once more but with Options.is_install = True.
+
+As part of build(), waf invokes ant to build the Java portion of our
+stack.
+
+
+=== How and why we use ant within waf ===
+
+By now, you have probably noticed that we do, indeed, ship ant
+build files in the CloudStack.  During the build process, waf calls
+ant directly to build the Java portions of our stack, and it uses
+the resulting JAR files to perform the installation.
+
+The reason we do this rather than use the native waf capabilities
+for building Java projects is simple: by using ant, we can leverage
+the support built-in for ant in Eclipse and many other IDEs.  Another
+reason to do this is because Java developers are familiar with ant,
+so adding a new JAR file or modifying what gets built into the
+existing JAR files is facilitated for Java developers.
+
+If you add to the ant build files a new ant target that uses the
+compile-java macro, waf will automatically pick it up, along with its
+depends= and JAR name attributes.  In general, all you need to do is
+add the produced JAR name to the packaging manifests (cloud.spec and
+debian/{name-of-package}.install).

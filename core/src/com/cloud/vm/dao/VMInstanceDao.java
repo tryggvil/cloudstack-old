@@ -36,6 +36,7 @@ public interface VMInstanceDao extends GenericDao<VMInstanceVO, Long> {
      * @return list of VMInstanceVO running on that host.
      */
 	List<VMInstanceVO> listByHostId(long hostId);
+	List<VMInstanceVO> listByLastHostId(long hostId);
 	
 	/**
 	 * List VMs by zone ID
@@ -44,29 +45,13 @@ public interface VMInstanceDao extends GenericDao<VMInstanceVO, Long> {
 	 */
 	List<VMInstanceVO> listByZoneId(long zoneId);
 	
-	/** 
+	/**
 	 * Lists non-expunged VMs by zone ID and templateId
 	 * @param zoneId
 	 * @return list of VMInstanceVO in the specified zone, deployed from the specified template, that are not expunged
 	 */
 	public List<VMInstanceVO> listNonExpungedByZoneAndTemplate(long zoneId, long templateId);
 	
-	/**
-	 * List VMs by pool ID and template ID
-	 * @param poolId
-	 * @param templateId
-	 * @return list of VMInstanceVO in the specified pool that use the specified template
-	 */
-	List<VMInstanceVO> listByPoolAndTemplateActive(long poolId, long templateId);
-	
-	/**
-	 * List VMs by pool ID and ISO ID
-	 * @param poolId
-	 * @param isoId
-	 * @return list of VMInstanceVO in the specified pool that use the specified ISO
-	 */
-	public List<VMInstanceVO> listByPoolAndISOActive(long poolId, long isoId);
-   
     /**
 	 * Updates display name and group for vm; enables/disables ha
 	 * @param id vm id.
@@ -98,4 +83,8 @@ public interface VMInstanceDao extends GenericDao<VMInstanceVO, Long> {
     VMInstanceVO findByIdTypes(long id, VirtualMachine.Type... types);
     
     void updateProxyId(long id, Long proxyId, Date time);
+
+    List<VMInstanceVO> listByHostIdTypes(long hostid, VirtualMachine.Type... types);
+    
+    List<VMInstanceVO> listUpByHostIdTypes(long hostid, VirtualMachine.Type... types);
 }

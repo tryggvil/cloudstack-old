@@ -24,6 +24,7 @@ import com.cloud.exception.InsufficientCapacityException;
 import com.cloud.exception.OperationTimedoutException;
 import com.cloud.exception.StorageUnavailableException;
 import com.cloud.host.HostVO;
+import com.cloud.utils.exception.ExecutionException;
 
 /**
  * HighAvailabilityHandler specifies the methods that are used to control
@@ -76,8 +77,9 @@ public interface VirtualMachineManager<T extends VMInstanceVO> {
      * @throws InsufficientCapacityException if there's not enough capacity to start the vm.
      * @throws StorageUnavailableException if the storage is unavailable.
      * @throws ConcurrentOperationException there's multiple threads working on this vm.
+     * @throws ExecutionException 
      */
-    T start(long vmId) throws InsufficientCapacityException, StorageUnavailableException, ConcurrentOperationException;
+    T start(long vmId, long startEventId) throws InsufficientCapacityException, StorageUnavailableException, ConcurrentOperationException, ExecutionException;
 
     /**
      * stop the vm
@@ -86,7 +88,7 @@ public interface VirtualMachineManager<T extends VMInstanceVO> {
      * @return true if stopped and false if not.
      * @throws AgentUnavailableException if the agent is unavailable.
      */
-    boolean stop(T vm) throws AgentUnavailableException;
+    boolean stop(T vm, long startEventId) throws AgentUnavailableException;
     
     /**
      * Produce a cleanup command to be sent to the agent to cleanup anything

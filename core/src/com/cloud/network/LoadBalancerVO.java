@@ -83,9 +83,15 @@ public class LoadBalancerVO {
     public String getName() {
         return name;
     }
+    public void setName(String name) {
+        this.name = name;
+    }
 
     public String getDescription() {
         return description;
+    }
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public long getAccountId() {
@@ -103,9 +109,15 @@ public class LoadBalancerVO {
     public String getPrivatePort() {
         return privatePort;
     }
+    public void setPrivatePort(String privatePort) {
+        this.privatePort = privatePort;
+    }
 
     public String getAlgorithm() {
         return algorithm;
+    }
+    public void setAlgorithm(String algorithm) {
+        this.algorithm = algorithm;
     }
     
     public Long getDomainId() {

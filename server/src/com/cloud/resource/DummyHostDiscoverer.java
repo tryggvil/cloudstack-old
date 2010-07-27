@@ -18,6 +18,7 @@
 
 package com.cloud.resource;
 
+import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +30,6 @@ import javax.naming.ConfigurationException;
 import org.apache.log4j.Logger;
 
 import com.cloud.host.HostVO;
-import com.cloud.resource.ServerResource;
 
 @Local(value=Discoverer.class)
 public class DummyHostDiscoverer implements Discoverer {
@@ -38,8 +38,8 @@ public class DummyHostDiscoverer implements Discoverer {
     private String _name;
 
     @Override
-    public Map<ServerResource, Map<String, String>> find(long dcId, Long podId, String urlString, String username, String password) {
-        if (!urlString.contains("dummy:")) {
+    public Map<ServerResource, Map<String, String>> find(long dcId, Long podId, Long clusterId, URI url, String username, String password) {
+        if (!url.getScheme().equals("dummy")) {
             return null;
         }
         
@@ -47,11 +47,11 @@ public class DummyHostDiscoverer implements Discoverer {
         Map<String, Object> params = new HashMap<String, Object>();
         Map<String, String> details = new HashMap<String, String>();
         
-        details.put("url", urlString);
+        details.put("url", url.toString());
         details.put("username", username);
         details.put("password", password);
         
-        params.put("url", urlString);
+        params.put("url", url.toString());
         params.put("username", username);
         params.put("password", password);
         params.put("zone", Long.toString(dcId));

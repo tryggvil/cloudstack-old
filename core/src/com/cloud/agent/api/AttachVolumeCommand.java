@@ -18,27 +18,29 @@
 
 package com.cloud.agent.api;
 
+import com.cloud.storage.Storage.StoragePoolType;
+
 public class AttachVolumeCommand extends Command {
 	
 	boolean attach;
 	String vmName;
+	StoragePoolType pooltype;
 	String volumeFolder;
 	String volumePath;
 	String volumeName;
-	
-	// For XenServer
-	String volumeNameLabel;
+	Long deviceId;
 	
 	protected AttachVolumeCommand() {
 	}
 	
-	public AttachVolumeCommand(boolean attach, String vmName, String volumeFolder, String volumePath, String volumeName, String volumeNameLabel) {
+	public AttachVolumeCommand(boolean attach, String vmName, StoragePoolType pooltype, String volumeFolder, String volumePath, String volumeName, Long deviceId) {
 		this.attach = attach;
 		this.vmName = vmName;
+		this.pooltype = pooltype;
 		this.volumeFolder = volumeFolder;
 		this.volumePath = volumePath;
 		this.volumeName = volumeName;
-		this.volumeNameLabel = volumeNameLabel;
+		this.deviceId = deviceId;
 	}
 	
 	@Override
@@ -54,7 +56,15 @@ public class AttachVolumeCommand extends Command {
 		return vmName;
 	}
 	
-	public String getVolumeFolder() {
+	public StoragePoolType getPooltype() {
+        return pooltype;
+    }
+
+    public void setPooltype(StoragePoolType pooltype) {
+        this.pooltype = pooltype;
+    }
+
+    public String getVolumeFolder() {
 		return volumeFolder;
 	}
 	
@@ -65,9 +75,13 @@ public class AttachVolumeCommand extends Command {
 	public String getVolumeName() {
 		return volumeName;
 	}
-	
-	public String getVolumeNameLabel() {
-		return volumeNameLabel;
-	}
+
+    public Long getDeviceId() {
+        return deviceId;
+    }
+
+    public void setDeviceId(Long deviceId) {
+        this.deviceId = deviceId;
+    }
 	
 }

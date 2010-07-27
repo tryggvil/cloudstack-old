@@ -19,6 +19,8 @@ package com.cloud.vm;
 
 import java.util.Formatter;
 
+import com.cloud.dc.Vlan;
+
 /**
  * This class contains the different ways to construct and deconstruct a
  * VM Name. 
@@ -39,7 +41,8 @@ public class VirtualMachineName {
     
     public static boolean isValidVmName(String vmName, String instance) {
         String[] tokens = vmName.split(SEPARATOR);
-        if (tokens.length != 5) {
+        /*Some vms doesn't have vlan/vnet id*/
+        if (tokens.length != 5 && tokens.length != 4) {
             return false;
         }
 
@@ -50,7 +53,9 @@ public class VirtualMachineName {
         try {
             Long.parseLong(tokens[1]);
             Long.parseLong(tokens[2]);
-            Long.parseLong(tokens[4], 16);
+            if (tokens.length == 5 && !Vlan.UNTAGGED.equalsIgnoreCase(tokens[4])) {
+            	Long.parseLong(tokens[4], 16);
+            }
         } catch (NumberFormatException e) {
             return false;
         }
@@ -132,7 +137,9 @@ public class VirtualMachineName {
         
         try {
             Long.parseLong(tokens[1]);
-            Long.parseLong(tokens[3], 16);
+            if (!Vlan.UNTAGGED.equalsIgnoreCase(tokens[3])) {
+            	Long.parseLong(tokens[3], 16);
+            }
         } catch (NumberFormatException ex) {
             return false;
         }

@@ -36,7 +36,8 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.persistence.Transient;
 
-import com.cloud.storage.StoragePool.StoragePoolType;
+import com.cloud.hypervisor.Hypervisor;
+import com.cloud.storage.Storage.StoragePoolType;
 import com.cloud.utils.db.GenericDao;
 
 @Entity
@@ -86,6 +87,9 @@ public class HostVO implements Host {
     
     @Column(name="storage_ip_address")
     private String storageIpAddress;
+
+    @Column(name="cluster_id")
+    private Long clusterId;
     
     @Column(name="storage_netmask")
     private String storageNetmask;
@@ -104,7 +108,7 @@ public class HostVO implements Host {
     
     @Column(name="hypervisor_type", updatable = true, nullable=false)
     @Enumerated(value=EnumType.STRING)
-    private HypervisorType hypervisorType;
+    private Hypervisor.Type hypervisorType;
     
     @Column(name="proxy_port")
     private Integer proxyPort;
@@ -140,6 +144,14 @@ public class HostVO implements Host {
 		return storageNetmaskDeux;
 	}
 
+	public Long getClusterId() {
+	    return clusterId;
+	}
+	
+	public void setClusterId(Long clusterId) {
+	    this.clusterId = clusterId;
+	}
+	
 	public void setStorageNetmaskDeux(String deuxStorageNetmask) {
 		this.storageNetmaskDeux = deuxStorageNetmask;
 	}
@@ -430,16 +442,8 @@ public class HostVO implements Host {
         this.version = version;
     }
     
-    public long getDom0MinMemory() {
-        return dom0MinMemory;
-    }
-    
     public void setStorageUrl(String url) {
         this.storageUrl = url;
-    }
-    
-    public void setDom0MinMemory(long dom0MinMemory) {
-        this.dom0MinMemory = dom0MinMemory;
     }
     
     public void setDisconnectedOn(Date disconnectedOn) {
@@ -621,12 +625,12 @@ public class HostVO implements Host {
     	return new StringBuilder(type.toString()).append("-").append(Long.toString(id)).append("-").append(name).toString();
     }
 
-	public void setHypervisorType(HypervisorType hypervisorType) {
+	public void setHypervisorType(Hypervisor.Type hypervisorType) {
 		this.hypervisorType = hypervisorType;
 	}
 
 	@Override
-	public HypervisorType getHypervisorType() {
+	public Hypervisor.Type getHypervisorType() {
 		return hypervisorType;
 	}
 }

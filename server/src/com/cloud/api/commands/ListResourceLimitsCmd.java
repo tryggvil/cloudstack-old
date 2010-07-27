@@ -69,41 +69,52 @@ public class ListResourceLimitsCmd extends BaseCmd {
         Integer pageSize = (Integer)params.get(BaseCmd.Properties.PAGESIZE.getName());
         Long accountId = null;
         
-        // If account is specified, you must be an admin
-        if (accountName != null) {
-        	if (domainId == null) {
-        		throw new ServerApiException(BaseCmd.PARAM_ERROR, "You must specify domain Id for the account: " + accountName);
-        	}
-        	Account userAccount = getManagementServer().findAccountByName(accountName, domainId);
-        	if (userAccount == null) {
-                throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to find account " + accountName + " in domain " + domainId);
-            }
-        	// Now verify the admin can see this account
-        	// if account is null, it must be accessing from 8096
-        	if (account != null) {
-        		if (account.getType() == Account.ACCOUNT_TYPE_NORMAL) {
-        			throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "You do not have permission to access this account: " + accountName);
-        		} else if (account.getType() == Account.ACCOUNT_TYPE_DOMAIN_ADMIN || account.getType() == Account.ACCOUNT_TYPE_READ_ONLY_ADMIN){
-        			// If this is a domain admin, we make sure the domain admin and the account belong in the same domain or
-        			// the account's domain is a child domain of the parent
-        			if (account.getDomainId() != userAccount.getDomainId() && !getManagementServer().isChildDomain(account.getDomainId(), userAccount.getDomainId())) {
-        				throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "You do not have permission as domain-admin to access limits for this account: " + accountName);
-        			}
-        		}
-        	}
-        	accountId = userAccount.getId();
-        	domainId = DomainVO.ROOT_DOMAIN;
-        } else if (domainId != null) {
-        	if (!domainId.equals(DomainVO.ROOT_DOMAIN)) {
-        		throw new ServerApiException(BaseCmd.PARAM_ERROR, "Only ROOT domain limits can be retrieved right now");
+        if (account == null || isAdmin(account.getType())) {
+        	if (accountName != null) {
+        		// Look up limits for the specified account
+        		
+        		if (domainId == null) {
+            		throw new ServerApiException(BaseCmd.PARAM_ERROR, "You must specify domain Id for the account: " + accountName);
+            	}
+        		
+        		//Account userAccount = getManagementServer().findAccountByName(accountName, domainId);
+        		Account userAccount = getManagementServer().findActiveAccount(accountName, domainId);
+        		
+        		if (userAccount == null) {
+                    throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to find account " + accountName + " in domain " + domainId);
+                } else if (account != null && (account.getType() == Account.ACCOUNT_TYPE_DOMAIN_ADMIN || account.getType() == Account.ACCOUNT_TYPE_READ_ONLY_ADMIN)) {
+                	// If this is a non-root admin, make sure that the admin and the user account belong in the same domain or
+                	// that the user account's domain is a child domain of the parent
+            		if (account.getDomainId() != userAccount.getDomainId() && !getManagementServer().isChildDomain(account.getDomainId(), userAccount.getDomainId())) {
+            			throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "You do not have permission to access limits for this account: " + accountName);
+            		}
+            	}
+        		
+        		accountId = userAccount.getId();
+        		domainId = null;
+        	} else if (domainId != null) {
+        		// Look up limits for the specified domain
+        		
+        		accountId = null;
+        	} else if (account == null) {
+        		// Look up limits for the ROOT domain
+        		
+        		domainId = DomainVO.ROOT_DOMAIN;
+        	} else {
+        		// Look up limits for the admin's account
+        		
+        		accountId = account.getId();
+        		domainId = null;
         	}
         } else {
-        	if (account != null) {
-        		accountId = account.getId();
-        	} else {
-        		accountId = AccountVO.ACCOUNT_ID_SYSTEM;
-        	}
-        	domainId = DomainVO.ROOT_DOMAIN;
+        	// Look up limits for the user's account
+        	
+        	accountId = account.getId();
+        	domainId = null;
+        }       
+        
+        if (accountId == null && domainId != null && !domainId.equals(DomainVO.ROOT_DOMAIN)) {
+        	throw new ServerApiException(BaseCmd.PARAM_ERROR, "Only ROOT domain limits can be retrieved right now");
         }
         
         // Map resource type

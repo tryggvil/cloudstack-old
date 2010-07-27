@@ -20,13 +20,13 @@ package com.cloud.dc;
 
 public interface Vlan {
 	public enum VlanType {
-		DcInternal,
-		DcExternal
+		DirectAttached,
+		VirtualNetwork
 	}
 	
 	public final static String UNTAGGED = "untagged";
 
-	public long getId();
+	public Long getId();
 
 	public String getVlanId();
 
@@ -36,13 +36,9 @@ public interface Vlan {
 
 	public long getDataCenterId();
 
-	public void setVlanName(String vlanName);
+	public void setIpRange(String description);
 
-	public String getVlanName();
-
-	public void setDescription(String description);
-
-	public String getDescription();
+	public String getIpRange();
 
 	public void setVlanType(VlanType ipRange);
 

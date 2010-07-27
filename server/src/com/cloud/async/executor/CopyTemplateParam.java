@@ -24,15 +24,17 @@ public class CopyTemplateParam {
 	private long templateId;
 	private Long sourceZoneId;
 	private Long destZoneId;
+	private long eventId;
 
 	public CopyTemplateParam() {
 	}
 
-	public CopyTemplateParam(long userId, long templateId, Long sourceZoneId, Long destZoneId) {
+	public CopyTemplateParam(long userId, long templateId, Long sourceZoneId, Long destZoneId, long eventId) {
 		this.userId = userId;
 		this.templateId = templateId;
 		this.sourceZoneId = sourceZoneId;
 		this.destZoneId = destZoneId;
+		this.eventId = eventId;
 	}
 	
 	public long getUserId() {
@@ -50,5 +52,13 @@ public class CopyTemplateParam {
 	public Long getDestZoneId() {
 		return destZoneId;
 	}
+
+    public void setEventId(long eventId) {
+        this.eventId = eventId;
+    }
+
+    public long getEventId() {
+        return eventId;
+    }
 	
 }

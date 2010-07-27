@@ -25,16 +25,18 @@ public class VMOperationParam {
 	private long vmId;
 	private String isoPath;
 	private VmOp operation;
+	protected long eventId;
 
 	
 	public VMOperationParam() {
 	}
 	
-	public VMOperationParam(long userId, long vmId, String isoPath) {
+	public VMOperationParam(long userId, long vmId, String isoPath, long eventId) {
 		this.userId = userId;
 		this.vmId = vmId;
 		this.isoPath = isoPath;
 		this.operation  = VmOp.Noop;
+		this.eventId = eventId;
 	}
 	
 	public long getUserId() {
@@ -68,4 +70,8 @@ public class VMOperationParam {
 	public VmOp getOperation() {
 		return operation;
 	}
+
+    public long getEventId() {
+        return eventId;
+    }
 }

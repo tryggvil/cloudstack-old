@@ -51,6 +51,7 @@ import com.cloud.agent.api.routing.SetFirewallRuleCommand;
 import com.cloud.agent.resource.computing.ComputingResource;
 import com.cloud.agent.resource.virtualnetwork.VirtualRoutingResource;
 import com.cloud.host.Host;
+import com.cloud.hypervisor.Hypervisor;
 import com.cloud.resource.ServerResource;
 import com.cloud.utils.script.Script;
 import com.cloud.vm.ConsoleProxy;
@@ -301,7 +302,7 @@ public class RoutingResource extends ComputingResource implements ServerResource
         final List<Object> info = getHostInfo();
         final StartupRoutingCommand cmd = new StartupRoutingCommand((Integer)info.get(0), (Long)info.get(1), (Long)info.get(2), (Long)info.get(4), (String)info.get(3), ports, changes);
         cmd.setIqn(getIQN());
-        cmd.setHypervisorType(Host.HypervisorType.Xen);
+        cmd.setHypervisorType(Hypervisor.Type.Xen);
         fillNetworkInformation(cmd);
         return new StartupCommand[] {cmd};
     }
@@ -406,7 +407,7 @@ public class RoutingResource extends ComputingResource implements ServerResource
     
     protected synchronized Answer execute(ModifyVlanCommand cmd) {
     	boolean add = cmd.getAdd();
-    	String vlanId = cmd.getVlanId();
+    	String vlanId = cmd.getVlanTag();
     	String vlanGateway = cmd.getVlanGateway();
     	
     	try {

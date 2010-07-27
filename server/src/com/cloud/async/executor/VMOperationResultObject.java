@@ -114,6 +114,17 @@ public class VMOperationResultObject {
 	@Param(name="hostid")
 	private Long hostid;
 	
+	@Param(name="networkgrouplist")
+	private String networkGroupList;
+	
+	public String getNetworkGroupList(){
+		return this.networkGroupList;
+	}
+	
+	public void setNetworkGroupList(String nGroups){
+		this.networkGroupList = nGroups;
+	}
+	
 	public long getId() {
 		return id;
 	}

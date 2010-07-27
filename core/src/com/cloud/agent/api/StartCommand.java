@@ -58,7 +58,8 @@ public class StartCommand extends AbstractStartCommand {
 			String guestNetworkId, int utilization, int cpuWeight, int bits, String isoPath, boolean bootFromISO, String guestOSDescription) {
 		id = vm.getId();
         guestIpAddress = vm.getGuestIpAddress();
-        gateway = router.getPrivateIpAddress();
+        if (router != null)
+        	gateway = router.getPrivateIpAddress();
         ramSize = offering.getRamSize();
         cpu = offering.getCpu();
         this.utilization= utilization;

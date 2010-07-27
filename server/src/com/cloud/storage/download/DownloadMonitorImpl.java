@@ -51,6 +51,7 @@ import com.cloud.exception.StorageUnavailableException;
 import com.cloud.host.Host;
 import com.cloud.host.HostVO;
 import com.cloud.host.dao.HostDao;
+import com.cloud.hypervisor.Hypervisor.Type;
 import com.cloud.storage.StoragePoolHostVO;
 import com.cloud.storage.VMTemplateHostVO;
 import com.cloud.storage.VMTemplateStoragePoolVO;
@@ -82,7 +83,7 @@ public class DownloadMonitorImpl implements  DownloadMonitor {
     static final Logger s_logger = Logger.getLogger(DownloadMonitorImpl.class);
 
 	private static final String DEFAULT_HTTP_COPY_PORT = "80";
-	
+	private String _hyperVisorType;
     @Inject 
     VMTemplateHostDao _vmTemplateHostDao;
     @Inject
@@ -91,6 +92,7 @@ public class DownloadMonitorImpl implements  DownloadMonitor {
     StoragePoolHostDao _poolHostDao;
     @Inject
     SecondaryStorageVmDao _secStorageVmDao;
+
     
     @Inject
     HostDao _serverDao = null;
@@ -141,7 +143,9 @@ public class DownloadMonitorImpl implements  DownloadMonitor {
         if ("realhostip.com".equalsIgnoreCase(cert)) {
         	s_logger.warn("Only realhostip.com ssl cert is supported, ignoring self-signed and other certs");
         }
-
+        
+        _hyperVisorType = _configDao.getValue("hypervisor.type");
+        
         _copyAuthPasswd = configs.get("secstorage.copy.password");
         
 
@@ -203,10 +207,12 @@ public class DownloadMonitorImpl implements  DownloadMonitor {
             downloadJobExists = true;
         }
 
+        Long maxTemplateSizeInBytes = getMaxTemplateSizeInBytes();
+        
 		if(destTmpltHost != null) {
 		    start();
 		    
-			DownloadCommand dcmd = new DownloadCommand(url, template.getUniqueName(), template.getFormat(), template.isRequiresHvm(), template.getAccountId(), template.getId(), template.getDisplayText(), template.getChecksum(), TemplateConstants.DEFAULT_HTTP_AUTH_USER, _copyAuthPasswd);
+			DownloadCommand dcmd = new DownloadCommand(url, template.getUniqueName(), template.getFormat(), template.isRequiresHvm(), template.getAccountId(), template.getId(), template.getDisplayText(), template.getChecksum(), TemplateConstants.DEFAULT_HTTP_AUTH_USER, _copyAuthPasswd, maxTemplateSizeInBytes);
 			DownloadListener dl = downloadJobExists?_listenerMap.get(destTmpltHost):null;
 			if (dl == null) {
 				dl = new DownloadListener(destServer, template, _timer, _vmTemplateHostDao, destTmpltHost.getId(), this, dcmd);
@@ -248,6 +254,10 @@ public class DownloadMonitorImpl implements  DownloadMonitor {
 			}
 			return generateCopyUrl(ssVm.getPublicIpAddress(), srcTmpltHost.getInstallPath());
 		}
+		/*No secondary storage vm yet*/
+		if (_hyperVisorType.equalsIgnoreCase("KVM")) {
+			return "file://" + sourceServer.getParent() + "/" + srcTmpltHost.getInstallPath();
+		}
 		return null;
 	}
 
@@ -262,10 +272,12 @@ public class DownloadMonitorImpl implements  DownloadMonitor {
         } else if ((vmTemplateHost.getJobId() != null) && (vmTemplateHost.getJobId().length() > 2)) {
             downloadJobExists = true;
         }
-
+                
+        Long maxTemplateSizeInBytes = getMaxTemplateSizeInBytes();
+        
 		if(vmTemplateHost != null) {
 		    start();
-			DownloadCommand dcmd = new DownloadCommand(template);
+			DownloadCommand dcmd = new DownloadCommand(template, maxTemplateSizeInBytes);
 			dcmd.setUrl(vmTemplateHost.getDownloadUrl());
 			if (vmTemplateHost.isCopy()) {
 				dcmd.setCreds(TemplateConstants.DEFAULT_HTTP_AUTH_USER, _copyAuthPasswd);
@@ -495,7 +507,13 @@ public class DownloadMonitorImpl implements  DownloadMonitor {
 		}
 	}
 	
-
+	private Long getMaxTemplateSizeInBytes() {
+		try {
+			return Long.parseLong(_configDao.getValue("max.template.iso.size")) * 1024L * 1024L * 1024L;
+		} catch (NumberFormatException e) {
+			return null;
+		}
+	}
 	
 }
 	

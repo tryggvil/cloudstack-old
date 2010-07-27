@@ -41,10 +41,10 @@ public interface ConsoleProxyManager extends Manager {
 	
 	public ConsoleProxyVO assignProxy(long dataCenterId, long userVmId);
 	
-	public ConsoleProxyVO startProxy(long proxyVmId);
-	public boolean stopProxy(long proxyVmId);
-	public boolean rebootProxy(long proxyVmId);
-	public boolean destroyProxy(long proxyVmId);
+	public ConsoleProxyVO startProxy(long proxyVmId, long startEventId);
+	public boolean stopProxy(long proxyVmId, long startEventId);
+	public boolean rebootProxy(long proxyVmId, long startEventId);
+	public boolean destroyProxy(long proxyVmId, long startEventId);
 	
 	public void onLoadReport(ConsoleProxyLoadReportCommand cmd);
 	public AgentControlAnswer onConsoleAccessAuthentication(ConsoleAccessAuthenticationCommand cmd);

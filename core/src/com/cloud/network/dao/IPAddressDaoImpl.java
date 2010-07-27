@@ -38,38 +38,12 @@ import com.cloud.utils.db.Transaction;
 public class IPAddressDaoImpl extends GenericDaoBase<IPAddressVO, String> implements IPAddressDao {
     private static final Logger s_logger = Logger.getLogger(IPAddressDaoImpl.class);
 	
-	protected SearchBuilder<IPAddressVO> DcSearchAll;
 	protected SearchBuilder<IPAddressVO> DcIpSearch;
-	protected SearchBuilder<IPAddressVO> VlanDbIdSearch;
 	protected SearchBuilder<IPAddressVO> VlanDbIdSearchUnallocated;
-    protected SearchBuilder<IPAddressVO> AccountIdSearch;
-    protected SearchBuilder<IPAddressVO> AccountIdSourceNatSearch;
-    protected SearchBuilder<IPAddressVO> AccountDcSearch;
-    protected SearchBuilder<IPAddressVO> AccountDcSnatSearch;
-    protected SearchBuilder<IPAddressVO> AddressSearch;
-    protected SearchBuilder<IPAddressVO> AccountZoneVlanSearch;
+    protected SearchBuilder<IPAddressVO> AccountSearch;
 
     // make it public for JUnit test
     public IPAddressDaoImpl() {
-	    AccountDcSearch = createSearchBuilder();
-	    AccountDcSearch.and("accountId", AccountDcSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
-	    AccountDcSearch.and("dataCenterId", AccountDcSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
-	    AccountDcSearch.done();
-
-	    AccountDcSnatSearch = createSearchBuilder();
-	    AccountDcSnatSearch.and("accountId", AccountDcSnatSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
-	    AccountDcSnatSearch.and("dataCenterId", AccountDcSnatSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
-	    AccountDcSnatSearch.and("sourceNat", AccountDcSnatSearch.entity().isSourceNat(), SearchCriteria.Op.EQ);
-	    AccountDcSnatSearch.done();
-	    
-	    AddressSearch = createSearchBuilder();
-	    AddressSearch.and("address", AddressSearch.entity().getAddress(), SearchCriteria.Op.EQ);
-	    AddressSearch.done();
-	    
-	    DcSearchAll = createSearchBuilder();
-	    DcSearchAll.and("dataCenterId", DcSearchAll.entity().getDataCenterId(), SearchCriteria.Op.EQ);
-	    DcSearchAll.done();
-	    
 	    DcIpSearch = createSearchBuilder();
 	    DcIpSearch.and("dataCenterId", DcIpSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
 	    DcIpSearch.and("ipAddress", DcIpSearch.entity().getAddress(), SearchCriteria.Op.EQ);
@@ -81,18 +55,9 @@ public class IPAddressDaoImpl extends GenericDaoBase<IPAddressVO, String> implem
 	    //VlanDbIdSearchUnallocated.addRetrieve("ipAddress", VlanDbIdSearchUnallocated.entity().getAddress());
 	    VlanDbIdSearchUnallocated.done();
 	    
-	    VlanDbIdSearch = createSearchBuilder();
-	    VlanDbIdSearch.and("vlanDbId", VlanDbIdSearch.entity().getVlanDbId(), SearchCriteria.Op.EQ);
-	    VlanDbIdSearch.done();
-	    
-	    AccountIdSearch = createSearchBuilder();
-	    AccountIdSearch.and("accountId", AccountIdSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
-	    AccountIdSearch.done();
-
-        AccountIdSourceNatSearch = createSearchBuilder();
-        AccountIdSourceNatSearch.and("accountId", AccountIdSourceNatSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
-        AccountIdSourceNatSearch.and("sourceNat", AccountIdSourceNatSearch.entity().isSourceNat(), SearchCriteria.Op.EQ);
-        AccountIdSourceNatSearch.done();
+        AccountSearch = createSearchBuilder();
+        AccountSearch.and("accountId", AccountSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
+        AccountSearch.done();
     }
     
     public boolean mark(long dcId, String ip) {
@@ -149,57 +114,12 @@ public class IPAddressDaoImpl extends GenericDaoBase<IPAddressVO, String> implem
 	    update(ipAddress, address);
 	}
 
-	@Override
-	public List<IPAddressVO> listByAccountId(long accountId) {
-	    if (accountId != -1) {
-	        SearchCriteria sc = AccountIdSearch.create();
-	        sc.setParameters("accountId", accountId);
-	        return listBy(sc);
-	    }
-        return listAllActive();
-	}
-
     @Override
-    public List<IPAddressVO> listByAccountIdSourceNat(long accountId, boolean sourceNat) {
-        if (accountId != -1) {
-            SearchCriteria sc = AccountIdSourceNatSearch.create();
-            sc.setParameters("accountId", accountId);
-            sc.setParameters("sourceNat", sourceNat);
-            return listBy(sc);
-        }
-        return listAllActive();
+    public List<IPAddressVO> listByAccount(long accountId) {
+    	SearchCriteria sc = AccountSearch.create();
+        sc.setParameters("accountId", accountId);
+        return listBy(sc);
     }
-
-    @Override
-	public List<IPAddressVO> listByAccountDcId(long accountId, long dcId, boolean sourceNat) {
-		SearchCriteria sc = AccountDcSnatSearch.create();
-		sc.setParameters("accountId", accountId);
-		sc.setParameters("dataCenterId", dcId);
-		sc.setParameters("sourceNat", sourceNat);
-		return listBy(sc);
-	}
-
-	@Override
-	public List<IPAddressVO> listByAccountDcId(long accountId, long dcId) {
-		SearchCriteria sc = AccountDcSearch.create();
-		sc.setParameters("accountId", accountId);
-		sc.setParameters("dataCenterId", dcId);
-		return listBy(sc);
-	}
-	
-	@Override
-	public List<IPAddressVO> listByDcId(long dcId) {
-		SearchCriteria sc = DcSearchAll.create();
-		sc.setParameters("dataCenterId", dcId);
-		return listBy(sc);
-	}
-	
-	@Override
-	public List<IPAddressVO> listByVlanDbId(long vlanDbId) {
-		SearchCriteria sc = VlanDbIdSearch.create();
-		sc.setParameters("vlanDbId", vlanDbId);
-		return listBy(sc);
-	}
 	
 	public List<IPAddressVO> listByDcIdIpAddress(long dcId, String ipAddress) {
 		SearchCriteria sc = DcIpSearch.create();
@@ -209,7 +129,7 @@ public class IPAddressDaoImpl extends GenericDaoBase<IPAddressVO, String> implem
 	}
 	
 	@Override @DB
-	public int countIPs(long dcId, long vlanDbId, long accountId, boolean onlyCountAllocated) {
+	public int countIPs(long dcId, long vlanDbId, boolean onlyCountAllocated) {
 		Transaction txn = Transaction.currentTxn();
 		PreparedStatement pstmt = null;
 		int ipCount = 0;
@@ -218,10 +138,6 @@ public class IPAddressDaoImpl extends GenericDaoBase<IPAddressVO, String> implem
 			
 			if (vlanDbId != -1) {
 				sql += " AND vlan_db_id = " + vlanDbId;
-			}
-			
-			if (accountId != -1) {
-				sql += " AND account_id = " + accountId;
 			}
 			
 			if (onlyCountAllocated) {
@@ -240,5 +156,33 @@ public class IPAddressDaoImpl extends GenericDaoBase<IPAddressVO, String> implem
         }
         
         return ipCount;
+	}
+	
+	@Override @DB
+	public int countIPs(long dcId, String vlanId, String vlanGateway, String vlanNetmask, boolean onlyCountAllocated) {
+		Transaction txn = Transaction.currentTxn();
+		int ipCount = 0;
+		try {
+			String sql = "SELECT count(*) FROM user_ip_address u INNER JOIN vlan v on (u.vlan_db_id = v.id AND v.data_center_id = ? AND v.vlan_id = ? AND v.vlan_gateway = ? AND v.vlan_netmask = ?)";
+			
+			if (onlyCountAllocated) {
+				sql += " WHERE allocated IS NOT NULL";
+			}
+			
+			PreparedStatement pstmt = txn.prepareAutoCloseStatement(sql);
+			pstmt.setLong(1, dcId);
+			pstmt.setString(2, vlanId);
+			pstmt.setString(3, vlanGateway);
+			pstmt.setString(4, vlanNetmask);
+			ResultSet rs = pstmt.executeQuery();
+			
+			if (rs.next()) {
+				ipCount = rs.getInt(1);
+			}
+		} catch (Exception e) {
+			s_logger.warn("Exception counting IP addresses", e);
+		}
+		
+		return ipCount;
 	}
 }

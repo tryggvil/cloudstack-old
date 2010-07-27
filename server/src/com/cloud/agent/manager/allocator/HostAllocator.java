@@ -22,15 +22,14 @@ import java.util.Set;
 import com.cloud.dc.DataCenterVO;
 import com.cloud.dc.HostPodVO;
 import com.cloud.host.Host;
-import com.cloud.host.Host.Type;
 import com.cloud.service.ServiceOffering;
-import com.cloud.storage.DiskOfferingVO;
 import com.cloud.storage.StoragePoolVO;
 import com.cloud.storage.VMTemplateVO;
 import com.cloud.utils.component.Adapter;
 import com.cloud.vm.UserVm;
+import com.cloud.vm.VmCharacteristics;
 
 public interface HostAllocator extends Adapter {
-	Host allocateTo(ServiceOffering offering, DiskOfferingVO diskOffering, Host.Type type, DataCenterVO dc, HostPodVO pod, StoragePoolVO sp, VMTemplateVO template, Set<Host> avoid);
+	Host allocateTo(VmCharacteristics vm, ServiceOffering offering, Host.Type type, DataCenterVO dc, HostPodVO pod, StoragePoolVO sp, VMTemplateVO template, Set<Host> avoid);
 	boolean isVirtualMachineUpgradable(final UserVm vm, final ServiceOffering offering);
 }

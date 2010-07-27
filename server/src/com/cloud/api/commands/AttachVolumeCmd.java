@@ -41,6 +41,8 @@ public class AttachVolumeCmd extends BaseCmd {
     	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.USER_ID, Boolean.FALSE));
     	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ID, Boolean.TRUE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.VIRTUAL_MACHINE_ID, Boolean.TRUE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.DEVICE_ID, Boolean.FALSE));
+        
     }
 
     public String getName() {
@@ -51,12 +53,17 @@ public class AttachVolumeCmd extends BaseCmd {
         return s_properties;
     }
 
+    public static String getResultObjectName() {
+    	return "volume";
+    }
+    
     @Override
     public List<Pair<String, Object>> execute(Map<String, Object> params) {
     	Account account = (Account) params.get(BaseCmd.Properties.ACCOUNT_OBJ.getName());
         //Long userId = (Long) params.get(BaseCmd.Properties.USER_ID.getName());
     	Long volumeId = (Long) params.get(BaseCmd.Properties.ID.getName());
     	Long vmId = (Long) params.get(BaseCmd.Properties.VIRTUAL_MACHINE_ID.getName());
+        Long deviceId = (Long) params.get(BaseCmd.Properties.DEVICE_ID.getName());
 
     	// Check that the volume ID is valid
     	VolumeVO volume = getManagementServer().findVolumeById(volumeId);
@@ -69,6 +76,15 @@ public class AttachVolumeCmd extends BaseCmd {
         	throw new ServerApiException (BaseCmd.VM_INVALID_PARAM_ERROR, "unable to find a virtual machine with id " + vmId);
         }
 
+        // Check that the device ID is valid
+        if( deviceId != null ) {
+            if(deviceId.longValue() == 0) {
+                throw new ServerApiException (BaseCmd.VM_INVALID_PARAM_ERROR, "deviceId can't be 0, which is used by Root device");
+            } else if(deviceId.longValue() == 3) {
+                throw new ServerApiException (BaseCmd.VM_INVALID_PARAM_ERROR, "deviceId can't be 3, which is used by CDROM device"); 
+            }
+        }
+        
         if (volume.getAccountId() != vm.getAccountId()) {
         	throw new ServerApiException (BaseCmd.VM_INVALID_PARAM_ERROR, "virtual machine and volume belong to different accounts, can not attach");
         }
@@ -90,7 +106,7 @@ public class AttachVolumeCmd extends BaseCmd {
     	}
 
     	try {
-    		long jobId = getManagementServer().attachVolumeToVMAsync(vmId, volumeId);
+    		long jobId = getManagementServer().attachVolumeToVMAsync(vmId, volumeId, deviceId);
 
     		if (jobId == 0) {
             	s_logger.warn("Unable to schedule async-job for AttachVolume comamnd");

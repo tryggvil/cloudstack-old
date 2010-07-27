@@ -27,7 +27,9 @@ import org.apache.log4j.Logger;
 import com.cloud.api.BaseCmd;
 import com.cloud.api.ServerApiException;
 import com.cloud.exception.InvalidParameterValueException;
+import com.cloud.server.ManagementServer;
 import com.cloud.storage.SnapshotPolicyVO;
+import com.cloud.storage.StoragePoolVO;
 import com.cloud.storage.VolumeVO;
 import com.cloud.user.Account;
 import com.cloud.utils.Pair;
@@ -39,7 +41,9 @@ public class CreateSnapshotPolicyCmd extends BaseCmd {
     private static final List<Pair<Enum, Boolean>> s_properties = new ArrayList<Pair<Enum, Boolean>>();
 
     static {
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.DOMAIN_ID, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT_OBJ, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.USER_ID, Boolean.FALSE));
     	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.VOLUME_ID, Boolean.TRUE));
     	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.SCHEDULE, Boolean.TRUE));
@@ -57,7 +61,6 @@ public class CreateSnapshotPolicyCmd extends BaseCmd {
 
     @Override
     public List<Pair<String, Object>> execute(Map<String, Object> params) {
-        Account account = (Account)params.get(BaseCmd.Properties.ACCOUNT_OBJ.getName());
         Long userId = (Long)params.get(BaseCmd.Properties.USER_ID.getName());
     	long volumeId = (Long)params.get(BaseCmd.Properties.VOLUME_ID.getName());
         String schedule = (String)params.get(BaseCmd.Properties.SCHEDULE.getName());
@@ -66,25 +69,34 @@ public class CreateSnapshotPolicyCmd extends BaseCmd {
         //ToDo: make maxSnaps optional. Use system wide max when not specified
         int maxSnaps = (Integer)params.get(BaseCmd.Properties.MAX_SNAPS.getName());
         
-        
+        ManagementServer managementServer = getManagementServer();
         // Verify that a volume exists with the specified volume ID
-        VolumeVO volume = getManagementServer().findVolumeById(volumeId);
+        VolumeVO volume = managementServer.findVolumeById(volumeId);
         if (volume == null) {
             throw new ServerApiException (BaseCmd.PARAM_ERROR, "Unable to find a volume with id " + volumeId);
         }
+        
+        // If an account was passed in, make sure that it matches the account of the volume
+        checkAccountPermissions(params, volume.getAccountId(), volume.getDomainId(), "volume", volumeId);
+        
+        StoragePoolVO storagePoolVO = managementServer.findPoolById(volume.getPoolId());
+        if (storagePoolVO == null) {
+            throw new ServerApiException(BaseCmd.PARAM_ERROR, "volumeId: " + volumeId + " does not have a valid storage pool. Is it destroyed?");
+        }
+        if (storagePoolVO.isLocal()) {
+            throw new ServerApiException(BaseCmd.PARAM_ERROR, "Cannot create a snapshot from a volume residing on a local storage pool, poolId: " + volume.getPoolId());
+        }
 
-        if (account != null) {
-            if (isAdmin(account.getType())) {
-                if (!getManagementServer().isChildDomain(account.getDomainId(), volume.getDomainId())) {
-                    throw new ServerApiException (BaseCmd.ACCOUNT_ERROR, "Unable to create a snapshot policy for volume with id " + volumeId + ", permission denied.");
-                }
-            } else if (account.getId().longValue() != volume.getAccountId()) {
-                throw new ServerApiException (BaseCmd.ACCOUNT_ERROR, "Account " + account.getAccountName() + " does not own volume " + volumeId + ", unable to create a snapshot policy.");
+        Long instanceId = volume.getInstanceId();
+        if (instanceId != null) {
+            // It is not detached, but attached to a VM
+            if (managementServer.findUserVMInstanceById(instanceId) == null) {
+                // It is not a UserVM but a SystemVM or DomR
+                throw new ServerApiException(BaseCmd.PARAM_ERROR, "Snapshots of volumes attached to System or router VM are not allowed");
             }
         }
         
-        long accountId = volume.getAccountId();
-
+        Long accountId = volume.getAccountId();
         // If command is executed via 8096 port, set userId to the id of System account (1)
         if (userId == null) {
             userId = Long.valueOf(1);
@@ -92,7 +104,7 @@ public class CreateSnapshotPolicyCmd extends BaseCmd {
 
         SnapshotPolicyVO snapshotPolicy = null;
         try {
-        	snapshotPolicy = getManagementServer().createSnapshotPolicy(accountId, userId, volumeId, schedule, intervalType, maxSnaps, timezone);
+        	snapshotPolicy = managementServer.createSnapshotPolicy(accountId, userId, volumeId, schedule, intervalType, maxSnaps, timezone);
         } catch (InvalidParameterValueException ex) {
         	throw new ServerApiException (BaseCmd.VM_INVALID_PARAM_ERROR, ex.getMessage());
         }

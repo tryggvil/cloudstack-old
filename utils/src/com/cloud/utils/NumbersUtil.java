@@ -260,6 +260,10 @@ public class NumbersUtil {
         }
     }
     
+    public static int hash(long value) {
+        return (int)(value^(value>>>32));
+    }
+    
     public static void main(String[] args) {
         long interval = parseInterval(args[0], -1);
         System.out.println(args[0] + " is " + interval);

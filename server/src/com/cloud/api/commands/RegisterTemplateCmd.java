@@ -27,6 +27,8 @@ import org.apache.log4j.Logger;
 import com.cloud.api.BaseCmd;
 import com.cloud.api.ServerApiException;
 import com.cloud.dc.DataCenterVO;
+import com.cloud.exception.InvalidParameterValueException;
+import com.cloud.exception.ResourceAllocationException;
 import com.cloud.storage.GuestOS;
 import com.cloud.storage.VMTemplateHostVO;
 import com.cloud.storage.VMTemplateStorageResourceAssoc;
@@ -119,12 +121,22 @@ public class RegisterTemplateCmd extends BaseCmd {
         	throw new ServerApiException(BaseCmd.PARAM_ERROR, "Please specify a valid zone Id.");
         }
         
-        //removing support for file:// type urls (bug: 4239)
         if(url.toLowerCase().contains("file://")){
         	throw new ServerApiException(BaseCmd.PARAM_ERROR, "File:// type urls are currently unsupported");
         }
+        
+        if((!url.toLowerCase().endsWith("vhd"))&&(!url.toLowerCase().endsWith("vhd.zip"))
+        	&&(!url.toLowerCase().endsWith("vhd.bz2"))&&(!url.toLowerCase().endsWith("vhd.gz") 
+        	&&(!url.toLowerCase().endsWith("qcow2"))&&(!url.toLowerCase().endsWith("qcow2.zip"))
+        	&&(!url.toLowerCase().endsWith("qcow2.bz2"))&&(!url.toLowerCase().endsWith("qcow2.gz")))){
+        	throw new ServerApiException(BaseCmd.PARAM_ERROR, "Please specify a valid "+format.toLowerCase());
+        }
         	
-        	
+        boolean allowPublicUserTemplates = Boolean.parseBoolean(getManagementServer().getConfigurationValue("allow.public.user.templates"));        
+        if (!isAdmin && !allowPublicUserTemplates && isPublic) {
+        	throw new ServerApiException(BaseCmd.PARAM_ERROR, "Only private templates can be created.");
+        }
+        
         if (!isAdmin || featured == null) {
         	featured = Boolean.FALSE;
         }
@@ -137,8 +149,14 @@ public class RegisterTemplateCmd extends BaseCmd {
         Long templateId;
         try {
         	templateId = getManagementServer().createTemplate(userId, zoneId, name, displayText, isPublic, featured, format, "ext3", url, null, requiresHVM, bits, passwordEnabled, guestOSId, true);
+        } catch (InvalidParameterValueException ipve) {
+            throw new ServerApiException(BaseCmd.PARAM_ERROR, "Internal error registering template " + name + "; " + ipve.getMessage());
+        } catch (IllegalArgumentException iae) {
+            throw new ServerApiException(BaseCmd.PARAM_ERROR, "Internal error registering template " + name + "; " + iae.getMessage());
+        } catch (ResourceAllocationException rae) {
+            throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Internal error registering template " + name + "; " + rae.getMessage());
         } catch (Exception ex) {
-            throw new ServerApiException(BaseCmd.INTERNAL_ERROR, ex.getMessage());
+            throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Internal error registering template " + name);
         }
         	
     	VMTemplateVO template = getManagementServer().findTemplateById(templateId);
@@ -162,8 +180,12 @@ public class RegisterTemplateCmd extends BaseCmd {
         		listForEmbeddedObject.add(new Pair<String, Object>(BaseCmd.Properties.ID.getName(), template.getId().toString()));
         		listForEmbeddedObject.add(new Pair<String, Object>(BaseCmd.Properties.NAME.getName(), template.getName()));
         		listForEmbeddedObject.add(new Pair<String, Object>(BaseCmd.Properties.DISPLAY_TEXT.getName(), template.getDisplayText()));
-        		listForEmbeddedObject.add(new Pair<String, Object>(BaseCmd.Properties.IS_PUBLIC.getName(), Boolean.valueOf(template.isPublicTemplate()).toString()));        		
-        		listForEmbeddedObject.add(new Pair<String, Object>(BaseCmd.Properties.CREATED.getName(), getDateString(template.getCreated())));
+        		listForEmbeddedObject.add(new Pair<String, Object>(BaseCmd.Properties.IS_PUBLIC.getName(), Boolean.valueOf(template.isPublicTemplate()).toString()));    
+        		
+        		if (templateHostRef != null) {
+        			listForEmbeddedObject.add(new Pair<String, Object>(BaseCmd.Properties.CREATED.getName(), getDateString(templateHostRef.getCreated())));
+        		}
+        	
         		listForEmbeddedObject.add(new Pair<String, Object>(BaseCmd.Properties.IS_READY.getName(), (templateHostRef != null && templateHostRef.getDownloadState() == VMTemplateStorageResourceAssoc.Status.DOWNLOADED)));
         		listForEmbeddedObject.add(new Pair<String, Object>(BaseCmd.Properties.IS_FEATURED.getName(), Boolean.valueOf(template.isFeatured()).toString()));
         		listForEmbeddedObject.add(new Pair<String, Object>(BaseCmd.Properties.PASSWORD_ENABLED.getName(), Boolean.valueOf(template.getEnablePassword()).toString()));

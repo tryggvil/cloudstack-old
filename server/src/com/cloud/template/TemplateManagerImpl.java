@@ -28,14 +28,15 @@ import javax.naming.ConfigurationException;
 import org.apache.log4j.Logger;
 
 import com.cloud.agent.AgentManager;
+import com.cloud.agent.api.Answer;
+import com.cloud.agent.api.storage.DestroyCommand;
 import com.cloud.agent.api.storage.DownloadAnswer;
-import com.cloud.agent.api.storage.ManageVolumeAnswer;
-import com.cloud.agent.api.storage.ManageVolumeCommand;
 import com.cloud.agent.api.storage.PrimaryStorageDownloadCommand;
 import com.cloud.configuration.ResourceCount.ResourceType;
 import com.cloud.configuration.dao.ConfigurationDao;
 import com.cloud.dc.DataCenterVO;
 import com.cloud.dc.dao.DataCenterDao;
+import com.cloud.event.EventState;
 import com.cloud.event.EventTypes;
 import com.cloud.event.EventVO;
 import com.cloud.event.dao.EventDao;
@@ -56,6 +57,7 @@ import com.cloud.storage.VolumeVO;
 import com.cloud.storage.Storage.FileSystem;
 import com.cloud.storage.Storage.ImageFormat;
 import com.cloud.storage.VMTemplateStorageResourceAssoc.Status;
+import com.cloud.storage.Volume.VolumeType;
 import com.cloud.storage.dao.SnapshotDao;
 import com.cloud.storage.dao.StoragePoolDao;
 import com.cloud.storage.dao.StoragePoolHostDao;
@@ -254,7 +256,7 @@ public class TemplateManagerImpl implements TemplateManager {
     
     @Override
     @DB
-    public boolean copy(long userId, long templateId, long sourceZoneId, long destZoneId) throws StorageUnavailableException, InvalidParameterValueException {
+    public boolean copy(long userId, long templateId, long sourceZoneId, long destZoneId, long startEventId) throws StorageUnavailableException, InvalidParameterValueException {
     	HostVO srcSecHost = _storageMgr.getSecondaryStorageHost(sourceZoneId);
     	HostVO dstSecHost = _storageMgr.getSecondaryStorageHost(destZoneId);
     	DataCenterVO destZone = _dcDao.findById(destZoneId);
@@ -274,6 +276,14 @@ public class TemplateManagerImpl implements TemplateManager {
         if (srcTmpltHost == null) {
         	throw new InvalidParameterValueException("Template " + vmTemplate.getName() + " not associated with " + srcSecHost.getName());
         }
+        EventVO event = new EventVO();
+        event.setUserId(userId);
+        event.setAccountId(vmTemplate.getAccountId());
+        event.setType(EventTypes.EVENT_TEMPLATE_COPY);
+        event.setState(EventState.Started);
+        event.setDescription("Copying template with Id: "+templateId);
+        event.setStartId(startEventId);
+        event = _eventDao.persist(event);
         
         // Event details
         String params = "id=" + templateId + "\ndcId="+destZoneId+"\nsize="+srcTmpltHost.getSize();
@@ -293,7 +303,7 @@ public class TemplateManagerImpl implements TemplateManager {
             templateType = "Template ";
         }
         
-        copyEventDescription = templateType + vmTemplate.getName() + " succesfully copied to zone: " + destZone.getName() + ".";
+        copyEventDescription = templateType + vmTemplate.getName() + " started copying to zone: " + destZone.getName() + ".";
         createEventDescription = templateType + vmTemplate.getName() + " succesfully created in zone: " + destZone.getName() + ".";
         
         Transaction txn = Transaction.currentTxn();
@@ -334,18 +344,26 @@ public class TemplateManagerImpl implements TemplateManager {
         
     	_downloadMonitor.copyTemplate(vmTemplate, srcSecHost, dstSecHost);
     	
-        saveEvent(userId, account.getId(), account.getDomainId(), copyEventType, copyEventDescription, EventVO.LEVEL_INFO, params);
+        saveEvent(userId, account.getId(), account.getDomainId(), copyEventType, copyEventDescription, EventVO.LEVEL_INFO, params, startEventId);
     	return true;
     }
     
     @Override
-    public boolean delete(long userId, long templateId, Long zoneId) throws InternalErrorException {
+    public boolean delete(long userId, long templateId, Long zoneId, long startEventId) throws InternalErrorException {
     	boolean success = true;
     	VMTemplateVO template = _tmpltDao.findById(templateId);
     	if (template == null || template.getRemoved() != null) {
     		throw new InternalErrorException("Please specify a valid template.");
     	}
-    	
+        EventVO event = new EventVO();
+        event.setUserId(userId);
+        event.setAccountId(template.getAccountId());
+        event.setType(EventTypes.EVENT_TEMPLATE_DELETE);
+        event.setState(EventState.Started);
+        event.setDescription("Deleting template with Id: "+templateId);
+        event.setStartId(startEventId);
+        event = _eventDao.persist(event);
+        
     	String zoneName;
     	List<HostVO> secondaryStorageHosts;
     	if (!template.isCrossZones() && zoneId != null) {
@@ -410,7 +428,7 @@ public class TemplateManagerImpl implements TemplateManager {
 					}
 					
 					String zoneParams = params + "\ndcId=" + sZoneId;
-					saveEvent(userId, account.getId(), account.getDomainId(), eventType, description + template.getName() + " succesfully deleted.", EventVO.LEVEL_INFO, zoneParams);
+					saveEvent(userId, account.getId(), account.getDomainId(), eventType, description + template.getName() + " succesfully deleted.", EventVO.LEVEL_INFO, zoneParams, startEventId);
 				} finally {
 					if (lock != null) {
 						_tmpltHostDao.release(lock.getId());
@@ -437,7 +455,7 @@ public class TemplateManagerImpl implements TemplateManager {
 					success = false;
 				} else if (_tmpltDao.remove(templateId)) {
 					// Decrement the number of templates
-					_accountMgr.decrementResourceCount(accountId, ResourceType.template);					
+					_accountMgr.decrementResourceCount(accountId, ResourceType.template);
 				}
 
 			} finally {
@@ -469,16 +487,8 @@ public class TemplateManagerImpl implements TemplateManager {
 				continue;
 			}
 
-			List<VMInstanceVO> vmInstances;
-			if (template.getFormat() == ImageFormat.ISO) {
-				vmInstances = _vmInstanceDao.listByPoolAndISOActive(pool.getId(), template.getId());
-			} else {
-				vmInstances = _vmInstanceDao.listByPoolAndTemplateActive(pool.getId(), template.getId());
-			}
-
-			// If no VMs are using the template/ISO, consider it unused
-			if (vmInstances.isEmpty()) {
-				unusedTemplatesInPool.add(templatePoolVO);
+			if (template.getFormat() != ImageFormat.ISO && !_volumeDao.isAnyVolumeActivelyUsingTemplateOnPool(template.getId(), pool.getId())) {
+                unusedTemplatesInPool.add(templatePoolVO);
 			}
 		}
 		
@@ -497,9 +507,9 @@ public class TemplateManagerImpl implements TemplateManager {
 			hostId = poolHostVOs.get(0).getHostId();
 		}
 		
-		final ManageVolumeCommand cmd = new ManageVolumeCommand(false, templatePoolVO.getTemplateSize(), pool.getUuid(), templatePoolVO.getInstallPath(), template.getName(), template.getName(), pool);
-		ManageVolumeAnswer answer = (ManageVolumeAnswer) _agentMgr.easySend(hostId, cmd);
-    	
+		DestroyCommand cmd = new DestroyCommand(pool, templatePoolVO);
+		Answer answer = _agentMgr.easySend(hostId, cmd);
+		
     	if (answer != null && answer.getResult()) {
     		// Remove the templatePoolVO
     		if (_tmpltPoolDao.remove(templatePoolVO.getId())) {
@@ -508,12 +518,13 @@ public class TemplateManagerImpl implements TemplateManager {
     	}
 	}
     
-    private Long saveEvent(long userId, Long accountId, Long domainId, String type, String description, String level, String params) {
+    private Long saveEvent(long userId, Long accountId, Long domainId, String type, String description, String level, String params, long startEventId) {
         EventVO event = new EventVO();
         event.setUserId(userId);
         event.setAccountId(accountId);
         event.setType(type);
         event.setDescription(description);
+        event.setStartId(startEventId);
         
         if (domainId != null) {
         	event.setDomainId(domainId);
@@ -528,6 +539,10 @@ public class TemplateManagerImpl implements TemplateManager {
         }
         
         return _eventDao.persist(event).getId();
+    }
+    
+    private Long saveEvent(long userId, Long accountId, Long domainId, String type, String description, String level, String params) {
+        return saveEvent(userId, accountId, domainId, type, description, level, params,0); 
     }
     
     @Override

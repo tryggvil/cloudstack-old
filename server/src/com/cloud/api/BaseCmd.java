@@ -35,6 +35,7 @@ import com.cloud.async.AsyncJobVO;
 import com.cloud.serializer.SerializerHelper;
 import com.cloud.server.ManagementServer;
 import com.cloud.user.Account;
+import com.cloud.utils.DateUtil;
 import com.cloud.utils.Pair;
 
 public abstract class BaseCmd {
@@ -54,6 +55,8 @@ public abstract class BaseCmd {
     public static final short TYPE_FLOAT = 4;
     public static final short TYPE_BOOLEAN = 5;
     public static final short TYPE_OBJECT = 6;
+    public static final short TYPE_OBJECT_MAP = 7;
+    public static final short TYPE_TZDATE = 8;
 
     // Client error codes
     public static final int MALFORMED_PARAMETER_ERROR = 430;
@@ -82,7 +85,8 @@ public abstract class BaseCmd {
     public static final int CREATE_VOLUME_FROM_SNAPSHOT_ERROR = 550;
     public static final int VM_INSUFFICIENT_CAPACITY = 551;
     public static final int CREATE_PRIVATE_TEMPLATE_ERROR = 552;
-
+    public static final int VM_HOST_LICENSE_EXPIRED = 553;
+    
     public static final int NET_IP_ASSOC_ERROR = 560;
     public static final int NET_IP_DIASSOC_ERROR = 561;
     public static final int NET_CREATE_IPFW_RULE_ERROR = 562;
@@ -111,6 +115,7 @@ public abstract class BaseCmd {
         ALLOCATED_ONLY("allocatedonly", BaseCmd.TYPE_BOOLEAN, "allocatedOnly"),
         API_KEY("apikey", BaseCmd.TYPE_STRING, "apiKey"),
         APPLIED("applied", BaseCmd.TYPE_BOOLEAN, "applied"),
+        AVERAGE_LOAD("averageload",BaseCmd.TYPE_LONG,"averageLoad"),
         ASSIGN_DATE("assigneddate", BaseCmd.TYPE_DATE, "assigneddate"),
         BOOTABLE("bootable", BaseCmd.TYPE_BOOLEAN, "bootable"),
         BITS("bits", BaseCmd.TYPE_INT, "bits"),
@@ -132,6 +137,10 @@ public abstract class BaseCmd {
         CONSOLE_PROXY_SSLENABLED("consoleproxysslenabled", BaseCmd.TYPE_BOOLEAN, "consoleProxySslEnabled"),
         CIDR("cidr", BaseCmd.TYPE_STRING, "cidr"),
         CIDR_ADDRESS("cidraddress", BaseCmd.TYPE_STRING, "CidrAddress"),
+        CIDR_LIST("cidrlist", BaseCmd.TYPE_STRING, "cidrList"),
+        GUEST_IP_ADDRESS("guestipaddress", BaseCmd.TYPE_STRING, "guestIpAddress"),
+        GUEST_MAC_ADDRESS("guestmacaddress", BaseCmd.TYPE_STRING, "guestMacAddress"),
+        GUEST_NETMASK("guestnetmask", BaseCmd.TYPE_STRING, "guestNetmask"),
         GUEST_CIDR_ADDRESS("guestcidraddress", BaseCmd.TYPE_STRING, "GuestCidrAddress"),
         CIDR_SIZE("cidrsize", BaseCmd.TYPE_LONG, "CidrSize"),
         CPU_NUMBER("cpunumber", BaseCmd.TYPE_LONG, "CpuNumber"),
@@ -139,6 +148,7 @@ public abstract class BaseCmd {
         CPU_ALLOCATED("cpuallocated", BaseCmd.TYPE_LONG, "cpuallocated"),
         CPU_USED("cpuused", BaseCmd.TYPE_LONG, "cpuused"),
         CREATED("created", BaseCmd.TYPE_DATE, "created"),
+        CROSS_ZONES("crossZones", BaseCmd.TYPE_BOOLEAN, "crosszones"),
         DAILY_MAX("dailymax", BaseCmd.TYPE_INT, "dailyMax"),
         DESCRIPTION("description", BaseCmd.TYPE_STRING, "description"),
         DEVICE_NAME("devicename", BaseCmd.TYPE_STRING, "deviceName"),
@@ -160,8 +170,10 @@ public abstract class BaseCmd {
         DOMAIN_ID("domainid", BaseCmd.TYPE_LONG, "domainId"),
         DOMAIN_LEVEL("level", BaseCmd.TYPE_INT, "level"),
         DEST_ZONE_ID("destzoneid", BaseCmd.TYPE_LONG, "destZoneId"),
+        DURATION("duration", BaseCmd.TYPE_INT, "duration"),
         END_DATE("enddate", BaseCmd.TYPE_DATE, "endDate"),
         EMAIL("email", BaseCmd.TYPE_STRING, "email"),
+        ENTRY_TIME("entrytime", BaseCmd.TYPE_INT, "entryTime"),
         FIREWALL_ENABLE_PASSWORD("firewallenablepassword", BaseCmd.TYPE_STRING, "firewallEnablePassword"),
         FIREWALL_IP("firewallip", BaseCmd.TYPE_STRING, "firewallIp"),
         FIREWALL_PASSWORD("firewallpassword", BaseCmd.TYPE_STRING, "firewallPassword"),
@@ -182,7 +194,10 @@ public abstract class BaseCmd {
         HOST_NAME("hostname", BaseCmd.TYPE_STRING, "hostname"),
         HOURLY_MAX("hourlymax", BaseCmd.TYPE_INT, "hourlyMax"),
         HYPERVISOR("hypervisor", BaseCmd.TYPE_STRING, "hypervisor"),
+        ICMP_TYPE("icmptype", BaseCmd.TYPE_INT, "icmpType"),
+        ICMP_CODE("icmpcode", BaseCmd.TYPE_INT, "icmpCode"),
         ID("id", BaseCmd.TYPE_LONG, "id"),
+        DEVICE_ID("deviceid", BaseCmd.TYPE_LONG, "deviceid"),
         IDS("ids", BaseCmd.TYPE_STRING, "Ids"),
         INTERVAL("interval", BaseCmd.TYPE_INT, "interval"),
         INTERVAL_TYPE("intervaltype", BaseCmd.TYPE_STRING, "intervalType"),
@@ -197,6 +212,7 @@ public abstract class BaseCmd {
         IS_CLEANUP_REQUIRED("iscleanuprequired", BaseCmd.TYPE_BOOLEAN, "iscleanuprequired"),
         IS_ENABLED("isenabled", BaseCmd.TYPE_BOOLEAN, "isEnabled"),
         IS_MIRRORED("ismirrored", BaseCmd.TYPE_BOOLEAN, "isMirrored"),
+        IS_LOCAL_STORAGE_ACTIVE("islocalstorageactive", BaseCmd.TYPE_BOOLEAN, "isLocalStorageActive"),
         ISO_ID("isoid", BaseCmd.TYPE_LONG, "isoId"),
         ISO_NAME("isoname", BaseCmd.TYPE_STRING, "isoName"),
         ISO_PATH("isopath", BaseCmd.TYPE_STRING, "isoPath"),
@@ -220,11 +236,14 @@ public abstract class BaseCmd {
         NEW_NAME("newname", BaseCmd.TYPE_STRING, "newname"),
         NETMASK("netmask", BaseCmd.TYPE_STRING, "netmask"),
         NETWORK_DOMAIN("networkdomain", BaseCmd.TYPE_STRING, "networkdomain"),
+        NETWORK_KB_READ("networkkbsread", BaseCmd.TYPE_LONG, "networkkbsread"),
+        NETWORK_KB_WRITE("networkkbswrite", BaseCmd.TYPE_LONG, "networkkbswrite"),
         OLD_POD_NAME("oldpodname", BaseCmd.TYPE_STRING, "oldPodName"),
         OLD_ZONE_NAME("oldzonename", BaseCmd.TYPE_STRING, "oldZoneName"),
         OP("op", BaseCmd.TYPE_STRING, "op"),
         PAGE("page", BaseCmd.TYPE_INT, "page"),
         PAGESIZE("pagesize", BaseCmd.TYPE_INT, "pagesize"),
+        PARENT_ID("parentid", BaseCmd.TYPE_LONG, "parentId"),
         PARENT_DOMAIN_ID("parentdomainid", BaseCmd.TYPE_LONG, "parentDomainId"),
         PARENT_DOMAIN_NAME("parentdomainname", BaseCmd.TYPE_STRING, "parentDomainName"),
         PASSWORD("password", BaseCmd.TYPE_STRING, "password"),
@@ -249,8 +268,9 @@ public abstract class BaseCmd {
         RESPONSE_TYPE("response",BaseCmd.TYPE_STRING,"response"),
         RULE_ID("ruleid", BaseCmd.TYPE_LONG, "ruleId"),
         SCHEDULE("schedule", BaseCmd.TYPE_STRING, "schedule"),
-        SHOW_ALL("showall", BaseCmd.TYPE_BOOLEAN, "showall"),
         SECRET_KEY("secretkey", BaseCmd.TYPE_STRING, "secretKey"),
+        SHOW_ALL("showall", BaseCmd.TYPE_BOOLEAN, "showall"),
+        SSO_KEY("ssokey", BaseCmd.TYPE_STRING, "ssoKey"),
         PORT_FORWARDING_SERVICE_ID("portforwardingserviceid", BaseCmd.TYPE_LONG, "portForwardingServiceId"),
         SENT("sent", BaseCmd.TYPE_DATE, "sent"),
         SERVICE_OFFERING_ID("serviceofferingid", BaseCmd.TYPE_LONG, "serviceOfferingId"),
@@ -258,6 +278,7 @@ public abstract class BaseCmd {
         SERVICE_OFFERING_NAME("serviceofferingname", BaseCmd.TYPE_STRING, "serviceOfferingName"),
         SOURCE_ZONE_ID("sourcezoneid", BaseCmd.TYPE_LONG, "sourceZoneId"),
         START_DATE("startdate", BaseCmd.TYPE_DATE, "startDate"),
+        START_TZDATE("startdate", BaseCmd.TYPE_TZDATE, "startDate"),
         START_IP("startip", BaseCmd.TYPE_STRING, "startIp"),
         END_IP("endip", BaseCmd.TYPE_STRING, "endIp"),
         START_VLAN("startvlan", BaseCmd.TYPE_LONG, "startvlan"),
@@ -342,7 +363,25 @@ public abstract class BaseCmd {
         URL("url", BaseCmd.TYPE_STRING, "url"),
         CMD("cmd", BaseCmd.TYPE_STRING, "cmd"),
         ACTIVE_VIEWER_SESSIONS("activeviewersessions", BaseCmd.TYPE_INT, "activeviewersessions"),
-        SYSTEM_VM_TYPE("systemvmtype", BaseCmd.TYPE_STRING, "systemvmtype");
+        SYSTEM_VM_TYPE("systemvmtype", BaseCmd.TYPE_STRING, "systemvmtype"),
+        START_PORT("startport", BaseCmd.TYPE_INT, "startPort"),
+        END_PORT("endport", BaseCmd.TYPE_INT, "endPort"),
+        NETWORK_GROUP_NAME("networkgroupname", BaseCmd.TYPE_STRING, "networkGroupName"),
+        NETWORK_GROUP_LIST("networkgrouplist", BaseCmd.TYPE_STRING, "networkGroupList"),
+        USER_NETWORK_GROUP_LIST("usernetworkgrouplist", BaseCmd.TYPE_OBJECT_MAP, "userNetworkGroupList"),
+        USE_VIRTUAL_NETWORK("usevirtualnetwork", BaseCmd.TYPE_BOOLEAN, "useVirtualNetwork"),
+        FOR_VIRTUAL_NETWORK("forvirtualnetwork", BaseCmd.TYPE_BOOLEAN, "forVirtualNetwork"),
+        EVENTS("events",BaseCmd.TYPE_STRING,"events"),
+        PORTAL("portal", BaseCmd.TYPE_STRING, "portal"),
+        TARGET_IQN("targetiqn", BaseCmd.TYPE_STRING, "targetiqn"),
+        TAGS("tags", BaseCmd.TYPE_STRING, "tags"),
+        TAKEN("taken", BaseCmd.TYPE_DATE, "taken"),
+        LUN("lun", BaseCmd.TYPE_INT, "lun"),
+        DETAILS("details", BaseCmd.TYPE_OBJECT_MAP, "details"),
+        CLUSTER_ID("clusterid", BaseCmd.TYPE_LONG, "clusterid"),
+        CLUSTER_NAME("clustername", BaseCmd.TYPE_STRING, "clustername"),
+        SCOPE("scope", BaseCmd.TYPE_STRING, "scope"),
+        SUM_ACROSS_ZONE("sumacrosszone", BaseCmd.TYPE_BOOLEAN, "sumAcrossZone");
 
         private final String _name;
         private final short _dataType;
@@ -391,7 +430,7 @@ public abstract class BaseCmd {
         List<Pair<Enum, Boolean>> properties = getProperties();
 
         // step 1 - all parameter names passed in will be converted to lowercase
-        Map<String, Object> processedParams = lowercaseParams(params);
+        Map<String, Object> processedParams = lowercaseParams(params, decode);
 
         // step 2 - make sure all required params exist, and all existing params adhere to the appropriate data type
         Map<String, Object> validatedParams = new HashMap<String, Object>();
@@ -404,7 +443,7 @@ public abstract class BaseCmd {
             if (param != null) {
                 short propertyType = prop.getDataType();
                 String decodedParam = null;
-                if (propertyType != TYPE_OBJECT) {
+                if ((propertyType != TYPE_OBJECT) && (propertyType != TYPE_OBJECT_MAP)) {
                     decodedParam = (String)param;
                     if (decode) {
                         try {
@@ -443,6 +482,14 @@ public abstract class BaseCmd {
                         throw new ServerApiException(MALFORMED_PARAMETER_ERROR, prop.getName() + " uses an unsupported date format");
                     }
                     break;
+                case TYPE_TZDATE:
+                    try {
+                        validatedParams.put(prop.getName(), DateUtil.parseTZDateString(decodedParam));
+                    } catch (ParseException ex) {
+                        s_logger.warn(prop.getName() + " (type is date) is malformed, value = " + decodedParam);
+                        throw new ServerApiException(MALFORMED_PARAMETER_ERROR, prop.getName() + " uses an unsupported date format");
+                    }
+                    break;
                 case TYPE_FLOAT:
                     try {
                         validatedParams.put(prop.getName(), Float.valueOf(Float.parseFloat(decodedParam)));
@@ -470,10 +517,89 @@ public abstract class BaseCmd {
         return validatedParams;
     }
 
-    private Map<String, Object> lowercaseParams(Map<String, Object> params) {
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> lowercaseParams(Map<String, Object> params, boolean decode) {
         Map<String, Object> lowercaseParams = new HashMap<String, Object>();
         for (String key : params.keySet()) {
-            lowercaseParams.put(key.toLowerCase(), params.get(key));
+        	int arrayStartIndex = key.indexOf('[');
+        	int arrayStartLastIndex = key.lastIndexOf('[');
+        	if (arrayStartIndex != arrayStartLastIndex) {
+        		throw new ServerApiException(MALFORMED_PARAMETER_ERROR, "Unable to decode parameter " + key + "; if specifying an object array, please use parameter[index].field=XXX, e.g. userGroupList[0].group=httpGroup");
+        	}
+
+        	if (arrayStartIndex > 0) {
+        		int arrayEndIndex = key.indexOf(']');
+        		int arrayEndLastIndex = key.lastIndexOf(']');
+        		if ((arrayEndIndex < arrayStartIndex) || (arrayEndIndex != arrayEndLastIndex)) {
+        			// malformed parameter
+        			throw new ServerApiException(MALFORMED_PARAMETER_ERROR, "Unable to decode parameter " + key + "; if specifying an object array, please use parameter[index].field=XXX, e.g. userGroupList[0].group=httpGroup");
+        		}
+
+        		// Now that we have an array object, check for a field name in the case of a complex object
+        		int fieldIndex = key.indexOf('.');
+        		String fieldName = null;
+        		if (fieldIndex < arrayEndIndex) {
+        			throw new ServerApiException(MALFORMED_PARAMETER_ERROR, "Unable to decode parameter " + key + "; if specifying an object array, please use parameter[index].field=XXX, e.g. userGroupList[0].group=httpGroup");
+        		} else {
+        			fieldName = key.substring(fieldIndex + 1);
+        		}
+
+        		// parse the parameter name as the text before the first '[' character
+        		String paramName = key.substring(0, arrayStartIndex);
+        		paramName = paramName.toLowerCase();
+
+        		Map<Integer, Map> mapArray = null;
+        		Map<String, Object> mapValue = null;
+        		String indexStr = key.substring(arrayStartIndex+1, arrayEndIndex);
+        		int index = 0;
+        		boolean parsedIndex = false;
+    			try {
+    				if (indexStr != null) {
+    					index = Integer.parseInt(indexStr);
+    					parsedIndex = true;
+    				}
+    			} catch (NumberFormatException nfe) {
+    				s_logger.warn("Invalid parameter " + key + " received, unable to parse object array, returning an error.");
+    			}
+
+    			if (!parsedIndex) {
+    				throw new ServerApiException(MALFORMED_PARAMETER_ERROR, "Unable to decode parameter " + key + "; if specifying an object array, please use parameter[index].field=XXX, e.g. userGroupList[0].group=httpGroup");
+    			}
+
+        		Object value = lowercaseParams.get(paramName);
+        		if (value == null) {
+        			// for now, assume object array with sub fields
+        			mapArray = new HashMap<Integer, Map>();
+        			mapValue = new HashMap<String, Object>();
+        			mapArray.put(Integer.valueOf(index), mapValue);
+        		} else if (value instanceof Map) {
+        			mapArray = (HashMap)value;
+        			mapValue = mapArray.get(Integer.valueOf(index));
+        			if (mapValue == null) {
+        			    mapValue = new HashMap<String, Object>();
+        			    mapArray.put(Integer.valueOf(index), mapValue);
+        			}
+        		}
+
+        		// we are ready to store the value for a particular field into the map for this object, make sure the value is decoded if required
+        		String valueStr = (String)params.get(key);
+        		String decodedValue = null;
+        		if (decode) {
+                    try {
+                    	decodedValue = URLDecoder.decode(valueStr, "UTF-8");
+                    } catch (UnsupportedEncodingException usex) {
+                        s_logger.warn(key + " could not be decoded, value = " + valueStr);
+                        throw new ServerApiException(PARAM_ERROR, key + " could not be decoded, received value " + valueStr);
+                    }
+                } else {
+                	decodedValue = valueStr;
+                }
+        		mapValue.put(fieldName, decodedValue);
+
+        		lowercaseParams.put(paramName, mapArray);
+        	} else {
+                lowercaseParams.put(key.toLowerCase(), params.get(key));
+        	}
         }
         return lowercaseParams;
     }
@@ -510,23 +636,8 @@ public abstract class BaseCmd {
             Object tagValue = tagData.second();
             if (tagValue instanceof Object[]) {
                 Object[] subObjects = (Object[])tagValue;
-                if (RESPONSE_TYPE_JSON.equalsIgnoreCase(responseType)) {
-                    if (subObjects.length < 1) continue;
-                    String separator = ((i > 0) ? ", " : "");
-                    sb.append(separator);
-                }
-                int j = 0;
-                for (Object subObject : subObjects) {
-                    if (subObject instanceof List) {
-                        List subObjList = (List)subObject;
-                        writeSubObject(sb, tagName, subObjList, responseType, j++);
-                    }
-                }
-
-                if (RESPONSE_TYPE_JSON.equalsIgnoreCase(responseType)) {
-                    sb.append("]");
-                }
-                i++;
+                if (subObjects.length < 1) continue;
+                writeObjectArray(responseType, sb, i++, tagName, subObjects);
             } else {
                 writeNameValuePair(sb, tagName, tagValue, responseType, i++);
             }
@@ -545,11 +656,36 @@ public abstract class BaseCmd {
         if (tagValue == null) {
             return;
         }
-        if (RESPONSE_TYPE_JSON.equalsIgnoreCase(responseType)) {
-            String seperator = ((propertyCount > 0) ? ", " : "");
-            sb.append(seperator + "\"" + tagName + "\" : \"" + tagValue.toString() + "\"");
+
+        if (tagValue instanceof Object[]) {
+            Object[] subObjects = (Object[])tagValue;
+            if (subObjects.length < 1) return;
+            writeObjectArray(responseType, sb, propertyCount, tagName, subObjects);
         } else {
-            sb.append("<" + tagName + ">" + escapeXml(tagValue.toString()) + "</" + tagName + ">");
+            if (RESPONSE_TYPE_JSON.equalsIgnoreCase(responseType)) {
+                String seperator = ((propertyCount > 0) ? ", " : "");
+                sb.append(seperator + "\"" + tagName + "\" : \"" + escapeJSON(tagValue.toString()) + "\"");
+            } else {
+                sb.append("<" + tagName + ">" + escapeXml(tagValue.toString()) + "</" + tagName + ">");
+            }
+        }
+    }
+
+    private void writeObjectArray(String responseType, StringBuffer sb, int propertyCount, String tagName, Object[] subObjects) {
+        if (RESPONSE_TYPE_JSON.equalsIgnoreCase(responseType)) {
+            String separator = ((propertyCount > 0) ? ", " : "");
+            sb.append(separator);
+        }
+        int j = 0;
+        for (Object subObject : subObjects) {
+            if (subObject instanceof List) {
+                List subObjList = (List)subObject;
+                writeSubObject(sb, tagName, subObjList, responseType, j++);
+            }
+        }
+
+        if (RESPONSE_TYPE_JSON.equalsIgnoreCase(responseType)) {
+            sb.append("]");
         }
     }
 
@@ -608,7 +744,15 @@ public abstract class BaseCmd {
 		}
 		return sOUT.toString();
 	}
-	
+
+	private static String escapeJSON(String str) {
+	    if (str == null) {
+	        return str;
+	    }
+
+	    return str.replace("\"", "\\\"");
+	}
+
 	protected long waitInstanceCreation(long jobId) {
         ManagementServer mgr = getManagementServer();
 
@@ -677,5 +821,62 @@ public abstract class BaseCmd {
 	    return ((accountType == Account.ACCOUNT_TYPE_ADMIN) ||
 	            (accountType == Account.ACCOUNT_TYPE_DOMAIN_ADMIN) ||
 	            (accountType == Account.ACCOUNT_TYPE_READ_ONLY_ADMIN));
+	}
+	
+	protected Account getAccount(Map<String, Object> params) throws ServerApiException {
+	    Long domainId      = (Long)   params.get(Properties.DOMAIN_ID.getName());
+        Account account    = (Account)params.get(Properties.ACCOUNT_OBJ.getName());
+        String accountName = (String) params.get(Properties.ACCOUNT.getName());
+        
+        Long accountId = null;
+        Account finalAccount = null;
+	    ManagementServer managementServer = getManagementServer();
+        if ((account == null) || isAdmin(account.getType())) {
+            if (domainId != null) {
+                if ((account != null) && !managementServer.isChildDomain(account.getDomainId(), domainId)) {
+                    throw new ServerApiException(PARAM_ERROR, "Invalid domain id (" + domainId + ") ");
+                }
+                if (accountName != null) {
+                    Account userAccount = managementServer.findActiveAccount(accountName, domainId);
+                    if (userAccount == null) {
+                        throw new ServerApiException(PARAM_ERROR, "Unable to find account " + accountName + " in domain " + domainId);
+                    }
+                    accountId = userAccount.getId();
+                }
+            } else {
+                accountId = ((account != null) ? account.getId() : null);
+            }
+        } else {
+            accountId = account.getId();
+        }
+
+        if (accountId != null) {
+            finalAccount = managementServer.findAccountById(accountId);
+        }
+        return finalAccount;
+	}
+	
+    protected Long checkAccountPermissions(Map<String, Object> params,
+                                           long targetAccountId,
+                                           long targetDomainId,
+                                           String targetDesc,
+                                           long targetId)
+    throws ServerApiException
+    {
+	    Long accountId = null;
+	    
+        Account account = getAccount(params);
+        if (account != null) {
+            if (!isAdmin(account.getType())) {
+                if (account.getId().longValue() != targetAccountId) {
+                    throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to find a " + targetDesc + " with id " + targetId + " for this account");
+                }
+            } else if (!getManagementServer().isChildDomain(account.getDomainId(), targetDomainId)) {
+                throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to perform operation for " + targetDesc + " with id " + targetId + ", permission denied.");
+            }
+            accountId = account.getId();
+        }
+        
+        return accountId;
 	}
 }

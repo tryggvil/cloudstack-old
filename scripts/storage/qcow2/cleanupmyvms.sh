@@ -1,5 +1,6 @@
 #!/bin/bash
-# $Id: cleanupmyvms.sh 9132 2010-06-04 20:17:43Z manuel $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/storage/qcow2/cleanupmyvms.sh $
+# $Id: cleanupmyvms.sh 9804 2010-06-22 18:36:49Z alex $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.1.x/java/scripts/storage/qcow2/cleanupmyvms.sh $
+# @VERSION@
 
 if [ "$1" == "" ]
 then

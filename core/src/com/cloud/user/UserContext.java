@@ -20,6 +20,8 @@ package com.cloud.user;
 
 import org.apache.log4j.Logger;
 
+import com.cloud.utils.ProcessUtil;
+
 
 public class UserContext {
     private static final Logger s_logger = Logger.getLogger(UserContext.class);
@@ -49,7 +51,8 @@ public class UserContext {
 			return userId.longValue();
 
 		if(!apiServer) 
-			s_logger.warn("Null user id in UserContext");
+			s_logger.warn("Null user id in UserContext " + ProcessUtil.dumpStack());
+		
 		return 0;
 	}
 
@@ -62,7 +65,7 @@ public class UserContext {
 			return accountId.longValue();
 		
 		if(!apiServer)
-			s_logger.warn("Null account id in UserContext");
+			s_logger.warn("Null account id in UserContext " + ProcessUtil.dumpStack());
 		return 0;
 	}
 
@@ -91,6 +94,15 @@ public class UserContext {
 		if(context == null)
 			return s_nullContext;
 		return context;
+	}
+	
+	public static void updateContext(Long userId, Long accountId, String sessionId) {
+		UserContext context = current();
+		assert(context != null) : "Context should be already setup before you can call this one";
+		
+		context.setUserId(userId);
+		context.setAccountId(accountId);
+		context.setSessionKey(sessionId);
 	}
 	
 	public static void registerContext(Long userId, Long accountId, String sessionId, boolean apiServer) {

@@ -78,6 +78,7 @@ public class SearchBuilder<T> implements MethodInterceptor {
     protected Map<String, Attribute> _attrs;
     protected HashMap<String, Ternary<SearchBuilder<?>, Attribute, Attribute>> _joins;
     protected ArrayList<Pair<Func, Attribute[]>> _selects;
+    protected ArrayList<Attribute> _groupBys;
     
     protected T _entity;
     protected ArrayList<Attribute> _specifiedAttrs;
@@ -134,7 +135,7 @@ public class SearchBuilder<T> implements MethodInterceptor {
         return this;
     }
     
-    public SearchBuilder<T> select(Object useless) {
+    public SearchBuilder<T> selectField(Object useless) {
         return select(Func.NATIVE, useless);
     }
     
@@ -148,7 +149,6 @@ public class SearchBuilder<T> implements MethodInterceptor {
     
     public SearchBuilder<T> select(Func func, Object... useless) {
         assert _entity != null : "SearchBuilder cannot be modified once it has been setup";
-        assert _specifiedAttrs.size() == 1 : "You didn't select the attribute.  Did you use a different SearchBuilder to get the entity?";
         
         Pair<Func, Attribute[]> pair = new Pair<Func, Attribute[]>(func, _specifiedAttrs.toArray(new Attribute[_specifiedAttrs.size()]));
         if (_selects == null) {
@@ -158,6 +158,19 @@ public class SearchBuilder<T> implements MethodInterceptor {
         
         _specifiedAttrs.clear();
         
+        return this;
+    }
+    
+    public SearchBuilder<T> groupBy(Object... useless) {
+    	if(_groupBys == null) {
+    		_groupBys = new ArrayList<Attribute>();
+    	}
+    	
+    	Attribute[] attrs = _specifiedAttrs.toArray(new Attribute[_specifiedAttrs.size()]);
+    	for(Attribute attr : attrs)
+    		_groupBys.add(attr);
+    	
+        _specifiedAttrs.clear();
         return this;
     }
     
@@ -194,7 +207,7 @@ public class SearchBuilder<T> implements MethodInterceptor {
     
     protected void constructCondition(String conditionName, String cond, Attribute attr, Op op) {
         assert _entity != null : "SearchBuilder cannot be modified once it has been setup";
-        assert _specifiedAttrs.size() == 1 : "You didn't selectt the attribute.";
+        assert _specifiedAttrs.size() == 1 : "You didn't select the attribute.";
         assert op != Op.SC : "Call join";
         
         Condition condition = new Condition(conditionName, cond, attr, op);

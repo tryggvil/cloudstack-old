@@ -25,27 +25,31 @@ function showHostsTab() {
 		var pIndex = 0;
 		
 		// Dialog Setup
-		if (getHypervisorType() != "kvm") {
+		if (getHypervisorType() != "kvm") { //"xenserver"
 			$("#host_action_new_routing").show();
 			activateDialog($("#dialog_add_routing").dialog({ 
 				autoOpen: false,
 				modal: true,
 				zIndex: 2000
 			}));
+			
+			var dialogAddRouting = $("#dialog_add_routing");
+						
 			$.ajax({
 				data: "command=listZones&available=true&response=json",
 				dataType: "json",
 				success: function(json) {
 					var zones = json.listzonesresponse.zone;
-					var zoneSelect = $("#dialog_add_routing #host_zone").empty();								
+					var zoneSelect = dialogAddRouting.find("#host_zone").empty();								
 					if (zones != null && zones.length > 0) {
 						for (var i = 0; i < zones.length; i++) 
 							zoneSelect.append("<option value='" + zones[i].id + "'>" + sanitizeXSS(zones[i].name) + "</option>"); 				    
 					}
-					$("#dialog_add_routing #host_zone").change();
+					//dialogAddRouting.find("#host_zone").change();
 				}
 			});
-			$("#dialog_add_routing #host_zone").bind("change", function(event) {
+			
+			dialogAddRouting.find("#host_zone").bind("change", function(event) {
 				var zoneId = $(this).val();
 				$.ajax({
 					data: "command=listPods&zoneId="+zoneId+"&response=json",
@@ -53,15 +57,38 @@ function showHostsTab() {
 					async: false,
 					success: function(json) {
 						var pods = json.listpodsresponse.pod;
-						var podSelect = $("#dialog_add_routing #host_pod").empty();	
+						var podSelect = dialogAddRouting.find("#host_pod").empty();	
 						if (pods != null && pods.length > 0) {
 							for (var i = 0; i < pods.length; i++) {
 								podSelect.append("<option value='" + pods[i].id + "'>" + sanitizeXSS(pods[i].name) + "</option>"); 
 							}
 						}
-						$("#dialog_add_routing #host_pod").change();
+						dialogAddRouting.find("#host_pod").change();
 					}
 				});
+			});
+			
+			dialogAddRouting.find("#host_pod").bind("change", function(event) {			   
+			    var podId = $(this).val();
+			    if(podId == null || podId.length == 0)
+			        return;
+			    var clusterSelect = dialogAddRouting.find("#cluster_select").empty();		        
+			    $.ajax({
+			        data: "command=listClusters&response=json&podid=" + podId,
+			        dataType: "json",
+			        success: function(json) {			            
+			            var items = json.listclustersresponse.cluster;
+			            if(items != null && items.length > 0) {			                
+			                for(var i=0; i<items.length; i++) 			                    
+			                    clusterSelect.append("<option value='" + items[i].id + "'>" + items[i].name + "</option>");		      
+		                    dialogAddRouting.find("input[value=existing_cluster_radio]").attr("checked", true);
+			            }
+			            else {
+							clusterSelect.append("<option value='-1'>None Available</option>");
+			                dialogAddRouting.find("input[value=new_cluster_radio]").attr("checked", true);
+			            }
+			        }
+			    });
 			});
 		}
 		activateDialog($("#dialog_update_os").dialog({ 
@@ -102,9 +129,19 @@ function showHostsTab() {
 	        }
 	        template.find("#detail_type").text(type);
 	        template.find("#detail_name").text(getVmName(json.name, json.displayname));
-	        template.find("#detail_ip").text(json.ipaddress);
+	        
+	        if(type == "Instance")
+	            template.find("#detail_ip").text(json.ipaddress);
+	        else //Router, System
+	            template.find("#detail_ip").text(json.privateip);
+	            
 	        template.find("#detail_service").text(json.serviceofferingname);
-	        template.find("#detail_owner").text(json.account);
+	        
+	        if(json.account == null && type == "System")
+	            template.find("#detail_owner").text("system");
+	        else
+	            template.find("#detail_owner").text(json.account);	        
+	        
 	        setDateField(json.created, template.find("#detail_created"));	
         }
 		
@@ -486,14 +523,11 @@ function showHostsTab() {
 				template.find("#row_container").addClass("row_odd");
 			}
 			template.data("hostId", json.id).data("hostName", sanitizeXSS(json.name));
-			if (json.hypervisor == "KVM") {
-				template.find("#routing_hypervisor img").attr("src", "images/KVM_icon.gif");
-			} else {
-				// default to XEN for now
-				template.find("#routing_hypervisor img").attr("src", "images/XEN_icon.gif");
-			}
+					
 			template.find("#routing_zone").text(json.zonename);
 			template.find("#routing_pod").text(json.podname);
+			template.find("#routing_cluster").text(json.clustername);
+			
 			template.find("#routing_name").text(json.name);
 			template.find("#routing_ipaddress").text(json.ipaddress);
 			template.find("#routing_version").text(json.version);
@@ -501,11 +535,14 @@ function showHostsTab() {
 			template.data("osId", json.oscategoryid);
 						
 			setDateField(json.disconnected, template.find("#routing_disconnected"));
-						
-			var statHtml = "<div class='hostcpu_icon'></div><p><strong> CPU Total:</strong> " +json.cpunumber+ " x " + convertHz(json.cpuspeed)+" | <strong>CPU Allocated:</strong> " + json.cpuallocated + " | <span class='host_statisticspanel_green'> <strong>CPU Used:</strong> " + json.cpuused + "</span></p>";
+			
+			var spaceCharacter = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"			
+			var statHtml = "<div class='hostcpu_icon'></div><p><strong> CPU Total:</strong> " + ((json.cpunumber==null)? spaceCharacter:json.cpunumber) + " x " + ((json.cpuspeed==null)? spaceCharacter:convertHz(json.cpuspeed))+" | <strong>CPU Allocated:</strong> " + ((json.cpuallocated==null)? spaceCharacter:json.cpuallocated) + " | <span class='host_statisticspanel_green'> <strong>CPU Used:</strong> " + ((json.cpuused==null)? spaceCharacter:json.cpuused) + "</span></p>";
 			template.find("#host_cpu_stat").html(statHtml);
-			statHtml = "<div class='hostmemory_icon'></div><p><strong> MEM Total:</strong> " +convertBytes(json.memorytotal)+" | <strong>MEM Allocated:</strong> " + convertBytes(json.memoryallocated) + " | <span class='host_statisticspanel_green'> <strong>MEM Used:</strong> " + json.memoryused + "</span></p>";
-			template.find("#host_mem_stat").html(statHtml);
+			statHtml = "<div class='hostmemory_icon'></div><p><strong> MEM Total:</strong> " + ((json.memorytotal==null)? spaceCharacter:convertBytes(json.memorytotal))+" | <strong>MEM Allocated:</strong> " + ((json.memoryallocated==null)? spaceCharacter:convertBytes(json.memoryallocated)) + " | <span class='host_statisticspanel_green'> <strong>MEM Used:</strong> " + ((json.memoryused==null)? spaceCharacter:convertBytes(json.memoryused)) + "</span></p>";
+			template.find("#host_mem_stat").html(statHtml);				
+			statHtml = "<div class='hostnetwork_icon'></div><p><strong> Network Read:</strong> " + ((json.networkkbsread==null)? spaceCharacter:convertBytes(json.networkkbsread * 1024))+" | <strong>Network Write:</strong> " + ((json.networkkbswrite==null)? spaceCharacter:convertBytes(json.networkkbswrite * 1024)) + "</p>";
+			template.find("#host_network_stat").html(statHtml);			
 			
 			routingStateToTemplate(json.state, template);
 		}
@@ -549,63 +586,100 @@ function showHostsTab() {
 		// Add New Routing Host
 		if (getHypervisorType() != "kvm") {
 			$("#host_action_new_routing").bind("click", function(event) {
-			$("#dialog_add_routing")
-			.dialog('option', 'buttons', { 				
-				"Add": function() { 
-				    var dialogBox = $(this);
-				
-					// validate values
-					var isValid = true;									
-					isValid &= validateString("Host name", dialogBox.find("#host_hostname"), dialogBox.find("#host_hostname_errormsg"));
-					isValid &= validateString("User name", dialogBox.find("#host_username"), dialogBox.find("#host_username_errormsg"));
-					isValid &= validateString("Password", dialogBox.find("#host_password"), dialogBox.find("#host_password_errormsg"));		
-					if (!isValid) return;
-								
-			        var hostname = trim(dialogBox.find("#host_hostname").val());
-					var username = trim(dialogBox.find("#host_username").val());
-					var password = trim(dialogBox.find("#host_password").val());
-					var zoneId = dialogBox.find("#host_zone").val();
-					var podId = dialogBox.find("#host_pod").val();
-					
-					var url;					
-					if(hostname.indexOf("http://")==-1)
-					    url = "http://" + hostname;
-					else
-					    url = hostname;
-										
-					var template = $("#routing_template").clone(true);		
-					var loadingImg = template.find(".adding_loading");		
-                    var rowContainer = template.find("#row_container");    	                               
-                    loadingImg.find(".adding_text").text("Adding....");	
-                    loadingImg.show();  
-                    rowContainer.hide();        
-                                 
-                    //submenuContent.find("#grid_content").prepend(template.fadeIn("slow"));	  //change to use prepend() when AddHost API is able to return an embedded object.                        					
-					submenuContent.find("#grid_content").append(template.fadeIn("slow")); //use append() for now since we refresh page after AddHost API returns success (without en embedded object) 
-					
-					dialogBox.dialog("close");
-					$.ajax({
-						data: "command=addHost&zoneId="+zoneId+"&podId="+podId+"&url="+encodeURIComponent(url)+"&username="+encodeURIComponent(username)+"&password="+encodeURIComponent(password)+"&response=json",
-						dataType: "json",
-						success: function(json) {
-							var hosts = json.addhostresponse.host;
-							// For now, we'll just refresh since this call doesn't return any hosts for me to append.							
-							listHosts();
-							
-							loadingImg.hide();  
-                            rowContainer.show();    
-						},			
-	                    error: function(XMLHttpResponse) {		                   
-		                    handleError(XMLHttpResponse);	
-		                    template.slideUp("slow", function(){ $(this).remove(); } );							    
-	                    }				
-					});
-				}, 
-				"Cancel": function() { 
-					$(this).dialog("close"); 
-				} 
-			}).dialog("open");
-			return false;
+				dialogAddRouting.find("#new_cluster_name").val("");
+				dialogAddRouting.find("#host_zone").change(); //refresh cluster dropdown
+			    
+			    dialogAddRouting
+			    .dialog('option', 'buttons', { 				
+				    "Add": function() { 
+				        var dialogBox = $(this);				   
+					    var clusterRadio = dialogBox.find("input[name=cluster]:checked").val();				
+    				
+					    // validate values
+					    var isValid = true;									
+					    isValid &= validateString("Host name", dialogBox.find("#host_hostname"), dialogBox.find("#host_hostname_errormsg"));
+					    isValid &= validateString("User name", dialogBox.find("#host_username"), dialogBox.find("#host_username_errormsg"));
+					    isValid &= validateString("Password", dialogBox.find("#host_password"), dialogBox.find("#host_password_errormsg"));						
+					    if(clusterRadio == "new_cluster_radio")
+					        isValid &= validateString("Cluster name", dialogBox.find("#new_cluster_name"), dialogBox.find("#new_cluster_name_errormsg"));					
+					    if (!isValid) return;
+    					
+					    var array1 = [];
+    					
+					    var zoneId = dialogBox.find("#host_zone").val();
+					    array1.push("&zoneId="+zoneId);
+    					
+					    var podId = dialogBox.find("#host_pod").val();	
+					    array1.push("&podId="+podId);
+    							      
+					    var username = trim(dialogBox.find("#host_username").val());
+					    array1.push("&username="+encodeURIComponent(username));
+    					
+					    var password = trim(dialogBox.find("#host_password").val());
+					    array1.push("&password="+encodeURIComponent(password));
+    					
+					    if(clusterRadio == "new_cluster_radio") {
+					        var newClusterName = trim(dialogBox.find("#new_cluster_name").val());
+					        array1.push("&clustername="+encodeURIComponent(newClusterName));				    
+					    }
+					    else if(clusterRadio == "existing_cluster_radio") {
+					        var clusterId = dialogBox.find("#cluster_select").val();
+							// We will default to no cluster if someone selects Join Cluster with no cluster available.
+							if (clusterId != '-1') {
+								array1.push("&clusterid="+clusterId);
+							}
+					    }
+    					
+					    var hostname = trim(dialogBox.find("#host_hostname").val());
+					    var url;					
+					    if(hostname.indexOf("http://")==-1)
+					        url = "http://" + hostname;
+					    else
+					        url = hostname;
+					    array1.push("&url="+encodeURIComponent(url));
+    										
+					    var template = $("#routing_template").clone(true);		
+					    var loadingImg = template.find(".adding_loading");		
+                        var rowContainer = template.find("#row_container");    	                               
+                        loadingImg.find(".adding_text").text("Adding....");	
+                        loadingImg.show();  
+                        rowContainer.hide();                                                                                     					
+					    submenuContent.find("#grid_content").append(template.fadeIn("slow")); 
+    					
+					    dialogBox.dialog("close");
+					    $.ajax({
+						    data: "command=addHost&response=json" + array1.join(""),
+						    dataType: "json",
+						    success: function(json) {						    
+							    var items = json.addhostresponse.host;
+							    routingJSONToTemplate(items[0], template);							
+							    loadingImg.hide();  
+                                rowContainer.show();  
+                                changeGridRowsTotal(submenuContent.find("#grid_rows_total"), 1); 
+                                                                
+                                if(items.length > 1) { 
+                                    for(var i=1; i<items.length; i++) { 
+                                        var anotherNewTemplate = $("#routing_template").clone(true);	
+                                        routingJSONToTemplate(items[i], anotherNewTemplate);	
+                                        submenuContent.find("#grid_content").append(anotherNewTemplate.fadeIn("slow")); 
+                                        changeGridRowsTotal(submenuContent.find("#grid_rows_total"), 1); 
+                                    }	
+                                }                                
+                                
+                                if(clusterRadio == "new_cluster_radio")
+                                    dialogBox.find("#new_cluster_name").val("");
+						    },			
+	                        error: function(XMLHttpResponse) {		                   
+		                        handleError(XMLHttpResponse);	
+		                        template.slideUp("slow", function(){ $(this).remove(); } );							    
+	                        }				
+					    });
+				    }, 
+				    "Cancel": function() { 
+					    $(this).dialog("close"); 
+				    } 
+			    }).dialog("open");
+			    return false;
 			});
 		}
 				

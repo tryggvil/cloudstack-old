@@ -34,6 +34,10 @@ import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
 
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+
+import org.apache.commons.codec.binary.Base64;
 import org.apache.log4j.Logger;
 
 import com.cloud.configuration.Config;
@@ -41,13 +45,12 @@ import com.cloud.configuration.ConfigurationManager;
 import com.cloud.configuration.ConfigurationVO;
 import com.cloud.configuration.dao.ConfigurationDao;
 import com.cloud.dc.DataCenterVO;
-import com.cloud.dc.dao.DataCenterDao;
 import com.cloud.domain.DomainVO;
 import com.cloud.exception.InternalErrorException;
 import com.cloud.exception.InvalidParameterValueException;
 import com.cloud.storage.SnapshotPolicyVO;
 import com.cloud.storage.dao.SnapshotPolicyDao;
-import com.cloud.user.dao.UserDao;
+import com.cloud.user.User;
 import com.cloud.utils.PasswordGenerator;
 import com.cloud.utils.PropertiesUtil;
 import com.cloud.utils.component.ComponentLocator;
@@ -61,20 +64,19 @@ public class ConfigurationServerImpl implements ConfigurationServer {
 	
 	private final ConfigurationDao _configDao;
 	private final ConfigurationManager _configMgr;
-	private final UserDao _userDao;
-	private final DataCenterDao _zoneDao;
 	private final SnapshotPolicyDao _snapPolicyDao;
 	
 	public ConfigurationServerImpl() {
 		ComponentLocator locator = ComponentLocator.getLocator(Name);
 		_configDao = locator.getDao(ConfigurationDao.class);
 		_configMgr = locator.getManager(ConfigurationManager.class);
-		_userDao = locator.getDao(UserDao.class);
-		_zoneDao = locator.getDao(DataCenterDao.class);
 		_snapPolicyDao = locator.getDao(SnapshotPolicyDao.class);
 	}
 
 	public void persistDefaultValues() throws InvalidParameterValueException, InternalErrorException {
+		
+		// Create system user and admin user
+		saveUser();
 		
 		// Get init
 		String init = _configDao.getValue("init");
@@ -128,34 +130,43 @@ public class ConfigurationServerImpl implements ConfigurationServer {
 	             //Add default manual snapshot policy
 	            SnapshotPolicyVO snapPolicy = new SnapshotPolicyVO(0L, "00", "GMT", (short)4, 0);
 	            _snapPolicyDao.persist(snapPolicy);
+	            
+	            // Save Virtual Networking service offerings
+	            _configMgr.createServiceOffering(User.UID_SYSTEM, "Small Instance, Virtual Networking", 1, 512, 500, "Small Instance, Virtual Networking, $0.05 per hour", false, false, true, null);
+	            _configMgr.createServiceOffering(User.UID_SYSTEM, "Medium Instance, Virtual Networking", 1, 1024, 1000, "Medium Instance, Virtual Networking, $0.10 per hour", false, false, true, null);
 			}
 			
-			// Save default service offerings
-			_configMgr.createServiceOffering(null, "Small", 1, 512, 500, "Small Offering, $0.05 per hour", false, false);
-			_configMgr.createServiceOffering(null, "Medium", 1, 1024, 1000, "Medium Offering, $0.10 per hour", false, false);
-			_configMgr.createServiceOffering(null, "Large", 2, 2048, 2000, "Large Offering, $0.15 per hour", false, false);
+			boolean externalIpAlloator = Boolean.parseBoolean(_configDao.getValue("direct.attach.network.externalIpAllocator.enabled"));
+			String hyperVisor = _configDao.getValue("hypervisor.type");
+			if (hyperVisor.equalsIgnoreCase("KVM") && !externalIpAlloator) {
+				/*For KVM, it's enabled by default*/
+				_configDao.update("direct.attach.network.externalIpAllocator.enabled", "true");
+			}
+			
+			// Save Direct Networking service offerings
+			_configMgr.createServiceOffering(User.UID_SYSTEM, "Small Instance, Direct Networking", 1, 512, 500, "Small Instance, Direct Networking, $0.05 per hour", false, false, false, null);			
+			_configMgr.createServiceOffering(User.UID_SYSTEM, "Medium Instance, Direct Networking", 1, 1024, 1000, "Medium Instance, Direct Networking, $0.10 per hour", false, false, false, null);			
 			
 			// Save default disk offerings
-			_configMgr.createDiskOffering(DomainVO.ROOT_DOMAIN, "Small", "Small Disk, 5 GB", 5, false);
-			_configMgr.createDiskOffering(DomainVO.ROOT_DOMAIN, "Medium", "Medium Disk, 20 GB", 20, false);
-			_configMgr.createDiskOffering(DomainVO.ROOT_DOMAIN, "Large", "Large Disk, 100 GB", 100, false);
-			
-			
+			_configMgr.createDiskOffering(DomainVO.ROOT_DOMAIN, "Small", "Small Disk, 5 GB", 5, false, null);
+			_configMgr.createDiskOffering(DomainVO.ROOT_DOMAIN, "Medium", "Medium Disk, 20 GB", 20, false, null);
+			_configMgr.createDiskOffering(DomainVO.ROOT_DOMAIN, "Large", "Large Disk, 100 GB", 100, false, null);
+
 			// Save the mount parent to the configuration table
 			String mountParent = getMountParent();
 			if (mountParent != null) {
-				_configMgr.updateConfiguration("mount.parent", mountParent);
+				_configMgr.updateConfiguration(User.UID_SYSTEM, "mount.parent", mountParent);
 				s_logger.debug("ConfigurationServer saved \"" + mountParent + "\" as mount.parent.");
 			} else {
 				s_logger.debug("ConfigurationServer could not detect mount.parent.");
 			}
-			
+
 			String hostIpAdr = getHost();
 			if (hostIpAdr != null) {
-				_configMgr.updateConfiguration("host", hostIpAdr);
+				_configMgr.updateConfiguration(User.UID_SYSTEM, "host", hostIpAdr);
 				s_logger.debug("ConfigurationServer saved \"" + hostIpAdr + "\" as host.");
 			}
-			
+
 			// Get the gateway and netmask of this machine
 			String[] gatewayAndNetmask = getGatewayAndNetmask();
 
@@ -163,45 +174,45 @@ public class ConfigurationServerImpl implements ConfigurationServer {
 				String gateway = gatewayAndNetmask[0];
 				String netmask = gatewayAndNetmask[1];
 				long cidrSize = NetUtils.getCidrSize(netmask);
-				
+
 				// Create a default zone
 				String dns = getDNS();
 				if (dns == null) {
 					dns = "4.2.2.2";
 				}
-				DataCenterVO zone = _configMgr.createZone("Default", dns, null, dns, null, "1000-2000","10.1.1.0/24");
-				
+				DataCenterVO zone = _configMgr.createZone(User.UID_SYSTEM, "Default", dns, null, dns, null, "1000-2000","10.1.1.0/24");
+
 				// Create a default pod
 				String networkType = _configDao.getValue("network.type");
 				if (networkType != null && networkType.equals("vnet")) {
-					_configMgr.createPod("Default", zone.getId(), "169.254.1.0/24", "169.254.1.2", "169.254.1.254");
+					_configMgr.createPod(User.UID_SYSTEM, "Default", zone.getId(), "169.254.1.1", "169.254.1.0/24", "169.254.1.2", "169.254.1.254");
 				} else {
-					_configMgr.createPod("Default", zone.getId(), gateway + "/" + cidrSize, null, null);
+					_configMgr.createPod(User.UID_SYSTEM, "Default", zone.getId(), gateway, gateway + "/" + cidrSize, null, null);
 				}
-				
-				s_logger.debug("ConfigurationServer saved a default pod and zone, with gateway: " + gateway + " and netmask: " + netmask);		
+
+				s_logger.debug("ConfigurationServer saved a default pod and zone, with gateway: " + gateway + " and netmask: " + netmask);
 			} else {
 				s_logger.debug("ConfigurationServer could not detect the gateway and netmask of the management server.");
 			}
-						
+
+	        // generate a single sign-on key
+	        updateSSOKey();
 		}
-		
+
 		// store the public and private keys in the database
 		updateKeyPairs();
-			
-		// Create system user and admin user
-		saveUser();
-		
+
 		// generate a random password used to authenticate zone-to-zone copy
 		generateSecStorageVmCopyPassword();
-			
+
 		// Update the cloud identifier
 		updateCloudIdentifier();
-		
+
 		// Set init to true
 		_configDao.update("init", "true");
 	}
-	
+
+	/*
 	private String getManagementNetworkCIDR() {
 		String[] gatewayAndNetmask = getGatewayAndNetmask();
 		
@@ -217,7 +228,8 @@ public class ConfigurationServerImpl implements ConfigurationServer {
 			return subnet + "/" + cidrSize;
 		}
 	}
-	
+	*/
+
 	private String[] getGatewayAndNetmask() {
 		String defaultRoute = Script.runSimpleBashScript("/sbin/route | grep default");
 		
@@ -383,7 +395,7 @@ public class ConfigurationServerImpl implements ConfigurationServer {
         } catch (SQLException ex) {
         }
     }
-	
+
 	protected void updateCloudIdentifier() {
 		// Creates and saves a UUID as the cloud identifier
 		String currentCloudIdentifier = _configDao.getValue("cloud.identifier");
@@ -393,72 +405,77 @@ public class ConfigurationServerImpl implements ConfigurationServer {
 		}
 	}
 
-	@DB
-	protected void updateKeyPairs() {
+    @DB
+    protected void updateKeyPairs() {
         // Grab the SSH key pair and insert it into the database, if it is not present
-		
-		s_logger.info("Processing updateKeyPairs");		
-		String already = _configDao.getValue("ssh.privatekey");
-		
-		if (already == null) {
-		
-			s_logger.info("Need to store in the database");
-			
-			String homeDir = Script.runSimpleBashScript("echo ~");
-			if (homeDir == "~") {
-				s_logger.warn("No home directory was detected.  Trouble with SSH keys ahead.");
-				return;
-			}
-			
-			File privkeyfile = new File(homeDir + "/.ssh/id_rsa");
-			File pubkeyfile  = new File(homeDir + "/.ssh/id_rsa.pub");
-			byte[] arr1 = new byte[4094]; // configuration table column value size 
-			try {
-			    new DataInputStream(new FileInputStream(privkeyfile)).readFully(arr1);
-			}
-			catch (EOFException e) {}
-			catch (Exception e) {
-			    s_logger.warn("Cannot read the private key file",e);
-			    return;
-			}
-			String privateKey = new String(arr1).trim();
-			byte[] arr2 = new byte[4094]; // configuration table column value size
-			try {
-				new DataInputStream(new FileInputStream(pubkeyfile)).readFully(arr2);
-			}
-			catch (EOFException e) {}
-			catch (Exception e) {
-			    s_logger.warn("Cannot read the public key file",e);
-			    return;
-			}
-			String publicKey  = new String(arr2).trim();
-			
-	        String insertSql1 = "INSERT INTO `cloud`.`configuration` (category, instance, component, name, value, description) " +
-            "VALUES ('Hidden','DEFAULT', 'management-server','ssh.privatekey', '"+privateKey+"','Private key for the entire CloudStack')";
-	        String insertSql2 = "INSERT INTO `cloud`.`configuration` (category, instance, component, name, value, description) " +
-            "VALUES ('Hidden','DEFAULT', 'management-server','ssh.publickey', '"+publicKey+"','Public key for the entire CloudStack')";
 
-	    Transaction txn = Transaction.currentTxn();
-		try {
-	        PreparedStatement stmt1 = txn.prepareAutoCloseStatement(insertSql1);
-	        stmt1.executeUpdate();
-		s_logger.debug("Private key inserted into database");
-        } catch (SQLException ex) {
-        	s_logger.warn("SQL of the private key failed",ex);
+        if (s_logger.isInfoEnabled()) {
+            s_logger.info("Processing updateKeyPairs");
         }
-	    try {
-	        PreparedStatement stmt2 = txn.prepareAutoCloseStatement(insertSql2);
-	        stmt2.executeUpdate();
-		s_logger.debug("Public key inserted into database");
-        } catch (SQLException ex) {
-        	s_logger.warn("SQL of the public key failed",ex);
+        String already = _configDao.getValue("ssh.privatekey");
+
+        if (already == null) {
+            if (s_logger.isInfoEnabled()) {
+                s_logger.info("Need to store in the database");
+            }
+
+            String homeDir = Script.runSimpleBashScript("echo ~");
+            if (homeDir == "~") {
+                s_logger.warn("No home directory was detected.  Trouble with SSH keys ahead.");
+                return;
+            }
+
+            File privkeyfile = new File(homeDir + "/.ssh/id_rsa");
+            File pubkeyfile  = new File(homeDir + "/.ssh/id_rsa.pub");
+            byte[] arr1 = new byte[4094]; // configuration table column value size
+            try {
+                new DataInputStream(new FileInputStream(privkeyfile)).readFully(arr1);
+            } catch (EOFException e) {
+            } catch (Exception e) {
+                s_logger.warn("Cannot read the private key file",e);
+                return;
+            }
+            String privateKey = new String(arr1).trim();
+            byte[] arr2 = new byte[4094]; // configuration table column value size
+            try {
+                new DataInputStream(new FileInputStream(pubkeyfile)).readFully(arr2);
+            } catch (EOFException e) {			    
+            } catch (Exception e) {
+                s_logger.warn("Cannot read the public key file",e);
+                return;
+            }
+            String publicKey  = new String(arr2).trim();
+
+            String insertSql1 = "INSERT INTO `cloud`.`configuration` (category, instance, component, name, value, description) " +
+                                "VALUES ('Hidden','DEFAULT', 'management-server','ssh.privatekey', '"+privateKey+"','Private key for the entire CloudStack')";
+            String insertSql2 = "INSERT INTO `cloud`.`configuration` (category, instance, component, name, value, description) " +
+                                "VALUES ('Hidden','DEFAULT', 'management-server','ssh.publickey', '"+publicKey+"','Public key for the entire CloudStack')";
+
+            Transaction txn = Transaction.currentTxn();
+            try {
+                PreparedStatement stmt1 = txn.prepareAutoCloseStatement(insertSql1);
+                stmt1.executeUpdate();
+                if (s_logger.isDebugEnabled()) {
+                    s_logger.debug("Private key inserted into database");
+                }
+            } catch (SQLException ex) {
+                s_logger.warn("SQL of the private key failed",ex);
+            }
+
+            try {
+                PreparedStatement stmt2 = txn.prepareAutoCloseStatement(insertSql2);
+                stmt2.executeUpdate();
+                if (s_logger.isDebugEnabled()) {
+                    s_logger.debug("Public key inserted into database");
+                }
+            } catch (SQLException ex) {
+                s_logger.warn("SQL of the public key failed",ex);
+            }
         }
-		}
-		
     }
 
 	@DB
-	protected void generateSecStorageVmCopyPassword() {		
+	protected void generateSecStorageVmCopyPassword() {
 		String already = _configDao.getValue("secstorage.copy.password");
 		
 		if (already == null) {
@@ -479,6 +496,20 @@ public class ConfigurationServerImpl implements ConfigurationServer {
 			}
 	    
 		}
-		
+	}
+
+	private void updateSSOKey() {
+        try {
+            String encodedKey = null;
+
+            // Algorithm for SSO Keys is SHA1, should this be configuable?
+            KeyGenerator generator = KeyGenerator.getInstance("HmacSHA1");
+            SecretKey key = generator.generateKey();
+            encodedKey = Base64.encodeBase64URLSafeString(key.getEncoded());
+
+            _configDao.update("security.singlesignon.key", encodedKey);
+        } catch (NoSuchAlgorithmException ex) {
+            s_logger.error("error generating sso key", ex);
+        }
 	}
 }

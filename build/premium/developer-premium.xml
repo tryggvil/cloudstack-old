@@ -9,11 +9,14 @@
     </description>
 
 
+  <dirname property="base.dir" file="${ant.file.Cloud.com Developer Premium Targets}/../.."/>
+  <property name="build.dir" location="${base.dir}/build"/>
+  
   <import file="${build.dir}/developer.xml" optional="false"/>
 
-
-  <target name="deploy-server" depends="build-all, package-systemvm-premium, deploy-common" />
-
+  <target name="deploy-server" depends="deploy-common" >
+    <copy todir="${server.deploy.to.dir}/webapps/client/WEB-INF/lib/vms" file="${dist.dir}/systemvm-premium.zip" />
+  </target>
 
 </project>
 

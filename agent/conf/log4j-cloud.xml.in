@@ -11,7 +11,6 @@
    <appender name="FILE" class="org.apache.log4j.rolling.RollingFileAppender">
       <param name="Append" value="true"/>
       <param name="Threshold" value="DEBUG"/>
-      <param name="MaxBackupIndex" value="30"/>
       <rollingPolicy class="org.apache.log4j.rolling.TimeBasedRollingPolicy">
         <param name="FileNamePattern" value="@AGENTLOG@.%d{yyyy-MM-dd}.gz"/>
         <param name="ActiveFileName" value="@AGENTLOG@"/>

@@ -27,6 +27,7 @@ import com.cloud.async.AsyncJobVO;
 import com.cloud.async.BaseAsyncJobExecutor;
 import com.cloud.serializer.GsonHelper;
 import com.cloud.server.ManagementServer;
+import com.cloud.vm.UserVmVO;
 import com.google.gson.Gson;
 
 public class ResetVMPasswordExecutor extends BaseAsyncJobExecutor {
@@ -50,16 +51,18 @@ public class ResetVMPasswordExecutor extends BaseAsyncJobExecutor {
 			asyncMgr.updateAsyncJobAttachment(job.getId(), "vm_instance", param.getVmId());
 			try {
 				boolean success = managementServer.resetVMPassword(param.getUserId(), param.getVmId(), param.getPassword());
-				if(success)
+				if(success) {
+			        UserVmVO userVm = managementServer.findUserVMInstanceById(param.getVmId());
 					asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_SUCCEEDED, 0, 
-						new ResetVMPasswordResultObject(param.getVmId(), param.getPassword()));
+						VMExecutorHelper.composeResultObject(managementServer, userVm, param.getPassword()));
+				}
 				else
 					asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_FAILED, BaseCmd.INTERNAL_ERROR, 
-						new ResetVMPasswordResultObject(param.getVmId(), ""));
+						"Operation failed");
 			} catch(Exception e) {
 				s_logger.warn("Unable to reset password for VM " + param.getVmId() + ": " + e.getMessage(), e);
 				asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_FAILED, BaseCmd.INTERNAL_ERROR, 
-						new ResetVMPasswordResultObject(param.getVmId(), e.getMessage()));
+					e.getMessage());
 			}
 		}
 		return true;

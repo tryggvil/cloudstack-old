@@ -189,6 +189,33 @@ public class NetUtils {
 		
 		return macAddressAsLong;
     }
+    
+    public static boolean ipRangesOverlap(String startIp1, String endIp1, String startIp2, String endIp2) {
+    	long startIp1Long = ip2Long(startIp1);
+    	long endIp1Long = startIp1Long;
+    	if (endIp1 != null) {
+    		endIp1Long = ip2Long(endIp1);
+    	}
+    	long startIp2Long = ip2Long(startIp2);
+    	long endIp2Long = startIp2Long;
+    	if (endIp2 != null) {
+    		endIp2Long = ip2Long(endIp2);
+    	}
+    	
+    	if (startIp1Long == startIp2Long || startIp1Long == endIp2Long || endIp1Long == startIp2Long || endIp1Long == endIp2Long) {
+    		return true;
+    	} else if (startIp1Long > startIp2Long && startIp1Long < endIp2Long) {
+    		return true;
+    	} else if (endIp1Long > startIp2Long && endIp1Long < endIp2Long) {
+    		return true;
+    	} else if (startIp2Long > startIp1Long && startIp2Long < endIp1Long) {
+    		return true;
+    	} else if (endIp2Long > startIp1Long && endIp2Long < endIp1Long) {
+    		return true;
+    	} else {
+    		return false;
+    	}    	    	
+    }
 	
     public static long ip2Long(String ip) {
         String[] tokens = ip.split("[.]");
@@ -378,7 +405,7 @@ public class NetUtils {
         	return false;
         }
         
-        if (cidrSizeNum < 1 || cidrSizeNum > 32) return false;
+        if (cidrSizeNum < 0 || cidrSizeNum > 32) return false;
         
         return true;
 	}
@@ -513,6 +540,46 @@ public class NetUtils {
     	return getSubNet(ip, netmask);
     }
     
+    public static String ipAndNetMaskToCidr(String ip, String netmask) {
+    	long ipAddr = ip2Long(ip);
+    	long subnet = ip2Long(netmask);
+    	long result = ipAddr & subnet;
+    	int bits = (subnet == 0)?0:1;
+    	long subnet2 = subnet;
+    	while ((subnet2 = (subnet2 >> 1) & subnet) != 0 )
+    		bits++;
+
+    	return long2Ip(result) + "/" + Integer.toString(bits);
+    }
+    
+    public static boolean isNetworkAWithinNetworkB(String cidrA, String cidrB) {
+    	Long cidrALong = cidrToLong(cidrA);
+    	Long cidrBLong = cidrToLong(cidrB);
+    	if (cidrALong == null || cidrBLong == null) {
+    		return false;
+    	}
+    	return (cidrALong.longValue() & cidrBLong.longValue()) == cidrBLong.longValue();
+    }
+    
+    public static Long cidrToLong(String cidr) {
+    	if (cidr == null || cidr.isEmpty()) return null;
+        String[] cidrPair = cidr.split("\\/");
+        if (cidrPair.length != 2) return null;
+        String cidrAddress = cidrPair[0];
+        String cidrSize = cidrPair[1];
+        if (!isValidIp(cidrAddress)) return null;
+        int cidrSizeNum = -1;
+        
+        try {
+        	cidrSizeNum = Integer.parseInt(cidrSize);
+        } catch (Exception e) {
+        	return null;
+        }
+    	long numericNetmask = (0xffffffff >> (32 - cidrSizeNum)) << (32 - cidrSizeNum);
+    	long ipAddr = ip2Long(cidrAddress);
+    	return ipAddr & numericNetmask;
+    }
+    
     public static String getCidrSubNet(String cidr) {
     	if (cidr == null || cidr.isEmpty()) return null;
         String[] cidrPair = cidr.split("\\/");
@@ -574,9 +641,41 @@ public class NetUtils {
     	return (proto.equals("tcp") || proto.equals("udp") || proto.equals("icmp"));
     }
     
+    public static boolean isValidNetworkGroupProto(String p) {
+    	String proto = p.toLowerCase();
+    	return (proto.equals("tcp") || proto.equals("udp") || proto.equals("icmp") || proto.equals("all"));
+    }
+    
     public static boolean isValidAlgorithm(String p) {
     	String algo = p.toLowerCase();
     	return (algo.equals("roundrobin") || algo.equals("leastconn") || algo.equals("source"));
+    }
+    
+    public static String getLinkLocalNetMask() {
+    	return "255.255.0.0";
+    }
+    
+    public static String getLinkLocalGateway() {
+    	return "169.254.0.1";
+    }
+    
+    public static String getLinkLocalCIDR() {
+    	return "169.254.0.0/16";
+    }
+    
+    public static String[] getLinkLocalIPRange(int size) {
+    	if (size > 16 || size <= 0) {
+    		return null;
+    	}
+    	/*reserve gateway*/
+    	return getIpRangeFromCidr(getLinkLocalGateway(), 32 - size);
+    }
+    
+    public static String getLinkLocalIpEnd() {
+    	String[] cidrPair = getLinkLocalCIDR().split("\\/");
+		String cidr =  cidrPair[0];
+		
+    	return getIpRangeEndIpFromCidr(cidr, 32 - Long.parseLong(cidrPair[1]));
     }
 
     // test only
@@ -640,9 +739,20 @@ public class NetUtils {
         	Set<Long> result = getAllIpsFromCidr("10.1.1.192", 24);
         	System.out.println("Number of ips: " + result.size());
         	
+        } else if (args[0].equals("within")) {
+        	String cidrA = args[1];
+        	String cidrB = args[2];
+        	System.out.println(NetUtils.isNetworkAWithinNetworkB(cidrA, cidrB));
+        	
+        }  else if (args[0].equals("tocidr")) {
+        	String ip = args[1];
+        	String mask = args[2];
+        	System.out.println(NetUtils.ipAndNetMaskToCidr(ip, mask));
+        	
         } else {
             System.out.println(long2Ip(NumbersUtil.parseLong(args[1], 0)));
         }
     }
+    	
 }
 

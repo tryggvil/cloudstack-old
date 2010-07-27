@@ -28,6 +28,7 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
+import com.cloud.utils.DateUtil;
 import com.cloud.utils.Pair;
 import com.google.gson.Gson;
 
@@ -107,8 +108,13 @@ public class SerializerHelper {
 				if(method != null) {
 					try {
 						Object fieldValue = method.invoke(o);
-						if(fieldValue != null)
-							l.add(new Pair<String, Object>(paramName, fieldValue.toString()));
+						if(fieldValue != null) {
+						    if (f.getType() == Date.class) {
+	                            l.add(new Pair<String, Object>(paramName, DateUtil.getOutputString((Date)fieldValue)));
+						    } else {
+	                            l.add(new Pair<String, Object>(paramName, fieldValue.toString()));
+						    }
+						}
 						//else
 						//	l.add(new Pair<String, Object>(paramName, ""));
 					} catch (IllegalArgumentException e) {

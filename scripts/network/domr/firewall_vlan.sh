@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# $Id: firewall_vlan.sh 9373 2010-06-09 01:57:36Z edison $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/network/domr/firewall_vlan.sh $
+# $Id: firewall_vlan.sh 9804 2010-06-22 18:36:49Z alex $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.1.x/java/scripts/network/domr/firewall_vlan.sh $
 # firewall.sh -- allow some ports / protocols to vm instances
 #
 #
+# @VERSION@
 
 usage() {
   printf "Usage: %s: (-A|-D) -i <domR eth1 ip>  -r <target-instance-ip> -P protocol (-p port_range | -t icmp_type_code)  -l <public ip address> -d <target port> [-f <firewall ip> -u <firewall user> -y <firewall password> -z <firewall enable password> -n <domr name> -N <VLAN netmask> ] \n" $(basename $0) >&2

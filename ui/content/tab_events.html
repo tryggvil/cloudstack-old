@@ -138,6 +138,14 @@
                             <label for="filter">Account:</label>
                             <input class="text" type="text" id="adv_search_account" />                               
                         </li>
+                        <li>
+                            <label>Start Date:</label>
+                            <input class="text" type="text" id="adv_search_startdate" />     
+                        </li>     
+                        <li>
+                            <label>End Date:</label>
+                            <input class="text" type="text" id="adv_search_enddate" />     
+                        </li>                       
                     </ol>
                     </form>
                     <div class="adv_search_actionbox">
@@ -165,21 +173,24 @@
                    <p>Loading...</p>
              </div>
 		<div class="grid_header"> 
-        	<div class="grid_genheader_cell" id="event_username_header" style="width:13%;">
+        	<div class="grid_genheader_cell" style="width:13%;">
 				<div class="grid_headertitles">Initiated By</div>
 			</div>
             <div class="grid_genheader_cell" id="event_account_header" style="width:13%;">
 				<div class="grid_headertitles">Owner Account</div>
 			</div>
-			<div class="grid_genheader_cell" style="width:13%;">
+			<div class="grid_genheader_cell" style="width:10%;">
 				<div class="grid_headertitles" >Type</div>
 			</div>
-			<div class="grid_genheader_cell" style="width:13%;">
+			<div class="grid_genheader_cell" style="width:10%;">
 				<div class="grid_headertitles">Level</div>
 			</div>
-			<div class="grid_genheader_cell" style="width:34%;">
+			<div class="grid_genheader_cell" style="width:30%;">
 				<div class="grid_headertitles">Description</div>
 			</div>
+			<div class="grid_genheader_cell" style="width:10%;">
+				<div class="grid_headertitles">State</div>
+			</div>			
 			<div class="grid_genheader_cell" style="width:13%;">
 				<div class="grid_headertitles">Date</div>
 			</div>
@@ -210,21 +221,24 @@
 <!-- Events Template -->
 <div id="event_template" style="display:none">
 
-	<div class="grid_smallgenrow_cell" id="event_username_container" style="width:13%;">
+	<div class="grid_smallgenrow_cell" style="width:13%;">
 		<div class="netgrid_celltitles" id="event_username"></div>
 	</div>
     <div class="grid_smallgenrow_cell" id="event_account_container" style="width:13%;">
 		<div class="netgrid_celltitles" id="event_account"></div>
 	</div>
-	<div class="grid_smallgenrow_cell" style="width:13%;">
+	<div class="grid_smallgenrow_cell" style="width:10%;">
 		<div class="netgrid_celltitles" id="event_type"></div>
 	</div>
-	<div class="grid_smallgenrow_cell" style="width:13%;">
+	<div class="grid_smallgenrow_cell" style="width:10%;">
 		<div class="netgrid_celltitles" id="event_level"></div>
 	</div>
-	<div class="grid_smallgenrow_cell" style="width:34%;">
+	<div class="grid_smallgenrow_cell" style="width:30%;">
 		<div class="netgrid_celltitles" id="event_desc"></div>
 	</div>
+	<div class="grid_smallgenrow_cell" style="width:10%;">
+		<div class="netgrid_celltitles" id="event_state"></div>
+	</div>	
 	<div class="grid_smallgenrow_cell" style="width:13%;">
 		<div class="netgrid_celltitles" id="event_date"></div>
 	</div>

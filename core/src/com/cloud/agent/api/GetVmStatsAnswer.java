@@ -32,4 +32,8 @@ public class GetVmStatsAnswer extends Answer {
 	public HashMap<String, VmStatsEntry> getVmStatsMap() {
 		return vmStatsMap;
 	}
+	
+	protected GetVmStatsAnswer() {
+		//no-args constructor for json serialization-deserialization
+	}
 }

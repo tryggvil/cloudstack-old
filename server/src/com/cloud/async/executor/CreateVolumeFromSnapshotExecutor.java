@@ -33,6 +33,7 @@ import com.cloud.exception.ResourceAllocationException;
 import com.cloud.serializer.GsonHelper;
 import com.cloud.server.ManagementServer;
 import com.cloud.storage.Snapshot;
+import com.cloud.storage.StorageManager;
 import com.cloud.storage.VolumeVO;
 import com.cloud.storage.snapshot.SnapshotManager;
 import com.cloud.user.Account;
@@ -49,7 +50,8 @@ public class CreateVolumeFromSnapshotExecutor extends BaseAsyncJobExecutor {
     	Gson gson = GsonHelper.getBuilder().create();
     	AsyncJobExecutorContext context = asyncMgr.getExecutorContext();
     	ManagementServer managerServer = context.getManagementServer();
-    	SnapshotManager snapshotManager = context.getSnapshotMgr();
+    	//SnapshotManager snapshotManager = context.getSnapshotMgr();
+    	StorageManager storageManager = context.getStorageMgr();
     	AccountManager accountManager = context.getAccountMgr();
     	
 		if (getSyncSource() == null) {
@@ -86,7 +88,7 @@ public class CreateVolumeFromSnapshotExecutor extends BaseAsyncJobExecutor {
 	                throw rae;
 	            }
 	            
-	            volume = snapshotManager.createVolumeFromSnapshot(accountId, userId, snapshotId, volumeName);
+	            volume = storageManager.createVolumeFromSnapshot(userId, accountId, snapshotId, volumeName, param.getEventId());
 
 		    	if (volume != null && volume.getStatus() == AsyncInstanceCreateStatus.Created) {
 				    result = AsyncJobResult.STATUS_SUCCEEDED;

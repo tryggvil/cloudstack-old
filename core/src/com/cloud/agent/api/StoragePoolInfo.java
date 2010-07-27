@@ -17,8 +17,9 @@
  */
 package com.cloud.agent.api;
 
-import com.cloud.storage.StoragePool;
-import com.cloud.storage.StoragePool.StoragePoolType;
+import java.util.Map;
+
+import com.cloud.storage.Storage.StoragePoolType;
 
 public class StoragePoolInfo {
 	String name;
@@ -26,9 +27,10 @@ public class StoragePoolInfo {
 	String host;
 	String localPath;
 	String hostPath;
-	StoragePool.StoragePoolType poolType;
+	StoragePoolType poolType;
 	long capacityBytes;
 	long availableBytes;
+	Map<String, String> details;
 	
 	protected StoragePoolInfo() {
 		super();
@@ -48,6 +50,13 @@ public class StoragePoolInfo {
 		this.availableBytes = availableBytes;
 	}
 	
+    public StoragePoolInfo(String name, String uuid, String host, String hostPath,
+            String localPath, StoragePoolType poolType, long capacityBytes,
+            long availableBytes, Map<String, String> details) {
+        this(name, uuid, host, hostPath, localPath, poolType, capacityBytes, availableBytes);
+        this.details = details;
+    }
+    
 	public long getCapacityBytes() {
 		return capacityBytes;
 	}
@@ -67,7 +76,7 @@ public class StoragePoolInfo {
 	public String getHostPath() {
 		return hostPath;
 	}
-	public StoragePool.StoragePoolType getPoolType() {
+	public StoragePoolType getPoolType() {
 		return poolType;
 	}
 
@@ -82,6 +91,8 @@ public class StoragePoolInfo {
 	public void setName(String name) {
 		this.name = name;
 	}
-	
-	
+
+	public Map<String, String> getDetails() {
+	    return details;
+	}
 }

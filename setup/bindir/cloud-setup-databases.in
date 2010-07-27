@@ -9,6 +9,20 @@ from random import choice
 import string
 from optparse import OptionParser
 import commands
+
+# ---- This snippet of code adds the sources path and the waf configured PYTHONDIR to the Python path ----
+# ---- We do this so cloud_utils can be looked up in the following order:
+# ---- 1) Sources directory
+# ---- 2) waf configured PYTHONDIR
+# ---- 3) System Python path
+for pythonpath in (
+		"@PYTHONDIR@",
+		os.path.join(os.path.dirname(__file__),os.path.pardir,os.path.pardir,"python","lib"),
+	):
+		if os.path.isdir(pythonpath): sys.path.insert(0,pythonpath)
+# ---- End snippet of code ----
+from cloud_utils import check_selinux, CheckFailed, resolves_to_ipv6
+
 try:
 	from subprocess import check_call as check_call
 	from subprocess import CalledProcessError
@@ -163,11 +177,6 @@ def checkutc():
      sys.exit(3)
 
 def checkhostname():
-  output = subprocess.Popen(["hostname"], stdout=subprocess.PIPE).communicate()[0].strip()
-  if len(output.split(".")) < 2:
-     sys.stderr.write("You need to have a fully-qualified host name for the setup to work.\n")
-     sys.stderr.write("Please use your operating system's network setup tools to set one.\n")
-     sys.exit(3)
   output = subprocess.Popen(["hostname","--fqdn"],stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
   output.communicate()
   output.wait()
@@ -176,21 +185,19 @@ def checkhostname():
      sys.stderr.write("Please use your operating system's network setup tools to fix this.\n")
      sys.exit(3)
   
+def checkdbserverhostname(host):
+	if resolves_to_ipv6(host,3306):
+		sys.stderr.write("%s resolves to an IPv6 address.  The Cloud.com CloudStack does not support IPv6 yet.\n"%host)
+		sys.stderr.write("Please fix this issue in either /etc/hosts or your DNS configuration.\n")
+		sys.exit(3)
+  
 def checkselinux():
-  enforcing = False
-  output = subprocess.Popen(["/usr/sbin/getenforce"], stdout=subprocess.PIPE).communicate()[0].strip()
-  if "nforcing" in output:
-     enforcing = True
-  try:
-	  if "SELINUX=enforcing" in file("/etc/selinux/config").read():
-		enforcing = True
-  except IOError,e:
-	  if e.errno == 2: pass
-	  else: raise
-  if enforcing:
-     sys.stderr.write("SELINUX is set to enforcing, please set it to permissive in /etc/selinux/config\n")
-     sys.stderr.write("then reboot the machine, after which you can run this program again.\n")
-     sys.exit(3)
+	try:
+		check_selinux()
+	except CheckFailed,e:
+		sys.stderr.write("SELINUX is set to enforcing, please set it to permissive in /etc/selinux/config\n")
+		sys.stderr.write("then reboot the machine, after which you can run this program again.\n")
+		sys.exit(3)
 
 def checknetwork():
 	ipaddr = firstip(ifaces())
@@ -233,7 +240,7 @@ if options.serversetup and not os.path.isfile(options.serversetup):
 
 
 dbfilepath = "@SETUPDATADIR@"
-dbppaths = [ os.path.join("@MSCONF@","db.properties") , os.path.join("@USAGESYSCONFDIR@","db.properties") ]
+dbppaths = [ os.path.join("@MSCONF@","db.properties") ] # , os.path.join("@USAGESYSCONFDIR@","db.properties") ]
 dbppaths = [ x for x in dbppaths if os.path.exists(x) ]
 if not dbppaths:
 	print "No services to set up installed on this system.  Refusing to continue."
@@ -241,6 +248,7 @@ if not dbppaths:
 
 #run sanity checks
 # checkutc()
+checkdbserverhostname(host)
 checkhostname()
 try: checkselinux()
 except OSError,e:
@@ -318,7 +326,7 @@ if rootuser:
 		systemcp = systemcp.strip()
 		if pipe.wait(): # this means that build-classpath failed miserably
 			systemcp = "@SYSTEMCLASSPATH@"
-		pcp = "@PREMIUMCLASSPATH@"
+		pcp = os.path.pathsep.join( glob.glob( os.path.join ( "@PREMIUMJAVADIR@" , "*" ) ) )
 		mscp = "@MSCLASSPATH@"
 		depscp = "@DEPSCLASSPATH@"
 		conf = os.path.dirname(dbppaths[0])

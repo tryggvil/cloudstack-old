@@ -48,6 +48,15 @@ public class ConsoleProxyVO extends VMInstanceVO implements ConsoleProxy {
     @Column(name="dns2")
     private String dns2;
 
+    @Column(name="guest_mac_address")
+    private String guestMacAddress;
+    
+    @Column(name="guest_ip_address")
+    private String guestIpAddress;
+    
+    @Column(name="guest_netmask")
+    private String guestNetmask;
+    
     @Column(name="public_ip_address", nullable=false)
     private String publicIpAddress;
     
@@ -89,6 +98,9 @@ public class ConsoleProxyVO extends VMInstanceVO implements ConsoleProxy {
     		long id,
             String name,
             State state,
+            String guestMacAddress,
+            String guestIpAddress,
+            String guestNetMask,
             String privateMacAddress,
             String privateIpAddress,
             String privateNetmask,
@@ -114,6 +126,9 @@ public class ConsoleProxyVO extends VMInstanceVO implements ConsoleProxy {
     	this.publicIpAddress = publicIpAddress;
     	this.publicNetmask = publicNetmask;
     	this.publicMacAddress = publicMacAddress;
+    	this.guestIpAddress = guestIpAddress;
+    	this.guestMacAddress = guestMacAddress;
+    	this.guestNetmask = guestNetMask;
     	this.vlanDbId = vlanDbId;
     	this.vlanId = vlanId;
     	this.dns1 = dns1;
@@ -153,6 +168,18 @@ public class ConsoleProxyVO extends VMInstanceVO implements ConsoleProxy {
     
     public void setPublicMacAddress(String publicMacAddress) {
     	this.publicMacAddress = publicMacAddress;
+    }
+    
+    public void setGuestIpAddress(String guestIpAddress) {
+    	this.guestIpAddress = guestIpAddress;
+    }
+    
+    public void setGuestNetmask(String guestNetmask) {
+    	this.guestNetmask = guestNetmask;
+    }
+    
+    public void setGuestMacAddress(String guestMacAddress) {
+    	this.guestMacAddress = guestMacAddress;
     }
     
     public void setRamSize(int ramSize) {
@@ -199,6 +226,21 @@ public class ConsoleProxyVO extends VMInstanceVO implements ConsoleProxy {
     @Override
 	public String getPublicMacAddress() {
 		return this.publicMacAddress;
+	}
+    
+
+	public String getGuestIpAddress() {
+    	return this.guestIpAddress;
+	}
+	
+
+	public String getGuestNetmask() {
+    	return this.guestNetmask;
+	}
+	
+
+	public String getGuestMacAddress() {
+		return this.guestMacAddress;
 	}
     
     @Override

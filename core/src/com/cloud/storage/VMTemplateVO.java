@@ -36,13 +36,14 @@ import com.cloud.storage.Storage.FileSystem;
 import com.cloud.storage.Storage.ImageFormat;
 import com.cloud.utils.db.GenericDao;
 import com.google.gson.annotations.Expose;
+import com.cloud.storage.Storage;
 
 @Entity
 @Table(name="vm_template")
 public class VMTemplateVO implements VirtualMachineTemplate {
 	@Id
     @TableGenerator(name="vm_template_sq", table="sequence", pkColumnName="name", valueColumnName="value", pkColumnValue="vm_template_seq", allocationSize=1)
-    @Column(name="id", updatable=false, nullable = false)
+    @Column(name="id", nullable = false)
 	private long id;
 
 	@Column(name="format")
@@ -61,7 +62,7 @@ public class VMTemplateVO implements VirtualMachineTemplate {
     private boolean featured;
     
     @Column(name="type")
-    private String diskType = null;
+    private FileSystem fileSystem = null;
     
     @Column(name="url")
     private String url = null;
@@ -119,15 +120,15 @@ public class VMTemplateVO implements VirtualMachineTemplate {
 	 * Proper constructor for a new vm template.
 	 */
     public VMTemplateVO(long id, String name, ImageFormat format, boolean isPublic, boolean featured, FileSystem fs, String url, boolean requiresHvm, int bits, long accountId, String cksum, String displayText, boolean enablePassword, long guestOSId, boolean bootable) {
-	    this(id, generateUniqueName(id, accountId, name), name, format, isPublic, featured, fs.toString(), url, null, requiresHvm, bits, accountId, cksum, displayText, enablePassword, guestOSId, bootable);
+	    this(id, generateUniqueName(id, accountId, name), name, format, isPublic, featured, fs, url, null, requiresHvm, bits, accountId, cksum, displayText, enablePassword, guestOSId, bootable);
     }
 
-	public VMTemplateVO(Long id, String uniqueName, String name, ImageFormat format, boolean isPublic, boolean featured, String diskType, String url, Date created, boolean requiresHvm, int bits, long accountId, String cksum, String displayText, boolean enablePassword, long guestOSId, boolean bootable) {
+	public VMTemplateVO(Long id, String uniqueName, String name, ImageFormat format, boolean isPublic, boolean featured, FileSystem fs, String url, Date created, boolean requiresHvm, int bits, long accountId, String cksum, String displayText, boolean enablePassword, long guestOSId, boolean bootable) {
 	    this.id = id;
 	    this.name = name;
 	    this.publicTemplate = isPublic;
 	    this.featured = featured;
-	    this.diskType = diskType;
+	    this.fileSystem = fs;
 	    this.url = url;
 	    this.requiresHvm = requiresHvm;
 	    this.bits = bits;
@@ -174,17 +175,12 @@ public class VMTemplateVO implements VirtualMachineTemplate {
 	}
 	
 	@Override
-	public String getDiskType() {
-	    return diskType;
-	}
-	
-	@Override
 	public FileSystem getFileSystem() {
-	    return FileSystem.valueOf(diskType);
+	    return fileSystem;
 	}
 	
-	public void setDiskType(String diskType) {
-		this.diskType = diskType;
+	public void setFileSystem(FileSystem fs) {
+		this.fileSystem = fs;
 	}
 	
 	public boolean requiresHvm() {

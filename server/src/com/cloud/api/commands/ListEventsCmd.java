@@ -49,6 +49,8 @@ public class ListEventsCmd extends BaseCmd {
 //        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.DESCRIPTION, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.START_DATE, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.END_DATE, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ENTRY_TIME, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.DURATION, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.KEYWORD, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.PAGE, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.PAGESIZE, Boolean.FALSE));
@@ -72,6 +74,8 @@ public class ListEventsCmd extends BaseCmd {
         Date startDate = (Date)params.get(BaseCmd.Properties.START_DATE.getName());
         Date endDate = (Date)params.get(BaseCmd.Properties.END_DATE.getName());
         String keyword = (String)params.get(BaseCmd.Properties.KEYWORD.getName());
+        Integer entryTime = (Integer)params.get(BaseCmd.Properties.ENTRY_TIME.getName());
+        Integer duration = (Integer)params.get(BaseCmd.Properties.DURATION.getName());
         Integer page = (Integer)params.get(BaseCmd.Properties.PAGE.getName());
         Integer pageSize = (Integer)params.get(BaseCmd.Properties.PAGESIZE.getName());
         boolean isAdmin = false;
@@ -130,7 +134,17 @@ public class ListEventsCmd extends BaseCmd {
     		c.addCriteria(Criteria.ENDDATE, endDate);
         }
 
-		List<EventVO> events = getManagementServer().searchForEvents(c);
+        List<EventVO> events;
+        
+        if(entryTime != null && duration != null){
+            if(entryTime <= duration){
+                throw new ServerApiException(BaseCmd.PARAM_ERROR, "Entry time shoule be greater than duration");
+            }
+            events = getManagementServer().listPendingEvents(entryTime, duration);
+        }
+        else {
+            events = getManagementServer().searchForEvents(c);
+        }
 
         if (events == null) {
             throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Internal error searching for events");
@@ -140,6 +154,7 @@ public class ListEventsCmd extends BaseCmd {
         int i = 0;
         for (EventVO event : events) {
             List<Pair<String, Object>> eventData = new ArrayList<Pair<String, Object>>();
+            eventData.add(new Pair<String, Object>(BaseCmd.Properties.ID.getName(), (new Long(event.getId())).toString()));
             User user = getManagementServer().findUserById(event.getUserId());
             if (user != null) {
             	eventData.add(new Pair<String, Object>(BaseCmd.Properties.USERNAME.getName(), user.getUsername() ));
@@ -156,7 +171,8 @@ public class ListEventsCmd extends BaseCmd {
             if (event.getCreateDate() != null) {
                 eventData.add(new Pair<String, Object>(BaseCmd.Properties.CREATED.getName(), getDateString(event.getCreateDate())));
             }
-
+            eventData.add(new Pair<String, Object>(BaseCmd.Properties.STATE.getName(), event.getState().toString()));
+            eventData.add(new Pair<String, Object>(BaseCmd.Properties.PARENT_ID.getName(), (new Long(event.getStartId())).toString()));
             eTag[i++] = eventData;
         }
         Pair<String, Object> eventTag = new Pair<String, Object>("event", eTag);

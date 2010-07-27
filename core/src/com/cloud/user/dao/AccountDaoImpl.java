@@ -171,4 +171,13 @@ public class AccountDaoImpl extends GenericDaoBase<AccountVO, Long> implements A
         sc.addAnd("type", Op.IN, Account.ACCOUNT_TYPE_ADMIN, Account.ACCOUNT_TYPE_DOMAIN_ADMIN, Account.ACCOUNT_TYPE_READ_ONLY_ADMIN);
 		return null;
 	}
+	
+	@Override
+	public void markForCleanup(long accountId) {
+		AccountVO account = findById(accountId);
+		if (!account.getNeedsCleanup()) {
+			account.setNeedsCleanup(true);
+        	update(accountId, account);
+		}
+	}
 }

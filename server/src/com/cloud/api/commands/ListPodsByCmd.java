@@ -93,6 +93,7 @@ public class ListPodsByCmd extends BaseCmd {
             podData.add(new Pair<String, Object>(BaseCmd.Properties.CIDR.getName(), pod.getCidrAddress() +"/" + pod.getCidrSize()));
             podData.add(new Pair<String, Object>(BaseCmd.Properties.START_IP.getName(), ipRange[0]));
             podData.add(new Pair<String, Object>(BaseCmd.Properties.END_IP.getName(), (ipRange.length > 1 && ipRange[1] != null) ? ipRange[1] : ""));
+            podData.add(new Pair<String, Object>(BaseCmd.Properties.GATEWAY.getName(), pod.getGateway()));
             podDataTags[i++] = podData;
         }
         Pair<String, Object> podTag = new Pair<String, Object>("pod", podDataTags);

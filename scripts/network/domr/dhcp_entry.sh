@@ -1,7 +1,8 @@
 #!/bin/bash
-# $Id: dhcp_entry.sh 9373 2010-06-09 01:57:36Z edison $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/network/domr/dhcp_entry.sh $
+# $Id: dhcp_entry.sh 9804 2010-06-22 18:36:49Z alex $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.1.x/java/scripts/network/domr/dhcp_entry.sh $
 # dhcp_entry.sh -- add dhcp entry on domr
 #
+# @VERSION@
 
 usage() {
   printf "Usage: %s: -r <domr-ip> -m <vm mac> -v <vm ip> -n <vm name>\n" $(basename $0) >&2

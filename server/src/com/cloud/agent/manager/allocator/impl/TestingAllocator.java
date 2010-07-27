@@ -28,11 +28,11 @@ import com.cloud.dc.HostPodVO;
 import com.cloud.host.Host;
 import com.cloud.host.dao.HostDao;
 import com.cloud.service.ServiceOffering;
-import com.cloud.storage.DiskOfferingVO;
 import com.cloud.storage.StoragePoolVO;
 import com.cloud.storage.VMTemplateVO;
 import com.cloud.utils.component.ComponentLocator;
 import com.cloud.vm.UserVm;
+import com.cloud.vm.VmCharacteristics;
 
 /**
  * @author ahuang
@@ -47,11 +47,9 @@ public class TestingAllocator implements HostAllocator {
     String _name;
 
     @Override
-    public Host allocateTo(ServiceOffering offering, DiskOfferingVO diskOffering, Host.Type type, DataCenterVO dc, HostPodVO pod,
+    public Host allocateTo(VmCharacteristics vm, ServiceOffering offering, Host.Type type, DataCenterVO dc, HostPodVO pod,
     		StoragePoolVO sp, VMTemplateVO template, Set<Host> avoid) {
-        if (type == Host.Type.Computing && _computingHost != null) {
-            return _hostDao.findById(_computingHost);
-        } else if (type == Host.Type.Computing && _routingHost != null) {
+        if (type == Host.Type.Routing && _routingHost != null) {
             return _hostDao.findById(_routingHost);
         } else if (type == Host.Type.Storage && _storageHost != null) {
             return _hostDao.findById(_storageHost);
@@ -68,10 +66,7 @@ public class TestingAllocator implements HostAllocator {
 
     @Override
     public boolean configure(String name, Map<String, Object> params) {
-        String value = (String)params.get(Host.Type.Computing.toString());
-        _computingHost = (value != null) ? Long.parseLong(value) : null;
-
-        value = (String)params.get(Host.Type.Routing.toString());
+        String value = (String)params.get(Host.Type.Routing.toString());
         _routingHost = (value != null) ? Long.parseLong(value) : null;
 
         value = (String)params.get(Host.Type.Storage.toString());

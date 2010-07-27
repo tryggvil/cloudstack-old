@@ -30,10 +30,18 @@ import com.cloud.utils.exception.CloudRuntimeException;
 public class DateUtil {
     public static final TimeZone GMT_TIMEZONE = TimeZone.getTimeZone("GMT");
     public static final String YYYYMMDD_FORMAT = "yyyyMMddHHmmss";
-    
+    private static final DateFormat _outputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
+
 	public static Date currentGMTTime() {
 		// Date object always stores miliseconds offset based on GMT internally
 		return new Date();
+	}
+
+	// parse TZ time string, date time string that can be used in passing time information in URL in pattern of following
+	// yyyy-MM-ddTHH:mm:ssZxxxx
+	public static Date parseTZDateString(String str) throws ParseException {
+		DateFormat dfParse = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'Z");
+		return dfParse.parse(str);
 	}
 	
 	public static Date parseDateString(TimeZone tz, String dateString) {
@@ -65,7 +73,18 @@ public class DateUtil {
 		
 		return df.format(time);
 	}
-	
+
+	public static String getOutputString(Date date) {
+        if (date == null) {
+            return "";
+        }
+        String formattedString = null;
+        synchronized(_outputFormat) {
+            formattedString = _outputFormat.format(date);
+        }
+        return formattedString;
+    }
+
     public enum IntervalType {
         HOURLY,
     	DAILY,
@@ -223,6 +242,7 @@ public class DateUtil {
 	
 	// test only
 	public static void main(String[] args) {
+		
 		TimeZone localTimezone = Calendar.getInstance().getTimeZone();
 		TimeZone gmtTimezone = TimeZone.getTimeZone("GMT");
 		TimeZone estTimezone = TimeZone.getTimeZone("EST");
@@ -234,6 +254,16 @@ public class DateUtil {
 		//Test next run time. Expects interval and schedule as arguments
 		if(args.length == 2) { 
 			System.out.println("Next run time: "+ getNextRunTime(IntervalType.getIntervalType(args[0]), args[1], "GMT", time).toString());
+		}
+
+		time = new Date();
+		DateFormat dfDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'Z");
+		String str = dfDate.format(time);
+		System.out.println("Formated TZ time string : "+ str);
+		try {
+			Date dtParsed = DateUtil.parseTZDateString(str);
+			System.out.println("Parsed TZ time string : "+ dtParsed.toString());
+		} catch (ParseException e) {
 		}
 	}
 }

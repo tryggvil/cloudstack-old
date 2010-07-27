@@ -22,20 +22,24 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 
 import com.cloud.api.BaseCmd;
 import com.cloud.api.ServerApiException;
+import com.cloud.dc.ClusterVO;
 import com.cloud.host.Host;
 import com.cloud.host.HostStats;
 import com.cloud.host.HostVO;
+import com.cloud.host.Status.Event;
 import com.cloud.server.Criteria;
 import com.cloud.service.ServiceOffering;
 import com.cloud.storage.GuestOSCategoryVO;
 import com.cloud.utils.NumbersUtil;
 import com.cloud.utils.Pair;
 import com.cloud.vm.UserVmVO;
+//import com.cloud.vm.HostStats;
 
 public class ListHostsCmd extends BaseCmd {
     public static final Logger s_logger = Logger.getLogger(ListHostsCmd.class.getName());
@@ -157,34 +161,27 @@ public class ListHostsCmd extends BaseCmd {
                     float cpuUtil = (float) hostStats.getCpuUtilization();
                     cpuUsed = decimalFormat.format(cpuUtil) + "%";
                     serverData.add(new Pair<String, Object>(BaseCmd.Properties.CPU_USED.getName(), cpuUsed));
+                    
+                    long avgLoad = (long)hostStats.getAverageLoad();
+                    serverData.add(new Pair<String, Object>(BaseCmd.Properties.AVERAGE_LOAD.getName(), avgLoad));
+                    
+                    long networkKbRead = (long)hostStats.getNetworkReadKBs();
+                    serverData.add(new Pair<String, Object>(BaseCmd.Properties.NETWORK_KB_READ.getName(), networkKbRead));
+                    
+                    long networkKbWrite = (long)hostStats.getNetworkWriteKBs();
+                    serverData.add(new Pair<String, Object>(BaseCmd.Properties.NETWORK_KB_WRITE.getName(), networkKbWrite));
                 }
             }
-            if ((server.getTotalMemory() != null) && (!server.getType().toString().equals("Storage"))) {
-                Long memory = server.getTotalMemory() * 7 / 8;
+            if (server.getType() == Host.Type.Routing) {
+                Long memory = server.getTotalMemory();
                 serverData.add(new Pair<String, Object>(BaseCmd.Properties.MEMORY_TOTAL.getName(), memory.toString()));
-                // calculate memory allocated by domR and userVm
-                long mem = 0l;
-                if (server.getType() == Host.Type.Routing) {
-                    Integer[] routerAndProxyCount = getManagementServer().countRoutersAndProxies(server.getId());
-                    if (routerAndProxyCount[0] != null) {
-                        int routerCount = routerAndProxyCount[0].intValue();
-                        mem += (routerCount * routerAndProxyCount[2].longValue() * 1024L * 1024L);
-                    }
-                }
-                List<UserVmVO> instances = getManagementServer().listUserVMsByHostId(server.getId());
-                for (UserVmVO vm : instances) {
-                    ServiceOffering so = getManagementServer().findServiceOfferingById(vm.getServiceOfferingId());
-                    mem += so.getRamSize() * 1024L * 1024L;
-                }
+                
+                // calculate memory allocated by systemVM and userVm
+                long mem = getManagementServer().getMemoryUsagebyHost(server.getId());
                 serverData.add(new Pair<String, Object>(BaseCmd.Properties.MEMORY_ALLOCATED.getName(), Long.valueOf(mem).toString()));
-                // calculate memory utilized
-                String memoryUsed = null;
-                HostStats hostStats = getManagementServer().getHostStatistics(server.getId());
-                if (hostStats != null) {
-                    long memFree = hostStats.getFreeMemory();
-                    memoryUsed = NumbersUtil.toReadableSize(((server.getTotalMemory() - memFree) * 7L) / 8L);
-                    serverData.add(new Pair<String, Object>(BaseCmd.Properties.MEMORY_USED.getName(), memoryUsed));
-                }
+                
+                // calculate memory utilized, we don't provide memory over commit
+                serverData.add(new Pair<String, Object>(BaseCmd.Properties.MEMORY_USED.getName(), mem));                
             }
             if (server.getType().toString().equals("Storage")) {
                 serverData.add(new Pair<String, Object>(BaseCmd.Properties.DISK_SIZE_TOTAL.getName(), Long.valueOf(server.getTotalSize()).toString()));
@@ -195,6 +192,14 @@ public class ListHostsCmd extends BaseCmd {
             if (server.getManagementServerId() != null) {
                 serverData.add(new Pair<String, Object>(BaseCmd.Properties.M_SERVER_ID.getName(), server.getManagementServerId().toString()));
             }
+            
+            if (server.getClusterId() != null) {
+            	ClusterVO cluster = getManagementServer().findClusterById(server.getClusterId());
+            	serverData.add(new Pair<String, Object>(BaseCmd.Properties.CLUSTER_ID.getName(), cluster.getId()));
+            	serverData.add(new Pair<String, Object>(BaseCmd.Properties.CLUSTER_NAME.getName(), cluster.getName()));
+            }
+            
+            serverData.add(new Pair<String, Object>(BaseCmd.Properties.IS_LOCAL_STORAGE_ACTIVE.getName(), getManagementServer().isLocalStorageActiveOnHost(server)));
 
             if (server.getCreated() != null) {
                 serverData.add(new Pair<String, Object>(BaseCmd.Properties.CREATED.getName(), getDateString(server.getCreated())));
@@ -203,8 +208,12 @@ public class ListHostsCmd extends BaseCmd {
                 serverData.add(new Pair<String, Object>(BaseCmd.Properties.REMOVED.getName(), getDateString(server.getRemoved())));
             }
 
-            // HostStats hostStats =
-            // getManagementServer().getHostStatistics(server.getId());
+    		Set<Event> possibleEvents = server.getStatus().getPossibleEvents();
+    		for(Event event:possibleEvents)
+    		{
+    			serverData.add(new Pair<String, Object>(BaseCmd.Properties.EVENTS.getName(),event.toString()));
+    		}
+            
 
             sTag[i++] = serverData;
         }

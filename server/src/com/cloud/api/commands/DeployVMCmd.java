@@ -26,13 +26,13 @@ import org.apache.log4j.Logger;
 
 import com.cloud.api.BaseCmd;
 import com.cloud.api.ServerApiException;
-import com.cloud.async.AsyncJobResult;
 import com.cloud.async.executor.DeployVMResultObject;
 import com.cloud.dc.DataCenterVO;
+import com.cloud.network.security.NetworkGroupVO;
 import com.cloud.serializer.SerializerHelper;
 import com.cloud.server.ManagementServer;
 import com.cloud.service.ServiceOfferingVO;
-import com.cloud.storage.Storage;
+import com.cloud.storage.DiskOfferingVO;
 import com.cloud.storage.VMTemplateVO;
 import com.cloud.user.Account;
 import com.cloud.utils.Pair;
@@ -46,7 +46,7 @@ public class DeployVMCmd extends BaseCmd {
     static {
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ZONE_ID, Boolean.TRUE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.SERVICE_OFFERING_ID, Boolean.TRUE));
-        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.DISK_OFFERING_ID, Boolean.TRUE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.DISK_OFFERING_ID, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.TEMPLATE_ID, Boolean.TRUE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.DISPLAY_NAME, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.GROUP, Boolean.FALSE));
@@ -55,6 +55,8 @@ public class DeployVMCmd extends BaseCmd {
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.USER_ID, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.DOMAIN_ID, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.NETWORK_GROUP_LIST, Boolean.FALSE));
+
     }
 
     public String getName() {
@@ -82,8 +84,7 @@ public class DeployVMCmd extends BaseCmd {
         String displayName = (String)params.get(BaseCmd.Properties.DISPLAY_NAME.getName());
         String group = (String)params.get(BaseCmd.Properties.GROUP.getName());
         String userData = (String) params.get(BaseCmd.Properties.USER_DATA.getName());
-        Long rootDiskOfferingId = new Long(-1);
-        Long dataDiskOfferingId = new Long(-1);
+        String networkGroupList = (String)params.get(BaseCmd.Properties.NETWORK_GROUP_LIST.getName());
 
         String password = null;
         Long accountId = null;
@@ -93,15 +94,12 @@ public class DeployVMCmd extends BaseCmd {
             throw new ServerApiException(BaseCmd.VM_INVALID_PARAM_ERROR, "Unable to find template with id " + templateId);
         }
 
-    	if (getManagementServer().findDiskOfferingById(diskOfferingId) == null) {
-    		throw new ServerApiException (BaseCmd.VM_INVALID_PARAM_ERROR, "Disk offering with id " + diskOfferingId + " doesn't exist in the system");
+    	if (diskOfferingId != null) {
+    	    DiskOfferingVO diskOffering = getManagementServer().findDiskOfferingById(diskOfferingId);
+    	    if ((diskOffering == null) || !DiskOfferingVO.Type.Disk.equals(diskOffering.getType())) {
+                throw new ServerApiException (BaseCmd.VM_INVALID_PARAM_ERROR, "Disk offering with id " + diskOfferingId + " doesn't exist in the system");
+    	    }
     	}
-
-        if (Storage.ImageFormat.ISO.equals(template.getFormat())) {
-        	rootDiskOfferingId = diskOfferingId;
-        } else {
-        	dataDiskOfferingId = diskOfferingId;
-        }
 
         DataCenterVO zone = getManagementServer().findDataCenterById(zoneId);
         if (zone == null) {
@@ -116,7 +114,7 @@ public class DeployVMCmd extends BaseCmd {
         if ((account == null) || isAdmin(account.getType())) {
             if (domainId != null) {
                 if ((account != null) && !getManagementServer().isChildDomain(account.getDomainId(), domainId)) {
-                    throw new ServerApiException(BaseCmd.PARAM_ERROR, "Invalid domain id (" + domainId + ") given, unable to list snapshot policies.");
+                    throw new ServerApiException(BaseCmd.PARAM_ERROR, "Invalid domain id (" + domainId + ") ");
                 }
                 if (accountName != null) {
                     Account userAccount = getManagementServer().findActiveAccount(accountName, domainId);
@@ -135,6 +133,16 @@ public class DeployVMCmd extends BaseCmd {
         if (accountId == null) {
             throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "No valid account specified for deploying a virtual machine.");
         }
+    	String [] groups = null;
+        if (networkGroupList != null) {
+        	groups = networkGroupList.split(",");
+        	for (String groupName: groups) {
+        		NetworkGroupVO groupVO = getManagementServer().findNetworkGroupByName(accountId, groupName);
+        		if (groupVO == null) {
+        			throw new ServerApiException(BaseCmd.PARAM_ERROR, "Network group not found: " + groupName);
+        		}
+        	}
+        }
 
     	// If command is executed via 8096 port, set userId to the id of System account (1)
     	if (userId == null) {
@@ -147,9 +155,9 @@ public class DeployVMCmd extends BaseCmd {
 
     	try {
     		long jobId = mgr.deployVirtualMachineAsync(userId.longValue(), accountId.longValue(), zoneId.longValue(),
-    				serviceOfferingId.longValue(), dataDiskOfferingId.longValue(),
-    				templateId.longValue(), rootDiskOfferingId.longValue(), 
-    				null, password, displayName, group, userData);
+    				serviceOfferingId.longValue(),
+    				templateId.longValue(), diskOfferingId, 
+    				null, password, displayName, group, userData, groups);
 
     		long vmId = 0;
     		if (jobId == 0) {
@@ -167,7 +175,8 @@ public class DeployVMCmd extends BaseCmd {
 
     		return returnValues;
     	} catch (Exception ex) {
-    		throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Failed to create VM: " + ex.getMessage());
+    		s_logger.error("Unhandled exception, ", ex);
+    		throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Failed to create VM due to unhandled exception");
     	}
     }
 

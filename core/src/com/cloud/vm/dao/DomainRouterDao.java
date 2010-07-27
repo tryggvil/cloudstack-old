@@ -22,6 +22,7 @@ import java.util.List;
 import com.cloud.utils.db.GenericDao;
 import com.cloud.vm.DomainRouterVO;
 import com.cloud.vm.VirtualMachine;
+import com.cloud.vm.DomainRouter.Role;
 
 /**
  *
@@ -73,6 +74,15 @@ public interface DomainRouterDao extends GenericDao<DomainRouterVO, Long> {
     public List<DomainRouterVO> listByHostId(Long hostId);
     
     /**
+     * list virtual machine routers by host id.  exclude destroyed, stopped, expunging VM, 
+     * pass in null to get all
+     * virtual machine routers.
+     * @param hostId id of the host.  null if to get all.
+     * @return list of DomainRouterVO
+     */
+    public List<DomainRouterVO> listUpByHostId(Long hostId);
+    
+    /**
      * Finds a domain router based on the ip address it is assigned to.
      * @param ipAddress
      * @return DomainRouterVO or null if not found.
@@ -102,4 +112,6 @@ public interface DomainRouterDao extends GenericDao<DomainRouterVO, Long> {
 	 * @return
 	 */
 	public List<DomainRouterVO> listByVlanDbId(Long vlanId);
+
+	DomainRouterVO findBy(long accountId, long dcId, Role role);
 }

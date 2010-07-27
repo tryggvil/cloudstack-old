@@ -86,7 +86,7 @@ public class AddSecondaryStorageCmd extends BaseCmd {
     	
     	List<? extends Host> h = null;
         try {
-        	h = getManagementServer().discoverHosts(zoneId, null, url, null, null);
+        	h = getManagementServer().discoverHosts(zoneId, null, null, url, null, null);
         } catch (Exception ex) {
         	s_logger.error("Failed to add secondary storage: ", ex);
         	throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Can't add secondary storage with url " + url);
@@ -120,7 +120,7 @@ public class AddSecondaryStorageCmd extends BaseCmd {
             if (server.getPodId() != null && getManagementServer().findHostPodById(server.getPodId()) != null) {
            	 serverData.add(new Pair<String, Object>(BaseCmd.Properties.POD_ID.getName(), server.getPodId().toString()));
 	             serverData.add(new Pair<String, Object>(BaseCmd.Properties.POD_NAME.getName(), getManagementServer().findHostPodById(server.getPodId()).getName()));
-            }   
+            }
             serverData.add(new Pair<String, Object>(BaseCmd.Properties.VERSION.getName(), server.getVersion().toString()));
             serverData.add(new Pair<String, Object>(BaseCmd.Properties.HYPERVISOR.getName(), server.getHypervisorType().toString()));
             
@@ -142,39 +142,13 @@ public class AddSecondaryStorageCmd extends BaseCmd {
         		//calculate cpu utilized
         		String cpuUsed = null;
         		HostStats hostStats = getManagementServer().getHostStatistics(server.getId());
-       		if (hostStats != null) {
-       			float cpuUtil = (float)hostStats.getCpuUtilization();
-           		cpuUsed = decimalFormat.format(cpuUtil * 100) + "%";
-           		serverData.add(new Pair<String, Object>(BaseCmd.Properties.CPU_USED.getName(), cpuUsed));
-       		}
+	       		if (hostStats != null) {
+	       			float cpuUtil = (float)hostStats.getCpuUtilization();
+	           		cpuUsed = decimalFormat.format(cpuUtil * 100) + "%";
+	           		serverData.add(new Pair<String, Object>(BaseCmd.Properties.CPU_USED.getName(), cpuUsed));
+	       		}
             }
-            if ((server.getTotalMemory() != null) && (!server.getType().toString().equals("Storage"))) {
-           	 Long memory = server.getTotalMemory()*7/8;
-           	 serverData.add(new Pair<String, Object>(BaseCmd.Properties.MEMORY_TOTAL.getName(), memory.toString()));
-           	 //calculate memory allocated by domR and userVm
-           	 long mem = 0l;
-           	 if (server.getType() == Host.Type.Routing) {
-                    Integer[] routerAndProxyCount = getManagementServer().countRoutersAndProxies(server.getId());
-                    if (routerAndProxyCount[0] != null) {
-                        int routerCount = routerAndProxyCount[0].intValue();
-                        mem += (routerCount * routerAndProxyCount[2].longValue() * 1024L * 1024L);
-                    }
-           	 }
-           	 List<UserVmVO> instances = getManagementServer().listUserVMsByHostId(server.getId());
-       		 for (UserVmVO vm : instances) {
-                   ServiceOffering so = getManagementServer().findServiceOfferingById(vm.getServiceOfferingId());
-                   mem += so.getRamSize() * 1024L * 1024L;
-                }
-           	 serverData.add(new Pair<String, Object>(BaseCmd.Properties.MEMORY_ALLOCATED.getName(), Long.valueOf(mem).toString()));
-           	 //calculate memory utilized
-           	 String memoryUsed = null;
-        		 HostStats hostStats = getManagementServer().getHostStatistics(server.getId());
-       		 if (hostStats != null) {
-           		long memFree = hostStats.getFreeMemory();
-           		memoryUsed = NumbersUtil.toReadableSize(((server.getTotalMemory() - memFree) * 7L) / 8L);
-           		serverData.add(new Pair<String, Object>(BaseCmd.Properties.MEMORY_USED.getName(), memoryUsed));
-       		}
-            }
+
             if (server.getType().toString().equals("Storage")){
 
            	serverData.add(new Pair<String, Object>(BaseCmd.Properties.DISK_SIZE_ALLOCATED.getName(), Long.valueOf(0).toString()));

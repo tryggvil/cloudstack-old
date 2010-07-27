@@ -62,6 +62,11 @@ public class Pair<T, U> {
     
     @Override
     public String toString() {
-        return t.toString() + " : " + u.toString();
+        StringBuilder b = new StringBuilder("P[");
+        b.append((t != null) ? t.toString() : "null");
+        b.append(":");
+        b.append((u != null) ? u.toString() : "null");
+        b.append("]");
+        return b.toString();
     }
 }

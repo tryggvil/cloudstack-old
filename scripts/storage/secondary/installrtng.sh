@@ -1,5 +1,5 @@
 #!/bin/bash
-# $Id: installrtng.sh 9132 2010-06-04 20:17:43Z manuel $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/storage/secondary/installrtng.sh $
+# $Id: installrtng.sh 9132 2010-06-04 20:17:43Z manuel $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.1.x/java/scripts/storage/secondary/installrtng.sh $
 usage() {
   printf "Usage: %s: -m <secondary storage mount point> -f <routing template file> [-F]\n" $(basename $0) >&2
   printf "or\n" >&2

@@ -8,6 +8,9 @@
         generally developer targets that has nothing to do with compiling.
     </description>
 
+  <dirname property="base.dir" file="${ant.file.Cloud.com Developer Targets}"/>
+  <property name="build.dir" location="${base.dir}/build"/>
+  
   <property name="tomcat.home" location="${env.CATALINA_HOME}"/>
   <property name="assertion" value="-ea"/>
 
@@ -95,7 +98,10 @@
     />
   </target>
 -->
-  <target name="deploy-server" depends="package-systemvm-oss, deploy-common" />
+  <target name="deploy-server" depends="deploy-common" >
+    <copy todir="${server.deploy.to.dir}/webapps/client/WEB-INF/lib/vms" file="${dist.dir}/systemvm.zip" />
+  </target>
+
 
   <target name="deploy-common" > 
     <condition property="zip.uptodate">
@@ -108,32 +114,17 @@
         <include name="*.jar"/>
       </fileset>
     </copy>
-    <if>
-    <isset property="OSS"/>
-    <then>
-    	<copy todir="${server.deploy.to.dir}/webapps/client/WEB-INF/lib/scripts/vm/hypervisor/xenserver/patch" file="${dist.dir}/systemvm.zip" />
-    </then>
-    <else>
-    	<copy todir="${server.deploy.to.dir}/webapps/client/WEB-INF/lib/scripts/vm/hypervisor/xenserver/patch" file="${dist.dir}/systemvm-premium.zip" />
-    </else>
-    </if>
-  	<copy todir="${server.deploy.to.dir}/webapps/client/WEB-INF/lib/scripts/vm/hypervisor/xenserver/patch" file="${dist.dir}/patch.tgz" />
-  	<touch file="${server.deploy.to.dir}/webapps/client/WEB-INF/lib/scripts/vm/hypervisor/xenserver/patch/version"/>
-  	<echo file="${server.deploy.to.dir}/webapps/client/WEB-INF/lib/scripts/vm/hypervisor/xenserver/patch/version" append="false" message="${version}.${build.number}"/>
+    <copy todir="${server.deploy.to.dir}/webapps/client/WEB-INF/lib/scripts/vm/hypervisor/xenserver" file="${dist.dir}/patch.tgz" />
+    <touch file="${server.deploy.to.dir}/webapps/client/WEB-INF/lib/scripts/vm/hypervisor/xenserver/version"/>
+    <echo file="${server.deploy.to.dir}/webapps/client/WEB-INF/lib/scripts/vm/hypervisor/xenserver/version" append="false" message="${version}.${build.number}"/>
     <copy overwrite="true" todir="${server.deploy.to.dir}/conf">
       <fileset dir="${deploy.work.dir}/client/conf/">
         <include name="**/*"/>
       </fileset>
     </copy>
-    <chmod perm="600">
-      <fileset dir="${server.deploy.to.dir}/webapps/client/WEB-INF/lib">
-        <include name="**/id_rsa"/>
-      </fileset>
-    </chmod>
     <chmod perm="755">
       <fileset dir="${server.deploy.to.dir}/webapps/client/WEB-INF/lib">
         <include name="**/*"/>
-        <exclude name="**/id_rsa"/>
       </fileset>
     </chmod>
     <replace file="${server.deploy.to.dir}/conf/catalina.properties" summary="true">
@@ -170,19 +161,19 @@
       <available file="${setup.db.dir}/override/server-setup.xml" />
     </condition>
 
-    <if>
-    <isset property="KVM"/>
-    <then>
-    	<condition property="templates.file" value="override/templates.kvm.sql" else="templates.kvm.sql">
-      	<available file="${setup.db.dir}/override/templates.kvm.sql" />
-    	</condition>
-    </then>
-    <else>
-    	<condition property="templates.file" value="override/templates.xenserver.sql" else="templates.xenserver.sql">
-      	<available file="${setup.db.dir}/override/templates.xenserver.sql" />
-    	</condition>
-    </else>
-    </if>
+    <condition property="kvm.templates.file" value="override/templates.kvm.sql" else="templates.kvm.sql">
+      <available file="${setup.db.dir}/override/templates.kvm.sql" />
+    </condition>
+
+    <condition property="xenserver.templates.file" value="override/templates.xenserver.sql" else="templates.xenserver.sql">
+      <available file="${setup.db.dir}/override/templates.xenserver.sql" />
+    </condition>
+
+
+    <condition property="templates.file" value="${kvm.templates.file}" else="${xenserver.templates.file}" >
+      <isset property="KVM"/>
+    </condition>
+
     <echo message="deploydb ${server-setup.file} ${templates.file} ${DBROOTPW}" />
     <exec dir="${setup.db.dir}" executable="bash">
       <arg value="deploy-db-dev.sh" />

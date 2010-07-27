@@ -8,6 +8,7 @@
 	       - jar.name = name of the jar file.
 	       - classpath = classpath to use for this compile      
 
+
 	     The directory structure under the ${top.dir} needs to be.
 	         - src
 	         
@@ -22,17 +23,13 @@
   
   <dirname property="base.dir" file="${ant.file.VMOps-Common}/.."/>
   <property name="build.dir" location="${base.dir}/build"/>
-  <!--
-  <buildnumber file="${build.dir}/build.number"/>
-  <property name="impl.version" value="${company.major.version}.${company.minor.version}.${company.patch.version}.${build.number}"/>
-  -->
   
   <property name="target.dir" location="${base.dir}/target"/>
   <property name="classes.dir" location="${target.dir}/classes"/>
   <property name="jar.dir" location="${target.dir}/jar"/>
   <property name="dep.cache.dir" location="${target.dir}/dep-cache"/>
   <property name="debug" value="true"/>
-  <property name="debuglevel" value="lines,vars"/>
+  <property name="debuglevel" value="lines,source"/>
   
   <macrodef name="compile-java">
     <attribute name="top.dir" description="Top Directory of the source.  We will add src to this to get the source code."/>
@@ -42,24 +39,19 @@
     <element name="exclude-files" optional="true"/>
     
     <sequential>
-      <local name="compile.java.src.dir"/>
-      <property name="compile.java.src.dir" location="@{top.dir}/src" />
-      
-      <local name="compile.java.bin.dir"/>
-      <property name="compile.java.bin.dir" location="${classes.dir}/@{jar.name}" />
 
-      <mkdir dir="${compile.java.bin.dir}" />
+      <mkdir dir="${classes.dir}/@{jar.name}"/>
         
-      <depend srcdir="${compile.java.src.dir}" destdir="${compile.java.bin.dir}" cache="${dep.cache.dir}" />
+      <depend srcdir="@{top.dir}/src" destdir="${classes.dir}/@{jar.name}" cache="${dep.cache.dir}" />
         
-      <javac srcdir="${compile.java.src.dir}" debug="${debug}" debuglevel="${debuglevel}" deprecation="${deprecation}" destdir="${compile.java.bin.dir}" source="${source.compat.version}" target="${target.compat.version}" includeantruntime="false" compiler="javac1.6">
+      <javac srcdir="@{top.dir}/src" debug="${debug}" debuglevel="${debuglevel}" deprecation="${deprecation}" destdir="${classes.dir}/@{jar.name}" source="${source.compat.version}" target="${target.compat.version}" includeantruntime="false" compiler="javac1.6">
         <!-- compilerarg line="-processor com.cloud.annotation.LocalProcessor -processorpath ${base.dir}/tools/src -Xlint:all"/ -->
         <!-- compilerarg line="-processor com.cloud.utils.LocalProcessor -processorpath ${base.dir}/utils/src -Xlint:all"/ -->
         <compilerarg line="-Xlint:all"/>
         <classpath refid="@{classpath}" />
         <exclude-files/>
       </javac>
-      <jar jarfile="${jar.dir}/@{jar.name}" basedir="${compile.java.bin.dir}">
+      <jar jarfile="${jar.dir}/@{jar.name}" basedir="${classes.dir}/@{jar.name}">
         <manifest>
           <attribute name="Class-Path" value="" />
           <attribute name="Built-By" value="${built.by}" />

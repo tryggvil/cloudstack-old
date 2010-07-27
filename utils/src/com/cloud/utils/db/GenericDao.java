@@ -143,6 +143,14 @@ public interface GenericDao<T, ID extends Serializable> {
     List<T> search(SearchCriteria sc, Filter filter);
     
     /**
+     * Customized search with SearchCritiria
+     * @param sc
+     * @param filter
+     * @return list of entity beans.
+     */
+    List<Object[]> searchAll(SearchCriteria sc, final Filter filter);
+    
+    /**
      * Retrieves the entire table.
      * @return collection of entity beans.
      **/
@@ -180,6 +188,13 @@ public interface GenericDao<T, ID extends Serializable> {
     boolean delete(ID id);
     
     /**
+     * remove the entity bean specified by the search criteria
+     * @param sc
+     * @return number of rows deleted
+     */
+    int delete(final SearchCriteria sc);
+    
+    /**
      * expunge the removed rows.
      */
     void expunge();
@@ -193,4 +208,6 @@ public interface GenericDao<T, ID extends Serializable> {
      * @return true if config is good.  false if not.
      */
     boolean configure(String name, Map<String, Object> params) throws ConfigurationException;
+    
+    int remove(SearchCriteria sc);
 }

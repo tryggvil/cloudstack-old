@@ -79,6 +79,11 @@ public class CreateDomainCmd extends BaseCmd {
         DomainVO domain = null;
         try {
             domain = getManagementServer().createDomain(name, account.getId(), parentDomainId);
+        } catch (IllegalArgumentException illArgEx) {
+            if (s_logger.isInfoEnabled()) {
+                s_logger.info("Failed to create domain " + name + " due to invalid name given.");
+            }
+            throw new ServerApiException(BaseCmd.PARAM_ERROR, "Failed to create domain " + name + ", invalid name given.  The character '/' is not valid for domain names.");
         } catch (Exception ex) {
             s_logger.error("Exception creating domain", ex);
             throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Failed to create domain " + name + ":  internal error.");

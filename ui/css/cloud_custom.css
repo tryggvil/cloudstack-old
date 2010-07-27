@@ -241,10 +241,10 @@ a:hover.logo {
 }
 
 a.add_newvmbutton {
-	width:114px;
-	height:28px;
+	width:103px;
+	height:22px;
 	float:left;
-	margin-left:10px;
+	margin:3px 0 0 10px;
 	display:inline;
 	background:url(../images/v1addnewvm_button.gif) no-repeat top left;
 	padding:0;
@@ -256,10 +256,10 @@ a:hover.add_newvmbutton  {
 
 
 a.add_hostbutton {
-	width:72px;
-	height:28px;
+	width:63px;
+	height:22px;
 	float:left;
-	margin-left:10px;
+	margin:3px 0 0 10px;
 	display:inline;
 	background:url(../images/v1addhost_button.gif) no-repeat top left;
 	padding:0;
@@ -270,10 +270,10 @@ a:hover.add_hostbutton  {
 }
 
 a.add_storagepoolbutton {
-	width:137px;
+	width:115px;
 	height:28px;
 	float:left;
-	margin-left:10px;
+	margin:3px 0 0 10px;
 	display:inline;
 	background:url(../images/v1addpstorage_button.gif) no-repeat top left;
 	padding:0;
@@ -284,10 +284,10 @@ a:hover.add_storagepoolbutton  {
 }
 
 a.add_secondary_storagebutton {
-	width:157px;
-	height:28px;
+	width:129px;
+	height:22px;
 	float:left;
-	margin-left:10px;
+	margin:3px 0 0 10px;
 	display:inline;
 	background:url(../images/v1addsstorage_button.gif) no-repeat top left;
 	padding:0;
@@ -298,10 +298,10 @@ a:hover.add_secondary_storagebutton  {
 }
 
 a.add_volumebutton {
-	width:87px;
-	height:37px;
+	width:74px;
+	height:22px;
 	float:left;
-	margin-left:10px;
+	margin:3px 0 0 10px;
 	display:inline;
 	background:url(../images/v1addvolume_button.gif) no-repeat top left;
 	padding:0;
@@ -312,10 +312,10 @@ a:hover.add_volumebutton  {
 }
 
 a.add_publicipbutton {
-	width:107px;
-	height:28px;
+	width:89px;
+	height:22px;
 	float:left;
-	margin-left:10px;
+	margin:3px 0 0 10px;
 	display:inline;
 	background:url(../images/v1aquireip_button.gif) no-repeat top left;
 	padding:0;
@@ -354,10 +354,10 @@ a:hover.add_loadbalancerbutton {
 }
 
 a.add_newtemplatebutton {
-	width:110px;
-	height:28px;
+	width:92px;
+	height:22px;
 	float:left;
-	margin-left:10px;
+	margin:3px 0 0 10px;
 	display:inline;
 	background:url(../images/v1addtemplate_button.gif) no-repeat top left;
 	padding:0;
@@ -368,10 +368,10 @@ a:hover.add_newtemplatebutton {
 }
 
 a.add_newisobutton {
-	width:86px;
-	height:28px;
+	width:70px;
+	height:22px;
 	float:left;
-	margin-left:10px;
+	margin:3px 0 0 10px;
 	display:inline;
 	background:url(../images/v1addiso_button.gif) no-repeat top left;
 	padding:0;
@@ -382,10 +382,10 @@ a:hover.add_newisobutton {
 }
 
 a.add_serviceoffbutton {
-	width:141px;
-	height:28px;
+	width:116px;
+	height:22px;
 	float:left;
-	margin-left:10px;
+	margin:3px 0 0 10px;
 	display:inline;
 	background:url(../images/v1addserviceoff_button.gif) no-repeat top left;
 	padding:0;
@@ -396,10 +396,10 @@ a:hover.add_serviceoffbutton  {
 }
 
 a.add_diskoffbutton {
-	width:122px;
-	height:28px;
+	width:102px;
+	height:22px;
 	float:left;
-	margin-left:10px;
+	margin:3px 0 0 10px;
 	display:inline;
 	background:url(../images/v1adddiskoff_button.gif) no-repeat top left;
 	padding:0;
@@ -432,6 +432,10 @@ a:hover.add_diskoffbutton  {
 	font-weight: bold; 
 }
 
-.ui-state-default, .ui-widget-content .ui-state-default { border: 1px solid #c0bfbf; background: #809617 url(../images/v1_popupbuttonbg.gif) 50% 50% repeat-x; font-weight: normal; color: #FFF; outline: none; }
+.ui-state-default, .ui-widget-content .ui-state-default { height:25px; border: 1px solid #c0bfbf; background: #809617 url(../images/v1_popupbuttonbg.gif) 50% 50% repeat-x; font-weight: normal; color: #FFF; outline: none; padding-top:-0.2em; }
 
-.ui-state-hover, .ui-widget-content .ui-state-hover, .ui-state-focus, .ui-widget-content .ui-state-focus { border: 1px solid #c0bfbf; background: #809617 url(../images/v1_popupbuttonbg_hover.gif) 50% 50% repeat-x; font-weight: normal; color: #FFF; outline: none; }
+.ui-state-hover, .ui-widget-content .ui-state-hover, .ui-state-focus, .ui-widget-content .ui-state-focus { border: 1px solid #c0bfbf; background: #809617 url(../images/v1_popupbuttonbg_hover.gif) 50% 50% repeat-x; font-weight: normal; color: #FFF; outline: none; padding-top:-0.2em;}
+
+
+.ui-dialog .ui-dialog-buttonpane { text-align: left; border-width: 1px 0 0 0; background-image: none; margin: .5em 0 0 0; padding: -0.2em 1em .5em .4em; }
+.ui-dialog .ui-dialog-buttonpane button { float: right; margin: .5em .4em .5em 0; cursor: pointer; padding: -0.2em .6em .3em .6em; line-height: 1.4em; width:auto; overflow:visible; }

@@ -32,11 +32,11 @@ import com.cloud.dc.HostPodVO;
 import com.cloud.host.Host;
 import com.cloud.host.dao.HostDao;
 import com.cloud.service.ServiceOffering;
-import com.cloud.storage.DiskOfferingVO;
 import com.cloud.storage.StoragePoolVO;
 import com.cloud.storage.VMTemplateVO;
 import com.cloud.utils.component.ComponentLocator;
 import com.cloud.vm.UserVm;
+import com.cloud.vm.VmCharacteristics;
 
 @Local(value=HostAllocator.class)
 public class RandomAllocator implements HostAllocator {
@@ -45,14 +45,14 @@ public class RandomAllocator implements HostAllocator {
     private HostDao _hostDao;
 
     @Override
-    public Host allocateTo(ServiceOffering offering, DiskOfferingVO diskOffering, Host.Type type, DataCenterVO dc, HostPodVO pod,
+    public Host allocateTo(VmCharacteristics vm, ServiceOffering offering, Host.Type type, DataCenterVO dc, HostPodVO pod,
     		StoragePoolVO sp, VMTemplateVO template, Set<Host> avoid) {
         if (type == Host.Type.Storage) {
             return null;
         }
 
         // list all computing hosts, regardless of whether they support routing...it's random after all
-        List<? extends Host> hosts = _hostDao.listBy(type, dc.getId(), pod.getId());
+        List<? extends Host> hosts = _hostDao.listBy(type, sp.getClusterId(), sp.getPodId(), sp.getDataCenterId());
         if (hosts.size() == 0) {
             return null;
         }

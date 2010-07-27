@@ -30,13 +30,13 @@ public class DatabaseCallbackFilter implements CallbackFilter {
     public static boolean checkAnnotation(Method method) {
         DB db = method.getAnnotation(DB.class);
         if (db != null) {
-            return db.inject();
+            return db.txn();
         }
         Class<?> clazz = method.getDeclaringClass();
         do {
             db = clazz.getAnnotation(DB.class);
             if (db != null) {
-                return db.inject();
+                return db.txn();
             }
             clazz = clazz.getSuperclass();
         } while (clazz != Object.class && clazz != null);

@@ -46,7 +46,7 @@ public class StartRouterExecutor extends VMOperationExecutor {
 			return true;
 		} else {
 	    	try {
-	    		DomainRouter router = managementServer.startRouter(param.getVmId());
+	    		DomainRouter router = managementServer.startRouter(param.getVmId(), param.getEventId());
 	    		if(router != null)
 	    			asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_SUCCEEDED, 0, 
 						RouterExecutorHelper.composeResultObject(managementServer, router));

@@ -70,6 +70,10 @@ public class Criteria {
     public static final String VLAN = "vlan";
     public static final String ISALLOCATED = "isallocated";
     public static final String IPADDRESS = "ipaddress";
+    public static final String FOR_VIRTUAL_NETWORK = "forvirtualnetwork";
+    public static final String TARGET_IQN = "targetiqn";
+    public static final String SCOPE = "scope";
+    public static final String NETWORKGROUP = "networkGroup";
 
 
 	public Criteria(String orderBy, Boolean ascending, Long offset, Long limit) {

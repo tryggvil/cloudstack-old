@@ -28,18 +28,21 @@ public class VmStatsEntry implements VmStats {
 	double cpuUtilization;
 	double networkReadKBs;
 	double networkWriteKBs;
-	int numCPUs;
-    
+	int numCPUs;	
+	String entityType;
+	    
     public VmStatsEntry() {
     }
     
-    public VmStatsEntry(double cpuUtilization, double networkReadKBs, double networkWriteKBs, int numCPUs) {
+    public VmStatsEntry(double cpuUtilization, double networkReadKBs, double networkWriteKBs, int numCPUs, String entityType) 
+    {
         this.cpuUtilization = cpuUtilization;
         this.networkReadKBs = networkReadKBs;
         this.networkWriteKBs = networkWriteKBs;
         this.numCPUs = numCPUs;
+        this.entityType = entityType;
     }
-    
+
     public double getCPUUtilization() {
     	return cpuUtilization;
     }
@@ -47,7 +50,7 @@ public class VmStatsEntry implements VmStats {
     public void setCPUUtilization(double cpuUtilization) {
     	this.cpuUtilization = cpuUtilization;
     }
-    
+
     public double getNetworkReadKBs() {
     	return networkReadKBs;
     }
@@ -71,4 +74,14 @@ public class VmStatsEntry implements VmStats {
     public void setNumCPUs(int numCPUs) {
     	this.numCPUs = numCPUs;
     }
+
+    public String getEntityType(){
+    	return this.entityType;
+    }
+    
+    public void setEntityType(String entityType){
+    	this.entityType = entityType;
+    }
+    
+
 }

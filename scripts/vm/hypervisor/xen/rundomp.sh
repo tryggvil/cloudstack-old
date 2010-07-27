@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# $Id: rundomp.sh 9132 2010-06-04 20:17:43Z manuel $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/vm/hypervisor/xen/rundomp.sh $
+# $Id: rundomp.sh 9132 2010-06-04 20:17:43Z manuel $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.1.x/java/scripts/vm/hypervisor/xen/rundomp.sh $
 #
 # rundomp.sh -- start a console proxy domU (domP)  (iscsi mode)
 # 	Usage : rundomp [options] <image-dir>

@@ -20,6 +20,7 @@ package com.cloud.agent.api;
 public class StartupCommand extends Command {
     String dataCenter;
     String pod;
+    String cluster;
     String guid;
     String name;
     Long id;
@@ -55,6 +56,14 @@ public class StartupCommand extends Command {
     
     public String getIqn() {
         return iqn;
+    }
+    
+    public void setCluster(String cluster) {
+        this.cluster = cluster;
+    }
+    
+    public String getCluster() {
+        return cluster;
     }
     
     public void setIqn(String iqn) {

@@ -46,7 +46,7 @@ public class RebootRouterExecutor extends VMOperationExecutor {
 			return true;
 		} else {
 			try {
-				if(managementServer.rebootRouter(param.getVmId())) {
+				if(managementServer.rebootRouter(param.getVmId(), param.getEventId())) {
 					DomainRouter router = managementServer.findDomainRouterById(param.getVmId());
 					asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_SUCCEEDED, 0, 
 						RouterExecutorHelper.composeResultObject(managementServer, router));

@@ -73,19 +73,17 @@ public class HttpTemplateDownloader implements TemplateDownloader {
 	boolean inited = true;
 
 	private String toDir;
-	private static long MAX_DOWNLOAD_LENGTH = 50L*1024L*1024L*1024L;
+	private long MAX_TEMPLATE_SIZE_IN_BYTES;
 
 	private final HttpMethodRetryHandler myretryhandler;
 
-	public HttpTemplateDownloader (StorageLayer storageLayer, String downloadUrl, String toDir, DownloadCompleteCallback callback, Long maxTemplateSize, String user, String password) {
+	public HttpTemplateDownloader (StorageLayer storageLayer, String downloadUrl, String toDir, DownloadCompleteCallback callback, long maxTemplateSizeInBytes, String user, String password) {
 		this._storage = storageLayer;
 		this.downloadUrl = downloadUrl;
 		this.setToDir(toDir);
 		this.status = TemplateDownloader.Status.NOT_STARTED;
 		
-		if (maxTemplateSize != null) {
-			this.MAX_DOWNLOAD_LENGTH = maxTemplateSize * 1024L * 1024L * 1024L;
-		}
+		this.MAX_TEMPLATE_SIZE_IN_BYTES = maxTemplateSizeInBytes;
 		
 		this.totalBytes = 0;
 		this.client = new HttpClient();
@@ -229,6 +227,7 @@ public class HttpTemplateDownloader implements TemplateDownloader {
 			
             Header contentLengthHeader = request.getResponseHeader("Content-Length");
             boolean chunked = false;
+            long remoteSize2 = 0;
             if (contentLengthHeader == null) {
             	Header chunkedHeader = request.getResponseHeader("Transfer-Encoding");
             	if (chunkedHeader == null || !"chunked".equalsIgnoreCase(chunkedHeader.getValue())) {
@@ -238,37 +237,38 @@ public class HttpTemplateDownloader implements TemplateDownloader {
             	} else if ("chunked".equalsIgnoreCase(chunkedHeader.getValue())){
             		chunked = true;
             	}
-            } 
+            } else {
+            	remoteSize2 = Long.parseLong(contentLengthHeader.getValue());
+            }
 
-            InputStream in = !chunked?new BufferedInputStream(request.getResponseBodyAsStream())
-            						: new ChunkedInputStream(request.getResponseBodyAsStream());
-            
-            RandomAccessFile out = new RandomAccessFile(file, "rwd");
-            out.seek(localFileSize);
-            
-            long remoteSize2  = Long.parseLong(contentLengthHeader.getValue());
-            if (remoteSize != 0 && remoteSize2 != remoteSize){
-            	s_logger.info("Remote size changed to " + remoteSize2 + " from " + remoteSize);
-            } else if (remoteSize == 0) {
+            if (remoteSize == 0) {
             	remoteSize = remoteSize2;
             }
-            if (remoteSize2 > MAX_DOWNLOAD_LENGTH) {
-            	s_logger.info("Remote size is too large: " + remoteSize2 + " , max=" + MAX_DOWNLOAD_LENGTH);
+            
+            if (remoteSize > MAX_TEMPLATE_SIZE_IN_BYTES) {
+            	s_logger.info("Remote size is too large: " + remoteSize + " , max=" + MAX_TEMPLATE_SIZE_IN_BYTES);
             	status = Status.UNRECOVERABLE_ERROR;
             	errorString = "Download file size is too large";
             	return 0;
             }
             
-            if (remoteSize2 == 0) {
-            	remoteSize2 = MAX_DOWNLOAD_LENGTH;
+            if (remoteSize == 0) {
+            	remoteSize = MAX_TEMPLATE_SIZE_IN_BYTES;
             }
-            s_logger.info("Starting download from " + getDownloadUrl() + " to " + toFile + " remoteSize=" + remoteSize2 + " , max size=" + MAX_DOWNLOAD_LENGTH);
+            
+            InputStream in = !chunked?new BufferedInputStream(request.getResponseBodyAsStream())
+            						: new ChunkedInputStream(request.getResponseBodyAsStream());
+            
+            RandomAccessFile out = new RandomAccessFile(file, "rwd");
+            out.seek(localFileSize);
+
+            s_logger.info("Starting download from " + getDownloadUrl() + " to " + toFile + " remoteSize=" + remoteSize + " , max size=" + MAX_TEMPLATE_SIZE_IN_BYTES);
             
             byte[] block = new byte[CHUNK_SIZE];
             long offset=0;
             boolean done=false;
             status = TemplateDownloader.Status.IN_PROGRESS;
-            while (!done && status != Status.ABORTED && offset <= remoteSize2) {
+            while (!done && status != Status.ABORTED && offset <= remoteSize) {
             	if ( (bytes = in.read(block, 0, CHUNK_SIZE)) > -1) {
             		out.write(block, 0, bytes);
             		offset +=bytes;
@@ -413,7 +413,9 @@ public class HttpTemplateDownloader implements TemplateDownloader {
 		return toDir;
 	}
 
-
+	public long getMaxTemplateSizeInBytes() { 
+		return this.MAX_TEMPLATE_SIZE_IN_BYTES;
+	}
 	
 	public static void main(String[] args) {
 		String url ="http:// dev.mysql.com/get/Downloads/MySQL-5.0/mysql-noinstall-5.0.77-win32.zip/from/http://mirror.services.wisc.edu/mysql/";
@@ -423,7 +425,7 @@ public class HttpTemplateDownloader implements TemplateDownloader {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		TemplateDownloader td = new HttpTemplateDownloader(null, url,"/tmp/mysql", null, null, null, null);
+		TemplateDownloader td = new HttpTemplateDownloader(null, url,"/tmp/mysql", null, TemplateDownloader.DEFAULT_MAX_TEMPLATE_SIZE_IN_BYTES, null, null);
 		long bytes = td.download(true, null);
 		if (bytes > 0) {
 			System.out.println("Downloaded  (" + bytes + " bytes)" + " in " + td.getDownloadTime()/1000 + " secs");

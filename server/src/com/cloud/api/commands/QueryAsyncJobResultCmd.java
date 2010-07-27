@@ -28,6 +28,8 @@ import org.apache.log4j.Logger;
 import com.cloud.api.BaseCmd;
 import com.cloud.api.ServerApiException;
 import com.cloud.async.AsyncJobResult;
+import com.cloud.async.executor.IngressRuleResultObject;
+import com.cloud.async.executor.NetworkGroupResultObject;
 import com.cloud.exception.PermissionDeniedException;
 import com.cloud.serializer.SerializerHelper;
 import com.cloud.utils.Pair;
@@ -79,11 +81,56 @@ public class QueryAsyncJobResultCmd extends BaseCmd {
 
     	        if(result.getCmdOriginator() != null && !result.getCmdOriginator().isEmpty()) {
     	        	List<Pair<String, Object>> resultValues = new ArrayList<Pair<String, Object>>();
-    	            SerializerHelper.appendPairList(resultValues, resultObject, BaseCmd.Properties.JOB_RESULT.getName());
+    	        	if (resultObject instanceof NetworkGroupResultObject) {
+    	        	    serializeNetworkGroupResults(resultValues, (NetworkGroupResultObject)resultObject);
+    	        	} else {
+                        SerializerHelper.appendPairList(resultValues, resultObject, BaseCmd.Properties.JOB_RESULT.getName());
+    	        	}
     	            returnValues.add(new Pair<String, Object>(result.getCmdOriginator(), new Object[] { resultValues } ));
     	        }
             }
         } 
         return returnValues;
+    }
+
+    // For now network groups are the only objects with nested objects inside, so we special case serialization to handle this one case.
+    // In the future, if a generic serialization that handles nested objects is implemented then this special case can be removed.
+    private void serializeNetworkGroupResults(List<Pair<String, Object>> resultValues, NetworkGroupResultObject resultObject) {
+        if (resultObject != null) {
+            resultValues.add(new Pair<String, Object>(BaseCmd.Properties.ID.getName(), resultObject.getId().toString()));
+            resultValues.add(new Pair<String, Object>(BaseCmd.Properties.NAME.getName(), resultObject.getName()));
+            resultValues.add(new Pair<String, Object>(BaseCmd.Properties.DESCRIPTION.getName(), resultObject.getDescription()));
+            resultValues.add(new Pair<String, Object>(BaseCmd.Properties.ACCOUNT.getName(), resultObject.getAccountName()));
+            resultValues.add(new Pair<String, Object>(BaseCmd.Properties.DOMAIN_ID.getName(), resultObject.getDomainId().toString()));
+
+            List<IngressRuleResultObject> ingressRules = resultObject.getIngressRules();
+            if ((ingressRules != null) && !ingressRules.isEmpty()) {
+                Object[] ingressDataArray = new Object[ingressRules.size()];
+                int j = 0;
+                for (IngressRuleResultObject ingressRule : ingressRules) {
+                    List<Pair<String, Object>> ingressData = new ArrayList<Pair<String, Object>>();
+
+                    ingressData.add(new Pair<String, Object>(BaseCmd.Properties.RULE_ID.getName(), ingressRule.getId().toString()));
+                    ingressData.add(new Pair<String, Object>(BaseCmd.Properties.PROTOCOL.getName(), ingressRule.getProtocol()));
+                    if ("icmp".equalsIgnoreCase(ingressRule.getProtocol())) {
+                        ingressData.add(new Pair<String, Object>(BaseCmd.Properties.ICMP_TYPE.getName(), Integer.valueOf(ingressRule.getStartPort()).toString()));
+                        ingressData.add(new Pair<String, Object>(BaseCmd.Properties.ICMP_CODE.getName(), Integer.valueOf(ingressRule.getEndPort()).toString()));
+                    } else {
+                        ingressData.add(new Pair<String, Object>(BaseCmd.Properties.START_PORT.getName(), Integer.valueOf(ingressRule.getStartPort()).toString()));
+                        ingressData.add(new Pair<String, Object>(BaseCmd.Properties.END_PORT.getName(), Integer.valueOf(ingressRule.getEndPort()).toString()));
+                    }
+
+                    if (ingressRule.getAllowedNetworkGroup() != null) {
+                        ingressData.add(new Pair<String, Object>(BaseCmd.Properties.NETWORK_GROUP_NAME.getName(), ingressRule.getAllowedNetworkGroup()));
+                        ingressData.add(new Pair<String, Object>(BaseCmd.Properties.ACCOUNT.getName(), ingressRule.getAllowedNetGroupAcct()));
+                    } else if (ingressRule.getAllowedSourceIpCidr() != null) {
+                        ingressData.add(new Pair<String, Object>(BaseCmd.Properties.CIDR.getName(), ingressRule.getAllowedSourceIpCidr()));
+                    }
+                    ingressDataArray[j++] = ingressData;
+                }
+
+                resultValues.add(new Pair<String, Object>("ingressrule", ingressDataArray));
+            }
+        }
     }
 }

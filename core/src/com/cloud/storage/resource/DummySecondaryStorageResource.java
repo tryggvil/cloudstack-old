@@ -43,7 +43,7 @@ import com.cloud.host.Host.Type;
 import com.cloud.resource.ServerResource;
 import com.cloud.resource.ServerResourceBase;
 import com.cloud.storage.Volume;
-import com.cloud.storage.StoragePool.StoragePoolType;
+import com.cloud.storage.Storage.StoragePoolType;
 import com.cloud.storage.template.TemplateInfo;
 
 public class DummySecondaryStorageResource extends ServerResourceBase implements ServerResource {

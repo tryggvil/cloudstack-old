@@ -23,10 +23,16 @@ package com.cloud.host;
  */
 public interface HostStats {
 	
-    double getCpuUtilization();
-    long getUsedMemory();
-    long getFreeMemory();
-    long getTotalMemory();
-    double getPublicNetworkReadKBs();
-    double getPublicNetworkWriteKBs();
+    //host related stats
+    public double getAverageLoad();
+    public double getCpuUtilization();
+    public double getNetworkWriteKBs();
+    public double getTotalMemoryKBs();
+    public double getFreeMemoryKBs();
+    public double getXapiMemoryUsageKBs();    
+    public double getNetworkReadKBs();
+    public String getEntityType();
+    public double getUsedMemory();
+    public int getNumCpus();
+    public HostStats getHostStats();
 }

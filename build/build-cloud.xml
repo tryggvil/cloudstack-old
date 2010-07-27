@@ -18,26 +18,26 @@
 
   <property environment="env" />
 
-  <condition property="build-cloud.properties.file" value="override/build-cloud.properties" else="build-cloud.properties">
+  <condition property="build-cloud.properties.file" value="${build.dir}/override/build-cloud.properties" else="${build.dir}/build-cloud.properties">
     <available file="${build.dir}/override/build-cloud.properties" />
   </condition>
 
-  <condition property="cloud.properties.file" value="override/cloud.properties" else="cloud.properties">
+  <condition property="cloud.properties.file" value="${build.dir}/override/cloud.properties" else="${build.dir}/cloud.properties">
     <available file="${build.dir}/override/cloud.properties" />
   </condition>
 
-  <condition property="override.file" value="override/replace.properties" else="replace.properties">
+  <condition property="override.file" value="${build.dir}/override/replace.properties" else="${build.dir}/replace.properties">
     <available file="${build.dir}/override/replace.properties" />
   </condition>
 
-  <echo message="${build.dir}/${build-cloud.properties.file}" />
-  <property file="${build.dir}/${build-cloud.properties.file}" />
+  <echo message="Using build parameters from ${build-cloud.properties.file}" />
+  <property file="${build-cloud.properties.file}" />
 
-  <echo message="${build.dir}/${cloud.properties.file}" />
-  <property file="${build.dir}/${cloud.properties.file}" />
+  <echo message="Using company info from ${cloud.properties.file}" />
+  <property file="${cloud.properties.file}" />
 
-  <echo message="${build.dir}/${override.file}" />
-  <property file="${build.dir}/${override.file}" />
+  <echo message="Using override file from ${override.file}" />
+  <property file="${override.file}" />
 
   <property file="${base.dir}/build/build.number" />
 
@@ -50,7 +50,7 @@
   <property name="target.compat.version" value="1.6" />
   <property name="source.compat.version" value="1.6" />
   <property name="debug" value="true" />
-  <property name="debuglevel" value="lines,vars" />
+  <property name="debuglevel" value="lines,source"/>
 
   <!-- directories for build and distribution -->
   <property name="dist.dir" location="${base.dir}/dist/" />
@@ -61,11 +61,12 @@
   <property name="build.log" location="${target.dir}/ant_verbose.txt" />
 
   <property name="thirdparty.dir" location="${base.dir}/thirdparty" />
+  <property name="deps.dir" location="${base.dir}/deps" />
 
   <!-- directories for client compilation-->
   <property name="client.dir" location="${base.dir}/client" />
   <property name="client.test.dir" location="${client.dir}/test" />
-  <property name="client.dist.dir" location="${dist.dir}/client" />
+  <property name="client.target.dir" location="${target.dir}/ui" />
   <property name="ui.user.dir" location="${base.dir}/ui" />
   <property name="setup.db.dir" location="${base.dir}/setup/db" />
 
@@ -84,6 +85,7 @@
   <property name="agent.dist.dir" location="${dist.dir}/agent" />
 
   <property name="scripts.dir" location="${base.dir}/scripts" />
+  <property name="scripts.target.dir" location="${target.dir}/scripts"/>
 
   <!-- directories for console proxy & applet code compilation-->
   <property name="console-common.dir" location="${base.dir}/console" />
@@ -96,7 +98,7 @@
   <property name="console-viewer.dist.dir" location="${dist.dir}/console-viewer" />
 
   <property name="tools.dir" location="${base.dir}/tools" />
-  <property name="antcontrib.dir" location="${tools.dir}/tools/ant/apache-ant-1.8.0/lib" />
+<!--  <property name="antcontrib.dir" location="${tools.dir}/tools/ant/apache-ant-1.8.0/lib" />-->
   <property name="deploy.dir" location="${build.dir}/deploy" />
   <property name="production.dir" location="${deploy.dir}/production" />
   <property name="meld.home" location="/usr/local/bin" />
@@ -120,7 +122,6 @@
 		Import information about the build version and company information
 	-->
   <property name="version" value="${company.major.version}.${company.minor.version}.${company.patch.version}" />
-  <property name="agent.upgrade.file" value="${client.dist.dir}/conf/agent-update.properties" />
 
   <!-- Class paths -->
   <path id="prod.src.path">
@@ -132,37 +133,13 @@
 
   <path id="src.classpath">
   </path>
-
-  <taskdef resource="net/sf/antcontrib/antcontrib.properties" classpath="${antcontrib.dir}/ant-contrib-1.0b3.jar" />
-
-  <if>
-
-    <isset property="waf.classpath" />
-
-    <then>
-
-      <path id="thirdparty.classpath">
-        <filelist files="${waf.classpath}" />
-        <!-- we use this to invoke ant from waf with the correct opensource -->
-      </path>
-
-    </then>
-
-    <else>
-
-      <path id="thirdparty.classpath">
-        <fileset dir="${thirdparty.dir}">
-          <include name="*.jar" />
-        </fileset>
-        <fileset dir="${tomcat.home}/lib">
-          <include name="servlet-api.jar" />
-          <include name="catalina.jar" />
-        </fileset>
-      </path>
-
-    </else>
-
-  </if>
+     
+  <path id="thirdparty.classpath">
+    <filelist files="${thirdparty.classpath}" />
+    <fileset dir="${thirdparty.dir}" erroronmissingdir="false">
+      <include name="*.jar" />
+    </fileset>
+  </path>
 
   <path id="dist.classpath">
     <fileset dir="${target.dir}">
@@ -190,7 +167,7 @@
     <path refid="thirdparty.classpath" />
     <path refid="dist.classpath" />
   </path>
-  <target name="compile-core" depends="-init" description="Compile the core business logic.">
+  <target name="compile-core" depends="-init, compile-utils" description="Compile the core business logic.">
     <compile-java jar.name="${core.jar}" top.dir="${core.dir}" classpath="core.classpath" />
   </target>
 
@@ -207,11 +184,28 @@
     <path refid="dist.classpath" />
   </path>
 
-  <target name="build-number" />
+  <target name="build-scripts" depends="-init">
+    <copy todir="${scripts.target.dir}">
+      <fileset dir="${scripts.dir}">
+        <include name="**/*"/>
+        <exclude name="**/.classpath" />
+        <exclude name="**/.project" />
+        <exclude name="**/network/domr/mth/" />
+        <exclude name="**/network/domr/kvm/" />
+        <exclude name="**/network/domr/xenserver/" />
+        <exclude name="**/storage/zfs/" />
+        <exclude name="**/storage/iscsi/" />
+        <exclude name="**/hypervisor/xen/" />
+      </fileset>
+      <filterset>
+        <filter token="VERSION" value="${impl.version}"/>
+      </filterset>
+    </copy>
+  </target>
 
   <target name="build-ui" depends="-init" description="Builds the UI">
-    <mkdir dir="${client.dist.dir}" />
-    <copy todir="${client.dist.dir}/ui">
+    <mkdir dir="${client.target.dir}" />
+    <copy todir="${client.target.dir}">
       <fileset dir="${ui.user.dir}">
         <include name="**/*.html" />
         <include name="**/*.js"/>
@@ -222,7 +216,7 @@
         <filter token="VERSION" value="${impl.version}"/>
       </filterset>
     </copy>
-    <copy todir="${client.dist.dir}/ui">
+    <copy todir="${client.target.dir}">
       <fileset dir="${ui.user.dir}">
         <include name="**/*"/>
         <exclude name="**/*.html" />
@@ -233,83 +227,52 @@
     </copy>
   </target>
 
-  <target name="build-war" depends="-init, compile-utils, compile-core, compile-server, build-ui" description="Compile the GWT client UI and builds WAR file.">
-    <mkdir dir="${client.dist.dir}" />
-    <chmod file="${scripts.dir}/start.sh" perm="700" />
-
-    <war destfile="${client.dist.dir}/client.war" webxml="${server.dir}/web.xml">
-      <fileset dir="${client.dist.dir}/ui">
-        <include name="**/*" />
-      </fileset>
-      <lib dir="${jar.dir}">
-        <include name="${core.jar}" />
-        <include name="${utils.jar}" />
-        <include name="${server.jar}" />
-      </lib>
-      <zipfileset dir="${scripts.dir}" prefix="WEB-INF/lib/scripts" filemode="555">
-        <include name="**/*" />
-        <exclude name="**/.classpath" />
-        <exclude name="**/.project" />
-        <exclude name="**/id_rsa" />
-      </zipfileset>
-      <zipfileset dir="${scripts.dir}" prefix="WEB-INF/lib/scripts" filemode="600">
-        <include name="**/id_rsa" />
-      </zipfileset>
-    </war>
-  </target>
-
   <target name="build-server" depends="compile-server">
     <mkdir dir="${server.dist.dir}" />
     <mkdir dir="${server.dist.dir}/lib" />
     <mkdir dir="${server.dist.dir}/conf" />
 
-    <if>
-
-      <not>
-        <isset property="waf.classpath" />
-      </not>
-
-      <then>
-        <copy todir="${server.dist.dir}/lib">
-          <fileset dir="${thirdparty.dir}">
-            <include name="mysql-connector-java-5.1.7-bin.jar" />
-            <include name="cglib-nodep-2.2.jar" />
-            <include name="gson-1.3.jar" />
-            <include name="log4j-1.2.15.jar" />
-            <include name="apache-log4j-extras-1.0.jar" />
-            <include name="ehcache-1.5.0.jar" />
-            <include name="commons-logging-1.1.1.jar" />
-            <include name="commons-dbcp-1.2.2.jar" />
-            <include name="commons-pool-1.4.jar" />
-            <include name="backport-util-concurrent-3.0.jar" />
-            <include name="httpcore-4.0.jar" />
-            <include name="commons-httpclient-3.1.jar" />
-            <include name="commons-codec-1.4.jar" />
-            <include name="email.jar" />
-            <include name="xmlrpc-client-3.1.3.jar" />
-            <include name="xmlrpc-common-3.1.3.jar" />
-            <include name="xenserver-5.5.0-1.jar" />
-            <include name="ws-commons-util-1.0.2.jar" />
-            <include name="trilead-ssh2-build213.jar" />
-          </fileset>
-        </copy>
-      </then>
-
-    </if>
+    <copy todir="${server.dist.dir}/lib">
+      <fileset dir="${thirdparty.dir}">
+        <include name="mysql-connector-java-5.1.7-bin.jar" />
+	<include name="cglib-nodep-2.2.jar" />
+	<include name="gson-1.3.jar" />
+	<include name="log4j-1.2.15.jar" />
+	<include name="apache-log4j-extras-1.0.jar" />
+	<include name="ehcache-1.5.0.jar" />
+	<include name="commons-logging-1.1.1.jar" />
+	<include name="commons-dbcp-1.2.2.jar" />
+	<include name="commons-pool-1.4.jar" />
+	<include name="backport-util-concurrent-3.0.jar" />
+	<include name="httpcore-4.0.jar" />
+	<include name="commons-httpclient-3.1.jar" />
+	<include name="commons-codec-1.4.jar" />
+	<include name="email.jar" />
+	<include name="xmlrpc-client-3.1.3.jar" />
+	<include name="xmlrpc-common-3.1.3.jar" />
+	<include name="xenserver-5.5.0-1.jar" />
+	<include name="ws-commons-util-1.0.2.jar" />
+	<include name="trilead-ssh2-build213.jar" />
+      </fileset>
+    </copy>
 
     <copy overwrite="true" todir="${server.dist.dir}/conf">
-      <mappedresources>
-        <fileset dir="${base.dir}/client/tomcatconf">
-          <include name="*.in" />
-        </fileset>
-        <globmapper from="*.in" to="*" />
-      </mappedresources>
+      <fileset dir="${base.dir}/client/tomcatconf">
+        <include name="*.in" />
+      </fileset>
+      <globmapper from="*.in" to="*" />
       <filterchain>
         <filterreader classname="org.apache.tools.ant.filters.ReplaceTokens">
-          <param type="propertiesfile" value="build/${override.file}" />
+          <param type="propertiesfile" value="${override.file}" />
         </filterreader>
       </filterchain>
     </copy>
+  	
+    <copy overwrite="true" todir="${server.dist.dir}/conf">
+        <fileset dir="${server.dir}/src/com/cloud/migration">
+          <include name="*.xml" />
+        </fileset>
+  	</copy>
   </target>
 
   <path id="console-common.classpath">
@@ -339,20 +302,13 @@
     <mkdir dir="${copyto.dir}/ui" />
     <mkdir dir="${copyto.dir}/css" />
 
-    <if>
-      <not>
-        <isset property="waf.classpath" />
-      </not>
-      <then>
-        <copy todir="${copyto.dir}">
-          <fileset dir="${thirdparty.dir}">
-            <include name="log4j-1.2.15.jar" />
-            <include name="apache-log4j-extras-1.0.jar" />
-            <include name="gson-1.3.jar" />
-          </fileset>
-        </copy>
-      </then>
-    </if>
+    <copy todir="${copyto.dir}">
+      <fileset dir="${thirdparty.dir}">
+        <include name="log4j-1.2.15.jar" />
+        <include name="apache-log4j-extras-1.0.jar" />
+         <include name="gson-1.3.jar" />
+      </fileset>
+    </copy>
 
     <copy todir="${copyto.dir}">
       <fileset dir="${jar.dir}">
@@ -477,30 +433,38 @@
       <fileset dir="${agent.dir}/conf">
         <include name="${agent.properties}" />
         <include name="${developer.properties}" />
+      </fileset>
+      <filterchain>
+        <filterreader classname="org.apache.tools.ant.filters.ReplaceTokens">
+          <param type="propertiesfile" value="${override.file}" />
+        </filterreader>
+      </filterchain>
+    </copy>
+
+    <copy overwrite="true" todir="${agent.dist.dir}/conf" flatten="true">
+      <fileset dir="${agent.dir}/conf">
         <include name="log4j-cloud.xml.in" />
       </fileset>
       <globmapper from="*.in" to="*" />
       <filterchain>
         <filterreader classname="org.apache.tools.ant.filters.ReplaceTokens">
-          <param type="propertiesfile" value="build/${override.file}" />
+          <param type="propertiesfile" value="${override.file}" />
         </filterreader>
       </filterchain>
     </copy>
+    <delete file="${agent.dist.dir}/conf/log4j-cloud.xml.in"/>
+
     <copy todir="${agent.dist.dir}">
       <fileset dir="${agent.dir}/scripts">
         <include name="agent.sh" />
         <include name="run.sh" />
       </fileset>
     </copy>
-
-    <copy file="${production.dir}/server/conf/agent-update.properties" todir="${client.dist.dir}/conf" />
-
-    <replaceregexp file="${agent.upgrade.file}" match="@.*@" replace="${impl.version}" />
   </target>
 
   <target name="build-servers" depends="-init, build-server" />
 
-  <target name="build-opensource" depends="-init, build-server, build-agent, build-console-proxy">
+  <target name="build-opensource" depends="-init, build-server, build-agent, build-console-proxy, build-scripts, build-ui">
     <copy overwrite="true" todir="${dist.dir}">
       <fileset dir="${base.dir}/build/deploy/">
         <include name="deploy-agent.sh" />
@@ -515,20 +479,25 @@
     <chmod file="${dist.dir}/deploy-agent.sh" perm="uog+xr" />
     <chmod file="${dist.dir}/deploy-server.sh" perm="uog+xr" />
   </target>
+ 
 	
-  <target name="build-xenserver-domr-patch" depends="-init">		
+  <target name="build-kvm-domr-patch" depends="-init">		
     <tar destfile="${dist.dir}/patch.tar">
-	  <tarfileset dir="${scripts.dir}/network/domr/xenserver/patches" filemode="755">
-	    <include name="**"/>
+	  <tarfileset dir="${base.dir}/patches/kvm" filemode="755">
+	    <include name="**/*"/>
+            <exclude name="**/.classpath" />
+            <exclude name="**/.project" />
 	  </tarfileset>
-	</tar>
-	<gzip destfile="${dist.dir}/patch.tgz" src="${dist.dir}/patch.tar"/>
-	<delete file="${dist.dir}/patch.tar"/>
+	  <tarfileset dir="${base.dir}/patches/shared" filemode="755">
+            <include name="**/*"/>
+            <exclude name="**/.classpath" />
+            <exclude name="**/.project" />
+          </tarfileset>
+    </tar>
+    <gzip destfile="${dist.dir}/patch.tgz" src="${dist.dir}/patch.tar"/>
+    <delete file="${dist.dir}/patch.tar"/>
   </target>
 
-  <target name="build-all" depends="build-opensource, build-war, build-xenserver-domr-patch">
-  </target>
-	  
   <target name="help">
     <echo level="info" message="Ant Build File for Cloud.com Cloud Stack" />
     <echo level="info" message="Type 'ant -projecthelp' to get a list of targets and their descriptions." />
@@ -554,11 +523,9 @@
 
     <!-- set build.number property, stored in eponymous file -->
     <buildnumber file="${build.dir}/build.number" />
-    <condition property="impl.version" value="${version}.${build.number}" else="${version}">
-      <and>
-        <isset property="update.build.number" />
-      </and>
-    </condition>
+    <condition property="impl.version" value="${version}.${manual.build.number}" else="${version}.${build.number}">
+       <isset property="manual.build.number"/>
+     </condition>
 
     <echo message="Build number is ${impl.version}" />
 
@@ -567,10 +534,6 @@
     <mkdir dir="${docs.dir}" />
     <mkdir dir="${dep.cache.dir}" />
     <record name="${build.log}" action="stop" />
-  </target>
-
-  <target name="update-build-number">
-    <property name="update.build.number" value="true" />
   </target>
 
   <target name="clean" description="clean up files generated by the build">

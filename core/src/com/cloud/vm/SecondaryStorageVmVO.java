@@ -55,6 +55,15 @@ public class SecondaryStorageVmVO extends VMInstanceVO implements SecondaryStora
     @Column(name="public_netmask", nullable=false)
     private String publicNetmask;
     
+    @Column(name="guest_mac_address")
+    private String guestMacAddress;
+    
+    @Column(name="guest_ip_address")
+    private String guestIpAddress;
+    
+    @Column(name="guest_netmask")
+    private String guestNetmask;
+    
     @Column(name="vlan_db_id")
     private Long vlanDbId;
     
@@ -83,6 +92,9 @@ public class SecondaryStorageVmVO extends VMInstanceVO implements SecondaryStora
     		long id,
             String name,
             State state,
+            String guestMacAddress,
+            String guestIpAddress,
+            String guestNetMask, 
             String privateMacAddress,
             String privateIpAddress,
             String privateNetmask,
@@ -109,6 +121,9 @@ public class SecondaryStorageVmVO extends VMInstanceVO implements SecondaryStora
     	this.publicIpAddress = publicIpAddress;
     	this.publicNetmask = publicNetmask;
     	this.publicMacAddress = publicMacAddress;
+    	this.guestIpAddress = guestIpAddress;
+    	this.guestMacAddress = guestMacAddress;
+    	this.guestNetmask = guestNetMask;
     	this.vlanDbId = vlanDbId;
     	this.vlanId = vlanId;
     	this.dns1 = dns1;
@@ -151,6 +166,18 @@ public class SecondaryStorageVmVO extends VMInstanceVO implements SecondaryStora
     	this.publicMacAddress = publicMacAddress;
     }
     
+    public void setGuestIpAddress(String guestIpAddress) {
+    	this.guestIpAddress = guestIpAddress;
+    }
+    
+    public void setGuestNetmask(String guestNetmask) {
+    	this.guestNetmask = guestNetmask;
+    }
+    
+    public void setGuestMacAddress(String guestMacAddress) {
+    	this.guestMacAddress = guestMacAddress;
+    }
+    
     public void setRamSize(int ramSize) {
     	this.ramSize = ramSize;
     }
@@ -187,6 +214,21 @@ public class SecondaryStorageVmVO extends VMInstanceVO implements SecondaryStora
     @Override
 	public String getPublicMacAddress() {
 		return this.publicMacAddress;
+	}
+    
+
+	public String getGuestIpAddress() {
+    	return this.guestIpAddress;
+	}
+	
+
+	public String getGuestNetmask() {
+    	return this.guestNetmask;
+	}
+	
+
+	public String getGuestMacAddress() {
+		return this.guestMacAddress;
 	}
     
     @Override

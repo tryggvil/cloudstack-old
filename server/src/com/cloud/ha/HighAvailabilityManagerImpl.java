@@ -50,6 +50,7 @@ import com.cloud.exception.OperationTimedoutException;
 import com.cloud.exception.StorageUnavailableException;
 import com.cloud.ha.WorkVO.WorkType;
 import com.cloud.ha.dao.HighAvailabilityDao;
+import com.cloud.host.Host;
 import com.cloud.host.HostVO;
 import com.cloud.host.Status;
 import com.cloud.host.dao.HostDao;
@@ -64,6 +65,7 @@ import com.cloud.utils.component.ComponentLocator;
 import com.cloud.utils.component.Inject;
 import com.cloud.utils.concurrency.NamedThreadFactory;
 import com.cloud.utils.db.GlobalLock;
+import com.cloud.utils.exception.ExecutionException;
 import com.cloud.vm.State;
 import com.cloud.vm.VMInstanceVO;
 import com.cloud.vm.VirtualMachine;
@@ -178,6 +180,10 @@ public class HighAvailabilityManagerImpl implements HighAvailabilityManager {
 
     @Override
     public void scheduleRestartForVmsOnHost(final HostVO host) {
+        
+        if( host.getType() != Host.Type.Routing) {
+            return;
+        }
         s_logger.warn("Scheduling restart for VMs on host " + host.getId());
 
         final List<VMInstanceVO> vms = _instanceDao.listByHostId(host.getId());
@@ -418,6 +424,13 @@ public class HighAvailabilityManagerImpl implements HighAvailabilityManager {
             }
             return null;  // VM doesn't require HA
         }
+        
+        if (!_storageMgr.canVmRestartOnAnotherServer(vm.getId())) {
+            if (s_logger.isDebugEnabled()) {
+                s_logger.debug("VM can not restart on another server.");
+            }
+            return null;
+        }
 
         if (work.getTimesTried() > _maxRetries) {
             s_logger.warn("Retried to max times so deleting: " + vmId);
@@ -425,7 +438,7 @@ public class HighAvailabilityManagerImpl implements HighAvailabilityManager {
         }
 
         try {
-            VMInstanceVO started = mgr.start(vm.getId());
+            VMInstanceVO started = mgr.start(vm.getId(), 0);
             if (started != null) {
                 s_logger.info("VM is now restarted: " + vmId + " on " + started.getHostId());
                 return null;
@@ -448,6 +461,10 @@ public class HighAvailabilityManagerImpl implements HighAvailabilityManager {
             return null;
         } catch (ConcurrentOperationException e) {
         	s_logger.warn("Unable to restart " + vm.toString() + " due to " + e.getMessage());
+            _alertMgr.sendAlert(alertType, vm.getDataCenterId(), vm.getPodId(), "Unable to restart " + vm.getName() + " which was running on host " + hostDesc, "The Storage is unavailable for trying to restart VM, name: " + vm.getName() + ", id: " + vmId + " which was running on host " + hostDesc);
+            return null;
+        } catch (ExecutionException e) {
+           	s_logger.warn("Unable to restart " + vm.toString() + " due to " + e.getMessage());
             _alertMgr.sendAlert(alertType, vm.getDataCenterId(), vm.getPodId(), "Unable to restart " + vm.getName() + " which was running on host " + hostDesc, "The Storage is unavailable for trying to restart VM, name: " + vm.getName() + ", id: " + vmId + " which was running on host " + hostDesc);
             return null;
         }
@@ -851,7 +868,7 @@ public class HighAvailabilityManagerImpl implements HighAvailabilityManager {
         try {
         	if (work.getWorkType() == WorkType.Stop) {
 	            if (vm.getHostId() != null) {
-	                if (mgr.stop(vm)) {
+	                if (mgr.stop(vm, 0)) {
 	                	s_logger.info("Successfully stopped " + vm.toString());
 	                    return null;
 	                }

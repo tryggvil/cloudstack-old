@@ -17,7 +17,6 @@
  */
 
 // Version: @VERSION@
-var g_version = '@VERSION@';
 var g_mySession = null;
 var g_role = null; // roles - root, domain-admin, ro-admin, user
 var g_username = null;
@@ -30,8 +29,15 @@ var g_timezone = null;
 // capabilities
 var g_networkType = "vnet"; // vnet, vlan, direct
 function getNetworkType() { return g_networkType; }
+
 var g_hypervisorType = "kvm";
 function getHypervisorType() { return g_hypervisorType; }
+
+var g_directattachnetworkgroupsenabled = "false";
+function getDirectAttachNetworkGroupsEnabled() { return g_directattachnetworkgroupsenabled; }
+
+g_directAttachedUntaggedEnabled = "false"
+function getDirectAttachUntaggedEnabled() { return g_directAttachedUntaggedEnabled; }
 
 //keyboard keycode
 var keycode_Enter = 13;
@@ -258,12 +264,55 @@ function submenuContentEventBinder(submenuContent, listFunction) {
 			    }
 		    });		    
 		} 	
+    	    	
+    	var vmSelect = submenuContent.find("#advanced_search").find("#adv_search_vm");	
+		if(vmSelect.length>0) {		   
+		    vmSelect.empty();		
+		    vmSelect.append("<option value=''></option>"); 	
+		    $.ajax({
+			    data: "command=listVirtualMachines&response=json",
+			    dataType: "json",
+			    success: function(json) {			        
+				    var items = json.listvirtualmachinesresponse.virtualmachine;		 
+				    if (items != null && items.length > 0) {
+				        for (var i = 0; i < items.length; i++) {
+					        vmSelect.append("<option value='" + items[i].id + "'>" + sanitizeXSS(items[i].name) + "</option>"); 
+				        }
+				    }
+			    }
+		    });		    
+		} 	
     	
         submenuContent.find("#advanced_search").show();
     });	  
 }
 
 // Validation functions
+function showError(isValid, field, errMsgField, errMsg) {    
+	if(isValid) {
+	    errMsgField.text("").hide();
+	    field.addClass("text").removeClass("error_text");
+	}
+	else {
+	    errMsgField.text(errMsg).show();
+	    field.removeClass("text").addClass("error_text");	
+	}
+}
+
+function showError2(isValid, field, errMsgField, errMsg, appendErrMsg) {    
+	if(isValid) {
+	    errMsgField.text("").hide();
+	    field.addClass("text2").removeClass("error_text2");
+	}
+	else {
+	    if(appendErrMsg) //append text
+	        errMsgField.text(errMsgField.text()+errMsg).show();  
+	    else  //reset text
+	        errMsgField.text(errMsg).show();  
+	    field.removeClass("text2").addClass("error_text2");	
+	}
+}
+
 function validateDropDownBox(label, field, errMsgField, appendErrMsg) {  
     var isValid = true;
     var errMsg = "";   
@@ -379,31 +428,6 @@ function validatePath(label, field, errMsgField, isOptional) {
 function cleanErrMsg(field, errMsgField) {
     showError(true, field, errMsgField);
 }	
-
-function showError(isValid, field, errMsgField, errMsg) {    
-	if(isValid) {
-	    errMsgField.text("").hide();
-	    field.addClass("text").removeClass("error_text");
-	}
-	else {
-	    errMsgField.text(errMsg).show();
-	    field.removeClass("text").addClass("error_text");	
-	}
-}
-
-function showError2(isValid, field, errMsgField, errMsg, appendErrMsg) {    
-	if(isValid) {
-	    errMsgField.text("").hide();
-	    field.addClass("text2").removeClass("error_text2");
-	}
-	else {
-	    if(appendErrMsg) //append text
-	        errMsgField.text(errMsgField.text()+errMsg).show();  
-	    else  //reset text
-	        errMsgField.text(errMsg).show();  
-	    field.removeClass("text2").addClass("error_text2");	
-	}
-}
 
 // setter 
 function setGridRowsTotal(field, gridRowsTotal) {   
@@ -665,6 +689,20 @@ timezones['Pacific/Guam']='[UTC+10:00] Chamorro Standard Time';
 timezones['Pacific/Auckland']='[UTC+12:00] New Zealand Standard Time';
 
 $(document).ready(function() {
+	// Prevent the UI from being iframed if the iframe isn't from the same domain.
+	try {
+		if ( top != self && self.location.hostname != top.location.hostname) {
+			// leaving the code here in the oft change an older browser is being used that does not have
+			// cross-site scripting prevention.
+			alert("Detected a frame (" + top.location.hostname + ") not from the same domain (" + self.location.hostname + ").  Moving app to top of browser to prevent any security tampering.");
+			top.location.href = window.location.href;
+		}
+	} catch (err) {
+		// This means the domains are different because the browser is preventing access to the parent's domain.
+		alert("Detected a frame not from the same domain (" + self.location.hostname + ").  Moving app to top of browser to prevent any security tampering.");
+		top.location.href = window.location.href;
+	}
+
 	// We don't support IE6 at the moment, so let's just inform customers it won't work
 	var IE6 = false /*@cc_on || @_jscript_version < 5.7 @*/;
 	var gteIE7 = false /*@cc_on || @_jscript_version >= 5.7 @*/;
@@ -752,11 +790,6 @@ $(document).ready(function() {
 		
 		$("body").stopTime();
 		
-		// If the version is not the same, refresh the browser
-		if ($('meta[name=version]').attr("content") != g_version) {
-			alert("Version difference of " + $('meta[name=version]').attr("content"));
-		}
-
 		// default is to redisplay the login page
 		if (onLogoutCallback()) {
 			if (refresh) {
@@ -801,11 +834,20 @@ $(document).ready(function() {
 	
 	// FUNCTION: logs the user in
 	function login() {
+		var array1 = [];
 		var username = encodeURIComponent($("#account_username").val());
+		array1.push("&username="+username);
+		
 		var password = $.md5(encodeURIComponent($("#account_password").val()));
+		array1.push("&password="+password);
+		
 		var domain = encodeURIComponent($("#account_domain").val());
+		if(domain != null && domain.length > 0)
+		    array1.push("&domain="+domain);
+		
 		$.ajax({
-			data: "command=login&username="+username+"&password="+password+"&domain="+domain+"&response=json",
+			type: "POST",
+			data: "command=login&response=json" + array1.join(""),
 			dataType: "json",
 			async: false,
 			success: function(json) {
@@ -814,15 +856,17 @@ $(document).ready(function() {
 				g_username = json.loginresponse.username;	
 				g_account = json.loginresponse.account;
 				g_domainid = json.loginresponse.domainid;	
-				g_timezone = json.loginresponse.timezone;
-				
-				g_timezoneoffset = json.loginresponse.timezoneoffset;	
-				if (json.loginresponse.networktype != undefined) {
-					g_networkType = json.loginresponse.networktype;
-				}
-				if (json.loginresponse.hypervisortype != undefined) {
-					g_hypervisorType = json.loginresponse.hypervisortype;
-				}
+				g_timezone = json.loginresponse.timezone;								
+				g_timezoneoffset = json.loginresponse.timezoneoffset;					
+				if (json.loginresponse.networktype != null) 
+					g_networkType = json.loginresponse.networktype;				
+				if (json.loginresponse.hypervisortype != null) 
+					g_hypervisorType = json.loginresponse.hypervisortype;				
+				if (json.loginresponse.directattachnetworkgroupsenabled != null) 
+					g_directattachnetworkgroupsenabled = json.loginresponse.directattachnetworkgroupsenabled;
+				if (json.loginresponse.directattacheduntaggedenabled != null) 
+					g_directAttachedUntaggedEnabled = json.loginresponse.directattacheduntaggedenabled;
+
 				$.cookie('networktype', g_networkType, { expires: 1});
 				$.cookie('hypervisortype', g_hypervisorType, { expires: 1});
 				$.cookie('username', g_username, { expires: 1});	
@@ -831,6 +875,9 @@ $(document).ready(function() {
 				$.cookie('role', g_role, { expires: 1});
 				$.cookie('timezoneoffset', g_timezoneoffset, { expires: 1});  
 				$.cookie('timezone', g_timezone, { expires: 1});  
+				$.cookie('directattachnetworkgroupsenabled', g_directattachnetworkgroupsenabled, { expires: 1}); 
+				$.cookie('directattacheduntaggedenabled', g_directAttachedUntaggedEnabled, { expires: 1}); 
+				
 				// Set Role
 				if (isUser()) {
 					$(".loginbutton_box p").text("").hide();			
@@ -921,7 +968,7 @@ $(document).ready(function() {
 		if (tabId == "menutab_dashboard_user" || tabId == "menutab_dashboard_root" || tabId == "menutab_dashboard_domain") {
 			showDashboardTab();
 		} else if (tabId == "menutab_vm") {
-			showInstancesTab(tab.data("domainId"), tab.data("account"));
+			showInstancesTab(tab.data("domainId"), tab.data("account"));		
 		} else if (tabId == "menutab_networking") {
 			showNetworkingTab(tab.data("domainId"), tab.data("account"));
 		} else if (tabId == "menutab_templates") {
@@ -968,7 +1015,7 @@ $(document).ready(function() {
 				var zones = null;
 				var noZones = false;
 				var noPods = true;
-				$("#menutab_dashboard_root, #menutab_vm, #menutab_networking, #menutab_templates, #menutab_events, #menutab_hosts, #menutab_storage, #menutab_accounts, #menutab_domain").hide();							
+				$("#menutab_dashboard_root, #menutab_vm, #menutab_networking_old, #menutab_networking, #menutab_templates, #menutab_events, #menutab_hosts, #menutab_storage, #menutab_accounts, #menutab_domain").hide();							
 				$.ajax({
 					data: "command=listZones&available=true&response=json",
 					dataType: "json",
@@ -988,7 +1035,7 @@ $(document).ready(function() {
 							                var pods = json.listpodsresponse.pod;						
 							                if (pods != null && pods.length > 0) {
             							        noPods = false;
-            							        $("#menutab_dashboard_root, #menutab_vm, #menutab_networking, #menutab_templates, #menutab_events, #menutab_hosts, #menutab_storage, #menutab_accounts, #menutab_domain").show();							
+            							        $("#menutab_dashboard_root, #menutab_vm, #menutab_networking_old, #menutab_networking, #menutab_templates, #menutab_events, #menutab_hosts, #menutab_storage, #menutab_accounts, #menutab_domain").show();							
 							                }							
 						                }
 					                });
@@ -1029,9 +1076,10 @@ $(document).ready(function() {
 					$(".db_bargraph_barbox_safezone").attr("style", "width:0%");
 					$(".db_bargraph_barbox_unsafezone").attr("style", "width:0%");
 					
+					var selectedZone = $("#capacity_zone_select option:selected").text();
+					var selectedPod = $("#capacity_pod_select").val();
+					
 					if (capacities != null && capacities.length > 0) {
-						var selectedZone = $("#capacity_zone_select option:selected").text();
-						var selectedPod = $("#capacity_pod_select").val();
 						for (var i = 0; i < capacities.length; i++) {
 							var capacity = capacities[i];
 							if (capacity.zonename == selectedZone) {
@@ -1049,37 +1097,7 @@ $(document).ready(function() {
 									} else {
 										$("#capacity_public_ip .db_bargraph_barbox_safezone").attr("style", "width:"+usedPercentage+"%");
 									    $("#capacity_public_ip .db_bargraph_barbox_unsafezone").attr("style", "width:0%");
-									}
-								// Storage Used
-								} else if (capacity.type == "2") {
-									$("#storage_used").attr("style", "width: " + ((parseFloat(capacity.percentused) < 50) ? "50%" : capacity.percentused + "%")).text("Used: " + convertBytes(parseInt(capacity.capacityused)) + " / " + capacity.percentused + "%");
-									$("#storage_total").text("Total: " + convertBytes(parseInt(capacity.capacitytotal)));
-									var usedPercentage = parseInt(capacity.percentused);									
-									if (usedPercentage > 70) {
-										$("#capacity_storage .db_bargraph_barbox_safezone").attr("style", "width:70%");
-										if(usedPercentage <= 100) 
-										    $("#capacity_storage .db_bargraph_barbox_unsafezone").attr("style", "width:"+(usedPercentage - 70)+"%");
-										else
-										    $("#capacity_storage .db_bargraph_barbox_unsafezone").attr("style", "width:30%");
-									} else {
-										$("#capacity_storage .db_bargraph_barbox_safezone").attr("style", "width:"+usedPercentage+"%");
-									    $("#capacity_storage .db_bargraph_barbox_unsafezone").attr("style", "width:0%");
-									}
-								// Storage Allocated
-								} else if (capacity.type == "3") {
-									$("#storage_alloc").attr("style", "width: " + ((parseFloat(capacity.percentused) < 50) ? "50%" : capacity.percentused + "%")).text("Used: " + convertBytes(parseInt(capacity.capacityused)) + " / " + capacity.percentused + "%");
-									$("#storage_alloc_total").text("Total: " + convertBytes(parseInt(capacity.capacitytotal)));
-									var usedPercentage = parseInt(capacity.percentused);
-									if (usedPercentage > 70) {
-										$("#capacity_storage_alloc .db_bargraph_barbox_safezone").attr("style", "width:70%");
-										if(usedPercentage <= 100) 
-										    $("#capacity_storage_alloc .db_bargraph_barbox_unsafezone").attr("style", "width:"+(usedPercentage - 70)+"%");
-										else
-										    $("#capacity_storage_alloc .db_bargraph_barbox_unsafezone").attr("style", "width:30%");
-									} else {
-										$("#capacity_storage_alloc .db_bargraph_barbox_safezone").attr("style", "width:"+usedPercentage+"%");
-									    $("#capacity_storage_alloc .db_bargraph_barbox_unsafezone").attr("style", "width:0%");
-									}
+									}								
 								// Secondary Storage
 								} else if (capacity.type == "6") {
 									$("#sec_storage_used").attr("style", "width: " + ((parseFloat(capacity.percentused) < 50) ? "50%" : capacity.percentused + "%")).text("Used: " + convertBytes(parseInt(capacity.capacityused)) + " / " + capacity.percentused + "%");
@@ -1127,6 +1145,36 @@ $(document).ready(function() {
 												$("#capacity_cpu .db_bargraph_barbox_safezone").attr("style", "width:"+usedPercentage+"%");
 											    $("#capacity_cpu .db_bargraph_barbox_unsafezone").attr("style", "width:0%");
 											}
+										// Storage Used
+										} else if (capacity.type == "2") {
+											$("#storage_used").attr("style", "width: " + ((parseFloat(capacity.percentused) < 50) ? "50%" : capacity.percentused + "%")).text("Used: " + convertBytes(parseInt(capacity.capacityused)) + " / " + capacity.percentused + "%");
+											$("#storage_total").text("Total: " + convertBytes(parseInt(capacity.capacitytotal)));
+											var usedPercentage = parseInt(capacity.percentused);									
+											if (usedPercentage > 70) {
+												$("#capacity_storage .db_bargraph_barbox_safezone").attr("style", "width:70%");
+												if(usedPercentage <= 100) 
+												    $("#capacity_storage .db_bargraph_barbox_unsafezone").attr("style", "width:"+(usedPercentage - 70)+"%");
+												else
+												    $("#capacity_storage .db_bargraph_barbox_unsafezone").attr("style", "width:30%");
+											} else {
+												$("#capacity_storage .db_bargraph_barbox_safezone").attr("style", "width:"+usedPercentage+"%");
+											    $("#capacity_storage .db_bargraph_barbox_unsafezone").attr("style", "width:0%");
+											}
+										// Storage Allocated
+										} else if (capacity.type == "3") {
+											$("#storage_alloc").attr("style", "width: " + ((parseFloat(capacity.percentused) < 50) ? "50%" : capacity.percentused + "%")).text("Used: " + convertBytes(parseInt(capacity.capacityused)) + " / " + capacity.percentused + "%");
+											$("#storage_alloc_total").text("Total: " + convertBytes(parseInt(capacity.capacitytotal)));
+											var usedPercentage = parseInt(capacity.percentused);
+											if (usedPercentage > 70) {
+												$("#capacity_storage_alloc .db_bargraph_barbox_safezone").attr("style", "width:70%");
+												if(usedPercentage <= 100) 
+												    $("#capacity_storage_alloc .db_bargraph_barbox_unsafezone").attr("style", "width:"+(usedPercentage - 70)+"%");
+												else
+												    $("#capacity_storage_alloc .db_bargraph_barbox_unsafezone").attr("style", "width:30%");
+											} else {
+												$("#capacity_storage_alloc .db_bargraph_barbox_safezone").attr("style", "width:"+usedPercentage+"%");
+											    $("#capacity_storage_alloc .db_bargraph_barbox_unsafezone").attr("style", "width:0%");
+											}
 										// Private IPs
 										} else if (capacity.type == "5") {
 											$("#private_ip_used").attr("style", "width: " + ((parseFloat(capacity.percentused) < 50) ? "50%" : capacity.percentused + "%")).text("Used: " + capacity.capacityused + " / " + capacity.percentused + "%");
@@ -1160,6 +1208,7 @@ $(document).ready(function() {
 							var pods = json.listpodsresponse.pod;
 							var podSelect = $("#capacity_pod_select").empty();	
 							if (pods != null && pods.length > 0) {
+								podSelect.append("<option value='All'>All</option>"); 
 							    for (var i = 0; i < pods.length; i++) {
 								    podSelect.append("<option value='" + pods[i].name + "'>" + sanitizeXSS(pods[i].name) + "</option>"); 
 							    }
@@ -1300,6 +1349,11 @@ $(document).ready(function() {
 						    var sent = parseInt(statJSON.sentbytes);
 						    var rec = parseInt(statJSON.receivedbytes);
     						
+    						if(sent==0 && rec==0)
+    						    $("#network_bandwidth_panel").hide();
+    						else
+    						    $("#network_bandwidth_panel").show();
+    						
 						    $("#menutab_role_user").show();
 						    $("#menutab_role_root").hide();
 							$("#menutab_role_domain").hide();
@@ -1363,18 +1417,26 @@ $(document).ready(function() {
 	g_networkType = $.cookie("networktype");
 	g_hypervisorType = $.cookie("hypervisortype");
 	g_timezone = $.cookie("timezone");
+	g_directattachnetworkgroupsenabled = $.cookie("directattachnetworkgroupsenabled");
+	g_directAttachedUntaggedEnabled = $.cookie("directattacheduntaggedenabled");
+	
 	if($.cookie("timezoneoffset") != null)
 	    g_timezoneoffset = isNaN($.cookie("timezoneoffset"))?null: parseFloat($.cookie("timezoneoffset"));
 	else
 	    g_timezoneoffset = null;
-	if (!g_networkType || g_networkType.length == 0) {
-		//default to vnet
+	    
+	if (!g_networkType || g_networkType.length == 0) 		
 		g_networkType = "vnet";
-	}
-	if (!g_hypervisorType || g_hypervisorType.length == 0) {
-		//default to vnet
+	
+	if (!g_hypervisorType || g_hypervisorType.length == 0) 		
 		g_hypervisorType = "kvm";
-	}
+	
+	if (!g_directattachnetworkgroupsenabled || g_directattachnetworkgroupsenabled.length == 0) 		
+		g_directattachnetworkgroupsenabled = "false";	
+		
+	if (!g_directAttachedUntaggedEnabled || g_directAttachedUntaggedEnabled.length == 0) 		
+		g_directAttachedUntaggedEnabled = "false";		
+		
 	$.ajax({
 		data: "command=listZones&available=true&response=json",
 		dataType: "json",

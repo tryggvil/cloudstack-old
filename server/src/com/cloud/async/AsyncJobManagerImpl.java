@@ -21,6 +21,7 @@ package com.cloud.async;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -44,6 +45,7 @@ import com.cloud.utils.concurrency.NamedThreadFactory;
 import com.cloud.utils.db.DB;
 import com.cloud.utils.db.GlobalLock;
 import com.cloud.utils.db.Transaction;
+import com.cloud.utils.exception.CloudRuntimeException;
 import com.cloud.utils.net.MacAddress;
 
 @Local(value={AsyncJobManager.class})
@@ -102,7 +104,6 @@ public class AsyncJobManagerImpl implements AsyncJobManager {
         		job.setInitMsid(getMsid());
         		_jobDao.persist(job);
         		txt.commit();
-        		
         		// no sync source originally
         		executor.setSyncSource(null);
         		executor.setJob(job);
@@ -212,9 +213,31 @@ public class AsyncJobManagerImpl implements AsyncJobManager {
     	if(s_logger.isDebugEnabled())
     		s_logger.debug("Sync job-" + jobId + " execution on object " + syncObjType + "." + syncObjId);
     	
-    	SyncQueueVO queue = _queueMgr.queue(syncObjType, syncObjId, "AsyncJob", jobId);
-    	checkQueue(queue.getId());
+    	SyncQueueVO queue = null;
+    	
+		// to deal with temporary DB exceptions like DB deadlock/Lock-wait time out cased rollbacks
+    	// we retry five times until we throw an exception
+		Random random = new Random();    		
+
+    	for(int i = 0; i < 5; i++) {
+    		queue = _queueMgr.queue(syncObjType, syncObjId, "AsyncJob", jobId);
+    		if(queue != null)
+    			break;
+
+    		try {
+				Thread.sleep(1000 + random.nextInt(5000));
+			} catch (InterruptedException e) {
+			}
+    	}
+    	
+		if(queue != null) {
+    		checkQueue(queue.getId());
+		} else {
+			throw new CloudRuntimeException("Unable to insert queue item into database, DB is full?");
+		}
     }
+    
+    
     
     @Override @DB
     public AsyncJobResult queryAsyncJobResult(long jobId) {

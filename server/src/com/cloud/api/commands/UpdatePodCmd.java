@@ -28,6 +28,7 @@ import com.cloud.api.BaseCmd;
 import com.cloud.api.ServerApiException;
 import com.cloud.dc.DataCenterVO;
 import com.cloud.dc.HostPodVO;
+import com.cloud.user.User;
 import com.cloud.utils.Pair;
 
 public class UpdatePodCmd extends BaseCmd {
@@ -39,9 +40,11 @@ public class UpdatePodCmd extends BaseCmd {
     static {
     	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ID, Boolean.TRUE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.NAME, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.GATEWAY, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.CIDR, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.START_IP, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.END_IP, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.USER_ID, Boolean.FALSE));
     }
 
     public String getName() {
@@ -55,9 +58,15 @@ public class UpdatePodCmd extends BaseCmd {
     public List<Pair<String, Object>> execute(Map<String, Object> params) {
     	Long podId = (Long) params.get(BaseCmd.Properties.ID.getName());
     	String podName = (String) params.get(BaseCmd.Properties.NAME.getName());
+    	String gateway = (String) params.get(BaseCmd.Properties.GATEWAY.getName());
     	String cidr = (String) params.get(BaseCmd.Properties.CIDR.getName());
     	String startIp = (String) params.get(BaseCmd.Properties.START_IP.getName());
     	String endIp = (String) params.get(BaseCmd.Properties.END_IP.getName());
+    	Long userId = (Long)params.get(BaseCmd.Properties.USER_ID.getName());
+    	
+    	if (userId == null) {
+            userId = Long.valueOf(User.UID_SYSTEM);
+        }
     	
     	//verify parameters
     	HostPodVO pod = getManagementServer().findHostPodById(podId);
@@ -77,7 +86,7 @@ public class UpdatePodCmd extends BaseCmd {
     	
     	HostPodVO updatedPod = null;
         try {
-             updatedPod = getManagementServer().editPod(podId, podName, cidr, startIp, endIp);
+             updatedPod = getManagementServer().editPod(userId, podId, podName, gateway, cidr, startIp, endIp);
         } catch (Exception ex) {
             s_logger.error("Exception updating pod", ex);
             throw new ServerApiException(BaseCmd.INTERNAL_ERROR, ex.getMessage());

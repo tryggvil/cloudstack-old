@@ -21,8 +21,10 @@ package com.cloud.api.commands;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.StringTokenizer;
 
 import org.apache.log4j.Logger;
@@ -31,6 +33,8 @@ import com.cloud.api.BaseCmd;
 import com.cloud.api.ServerApiException;
 import com.cloud.capacity.CapacityVO;
 import com.cloud.server.Criteria;
+import com.cloud.storage.StoragePoolVO;
+import com.cloud.storage.Storage.StoragePoolType;
 import com.cloud.utils.Pair;
 
 public class ListCapacityCmd extends BaseCmd{
@@ -66,7 +70,7 @@ public class ListCapacityCmd extends BaseCmd{
         Integer pageSize = (Integer)params.get(BaseCmd.Properties.PAGESIZE.getName());
 
         Long startIndex = Long.valueOf(0);
-        int pageSizeNum = 50;
+        int pageSizeNum = 1000000;
         if (pageSize != null) {
             pageSizeNum = pageSize.intValue();
         }
@@ -91,7 +95,7 @@ public class ListCapacityCmd extends BaseCmd{
 
         List<CapacityVO> summedCapacities = sumCapacities(capacities);
         List<Pair<String, Object>> capacitiesTags = new ArrayList<Pair<String, Object>>();
-        Object[] cTag = new Object[capacities.size()];
+        Object[] cTag = new Object[summedCapacities.size()];
         int i=0;
 
         for (CapacityVO capacity : summedCapacities) {
@@ -101,7 +105,7 @@ public class ListCapacityCmd extends BaseCmd{
             capacityData.add(new Pair<String, Object>(BaseCmd.Properties.ZONE_NAME.getName(), getManagementServer().getDataCenterBy(capacity.getDataCenterId()).getName()));
             if (capacity.getPodId() != null) {
                 capacityData.add(new Pair<String, Object>(BaseCmd.Properties.POD_ID.getName(), capacity.getPodId()));
-                capacityData.add(new Pair<String, Object>(BaseCmd.Properties.POD_NAME.getName(), getManagementServer().findHostPodById(capacity.getPodId()).getName()));
+                capacityData.add(new Pair<String, Object>(BaseCmd.Properties.POD_NAME.getName(), (capacity.getPodId() > 0) ? getManagementServer().findHostPodById(capacity.getPodId()).getName() : "All"));
             }
             capacityData.add(new Pair<String, Object>(BaseCmd.Properties.CAPACITY_USED.getName(), Long.valueOf(capacity.getUsedCapacity()).toString()));
             capacityData.add(new Pair<String, Object>(BaseCmd.Properties.CAPACITY_TOTAL.getName(), Long.valueOf(capacity.getTotalCapacity()).toString()));
@@ -127,12 +131,30 @@ public class ListCapacityCmd extends BaseCmd{
     public List<CapacityVO> sumCapacities(List<CapacityVO> hostCapacities) {	        
         Map<String, Long> totalCapacityMap = new HashMap<String, Long>();
         Map<String, Long> usedCapacityMap = new HashMap<String, Long>();
-
+        
+        Set<Long> poolIdsToIgnore = new HashSet<Long>();
+        Criteria c = new Criteria();
+        List<? extends StoragePoolVO> allStoragePools = getManagementServer().searchForStoragePools(c);
+        for (StoragePoolVO pool : allStoragePools) {
+        	StoragePoolType poolType = pool.getPoolType();
+        	if (!(poolType.equals(StoragePoolType.NetworkFilesystem) || poolType.equals(StoragePoolType.IscsiLUN))) {
+        		poolIdsToIgnore.add(pool.getId());
+        	}
+        }
+        
         // collect all the capacity types, sum allocated/used and sum total...get one capacity number for each
         for (CapacityVO capacity : hostCapacities) {
+        	if (poolIdsToIgnore.contains(capacity.getHostOrPoolId())) {
+        		continue;
+        	}
+        	
             String key = capacity.getCapacityType() + "_" + capacity.getDataCenterId();
+            String keyForPodTotal = key + "_-1";
+            
+            boolean sumPodCapacity = false;
             if (capacity.getPodId() != null) {
                 key += "_" + capacity.getPodId();
+                sumPodCapacity = true;
             }
 
             Long totalCapacity = totalCapacityMap.get(key);
@@ -152,6 +174,26 @@ public class ListCapacityCmd extends BaseCmd{
 
             totalCapacityMap.put(key, totalCapacity);
             usedCapacityMap.put(key, usedCapacity);
+            
+            if (sumPodCapacity) {
+            	totalCapacity = totalCapacityMap.get(keyForPodTotal);
+                usedCapacity = usedCapacityMap.get(keyForPodTotal);
+
+                if (totalCapacity == null) {
+                    totalCapacity = new Long(capacity.getTotalCapacity());
+                } else {
+                    totalCapacity = new Long(capacity.getTotalCapacity() + totalCapacity.longValue());
+                }
+
+                if (usedCapacity == null) {
+                    usedCapacity = new Long(capacity.getUsedCapacity());
+                } else {
+                    usedCapacity = new Long(capacity.getUsedCapacity() + usedCapacity.longValue());
+                }
+
+                totalCapacityMap.put(keyForPodTotal, totalCapacity);
+                usedCapacityMap.put(keyForPodTotal, usedCapacity);
+            }
         }
 
         List<CapacityVO> summedCapacities = new ArrayList<CapacityVO>();

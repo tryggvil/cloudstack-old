@@ -25,7 +25,8 @@ import com.cloud.utils.db.GenericDao;
 
 public interface PodVlanMapDao extends GenericDao<PodVlanMapVO, Long> {
 		
-	public List<PodVlanMapVO> listPodVlanMaps(long podId);
+	public List<PodVlanMapVO> listPodVlanMapsByPod(long podId);
+	public List<PodVlanMapVO> listPodVlanMapsByVlan(long vlanDbId);
 	public PodVlanMapVO findPodVlanMap(long podId, long vlanDbId);
 	
 }

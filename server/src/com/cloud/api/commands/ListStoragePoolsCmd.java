@@ -26,7 +26,9 @@ import org.apache.log4j.Logger;
 
 import com.cloud.api.BaseCmd;
 import com.cloud.api.ServerApiException;
+import com.cloud.dc.ClusterVO;
 import com.cloud.server.Criteria;
+import com.cloud.storage.StoragePoolDetailVO;
 import com.cloud.storage.StoragePoolVO;
 import com.cloud.storage.StorageStats;
 import com.cloud.utils.Pair;
@@ -40,6 +42,7 @@ public class ListStoragePoolsCmd extends BaseCmd{
     static {
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.NAME, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ZONE_ID, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.POD_ID, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.IP_ADDRESS, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.PATH, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.KEYWORD, Boolean.FALSE));
@@ -57,10 +60,12 @@ public class ListStoragePoolsCmd extends BaseCmd{
         return s_properties;
     }
 
-    @Override
+    @SuppressWarnings("unchecked")
+	@Override
     public List<Pair<String, Object>> execute(Map<String, Object> params) {
         String name = (String)params.get(BaseCmd.Properties.NAME.getName());
         Long zoneId = (Long)params.get(BaseCmd.Properties.ZONE_ID.getName());
+        Long podId = (Long)params.get(BaseCmd.Properties.POD_ID.getName());
         String ipAddress = (String)params.get(BaseCmd.Properties.IP_ADDRESS.getName());
         String path = (String)params.get(BaseCmd.Properties.PATH.getName());
         String keyword = (String)params.get(BaseCmd.Properties.KEYWORD.getName());
@@ -84,6 +89,7 @@ public class ListStoragePoolsCmd extends BaseCmd{
         } else {
             c.addCriteria(Criteria.NAME, name);
             c.addCriteria(Criteria.DATACENTERID, zoneId);
+            c.addCriteria(Criteria.PODID, podId);
             c.addCriteria(Criteria.ADDRESS, ipAddress);
             c.addCriteria(Criteria.PATH, path);
         }
@@ -108,9 +114,11 @@ public class ListStoragePoolsCmd extends BaseCmd{
             }
             poolData.add(new Pair<String, Object>(BaseCmd.Properties.IP_ADDRESS.getName(), netfsPool.getHostAddress()));
             poolData.add(new Pair<String, Object>(BaseCmd.Properties.ZONE_ID.getName(), Long.valueOf(pool.getDataCenterId()).toString()));
-            poolData.add(new Pair<String, Object>(BaseCmd.Properties.ZONE_NAME.getName(), getManagementServer().getDataCenterBy(pool.getDataCenterId()).getName()));	             
-            poolData.add(new Pair<String, Object>(BaseCmd.Properties.POD_ID.getName(), Long.valueOf(pool.getPodId()).toString()));
-            poolData.add(new Pair<String, Object>(BaseCmd.Properties.POD_NAME.getName(), getManagementServer().getPodBy(pool.getPodId()).getName()));	                          
+            poolData.add(new Pair<String, Object>(BaseCmd.Properties.ZONE_NAME.getName(), getManagementServer().getDataCenterBy(pool.getDataCenterId()).getName()));
+            if (pool.getPodId() != null) {
+                poolData.add(new Pair<String, Object>(BaseCmd.Properties.POD_ID.getName(), Long.valueOf(pool.getPodId()).toString()));
+                poolData.add(new Pair<String, Object>(BaseCmd.Properties.POD_NAME.getName(), getManagementServer().getPodBy(pool.getPodId()).getName()));
+            }
 
             poolData.add(new Pair<String, Object>(BaseCmd.Properties.PATH.getName(), netfsPool.getPath().toString()));
 
@@ -130,9 +138,14 @@ public class ListStoragePoolsCmd extends BaseCmd{
             if (pool.getCreated() != null) {
                 poolData.add(new Pair<String, Object>(BaseCmd.Properties.CREATED.getName(), getDateString(pool.getCreated())));
             }
-//            if (pool.getRemoved() != null) {
-//                poolData.add(new Pair<String, Object>(BaseCmd.Properties.REMOVED.getName(), getDateString(pool.getRemoved())));
-//            }
+         
+            if (pool.getClusterId() != null) {
+            	ClusterVO cluster = getManagementServer().findClusterById(pool.getClusterId());
+            	poolData.add(new Pair<String, Object>(BaseCmd.Properties.CLUSTER_ID.getName(), cluster.getId()));
+            	poolData.add(new Pair<String, Object>(BaseCmd.Properties.CLUSTER_NAME.getName(), cluster.getName()));
+            }           
+            
+            poolData.add(new Pair<String, Object>(BaseCmd.Properties.TAGS.getName(), getManagementServer().getStoragePoolTags(pool.getId())));
 
             sTag[i++] = poolData;
         }

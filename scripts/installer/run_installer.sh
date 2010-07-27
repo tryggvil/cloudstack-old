@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# $Id: run_installer.sh 9132 2010-06-04 20:17:43Z manuel $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/installer/run_installer.sh $
+# $Id: run_installer.sh 9132 2010-06-04 20:17:43Z manuel $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.1.x/java/scripts/installer/run_installer.sh $
 
 installer=$1
 classname="com.vmops.installer.VMOpsSimpleSetup"

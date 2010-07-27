@@ -54,4 +54,5 @@ public interface SerialVersionUID {
     public static final long OperationTimedoutException = Base | 0x18;
     public static final long StorageUnavailableException = Base | 0x19;
     public static final long InfficientVirtualNetworkCapacityException = Base | 0x1a;
+    public static final long DiscoveryException = Base | 0x1b;
 }

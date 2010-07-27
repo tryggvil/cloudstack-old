@@ -37,7 +37,9 @@ public class DeleteSnapshotCmd extends BaseCmd {
 
 	static {
     	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ID, Boolean.TRUE));
+    	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.DOMAIN_ID, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT_OBJ, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.USER_ID, Boolean.FALSE));
     }
 	
@@ -52,7 +54,6 @@ public class DeleteSnapshotCmd extends BaseCmd {
     @Override
     public List<Pair<String, Object>> execute(Map<String, Object> params) {
         Long snapshotId = (Long)params.get(BaseCmd.Properties.ID.getName());
-        Account account = (Account)params.get(BaseCmd.Properties.ACCOUNT_OBJ.getName());
         Long userId = (Long)params.get(BaseCmd.Properties.USER_ID.getName());
 
         //Verify parameters
@@ -61,19 +62,13 @@ public class DeleteSnapshotCmd extends BaseCmd {
             throw new ServerApiException (BaseCmd.SNAPSHOT_INVALID_PARAM_ERROR, "unable to find a snapshot with id " + snapshotId);
         }
 
-        if (account != null) {
-            if (!isAdmin(account.getType())) {
-                if (account.getId() != snapshotCheck.getAccountId()) {
-                    throw new ServerApiException(BaseCmd.SNAPSHOT_INVALID_PARAM_ERROR, "unable to find a snapshot with id " + snapshotId + " for this account");
-                }
-            } else {
-                Account snapshotOwner = getManagementServer().findAccountById(snapshotCheck.getAccountId());
-                if ((snapshotOwner == null) || !getManagementServer().isChildDomain(account.getDomainId(), snapshotOwner.getDomainId())) {
-                    throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to delete snapshot " + snapshotId + ", permission denied.");
-                }
-            }
+        // If an account was passed in, make sure that it matches the account of the snapshot
+        Account snapshotOwner = getManagementServer().findAccountById(snapshotCheck.getAccountId());
+        if (snapshotOwner == null) {
+            throw new ServerApiException(BaseCmd.SNAPSHOT_INVALID_PARAM_ERROR, "Snapshot id " + snapshotId + " does not have a valid account");
         }
-
+        checkAccountPermissions(params, snapshotOwner.getId(), snapshotOwner.getDomainId(), "snapshot", snapshotId);
+        
         //If command is executed via 8096 port, set userId to the id of System account (1)
         if (userId == null) {
             userId = Long.valueOf(1);

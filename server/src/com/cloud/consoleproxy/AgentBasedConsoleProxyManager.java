@@ -57,6 +57,7 @@ import com.cloud.vm.VirtualMachineManager;
 import com.cloud.vm.VirtualMachineName;
 import com.cloud.vm.VirtualMachine.Type;
 import com.cloud.vm.dao.UserVmDao;
+import com.cloud.vm.dao.VMInstanceDao;
 
 @Local(value={ConsoleProxyManager.class})
 public class AgentBasedConsoleProxyManager implements ConsoleProxyManager, VirtualMachineManager<ConsoleProxyVO> {
@@ -66,9 +67,11 @@ public class AgentBasedConsoleProxyManager implements ConsoleProxyManager, Virtu
 	protected HostDao _hostDao;
 	protected UserVmDao _userVmDao;
 	private String _instance;
+	private VMInstanceDao _instanceDao;
+	private ConsoleProxyListener _listener;
 	
 	protected int _consoleProxyUrlPort = ConsoleProxyManager.DEFAULT_PROXY_URL_PORT;
-	private boolean _sslEnabled = false;
+	protected boolean _sslEnabled = false;
 	AgentManager _agentMgr;
 	
 	public int getVncPort(VMInstanceVO vm) {
@@ -106,6 +109,10 @@ public class AgentBasedConsoleProxyManager implements ConsoleProxyManager, Virtu
 					+ HostDao.class.getName());
 		}
 		
+		_instanceDao = locator.getDao(VMInstanceDao.class);
+		if (_instanceDao == null)
+			throw new ConfigurationException("Unable to get " + VMInstanceDao.class.getName());
+		
 		_userVmDao = locator.getDao(UserVmDao.class);
 		if (_userVmDao == null)
 			throw new ConfigurationException("Unable to get " + UserVmDao.class.getName());
@@ -120,6 +127,8 @@ public class AgentBasedConsoleProxyManager implements ConsoleProxyManager, Virtu
 		
 		_instance = configs.get("instance.name");
 		
+		_listener = new ConsoleProxyListener(this);
+		_agentMgr.registerForHostEvents(_listener, true, true, false);
 		
 		HighAvailabilityManager haMgr = locator.getManager(HighAvailabilityManager.class);
 		haMgr.registerHandler(Type.ConsoleProxy, this);
@@ -153,7 +162,7 @@ public class AgentBasedConsoleProxyManager implements ConsoleProxyManager, Virtu
             publicIp = host.getPrivateIpAddress();
         }
         
-        return new ConsoleProxyVO(1l, "EmbeddedProxy", State.Running,
+        return new ConsoleProxyVO(1l, "EmbeddedProxy", State.Running, null, null, null,
                 "02:02:02:02:02:02",
                 host.getPrivateIpAddress(),
                 "255.255.255.0",
@@ -220,7 +229,46 @@ public class AgentBasedConsoleProxyManager implements ConsoleProxyManager, Virtu
 
     @Override
 	public AgentControlAnswer onConsoleAccessAuthentication(ConsoleAccessAuthenticationCommand cmd) {
-    	return new ConsoleAccessAuthenticationAnswer(cmd, false);
+    	long vmId = 0;
+		
+		if(cmd.getVmId() != null && cmd.getVmId().isEmpty()) {
+			if(s_logger.isTraceEnabled())
+				s_logger.trace("Invalid vm id sent from proxy(happens when proxy session has terminated)");
+			return new ConsoleAccessAuthenticationAnswer(cmd, false);
+		}
+		
+		try {
+			vmId = Long.parseLong(cmd.getVmId());
+		} catch(NumberFormatException e) {
+			s_logger.error("Invalid vm id " + cmd.getVmId() + " sent from console access authentication", e);
+			return new ConsoleAccessAuthenticationAnswer(cmd, false);
+		}
+		
+		// TODO authentication channel between console proxy VM and management server needs to be secured,
+		// the data is now being sent through private network, but this is apparently not enough
+		VMInstanceVO vm = _instanceDao.findById(vmId);
+		if(vm == null) {
+			return new ConsoleAccessAuthenticationAnswer(cmd, false);
+		}
+		
+		if(vm.getHostId() == null) {
+			s_logger.warn("VM " + vmId + " lost host info, failed authentication request");
+			return new ConsoleAccessAuthenticationAnswer(cmd, false);
+		}
+		
+		HostVO host = _hostDao.findById(vm.getHostId());
+		if(host == null) {
+			s_logger.warn("VM " + vmId + "'s host does not exist, fail authentication request");
+			return new ConsoleAccessAuthenticationAnswer(cmd, false);
+		}
+		
+		String sid = cmd.getSid();
+		if(sid == null || !sid.equals(vm.getVncPassword())) {
+			s_logger.warn("sid " + sid + " in url does not match stored sid " + vm.getVncPassword());
+			return new ConsoleAccessAuthenticationAnswer(cmd, false);
+		}
+		
+		return new ConsoleAccessAuthenticationAnswer(cmd, true);
     }
 
     @Override
@@ -232,22 +280,22 @@ public class AgentBasedConsoleProxyManager implements ConsoleProxyManager, Virtu
     }
 
     @Override
-    public ConsoleProxyVO startProxy(long proxyVmId) {
+    public ConsoleProxyVO startProxy(long proxyVmId, long startEventId) {
         return null;
     }
 
 	@Override
-	public boolean destroyProxy(long proxyVmId) {
+	public boolean destroyProxy(long proxyVmId, long startEventId) {
 		return false;
 	}
 
 	@Override
-	public boolean rebootProxy(long proxyVmId) {
+	public boolean rebootProxy(long proxyVmId, long startEventId) {
 		return false;
 	}
 
 	@Override
-	public boolean stopProxy(long proxyVmId) {
+	public boolean stopProxy(long proxyVmId, long startEventId) {
 		return false;
 	}
 
@@ -303,12 +351,12 @@ public class AgentBasedConsoleProxyManager implements ConsoleProxyManager, Virtu
     }
 
     @Override
-    public ConsoleProxyVO start(long vmId) throws InsufficientCapacityException, StorageUnavailableException, ConcurrentOperationException {
+    public ConsoleProxyVO start(long vmId, long startEventId) throws InsufficientCapacityException, StorageUnavailableException, ConcurrentOperationException {
         return null;
     }
 
     @Override
-    public boolean stop(ConsoleProxyVO vm) throws AgentUnavailableException {
+    public boolean stop(ConsoleProxyVO vm, long startEventId) throws AgentUnavailableException {
         return false;
     }
 }

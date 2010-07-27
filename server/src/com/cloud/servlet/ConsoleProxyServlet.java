@@ -23,12 +23,16 @@ import java.io.IOException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import org.apache.log4j.Logger;
 
 import com.cloud.host.HostVO;
 import com.cloud.server.ManagementServer;
+import com.cloud.user.Account;
+import com.cloud.user.User;
 import com.cloud.utils.component.ComponentLocator;
+import com.cloud.vm.UserVmVO;
 import com.cloud.vm.VMInstanceVO;
 
 /**
@@ -52,6 +56,24 @@ public class ConsoleProxyServlet extends HttpServlet {
 	@Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) {
 		try {
+            HttpSession session = req.getSession(false);
+            if(session == null) {
+				s_logger.info("Invalid web session, reject console/thumbnail access");
+				sendResponse(resp, "Access denied. You haven't logged in or your web session has timed out");
+				return;
+            }
+            	
+            String userId = (String)session.getAttribute("userId");
+            String account = (String)session.getAttribute("account");
+            Account accountObj = (Account)session.getAttribute("accountobj");
+
+            // Do a sanity check here to make sure the user hasn't already been deleted
+            if ((userId == null) || (account == null) || (accountObj == null) || !verifyUser(Long.valueOf(userId))) {
+				s_logger.info("Invalid user/account, reject console/thumbnail access");
+				sendResponse(resp, "Access denied. Invalid or inconsistent account is found");
+				return;
+            }
+			
 			String cmd = req.getParameter("cmd");
 			if(cmd == null || !isValidCmd(cmd)) {
 				s_logger.info("invalid console servlet command: " + cmd);
@@ -69,7 +91,7 @@ public class ConsoleProxyServlet extends HttpServlet {
 				return;
 			}
 			
-			if(!checkSessionPermision(vmId)) {
+			if(!checkSessionPermision(req, vmId)) {
 				sendResponse(resp, "Permission denied");
 				return;
 			}
@@ -242,8 +264,37 @@ public class ConsoleProxyServlet extends HttpServlet {
 		}
 	}
 	
-	private boolean checkSessionPermision(long vmId) {
-		// TODO: skip security check for now
+	private boolean checkSessionPermision(HttpServletRequest req, long vmId) {
+
+        HttpSession session = req.getSession(false);
+        Account accountObj = (Account)session.getAttribute("accountobj");
+        
+        VMInstanceVO vm = _ms.findVMInstanceById(vmId);
+        UserVmVO userVm;
+        switch(vm.getType())
+        {
+        case User :
+        	userVm = _ms.findUserVMInstanceById(vmId);
+        	if(userVm.getAccountId() != accountObj.getId().longValue() && accountObj.getType() != Account.ACCOUNT_TYPE_ADMIN) {
+        		if(s_logger.isDebugEnabled())
+	        		s_logger.debug("VM access is denied. VM owner account " + userVm.getAccountId() 
+	        			+ " does not match the account id in session " + accountObj.getId());
+        		return false;
+        	}
+        	break;
+        	
+        case ConsoleProxy :
+        case DomainRouter :
+        case SecondaryStorageVm:
+        	// only root admin is allowed to access system vm and domR
+        	if(accountObj.getType() != Account.ACCOUNT_TYPE_ADMIN) {
+        		if(s_logger.isDebugEnabled())
+	        		s_logger.debug("VM access is denied. Accessing restricted VM requires admin privilege");
+        		return false;
+        	}
+        	break;
+        }
+        
 		return true;
 	}
 	
@@ -253,4 +304,20 @@ public class ConsoleProxyServlet extends HttpServlet {
 		
 		return false;
 	}
+	
+    public boolean verifyUser(Long userId) {
+    	// copy from ApiServer.java, a bit ugly here
+    	User user = _ms.findUserById(userId);
+    	Account account = null;
+    	if (user != null) {
+    	    account = _ms.findAccountById(user.getAccountId());
+    	}
+
+    	if ((user == null) || (user.getRemoved() != null) || !user.getState().equals(Account.ACCOUNT_STATE_ENABLED) 
+    		|| (account == null) || !account.getState().equals(Account.ACCOUNT_STATE_ENABLED)) {
+    		s_logger.warn("Deleted/Disabled/Locked user with id=" + userId + " attempting to access public API");
+    		return false;
+    	}
+    	return true;
+    }
 }

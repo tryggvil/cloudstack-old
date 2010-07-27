@@ -65,9 +65,7 @@ public class RunningHostInfoAgregator {
 			ZoneHostInfo zoneInfo = getZoneHostInfo(countInfo.getDcId());
 			
 			Host.Type type = Enum.valueOf(Host.Type.class, countInfo.getHostType());
-			if(type == Host.Type.Computing) {
-				zoneInfo.setFlag(ZoneHostInfo.COMPUTING_HOST_MASK);
-			} else if(type == Host.Type.Routing) {
+			if(type == Host.Type.Routing) {
 				zoneInfo.setFlag(ZoneHostInfo.COMPUTING_HOST_MASK);
 				zoneInfo.setFlag(ZoneHostInfo.ROUTING_HOST_MASK);
 			} else if(type == Host.Type.Storage || type == Host.Type.SecondaryStorage) {

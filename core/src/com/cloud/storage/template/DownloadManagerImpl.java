@@ -42,6 +42,7 @@ import com.cloud.agent.api.storage.DownloadAnswer;
 import com.cloud.agent.api.storage.DownloadCommand;
 import com.cloud.agent.api.storage.DownloadProgressCommand;
 import com.cloud.agent.api.storage.DownloadProgressCommand.RequestType;
+import com.cloud.exception.InternalErrorException;
 import com.cloud.storage.StorageLayer;
 import com.cloud.storage.StorageResource;
 import com.cloud.storage.VMTemplateHostVO;
@@ -203,7 +204,6 @@ public class DownloadManagerImpl implements DownloadManager {
     private final Map<String, DownloadJob> jobs = new ConcurrentHashMap<String, DownloadJob>();
     private String listTmpltScr;
     private int installTimeoutPerGig = 180 * 60 * 1000;
-    private long maxTemplateAndIsoSize;
 	private boolean _sslCopy;
 
     public String setRootDir(String rootDir, StorageResource storage) {
@@ -294,7 +294,7 @@ public class DownloadManagerImpl implements DownloadManager {
         Script scr = null;
         scr = new Script(createTmpltScr, timeout, s_logger);
         scr.add("-s", Integer.toString(imgSizeGigs));
-        scr.add("-S", Long.toString(maxTemplateAndIsoSize * 1024L * 1024L * 1024L));
+        scr.add("-S", Long.toString(td.getMaxTemplateSizeInBytes()));
         if (dnld.getDescription() != null && dnld.getDescription().length() > 1) {
             scr.add("-d", dnld.getDescription());
         }
@@ -349,7 +349,12 @@ public class DownloadManagerImpl implements DownloadManager {
         while (en.hasMoreElements()) {
             Processor processor = en.nextElement();
             
-            FormatInfo info = processor.process(templatePath, null, templateName);
+            FormatInfo info = null;
+			try {
+				info = processor.process(templatePath, null, templateName);
+			} catch (InternalErrorException e) {
+				return e.toString();
+			}
             if (info != null) {
                 loc.addFormat(info);
                 dnld.setTemplatesize(info.virtualSize);
@@ -378,7 +383,7 @@ public class DownloadManagerImpl implements DownloadManager {
     }
 
     @Override
-    public String downloadPublicTemplate(long id, String url, String name, ImageFormat format, boolean hvm, Long accountId, String descr, String cksum, String installPathPrefix, String user, String password) {
+    public String downloadPublicTemplate(long id, String url, String name, ImageFormat format, boolean hvm, Long accountId, String descr, String cksum, String installPathPrefix, String user, String password, long maxTemplateSizeInBytes) {
         UUID uuid = new UUID();
         String jobId = uuid.toString();
         String tmpDir = installPathPrefix + File.separator + accountId + File.separator + id;
@@ -406,11 +411,11 @@ public class DownloadManagerImpl implements DownloadManager {
             TemplateDownloader td;
             if ((uri != null) && (uri.getScheme() != null)) {
                 if (uri.getScheme().equalsIgnoreCase("http") || uri.getScheme().equalsIgnoreCase("https")) {
-                    td = new HttpTemplateDownloader(_storage, url, tmpDir, new Completion(jobId), this.maxTemplateAndIsoSize, user, password);
+                    td = new HttpTemplateDownloader(_storage, url, tmpDir, new Completion(jobId), maxTemplateSizeInBytes, user, password);
                 } else if (uri.getScheme().equalsIgnoreCase("file")) {
-                    td = new LocalTemplateDownloader(_storage, url, tmpDir, new Completion(jobId));
+                    td = new LocalTemplateDownloader(_storage, url, tmpDir, maxTemplateSizeInBytes, new Completion(jobId));
                 } else if (uri.getScheme().equalsIgnoreCase("scp")) {
-                    td = new ScpTemplateDownloader(_storage, url, tmpDir, new Completion(jobId));
+                    td = new ScpTemplateDownloader(_storage, url, tmpDir, maxTemplateSizeInBytes, new Completion(jobId));
                 } else if (uri.getScheme().equalsIgnoreCase("nfs")) {
                     td = null;
                     // TODO: implement this.
@@ -506,7 +511,7 @@ public class DownloadManagerImpl implements DownloadManager {
         }
 
         if (cmd.getUrl() == null) {
-            return new DownloadAnswer(null, 0, "Invalid Url", com.cloud.storage.VMTemplateStorageResourceAssoc.Status.DOWNLOAD_ERROR, "", "", 0);
+            return new DownloadAnswer(null, 0, "Template is corrupted on storage due to an invalid url , cannot download", com.cloud.storage.VMTemplateStorageResourceAssoc.Status.DOWNLOAD_ERROR, "", "", 0);
         }
 
         if (cmd.getName() == null) {
@@ -522,7 +527,9 @@ public class DownloadManagerImpl implements DownloadManager {
         	user = cmd.getAuth().getUserName();
         	password = new String(cmd.getAuth().getPassword());
         }
-        String jobId = downloadPublicTemplate(cmd.getId(), cmd.getUrl(), cmd.getName(), cmd.getFormat(), cmd.isHvm(), cmd.getAccountId(), cmd.getDescription(), cmd.getChecksum(), installPathPrefix, user, password);
+        
+        long maxDownloadSizeInBytes = (cmd.getMaxDownloadSizeInBytes() == null) ? TemplateDownloader.DEFAULT_MAX_TEMPLATE_SIZE_IN_BYTES : (cmd.getMaxDownloadSizeInBytes());
+        String jobId = downloadPublicTemplate(cmd.getId(), cmd.getUrl(), cmd.getName(), cmd.getFormat(), cmd.isHvm(), cmd.getAccountId(), cmd.getDescription(), cmd.getChecksum(), installPathPrefix, user, password, maxDownloadSizeInBytes);
         sleep();
         if (jobId == null) {
             return new DownloadAnswer(null, 0, "Internal Error", com.cloud.storage.VMTemplateStorageResourceAssoc.Status.DOWNLOAD_ERROR, "", "", 0);
@@ -741,10 +748,7 @@ public class DownloadManagerImpl implements DownloadManager {
         this.installTimeoutPerGig = NumbersUtil.parseInt(value, 15 * 60) * 1000;
 
         value = (String) params.get("install.numthreads");
-        final int numInstallThreads = NumbersUtil.parseInt(value, 10);
-        
-        value = (String) params.get("max.template.iso.size");
-        this.maxTemplateAndIsoSize = NumbersUtil.parseLong(value, 50L);
+        final int numInstallThreads = NumbersUtil.parseInt(value, 10);        
 
         String scriptsDir = (String) params.get("template.scripts.dir");
         if (scriptsDir == null) {

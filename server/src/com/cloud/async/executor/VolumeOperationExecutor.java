@@ -56,19 +56,15 @@ public class VolumeOperationExecutor extends BaseAsyncJobExecutor {
     			VolumeOp op = param.getOp();
     			VolumeVO volume = null;
     			if (op == VolumeOp.Create) {
-    				volume = asyncMgr.getExecutorContext().getManagementServer().createVolume(param.getAccountId(), param.getUserId(), param.getName(), param.getZoneId(), param.getDiskOfferingId());
+    				volume = asyncMgr.getExecutorContext().getManagementServer().createVolume(param.getUserId(), param.getAccountId(), param.getName(), param.getZoneId(), param.getDiskOfferingId(), param.getEventId());
     				if (volume.getStatus() == AsyncInstanceCreateStatus.Corrupted) {
     					asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_FAILED, BaseCmd.INTERNAL_ERROR, "Failed to create volume.");
     				} else {
     					asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_SUCCEEDED, 0, composeResultObject(volume, param));
     				}
     			}
-    			else if (op == VolumeOp.Delete) {
-    				asyncMgr.getExecutorContext().getManagementServer().deleteVolume(param.getVolumeId());
-    				asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_SUCCEEDED, 0, null);
-    			} 
     			else if (op == VolumeOp.Attach) {
-    				asyncMgr.getExecutorContext().getManagementServer().attachVolumeToVM(param.getVmId(), param.getVolumeId());
+    				asyncMgr.getExecutorContext().getManagementServer().attachVolumeToVM(param.getVmId(), param.getVolumeId(), param.getDeviceId(), param.getEventId());
 
     				// get the VM instance and Volume for the result object
     				UserVm vmInstance = asyncMgr.getExecutorContext().getManagementServer().findUserVMInstanceById(param.getVmId());
@@ -76,10 +72,10 @@ public class VolumeOperationExecutor extends BaseAsyncJobExecutor {
     				asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_SUCCEEDED, 0, composeAttachResultObject(vmInstance, vol));
     			} 
     			else if (op == VolumeOp.Detach) {
-    				asyncMgr.getExecutorContext().getManagementServer().detachVolumeFromVM(param.getVolumeId());
+    				asyncMgr.getExecutorContext().getManagementServer().detachVolumeFromVM(param.getVolumeId(), param.getEventId());
     				asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_SUCCEEDED, 0, null);
     			} else {
-    				throw new Exception("Invalid Volume Operation. Valid Operations are: CreateVolume, DeleteVolume, AttachVolume, and DetachVolume.");
+    				throw new Exception("Invalid Volume Operation. Valid Operations are: CreateVolume, AttachVolume, and DetachVolume.");
     			}
 
     		} catch (InternalErrorException e) {

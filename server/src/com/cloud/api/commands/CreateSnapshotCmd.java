@@ -32,8 +32,8 @@ import com.cloud.async.executor.CreateSnapshotResultObject;
 import com.cloud.exception.ResourceAllocationException;
 import com.cloud.serializer.SerializerHelper;
 import com.cloud.server.ManagementServer;
+import com.cloud.storage.StoragePoolVO;
 import com.cloud.storage.VolumeVO;
-import com.cloud.user.Account;
 import com.cloud.utils.Pair;
 
 public class CreateSnapshotCmd extends BaseCmd {
@@ -43,7 +43,9 @@ public class CreateSnapshotCmd extends BaseCmd {
 
     static {
     	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.VOLUME_ID, Boolean.TRUE));
+    	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.DOMAIN_ID, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT_OBJ, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.USER_ID, Boolean.FALSE));
     }
 
@@ -62,33 +64,17 @@ public class CreateSnapshotCmd extends BaseCmd {
     @Override
     public List<Pair<String, Object>> execute(Map<String, Object> params) {
         Long volumeId = (Long) params.get(BaseCmd.Properties.VOLUME_ID.getName());
-        Account account = (Account) params.get(BaseCmd.Properties.ACCOUNT_OBJ.getName());
         Long userId = (Long) params.get(BaseCmd.Properties.USER_ID.getName());
 
+        ManagementServer managementServer = getManagementServer();
         // Verify that a volume exists with a specified volume ID
-        VolumeVO volume = getManagementServer().findVolumeById(volumeId);
+        VolumeVO volume = managementServer.findVolumeById(volumeId);
         if (volume == null) {
             throw new ServerApiException (BaseCmd.PARAM_ERROR, "Unable to find a volume with id " + volumeId);
         }
-
-        Long instanceId = volume.getInstanceId();
-        if (instanceId != null) {
-            // It is not detached, but attached to a VM
-            if (getManagementServer().findUserVMInstanceById(instanceId) == null) {
-                // It is not a UserVM but a SystemVM or DomR
-                throw new ServerApiException(BaseCmd.PARAM_ERROR, "Snapshots of volumes attached to System or router VM are not allowed");
-            }
-        }
+        
         // If an account was passed in, make sure that it matches the account of the volume
-        if (account != null) {
-            if (!isAdmin(account.getType())) {
-                if (account.getId().longValue() != volume.getAccountId()) {
-                    throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to find a volume with id " + volumeId + " for this account");
-                }
-            } else if (!getManagementServer().isChildDomain(account.getDomainId(), volume.getDomainId())) {
-                throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to create a snapshot for volume with id " + volumeId + ", permission denied.");
-            }
-        }
+        checkAccountPermissions(params, volume.getAccountId(), volume.getDomainId(), "volume", volumeId);
 
         // If command is executed via 8096 port, set userId to the id of System account (1)
         if (userId == null) {
@@ -96,7 +82,7 @@ public class CreateSnapshotCmd extends BaseCmd {
         }
 
         try {
-            long jobId = getManagementServer().createSnapshotAsync(userId, volumeId.longValue());
+            long jobId = managementServer.createSnapshotAsync(userId, volumeId.longValue());
             if (jobId == 0) {
             	s_logger.warn("Unable to schedule async-job for CreateSnapshot comamnd");
             } else {

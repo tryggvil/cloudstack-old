@@ -24,9 +24,11 @@ import com.cloud.host.Status.Event;
 import com.cloud.serializer.Param;
 
 public class HostResultObject {
-
 	@Param(name="id")
 	private long id;
+	
+	@Param(name="averageload")
+	private long averageLoad;
 	
 	@Param(name="name")
 	private String name;
@@ -86,7 +88,7 @@ public class HostResultObject {
     private long memoryAllocated;
     
     @Param(name="memoryused")
-    private String memoryUsed;
+    private long memoryUsed;
 
     @Param(name="disksizetotal")
     private long diskSizeTotal;
@@ -119,7 +121,7 @@ public class HostResultObject {
     private Set<Event> events;
 
     @Param(name="oscategoryid")
-    private long osCategoryId;
+    private Long osCategoryId;
 
     @Param(name="oscategoryname")
     private String osCategoryName;
@@ -127,6 +129,12 @@ public class HostResultObject {
     @Param(name="lastpinged")
     private long lastPinged;
     
+    @Param(name="networkkbsread")
+    private Long networkKbsRead;
+    
+    @Param(name="networkkbswrite")
+    private Long networkKbsWrite;
+
     public long getId(){
     	return this.id;
     }
@@ -143,7 +151,7 @@ public class HostResultObject {
     	this.osCategoryName = osCategoryName;
     }
 
-    public long getOsCategoryId(){
+    public Long getOsCategoryId(){
     	return this.osCategoryId;
     }
     
@@ -292,12 +300,12 @@ public class HostResultObject {
 		this.storageUrl = storageUrl;
 	}
 
-	public Long getSpeed() {
+	public Long getCpuSpeed() {
 		return cpuSpeed;
 	}
 
-	public void setSpeed(Long speed) {
-		this.cpuSpeed = speed;
+	public void setCpuSpeed(Long cpuSpeed) {
+		this.cpuSpeed = cpuSpeed;
 	}
 
 	public long getTotalMemory() {
@@ -308,23 +316,27 @@ public class HostResultObject {
 		this.totalMemory = totalMemory;
 	}
 
-	public long getMemoryAlloc() {
+	public long getMemoryAllocated() {
 		return memoryAllocated;
 	}
 
-	public void setMemoryAlloc(long memoryAlloc) {
-		this.memoryAllocated = memoryAlloc;
+	public void setMemoryAllocated(long memoryAllocated) {
+		this.memoryAllocated = memoryAllocated;
 	}
 
-	public String getMemoryUsed() {
+	public long getMemoryUsed() {
 		return memoryUsed;
 	}
 
-	public void setMemoryUsed(String memoryUsed) {
+	public void setMemoryUsed(long memoryUsed) {
 		this.memoryUsed = memoryUsed;
 	}
 	
-	public long getDiskSize() {
+//	public long getDiskSize() {
+//		return diskSizeTotal;
+//	}
+	
+	public long isDiskSizeTotal() {
 		return diskSizeTotal;
 	}
 
@@ -402,5 +414,29 @@ public class HostResultObject {
 
 	public void setDisconnected(Date disconnected) {
 		this.disconnected = disconnected;
+	}
+	
+	public long getAverageLoad(){
+		return this.averageLoad;
+	}
+	
+	public void setAverageLoad(long averageLoad){
+		this.averageLoad = averageLoad;
+	}
+
+	public Long getNetworkKbsRead(){
+		return this.networkKbsRead;
+	}
+
+	public void setNetworkKbsRead(long networkKbsRead){
+		this.networkKbsRead = networkKbsRead;
+	}
+		
+	public Long getNetworkKbsWrite(){
+		return this.networkKbsWrite;
+	}
+
+	public void setNetworkKbsWrite(long networkKbsWrite){
+		this.networkKbsWrite = networkKbsWrite;
 	}
 }

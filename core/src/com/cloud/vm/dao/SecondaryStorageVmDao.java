@@ -32,6 +32,8 @@ public interface SecondaryStorageVmDao extends GenericDao<SecondaryStorageVmVO, 
     
     public List<SecondaryStorageVmVO> listByHostId(long hostId);
     
+    public List<SecondaryStorageVmVO> listUpByHostId(long hostId);
+    
     public List<SecondaryStorageVmVO> listByZoneId(long zoneId);
     
 

@@ -38,12 +38,7 @@ public interface VirtualMachineTemplate {
      * @return name
      */
     String getName();
-    
-    /**
-     * @return the file system type.
-     */
-    String getDiskType();
-    
+   
     /**
      * @return the file system for this template.
      */

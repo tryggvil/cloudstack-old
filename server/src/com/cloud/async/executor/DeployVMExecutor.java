@@ -19,6 +19,9 @@
 package com.cloud.async.executor;
 
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.log4j.Logger;
 
 import com.cloud.agent.api.Answer;
@@ -26,16 +29,19 @@ import com.cloud.api.BaseCmd;
 import com.cloud.async.AsyncJobManager;
 import com.cloud.async.AsyncJobResult;
 import com.cloud.async.AsyncJobVO;
+import com.cloud.exception.ConcurrentOperationException;
 import com.cloud.exception.InternalErrorException;
 import com.cloud.exception.InvalidParameterValueException;
 import com.cloud.exception.PermissionDeniedException;
 import com.cloud.exception.ResourceAllocationException;
+import com.cloud.network.security.NetworkGroupVO;
 import com.cloud.serializer.GsonHelper;
 import com.cloud.server.ManagementServer;
 import com.cloud.service.ServiceOfferingVO;
 import com.cloud.storage.InsufficientStorageCapacityException;
 import com.cloud.storage.VMTemplateVO;
 import com.cloud.user.Account;
+import com.cloud.utils.exception.ExecutionException;
 import com.cloud.vm.UserVm;
 import com.google.gson.Gson;
 
@@ -53,9 +59,9 @@ public class DeployVMExecutor extends VMOperationExecutor {
     	try {
 			UserVm vm = asyncMgr.getExecutorContext().getManagementServer().deployVirtualMachine(
 				param.getUserId(), param.getAccountId(), param.getDataCenterId(),
-				param.getServiceOfferingId(), param.getDataDiskOfferingId(),
-				param.getTemplateId(), param.getrootDiskOfferingId(), param.getDomain(), 
-				param.getPassword(), param.getDisplayName(), param.getGroup(), param.getUserData());
+				param.getServiceOfferingId(),
+				param.getTemplateId(), param.getDiskOfferingId(), param.getDomain(), 
+				param.getPassword(), param.getDisplayName(), param.getGroup(), param.getUserData(), param.getNetworkGroup(), param.getEventId());
 			
     		asyncMgr.completeAsyncJob(getJob().getId(),
         		AsyncJobResult.STATUS_SUCCEEDED, 0, composeResultObject(vm, param));
@@ -65,7 +71,10 @@ public class DeployVMExecutor extends VMOperationExecutor {
 				s_logger.debug("Unable to deploy VM: " + e.getMessage());
     		asyncMgr.completeAsyncJob(getJob().getId(),
         		AsyncJobResult.STATUS_FAILED, BaseCmd.VM_INSUFFICIENT_CAPACITY, e.getMessage());
-			
+		} catch (ExecutionException e) {
+			if(s_logger.isDebugEnabled())
+				s_logger.debug("Unable to deploy VM: " + e.getMessage());
+			asyncMgr.completeAsyncJob(getJob().getId(),AsyncJobResult.STATUS_FAILED, BaseCmd.VM_HOST_LICENSE_EXPIRED, e.getMessage());
 		} catch (InvalidParameterValueException e) {
 			if(s_logger.isDebugEnabled())
 				s_logger.debug("Unable to deploy VM: " + e.getMessage());
@@ -86,6 +95,11 @@ public class DeployVMExecutor extends VMOperationExecutor {
                 s_logger.debug("Unable to deploy VM: " + e.getMessage());
             asyncMgr.completeAsyncJob(getJob().getId(),
                 AsyncJobResult.STATUS_FAILED, BaseCmd.ACCOUNT_ERROR, e.getMessage());
+		} catch (ConcurrentOperationException e) {
+            if(s_logger.isDebugEnabled())
+                s_logger.debug("Unable to deploy VM: " + e.getMessage());
+            asyncMgr.completeAsyncJob(getJob().getId(),
+                AsyncJobResult.STATUS_FAILED, BaseCmd.INTERNAL_ERROR, e.getMessage());
 		} catch(Exception e) {
 			s_logger.warn("Unable to deploy VM : " + e.getMessage(), e);
     		asyncMgr.completeAsyncJob(getJob().getId(),
@@ -108,6 +122,9 @@ public class DeployVMExecutor extends VMOperationExecutor {
 	
 	private DeployVMResultObject composeResultObject(UserVm vm, DeployVMParam param) {
 		DeployVMResultObject resultObject = new DeployVMResultObject();
+		
+		if(vm == null)
+			return resultObject;
 		
 		resultObject.setId(vm.getId());
 		resultObject.setName(vm.getName());
@@ -161,9 +178,7 @@ public class DeployVMExecutor extends VMOperationExecutor {
         
         if (templatePasswordEnabled) {
         	resultObject.setPassword(param.getPassword());
-        } else {
-        	resultObject.setPassword("");
-        }
+        } 
         
         // ISO Info
         Long isoId = vm.getIsoId();
@@ -172,11 +187,14 @@ public class DeployVMExecutor extends VMOperationExecutor {
             if (iso != null) {
             	resultObject.setIsoId(isoId.longValue());
             	resultObject.setIsoName(iso.getName());
+            	resultObject.setTemplateId(isoId.longValue());
+            	resultObject.setTemplateName(iso.getName());
 
             	templateDisplayText = iso.getDisplayText();
             	if(templateDisplayText == null)
             		templateDisplayText = iso.getName();
             	resultObject.setIsoDisplayText(templateDisplayText);
+            	resultObject.setTemplateDisplayText(templateDisplayText);
             }
         }
         else
@@ -195,6 +213,7 @@ public class DeployVMExecutor extends VMOperationExecutor {
         resultObject.setCpuSpeed(String.valueOf(offering.getSpeed()));
         resultObject.setMemory(String.valueOf(offering.getRamSize()));
         
+        resultObject.setNetworkGroupList(managementServer.getNetworkGroupsNamesForVm(vm.getId()));
 		return resultObject;
 	}
 }

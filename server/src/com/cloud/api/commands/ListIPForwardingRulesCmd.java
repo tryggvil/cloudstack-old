@@ -124,6 +124,7 @@ public class ListIPForwardingRulesCmd extends BaseCmd {
             }
 
             if (userVM != null) {
+                ruleData.add(new Pair<String, Object>(BaseCmd.Properties.VIRTUAL_MACHINE_ID.getName(), userVM.getId()));
                 ruleData.add(new Pair<String, Object>(BaseCmd.Properties.VIRTUAL_MACHINE_NAME.getName(), userVM.getName()));
             }
 

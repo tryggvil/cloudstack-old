@@ -71,6 +71,13 @@ public class Ternary<T, U, V> {
     
     @Override
     public String toString() {
-        return "[ " + t.toString() + " - " + u.toString() + " - " + v.toString() + " ]";
+        StringBuilder b = new StringBuilder("T[");
+        b.append(t != null ? t.toString() : "null");
+        b.append(":");
+        b.append(u != null ? u.toString() : "null");
+        b.append(":");
+        b.append(v != null ? v.toString() : "null");
+        b.append("]");
+        return b.toString();
     }
 }

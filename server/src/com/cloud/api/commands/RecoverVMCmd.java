@@ -75,7 +75,7 @@ public class RecoverVMCmd extends BaseCmd {
             returnValues.add(new Pair<String, Object>(BaseCmd.Properties.SUCCESS.getName(), Boolean.valueOf(success).toString()));
             return returnValues;
         } catch (ResourceAllocationException ex) {
-            throw new ServerApiException(BaseCmd.VM_RECOVER_ERROR, "internal error recovering virtual machine with id " + vmId);
+            throw new ServerApiException(BaseCmd.VM_RECOVER_ERROR, "Failed to recover virtual machine with id " + vmId + "; " + ex.getMessage());
         }
     }
 }

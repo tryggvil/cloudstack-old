@@ -7,8 +7,16 @@ SYSTEMJARS="@SYSTEMJARS@"
 SCP=$(build-classpath $SYSTEMJARS) ; if [ $? != 0 ] ; then SCP="@SYSTEMCLASSPATH@" ; fi
 DCP="@DEPSCLASSPATH@"
 ACP="@AGENTCLASSPATH@"
-PCP="@PREMIUMCLASSPATH@"
-export CLASSPATH=$PCP:$SCP:$DCP:$ACP:@AGENTSYSCONFDIR@
+export CLASSPATH=$SCP:$DCP:$ACP:@AGENTSYSCONFDIR@
+for jarfile in "@PREMIUMJAVADIR@"/* ; do
+	if [ ! -e "$jarfile" ] ; then continue ; fi
+	CLASSPATH=$jarfile:$CLASSPATH
+done
+for plugin in "@PLUGINJAVADIR@"/* ; do
+	if [ ! -e "$plugin" ] ; then continue ; fi
+	CLASSPATH=$plugin:$CLASSPATH
+done
+export CLASSPATH
 
 set -e
 cd "@AGENTLIBDIR@"

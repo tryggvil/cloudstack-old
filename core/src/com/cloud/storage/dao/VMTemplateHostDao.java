@@ -1,17 +1,17 @@
 /**
  *  Copyright (C) 2010 Cloud.com, Inc.  All rights reserved.
  * 
- * This software is licensed under the GNU General Public License v3 or later.
+ * This software is licensed under the GNU General  License v3 or later.
  * 
  * It is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU General  License as published by
  * the Free Software Foundation, either version 3 of the License, or any later version.
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU General  License for more details.
  * 
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU General  License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
@@ -24,34 +24,31 @@ import com.cloud.storage.VMTemplateHostVO;
 import com.cloud.utils.db.GenericDao;
 
 public interface VMTemplateHostDao extends GenericDao<VMTemplateHostVO, Long> {
-	public List<VMTemplateHostVO> listByHostId(long id);
-	
-	public List<VMTemplateHostVO> listByTemplateId(long templateId);
-	
-	public VMTemplateHostVO findByHostTemplate(long hostId, long templateId);
-	
-	public VMTemplateHostVO findByHostTemplate(long hostId, long templateId, boolean lock);
-	
-	public List<VMTemplateHostVO> listByHostTemplate(long hostId, long templateId);
+    List<VMTemplateHostVO> listByHostId(long id);
 
-	
-	public VMTemplateHostVO findByHostTemplatePool(long hostId, long templateId, long poolId);
-	
-	public  List<VMTemplateHostVO> listByTemplatePool(long templateId, long poolId);
+    List<VMTemplateHostVO> listByTemplateId(long templateId);
 
+    VMTemplateHostVO findByHostTemplate(long hostId, long templateId);
 
-	public void update(VMTemplateHostVO instance);
+    VMTemplateHostVO findByHostTemplate(long hostId, long templateId, boolean lock);
 
-	public List<VMTemplateHostVO> listByTemplateStatus(long templateId, VMTemplateHostVO.Status downloadState);
+    List<VMTemplateHostVO> listByHostTemplate(long hostId, long templateId);
 
-	public List<VMTemplateHostVO> listByTemplateStatus(long templateId, long datacenterId, VMTemplateHostVO.Status downloadState);
-	
-	public List<VMTemplateHostVO> listByTemplateStatus(long templateId, long datacenterId, long podId, VMTemplateHostVO.Status downloadState);
+    VMTemplateHostVO findByHostTemplatePool(long hostId, long templateId, long poolId);
 
-	public List<VMTemplateHostVO> listByTemplateStates(long templateId, VMTemplateHostVO.Status ... states);
+    List<VMTemplateHostVO> listByTemplatePool(long templateId, long poolId);
 
-	public List<VMTemplateHostVO> listDestroyed(long hostId);
-	
-	boolean templateAvailable(long templateId, long hostId);
+    void update(VMTemplateHostVO instance);
 
+    List<VMTemplateHostVO> listByTemplateStatus(long templateId, VMTemplateHostVO.Status downloadState);
+
+    List<VMTemplateHostVO> listByTemplateStatus(long templateId, long datacenterId, VMTemplateHostVO.Status downloadState);
+
+    List<VMTemplateHostVO> listByTemplateStatus(long templateId, long datacenterId, long podId, VMTemplateHostVO.Status downloadState);
+
+    List<VMTemplateHostVO> listByTemplateStates(long templateId, VMTemplateHostVO.Status... states);
+
+    List<VMTemplateHostVO> listDestroyed(long hostId);
+
+    boolean templateAvailable(long templateId, long hostId);
 }

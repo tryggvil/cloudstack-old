@@ -18,7 +18,10 @@
 
 package com.cloud.async.executor;
 
+import java.util.List;
+
 import com.cloud.api.BaseCmd;
+import com.cloud.network.security.NetworkGroupVO;
 import com.cloud.server.ManagementServer;
 import com.cloud.service.ServiceOfferingVO;
 import com.cloud.storage.VMTemplateVO;
@@ -26,7 +29,7 @@ import com.cloud.user.Account;
 import com.cloud.vm.UserVmVO;
 
 public class VMExecutorHelper {
-	public static VMOperationResultObject composeResultObject(ManagementServer managementServer, UserVmVO vm) {
+	public static VMOperationResultObject composeResultObject(ManagementServer managementServer, UserVmVO vm, String vmPassword) {
 		
 		VMOperationResultObject resultObject = new VMOperationResultObject();
 		
@@ -83,6 +86,10 @@ public class VMExecutorHelper {
         resultObject.setTemplateName(templateName);
         resultObject.setTemplateDisplayText(templateDisplayText);
         resultObject.setPasswordEnabled(templatePasswordEnabled);
+        if(templatePasswordEnabled)
+        	resultObject.setPassword(vmPassword);
+        else
+        	resultObject.setPassword("");
         
         String isoName = null;
         if (vm.getIsoId() != null) {
@@ -103,6 +110,9 @@ public class VMExecutorHelper {
         resultObject.setCpuNumber(String.valueOf(offering.getCpu()));
         resultObject.setCpuSpeed(String.valueOf(offering.getSpeed()));
         resultObject.setMemory(String.valueOf(offering.getRamSize()));
+        
+        //Network groups
+        resultObject.setNetworkGroupList(managementServer.getNetworkGroupsNamesForVm(vm.getId()));
         
 		return resultObject;
 	}

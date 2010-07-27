@@ -18,12 +18,10 @@
 
 package com.cloud.agent.api;
 
+import java.io.File;
 import java.util.UUID;
 
 import com.cloud.storage.StoragePoolVO;
-import com.cloud.storage.StoragePool.StoragePoolType;
-
-import java.io.File;
 
 public class ModifyStoragePoolCommand extends Command {
 	
@@ -46,7 +44,7 @@ public class ModifyStoragePoolCommand extends Command {
     }
     
     public ModifyStoragePoolCommand(boolean add, StoragePoolVO pool) {
-		this(add, pool, LOCAL_PATH_PREFIX + File.separator + UUID.nameUUIDFromBytes((pool.getHostAddress() + pool.getPath()).getBytes())); 
+		this(add, pool, LOCAL_PATH_PREFIX + File.separator + UUID.nameUUIDFromBytes((pool.getHostAddress() + pool.getPath()).getBytes()));
 	}
 
     public StoragePoolVO getPool() {

@@ -25,6 +25,7 @@ import com.cloud.api.BaseCmd;
 import com.cloud.async.AsyncJobManager;
 import com.cloud.async.AsyncJobResult;
 import com.cloud.async.AsyncJobVO;
+import com.cloud.event.EventState;
 import com.cloud.event.EventTypes;
 import com.cloud.event.EventVO;
 import com.cloud.serializer.GsonHelper;
@@ -48,6 +49,15 @@ public class StopVMExecutor extends VMOperationExecutor {
 	    	return true;
 		} else {
 	    	VMOperationParam param = gson.fromJson(job.getCmdInfo(), VMOperationParam.class);
+	        EventVO event = new EventVO();
+	        event.setType(EventTypes.EVENT_VM_STOP);
+	        event.setUserId(param.getUserId());
+	        UserVmVO userVm = asyncMgr.getExecutorContext().getManagementServer().findUserVMInstanceById(param.getVmId());
+	        event.setAccountId(userVm.getAccountId());
+	        event.setState(EventState.Started);
+	        event.setStartId(param.getEventId());
+	        event.setDescription("Stopping Vm with Id: "+param.getVmId());
+	        asyncMgr.getExecutorContext().getEventDao().persist(event);
 	    	return asyncMgr.getExecutorContext().getVmMgr().executeStopVM(this, param);
 		}
 	}
@@ -65,6 +75,8 @@ public class StopVMExecutor extends VMOperationExecutor {
         event.setUserId(param.getUserId());
         event.setAccountId(vm.getAccountId());
         event.setType(EventTypes.EVENT_VM_STOP);
+        event.setState(EventState.Completed);
+        event.setStartId(param.getEventId());
         event.setParameters("id="+vm.getId() + "\nvmName=" + vm.getName() + "\nsoId=" + vm.getServiceOfferingId() + "\ntId=" + vm.getTemplateId() + "\ndcId=" + vm.getDataCenterId());
     	
         boolean stopped = false;
@@ -75,9 +87,9 @@ public class StopVMExecutor extends VMOperationExecutor {
     	try {
 	    	if(stopped) {
 	    		// completeStopCommand will log the event, if we log it here we will end up with duplicated stop event
-	        	asyncMgr.getExecutorContext().getVmMgr().completeStopCommand(param.getUserId(), vm, Event.OperationSucceeded);
+	        	asyncMgr.getExecutorContext().getVmMgr().completeStopCommand(param.getUserId(), vm, Event.OperationSucceeded, param.getEventId());
 	    		asyncMgr.completeAsyncJob(getJob().getId(), 
-		        		AsyncJobResult.STATUS_SUCCEEDED, 0, VMExecutorHelper.composeResultObject(asyncMgr.getExecutorContext().getManagementServer(), vm));
+		        		AsyncJobResult.STATUS_SUCCEEDED, 0, VMExecutorHelper.composeResultObject(asyncMgr.getExecutorContext().getManagementServer(), vm, null));
 	    		jobStatusUpdated = true;
 	    	} else {
 	            asyncMgr.getExecutorContext().getVmDao().updateIf(vm, Event.OperationFailed, vm.getHostId());
@@ -94,7 +106,7 @@ public class StopVMExecutor extends VMOperationExecutor {
     		if(!jobStatusUpdated) {
     	    	if(stopped) {
 		    		asyncMgr.completeAsyncJob(getJob().getId(), 
-		        		AsyncJobResult.STATUS_SUCCEEDED, 0, VMExecutorHelper.composeResultObject(asyncMgr.getExecutorContext().getManagementServer(), vm));
+		        		AsyncJobResult.STATUS_SUCCEEDED, 0, VMExecutorHelper.composeResultObject(asyncMgr.getExecutorContext().getManagementServer(), vm, null));
     	    	} else {
     	            asyncMgr.completeAsyncJob(getJob().getId(), 
     		        		AsyncJobResult.STATUS_FAILED, BaseCmd.INTERNAL_ERROR, "Agent failed to stop VM");

@@ -21,5 +21,6 @@ package com.cloud.async;
 public enum AsyncInstanceCreateStatus {
     Creating,
     Created,
-    Corrupted;
+    Corrupted,
+    Failed;
 }

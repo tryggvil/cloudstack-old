@@ -47,6 +47,7 @@ public class DownloadCommand extends AbstractDownloadCommand {
 	private String description;
 	private String checksum;
 	private PasswordAuth auth;
+	private Long maxDownloadSizeInBytes = null;
 	private long id;
 	
 	protected DownloadCommand() {
@@ -60,23 +61,26 @@ public class DownloadCommand extends AbstractDownloadCommand {
 	    this.id = that.id;
 	    this.description = that.description;
 	    this.auth = that.getAuth();
+	    this.maxDownloadSizeInBytes = that.getMaxDownloadSizeInBytes();
 	}
 	
-	public DownloadCommand(VMTemplateVO template) {
+	public DownloadCommand(VMTemplateVO template, Long maxDownloadSizeInBytes) {
 	    super(template.getUniqueName(), template.getUrl(), template.getFormat(), template.getAccountId());
 	    this.hvm = template.requiresHvm();
 	    this.checksum = template.getChecksum();
 	    this.id = template.getId();
 	    this.description = template.getDisplayText();
+	    this.maxDownloadSizeInBytes = maxDownloadSizeInBytes;
 	}
 
-	public DownloadCommand(String url, String name, ImageFormat format, boolean isHvm, Long accountId, Long templateId, String descr, String cksum, String user, String passwd) {
+	public DownloadCommand(String url, String name, ImageFormat format, boolean isHvm, Long accountId, Long templateId, String descr, String cksum, String user, String passwd, Long maxDownloadSizeInBytes) {
 	    super(name, url, format, accountId);
 		this.setHvm(isHvm);
 		this.description = descr;
 		this.checksum = cksum;
 		this.id = templateId;
 		auth = new PasswordAuth(user, passwd);
+		this.maxDownloadSizeInBytes = maxDownloadSizeInBytes;
 	}
 	
 	public long getId() {
@@ -119,5 +123,9 @@ public class DownloadCommand extends AbstractDownloadCommand {
 	
 	public void setCreds(String userName, String passwd) {
 		auth = new PasswordAuth(userName, passwd);
+	}
+	
+	public Long getMaxDownloadSizeInBytes() {
+		return maxDownloadSizeInBytes;
 	}
 }

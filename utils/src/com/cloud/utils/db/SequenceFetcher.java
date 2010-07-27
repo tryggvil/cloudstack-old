@@ -61,7 +61,7 @@ public class SequenceFetcher {
     }
     
     protected SequenceFetcher() {
-        _executors = new ThreadPoolExecutor(25, 25, 120l, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(250), new NamedThreadFactory("SequenceFetcher"));
+        _executors = new ThreadPoolExecutor(100, 100, 120l, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(250), new NamedThreadFactory("SequenceFetcher"));
     }
 
     protected static final SequenceFetcher s_instance = new SequenceFetcher();
@@ -74,7 +74,7 @@ public class SequenceFetcher {
         Class<T> _clazz;
         Object _key;
         
-        public Fetcher(Class<T> clazz, TableGenerator tg, Object key) {
+        protected Fetcher(Class<T> clazz, TableGenerator tg, Object key) {
             _tg = tg;
             _clazz = clazz;
             _key = key;

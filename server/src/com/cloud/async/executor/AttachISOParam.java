@@ -23,6 +23,7 @@ public class AttachISOParam {
 	private long userId;
 	private long isoId;
 	private boolean attach;
+	private long eventId;
 	
 	public AttachISOParam() {
 	}
@@ -49,4 +50,12 @@ public class AttachISOParam {
 	public boolean isAttach() {
 	    return attach;
 	}
+
+    public void setEventId(long eventId) {
+        this.eventId = eventId;
+    }
+
+    public long getEventId() {
+        return eventId;
+    }
 }

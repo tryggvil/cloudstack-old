@@ -18,17 +18,12 @@
 
 package com.cloud.domain.dao;
 
-import java.util.List;
-
 import com.cloud.domain.DomainVO;
 import com.cloud.utils.db.GenericDao;
 
 public interface DomainDao extends GenericDao<DomainVO, Long> {
     public void update(Long id, String domainName);
     public DomainVO create(DomainVO domain);
-    public List<DomainVO> findDomainsLike(String domain);
-    public List<DomainVO> findDomainsLike(Long parentId, String domain);
-    public DomainVO findDomainByName(String domainName);
-    public DomainVO findDomainByName(Long parentId, String domainName);
+    public DomainVO findDomainByPath(String domainPath);
     public boolean isChildDomain(Long parentId, Long childId);
 }

@@ -41,4 +41,6 @@ public interface StoragePoolHostDao extends GenericDao<StoragePoolHostVO, Long> 
 	public ArrayList<Long> getPoolIds(Long hostId);
 	
 	public void deletePrimaryRecordsForHost(long hostId);
+	
+	public void deleteStoragePoolHostDetails(long hostId, long poolId);
 }

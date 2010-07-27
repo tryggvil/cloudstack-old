@@ -19,7 +19,6 @@ package com.cloud.storage.secondary;
 
 import java.io.File;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -83,22 +82,15 @@ public class SecondaryStorageDiscoverer extends DiscovererBase implements Discov
     }
     
     @Override
-    public Map<? extends ServerResource, Map<String, String>> find(long dcId, Long podId, String urlString, String username, String password) {
-        URI uri;
-        try {
-            uri = new URI(urlString);
-            if (!uri.getScheme().equalsIgnoreCase("nfs") && !uri.getScheme().equalsIgnoreCase("file")
-                    && !uri.getScheme().equalsIgnoreCase("iso") && !uri.getScheme().equalsIgnoreCase("dummy")) {
-                s_logger.debug("It's not NFS or file or ISO, so not a secondary storage server: " + urlString);
-                return null;
-            }
-        } catch (URISyntaxException e) {
-            s_logger.debug("Is not a valid url" + urlString);
+    public Map<? extends ServerResource, Map<String, String>> find(long dcId, Long podId, Long clusterId, URI uri, String username, String password) {
+        if (!uri.getScheme().equalsIgnoreCase("nfs") && !uri.getScheme().equalsIgnoreCase("file")
+                && !uri.getScheme().equalsIgnoreCase("iso") && !uri.getScheme().equalsIgnoreCase("dummy")) {
+            s_logger.debug("It's not NFS or file or ISO, so not a secondary storage server: " + uri.toString());
             return null;
         }
 
         if (uri.getScheme().equalsIgnoreCase("nfs") || uri.getScheme().equalsIgnoreCase("iso")) {
-            return createNfsSecondaryStorageResource(dcId, podId, urlString);
+            return createNfsSecondaryStorageResource(dcId, podId, uri);
         } else if (uri.getScheme().equalsIgnoreCase("file")) {
             return createLocalSecondaryStorageResource(dcId, podId, uri);
         } else if (uri.getScheme().equalsIgnoreCase("dummy")) {
@@ -108,21 +100,12 @@ public class SecondaryStorageDiscoverer extends DiscovererBase implements Discov
         }
     }
     
-    protected Map<? extends ServerResource, Map<String, String>> createNfsSecondaryStorageResource(long dcId, Long podId, String urlString) {
+    protected Map<? extends ServerResource, Map<String, String>> createNfsSecondaryStorageResource(long dcId, Long podId, URI uri) {
         
     	if (_useServiceVM) {
-    		try {
-				return createDummySecondaryStorageResource(dcId, podId, new URI(urlString));
-			} catch (URISyntaxException e) {
-				s_logger.warn("Invalid uri  " + urlString);
-			}
+    	    return createDummySecondaryStorageResource(dcId, podId, uri);
     	}
-        String mountStr;
-        try {
-            mountStr = NfsUtils.url2Mount(urlString);
-        } catch (URISyntaxException e1) {
-            return null;
-        }
+        String mountStr = NfsUtils.uri2Mount(uri);
         
         Script script = new Script(true, "mount", _timeout, s_logger);
         String mntPoint = null;
@@ -140,7 +123,7 @@ public class SecondaryStorageDiscoverer extends DiscovererBase implements Discov
         script.add(mountStr, mntPoint);
         String result = script.execute();
         if (result != null && !result.contains("already mounted")) {
-            s_logger.warn("Unable to mount " + urlString + " due to " + result);
+            s_logger.warn("Unable to mount " + uri.toString() + " due to " + result);
             file.delete();
             return null;
         }
@@ -156,7 +139,7 @@ public class SecondaryStorageDiscoverer extends DiscovererBase implements Discov
         NfsSecondaryStorageResource storage = new NfsSecondaryStorageResource();
         Map<String, String> details = new HashMap<String, String>();
         details.put("mount.path", mountStr);
-        details.put("orig.url", urlString);
+        details.put("orig.url", uri.toString());
         details.put("mount.parent", _mountParent);
         
         Map<String, Object> params = new HashMap<String, Object>();
@@ -165,7 +148,7 @@ public class SecondaryStorageDiscoverer extends DiscovererBase implements Discov
         if (podId != null) {
             params.put("pod", podId.toString());
         }
-        params.put("guid", urlString);
+        params.put("guid", uri.toString());
         params.put("secondary.storage.vm", "false");
         params.put("max.template.iso.size", _configDao.getValue("max.template.iso.size"));
         

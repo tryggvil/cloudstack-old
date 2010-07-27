@@ -19,6 +19,7 @@
 package com.cloud.async.executor;
 
 import java.util.Date;
+import java.util.List;
 
 import com.cloud.serializer.Param;
 
@@ -118,7 +119,17 @@ public class DeployVMResultObject {
 	@Param(name="hostid")
 	private Long hostid;
 	
-
+	@Param(name="networkgrouplist")
+	private String networkGroupList;
+	
+	public String getNetworkGroupList(){
+		return this.networkGroupList;
+	}
+	
+	public void setNetworkGroupList(String nGroups){
+		this.networkGroupList = nGroups;
+	}
+	
 	public String getIsoDisplayText() {
 		return isoDisplayText;
 	}

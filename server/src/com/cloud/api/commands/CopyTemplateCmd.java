@@ -30,6 +30,7 @@ import com.cloud.async.AsyncJobResult;
 import com.cloud.async.executor.CopyTemplateResultObject;
 import com.cloud.async.executor.CreatePrivateTemplateResultObject;
 import com.cloud.serializer.SerializerHelper;
+import com.cloud.storage.Storage;
 import com.cloud.storage.VMTemplateVO;
 import com.cloud.user.Account;
 import com.cloud.utils.Pair;
@@ -76,6 +77,11 @@ public class CopyTemplateCmd extends BaseCmd {
         VMTemplateVO template1 = getManagementServer().findTemplateById(templateId.longValue());
         if (template1 == null) {
             throw new ServerApiException(BaseCmd.PARAM_ERROR, "unable to find template with id " + templateId);
+        }
+        
+        boolean isIso = Storage.ImageFormat.ISO.equals(template1.getFormat());
+        if (isIso) {
+        	throw new ServerApiException(BaseCmd.PARAM_ERROR, "Please specify a valid template.");
         }
 
         if (account != null) {

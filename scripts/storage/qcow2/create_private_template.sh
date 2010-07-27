@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# $Id: create_private_template.sh 9132 2010-06-04 20:17:43Z manuel $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/storage/qcow2/create_private_template.sh $
+# $Id: create_private_template.sh 9804 2010-06-22 18:36:49Z alex $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.1.x/java/scripts/storage/qcow2/create_private_template.sh $
 # create_private_template.sh -- create a private template from a snapshot
 #
+# @VERSION@
 
 usage() {
   printf "Usage: %s: -p <snapshot path> -n <template name> -s <snapshot name> -d <template path>\n" $(basename $0) >&2

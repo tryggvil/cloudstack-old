@@ -17,6 +17,7 @@
  */
 package com.cloud.agent;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Set;
 
@@ -24,7 +25,9 @@ import com.cloud.agent.api.Answer;
 import com.cloud.agent.api.Command;
 import com.cloud.dc.DataCenterVO;
 import com.cloud.dc.HostPodVO;
+import com.cloud.dc.PodCluster;
 import com.cloud.exception.AgentUnavailableException;
+import com.cloud.exception.DiscoveryException;
 import com.cloud.exception.InternalErrorException;
 import com.cloud.exception.OperationTimedoutException;
 import com.cloud.host.Host;
@@ -34,10 +37,10 @@ import com.cloud.host.Status;
 import com.cloud.host.Status.Event;
 import com.cloud.service.ServiceOffering;
 import com.cloud.service.ServiceOfferingVO;
-import com.cloud.storage.DiskOfferingVO;
 import com.cloud.storage.StoragePoolVO;
 import com.cloud.storage.VMTemplateVO;
 import com.cloud.storage.VirtualMachineTemplate;
+import com.cloud.utils.Pair;
 import com.cloud.utils.component.Manager;
 import com.cloud.vm.UserVm;
 import com.cloud.vm.VMInstanceVO;
@@ -147,8 +150,10 @@ public interface AgentManager extends Manager {
 	 * to deploy in, service offering, template, and list of host to avoid.
 	 */
 
-	Host findHost(Host.Type type, DataCenterVO dc, HostPodVO pod, StoragePoolVO sp, ServiceOffering offering, DiskOfferingVO diskOffering, VMTemplateVO template, VMInstanceVO vm, Host currentHost, Set<Host> avoid);
-	
+	Host findHost(Host.Type type, DataCenterVO dc, HostPodVO pod, StoragePoolVO sp, ServiceOffering offering, VMTemplateVO template, VMInstanceVO vm, Host currentHost, Set<Host> avoid);
+	List<PodCluster> listByDataCenter(long dcId);
+	List<PodCluster> listByPod(long podId);
+
 	/**
 	 * Updates a host
 	 * @param hostId
@@ -172,7 +177,7 @@ public interface AgentManager extends Manager {
 	 * @param userId
 	 * @return
 	 */
-    HostPodVO findPod(VirtualMachineTemplate template, ServiceOfferingVO offering, DataCenterVO dc, long userId, Set<Long> avoids);
+    Pair<HostPodVO, Long> findPod(VirtualMachineTemplate template, ServiceOfferingVO offering, DataCenterVO dc, long userId, Set<Long> avoids);
 
     /**
      * Put the agent in maintenance mode.
@@ -204,5 +209,5 @@ public interface AgentManager extends Manager {
     public boolean executeUserRequest(long hostId, Event event) throws AgentUnavailableException;
     public boolean reconnect(final long hostId) throws AgentUnavailableException;
     
-    public List<HostVO> discoverHosts(long dcId, Long podId, String url, String username, String password);
+    public List<HostVO> discoverHosts(long dcId, Long podId, Long clusterId, URI url, String username, String password) throws DiscoveryException;
 }

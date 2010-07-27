@@ -17,49 +17,63 @@
  */
 package com.cloud.agent.api;
 
+import java.util.HashMap;
+
 import com.cloud.host.HostStats;
 
 /**
- * @author ahuang
+ * @author ajoshi
  *
  */
 public class GetHostStatsAnswer extends Answer implements HostStats {
-    double cpuUtilization;
-    long freeMemory;
-    long totalMemory;
-    double publicNetworkReadKBs;
-    double publicNetworkWriteKBs;
-    
+	
+	HostStatsEntry hostStats;
+	
+	double cpuUtilization;
+	double networkReadKBs;
+	double networkWriteKBs;
+	int numCPUs;
+	String entityType;
+    double totalMemoryKBs;
+    double freeMemoryKBs;
+    double xapiMemoryUsageKBs;    
+	double averageLoad;
+	
     protected GetHostStatsAnswer() {
     }
-    
-    public GetHostStatsAnswer(GetHostStatsCommand cmd, String detail) {
-        super(cmd, false, detail);
-    }
-    
-    public GetHostStatsAnswer(GetHostStatsCommand cmd, double cpuUtilization, long freeMemory, long totalMemory, double publicNetworkReadKBs, double publicNetworkWriteKBs) {
+        
+	public GetHostStatsAnswer(GetHostStatsCommand cmd, HostStatsEntry hostStatistics) {
+		super(cmd);
+		this.hostStats = hostStatistics;
+	}
+	
+    public GetHostStatsAnswer(GetHostStatsCommand cmd, double cpuUtilization, double freeMemoryKBs, double totalMemoryKBs, double networkReadKBs, 
+    		double networkWriteKBs, String entityType, double xapiMemoryUsageKBs, double averageLoad, int numCPUs) {
         super(cmd);
     
         this.cpuUtilization = cpuUtilization;
-        this.freeMemory = freeMemory;
-        this.totalMemory = totalMemory;
-        this.publicNetworkReadKBs = publicNetworkReadKBs;
-        this.publicNetworkWriteKBs = publicNetworkWriteKBs;
+        this.freeMemoryKBs = freeMemoryKBs;
+        this.totalMemoryKBs = totalMemoryKBs;
+        this.networkReadKBs = networkReadKBs;
+        this.networkWriteKBs = networkWriteKBs;
+        this.entityType = entityType;
+        this.xapiMemoryUsageKBs = xapiMemoryUsageKBs;
+        this.numCPUs = numCPUs;
     }
     
     @Override
-    public long getUsedMemory() {
-    	return (totalMemory - freeMemory);
+    public double getUsedMemory() {
+    	return (totalMemoryKBs - freeMemoryKBs);
     }
     
     @Override
-    public long getFreeMemory() {
-        return freeMemory;
+    public double getFreeMemoryKBs() {
+        return freeMemoryKBs;
     }
     
     @Override
-    public long getTotalMemory() {
-    	return totalMemory;
+    public double getTotalMemoryKBs() {
+    	return totalMemoryKBs;
     }
     
     @Override
@@ -68,13 +82,37 @@ public class GetHostStatsAnswer extends Answer implements HostStats {
     }
     
     @Override
-    public double getPublicNetworkReadKBs() {
-    	return publicNetworkReadKBs;
+    public double getNetworkReadKBs() {
+    	return networkReadKBs;
     }
     
     @Override
-    public double getPublicNetworkWriteKBs() {
-    	return publicNetworkWriteKBs;
+    public double getNetworkWriteKBs() {
+    	return networkWriteKBs;
     }
 
+	@Override
+	public double getAverageLoad() {
+		return averageLoad;
+	}
+
+	@Override
+	public String getEntityType() {
+		return entityType;
+	}
+
+	@Override
+	public double getXapiMemoryUsageKBs() {
+		return xapiMemoryUsageKBs;
+	}
+
+	@Override
+	public int getNumCpus(){
+		return numCPUs;
+	}
+
+	@Override
+	public HostStats getHostStats() {
+		return hostStats;
+	}
 }

@@ -2,6 +2,7 @@
 # $Id: vm_data.sh 9307 2010-06-08 00:43:08Z chiradeep $ $HeadURL: svn://svn.lab.vmops.com/repos/vmdev/java/scripts/vm/hypervisor/xenserver/patch/vm_data.sh $
 # vm_data.sh -- adds userdata and metadata for a VM to a DomR
 #
+# @VERSION@
 
 usage() {
   printf "Usage: %s: -r <domr-ip> -v <vm ip> -F <vm data folder> -f <vm data file> -d <data to put in file> \n" $(basename $0) >&2

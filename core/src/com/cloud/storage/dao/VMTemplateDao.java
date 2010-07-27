@@ -42,7 +42,10 @@ public interface VMTemplateDao extends GenericDao<VMTemplateVO, Long> {
 	}
 	
 	public List<VMTemplateVO> listByPublic();
+	//finds by the column "unique_name"
 	public VMTemplateVO findByName(String templateName);
+	//finds by the column "name" 
+	public VMTemplateVO findByTemplateName(String templateName);
 	//public void update(VMTemplateVO template);
 	public VMTemplateVO findRoutingTemplate();
 	public VMTemplateVO findConsoleProxyTemplate();
@@ -54,6 +57,6 @@ public interface VMTemplateDao extends GenericDao<VMTemplateVO, Long> {
 	public List<VMTemplateVO> searchTemplates(String name, String keyword, TemplateFilter templateFilter, boolean isIso, Boolean bootable, Account account, DomainVO domain, Integer pageSize, Long startIndex, Long zoneId);
 	
 	public long addTemplateToZone(VMTemplateVO tmplt, long zoneId);
-	public List<VMTemplateVO> listAllInZone(long dataCenterId);
+	public List<VMTemplateVO> listAllInZone(long dataCenterId);	
 	
 }

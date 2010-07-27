@@ -39,6 +39,7 @@ import com.cloud.service.ServiceOffering;
 import com.cloud.storage.GuestOSCategoryVO;
 import com.cloud.utils.NumbersUtil;
 import com.cloud.vm.UserVmVO;
+//import com.cloud.vm.HostStats;
 import com.google.gson.Gson;
 
 public class CompleteMaintenanceExecutor extends BaseAsyncJobExecutor {
@@ -120,7 +121,7 @@ public class CompleteMaintenanceExecutor extends BaseAsyncJobExecutor {
             {
             	
                 hostRO.setCpuNumber(hostVO.getCpus());
-                hostRO.setSpeed(hostVO.getSpeed());
+                hostRO.setCpuSpeed(hostVO.getSpeed());
                 // calculate cpu allocated by vm
                 int cpu = 0;
                 String cpuAlloc = null;
@@ -140,35 +141,26 @@ public class CompleteMaintenanceExecutor extends BaseAsyncJobExecutor {
                     float cpuUtil = (float) hostStats.getCpuUtilization();
                     cpuUsed = decimalFormat.format(cpuUtil) + "%";
                     hostRO.setCpuUsed(cpuUsed);
+                    
+                    long avgLoad = (long)hostStats.getAverageLoad();
+                    hostRO.setAverageLoad(avgLoad);
+                    
+                    long networkKbsRead = (long)hostStats.getNetworkReadKBs();
+                    hostRO.setNetworkKbsRead(networkKbsRead);
+                    
+                    long networkKbsWrite = (long)hostStats.getNetworkWriteKBs();
+                    hostRO.setNetworkKbsWrite(networkKbsWrite);
                 }
             }
 
-            if ((hostVO.getTotalMemory() != null) && (!hostVO.getType().toString().equals("Storage"))) {
-                Long memory = hostVO.getTotalMemory() * 7 / 8;
+            if ( hostVO.getType() == Host.Type.Routing ) {
+                Long memory = hostVO.getTotalMemory();
                 hostRO.setTotalMemory(memory);
-                // calculate memory allocated by domR and userVm
-                long mem = 0l;
-                if (hostVO.getType() == Host.Type.Routing) {
-                    Integer[] routerAndProxyCount = managementServer.countRoutersAndProxies(hostVO.getId());
-                    if (routerAndProxyCount[0] != null) {
-                        int routerCount = routerAndProxyCount[0].intValue();
-                        mem += (routerCount * routerAndProxyCount[2].longValue() * 1024L * 1024L);
-                    }
-                }
-                List<UserVmVO> instances = managementServer.listUserVMsByHostId(hostVO.getId());
-                for (UserVmVO vm : instances) {
-                    ServiceOffering so = managementServer.findServiceOfferingById(vm.getServiceOfferingId());
-                    mem += so.getRamSize() * 1024L * 1024L;
-                }
-                hostRO.setMemoryAlloc(mem);
-                // calculate memory utilized
-                String memoryUsed = null;
-                HostStats hostStats = managementServer.getHostStatistics(hostVO.getId());
-                if (hostStats != null) {
-                    long memFree = hostStats.getFreeMemory();
-                    memoryUsed = NumbersUtil.toReadableSize(((hostVO.getTotalMemory() - memFree) * 7L) / 8L);
-                    hostRO.setMemoryUsed(memoryUsed);
-                }
+                // calculate memory allocated by systemVM and userVm
+                long mem = managementServer.getMemoryUsagebyHost(hostVO.getId());
+                hostRO.setMemoryAllocated(mem);
+                // calculate memory utilized, we don't provide memory over commit
+                hostRO.setMemoryUsed(mem);
             }
             if (hostVO.getType().toString().equals("Storage")) {
                 hostRO.setDiskSizeTotal(hostVO.getTotalSize());

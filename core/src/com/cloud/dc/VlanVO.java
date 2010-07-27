@@ -48,31 +48,28 @@ public class VlanVO implements Vlan {
 	@Column(name="data_center_id") 
 	long dataCenterId;
 	
-	@Column(name="vlan_name") 
-	String vlanName;
-	
 	@Column(name="description") 
-	String description;
+	String ipRange;
 	
 	@Column(name="vlan_type")
 	@Enumerated(EnumType.STRING) 
-	VlanType vlanType = VlanType.DcExternal; 
+	VlanType vlanType;
 	
-	public VlanVO(String vlanId, String vlanGateway, String vlanNetmask, long dataCenterId, String description, String name) {
-		this.vlanId = vlanId;
+	public VlanVO(VlanType vlanType, String vlanTag, String vlanGateway, String vlanNetmask, long dataCenterId, String ipRange) {
+		this.vlanType = vlanType;
+		this.vlanId = vlanTag;
 		this.vlanGateway = vlanGateway;
 		this.vlanNetmask = vlanNetmask;
 		this.dataCenterId = dataCenterId;
-		this.description = description;
-		this.vlanName = name;
+		this.ipRange = ipRange;
 	}
 	
 	public VlanVO() {
 		
 	}
 	
-	public long getId() {
-		return id.longValue();
+	public Long getId() {
+		return id;
 	}
 	
 	public String getVlanId() {
@@ -81,6 +78,10 @@ public class VlanVO implements Vlan {
 
 	public String getVlanGateway() {
 		return vlanGateway;
+	}
+	
+	public void setVlanGateway(String vlanGateway) {
+		this.vlanGateway = vlanGateway;
 	}
     
 	public String getVlanNetmask() {
@@ -91,20 +92,12 @@ public class VlanVO implements Vlan {
 		return dataCenterId;
 	}
 
-	public void setVlanName(String vlanName) {
-		this.vlanName = vlanName;
+	public void setIpRange(String ipRange) {
+		this.ipRange = ipRange;
 	}
 
-	public String getVlanName() {
-		return vlanName;
-	}
-
-	public void setDescription(String description) {
-		this.description = description;
-	}
-
-	public String getDescription() {
-		return description;
+	public String getIpRange() {
+		return ipRange;
 	}
 
 	public void setVlanType(VlanType vlanType) {

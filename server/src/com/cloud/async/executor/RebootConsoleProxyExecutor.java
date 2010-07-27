@@ -45,7 +45,7 @@ public class RebootConsoleProxyExecutor extends VMOperationExecutor {
 			return true;
 		} else {
 	    	try {
-	    		boolean result = managementServer.rebootConsoleProxy(param.getVmId());
+	    		boolean result = managementServer.rebootConsoleProxy(param.getVmId(), param.getEventId());
 	    		if(result)
 	    			asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_SUCCEEDED, 0, 
 	    				composeResultObject(managementServer, param.getVmId()));

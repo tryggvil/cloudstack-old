@@ -17,6 +17,7 @@
  */
 package com.cloud.storage.template;
 
+import com.cloud.exception.InternalErrorException;
 import com.cloud.storage.Storage.ImageFormat;
 import com.cloud.utils.component.Adapter;
 
@@ -39,7 +40,7 @@ public interface Processor extends Adapter {
      * @param templateName file name to call the resulting image file.  The processor is required to add extensions.
      * @return FormatInfo if the file is processed.  null if not.
      */
-    FormatInfo process(String templatePath, ImageFormat format, String templateName);
+    FormatInfo process(String templatePath, ImageFormat format, String templateName) throws InternalErrorException;
     
     public static class FormatInfo {
         public ImageFormat format;

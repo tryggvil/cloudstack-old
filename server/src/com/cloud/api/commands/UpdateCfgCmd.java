@@ -26,6 +26,7 @@ import org.apache.log4j.Logger;
 
 import com.cloud.api.BaseCmd;
 import com.cloud.api.ServerApiException;
+import com.cloud.user.User;
 import com.cloud.utils.Pair;
 
 public class UpdateCfgCmd extends BaseCmd {
@@ -37,6 +38,7 @@ public class UpdateCfgCmd extends BaseCmd {
     static {
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.NAME, Boolean.TRUE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.VALUE, Boolean.TRUE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.USER_ID, Boolean.FALSE));
     }
 
     public String getName() {
@@ -50,9 +52,14 @@ public class UpdateCfgCmd extends BaseCmd {
     public List<Pair<String, Object>> execute(Map<String, Object> params) {
         String name = (String) params.get(BaseCmd.Properties.NAME.getName());
         String value = (String) params.get(BaseCmd.Properties.VALUE.getName());
-
+        Long userId = (Long)params.get(BaseCmd.Properties.USER_ID.getName());
+        
+        if (userId == null) {
+            userId = Long.valueOf(User.UID_SYSTEM);
+        }
+        
         try {
-        	getManagementServer().updateConfiguration(name, value);
+        	getManagementServer().updateConfiguration(userId, name, value);
         } catch (Exception ex) {
         	throw new ServerApiException(BaseCmd.INTERNAL_ERROR, ex.getMessage());
         }

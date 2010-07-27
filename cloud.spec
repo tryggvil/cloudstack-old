@@ -4,7 +4,7 @@
 # DISABLE the post-percentinstall java repacking and line number stripping
 # we need to find a way to just disable the java repacking and line number stripping, but not the autodeps
 
-%define _ver 2.0.0
+%define _ver 2.1.0
 %define _rel 1
 
 Name:      cloud
@@ -35,7 +35,7 @@ BuildRequires: jpackage-utils
 BuildRequires: gcc
 BuildRequires: glibc-devel
 
-%define _premium %(tar jtvmf %{SOURCE0} | grep 'premium/$' | head -1 | wc -l)
+%global _premium %(tar jtvmf %{SOURCE0} '*/premium/' --occurrence=1 2>/dev/null | wc -l)
 
 %description
 This is the Cloud.com Stack, a highly-scalable elastic, open source,
@@ -75,6 +75,7 @@ in the Cloud.com Stack.
 Summary:   Cloud.com-specific virtual network daemon
 Requires: python
 Requires: %{name}-daemonize = %{version}-%{release}
+Requires: %{name}-python = %{version}-%{release}
 Requires: net-tools
 Requires: bridge-utils
 Obsoletes: vmops-vnet < %{version}-%{release}
@@ -101,6 +102,15 @@ The Cloud.com agent is in charge of managing shared computing resources in
 a Cloud.com Stack-powered cloud.  Install this package if this computer
 will participate in your cloud -- this is a requirement for the Cloud.com
 agent.
+
+%package python
+Summary:   Cloud.com Python library
+# FIXME nuke the archdependency
+Requires: python
+Group:     System Environment/Libraries
+%description python
+The Cloud.com Python library contains a few Python modules that the
+CloudStack uses.
 
 %package deps
 Summary:   Cloud.com library dependencies
@@ -131,17 +141,6 @@ Obsoletes: vmops-core < %{version}-%{release}
 The Cloud.com core libraries provide a set of Java classes used
 in the Cloud.com Stack.
 
-%package test
-Summary:   Cloud.com test suite
-Requires: java >= 1.6.0
-Requires: %{name}-utils = %{version}-%{release}, %{name}-deps = %{version}-%{release}, wget
-Group:     System Environment/Libraries
-Obsoletes: vmops-test < %{version}-%{release}
-%description test
-The Cloud.com test package contains a suite of automated tests
-that the very much appreciated QA team at Cloud.com constantly
-uses to help increase the quality of the Cloud.com Stack.
-
 %package client
 Summary:   Cloud.com management server
 # If GCJ is present, a setPerformanceSomething method fails to load Catalina
@@ -153,6 +152,7 @@ Requires: %{name}-client-ui = %{version}-%{release}
 Requires: %{name}-setup = %{version}-%{release}
 # reqs the agent-scripts package because of xenserver within the management server
 Requires: %{name}-agent-scripts = %{version}-%{release}
+Requires: %{name}-python = %{version}-%{release}
 # for consoleproxy
 # Requires: %{name}-agent
 Requires: tomcat6
@@ -168,7 +168,7 @@ Requires: /sbin/chkconfig
 Requires: /usr/bin/ssh-keygen
 Requires: MySQL-python
 Requires: python-paramiko
-Requires: /usr/bin/augtool
+Requires: augeas >= 0.7.1
 Group:     System Environment/Libraries
 %description client
 The Cloud.com management server is the central point of coordination,
@@ -184,6 +184,8 @@ Requires: mysql
 Requires: %{name}-utils = %{version}-%{release}
 Requires: %{name}-server = %{version}-%{release}
 Requires: %{name}-deps = %{version}-%{release}
+Requires: %{name}-python = %{version}-%{release}
+Requires: MySQL-python
 Group:     System Environment/Libraries
 %description setup
 The Cloud.com setup tools let you set up your Management Server and Usage Server.
@@ -191,14 +193,13 @@ The Cloud.com setup tools let you set up your Management Server and Usage Server
 %package agent
 Summary:   Cloud.com agent
 Obsoletes: vmops-agent < %{version}-%{release}
-Obsoletes: vmops-console-proxy < %{version}-%{release}
-Obsoletes: cloud-console-proxy < %{version}-%{release}
 Obsoletes: vmops-console < %{version}-%{release}
 Obsoletes: cloud-console < %{version}-%{release}
 Requires: java >= 1.6.0
 Requires: %{name}-utils = %{version}-%{release}, %{name}-core = %{version}-%{release}, %{name}-deps = %{version}-%{release}
 Requires: %{name}-agent-scripts = %{version}-%{release}
 Requires: %{name}-vnet = %{version}-%{release}
+Requires: %{name}-python = %{version}-%{release}
 Requires: commons-httpclient
 #Requires: commons-codec
 Requires: commons-collections
@@ -214,14 +215,48 @@ Requires: /sbin/chkconfig
 Requires: kvm
 Requires: libcgroup
 Requires: /usr/bin/uuidgen
-Requires: /usr/bin/augtool
+Requires: augeas >= 0.7.1
+Requires: rsync
 Group:     System Environment/Libraries
 %description agent
 The Cloud.com agent is in charge of managing shared computing resources in
 a Cloud.com Stack-powered cloud.  Install this package if this computer
 will participate in your cloud.
 
+%package console-proxy
+Summary:   Cloud.com console proxy
+Requires: java >= 1.6.0
+Requires: %{name}-utils = %{version}-%{release}, %{name}-core = %{version}-%{release}, %{name}-deps = %{version}-%{release}, %{name}-agent = %{version}-%{release}
+Requires: commons-httpclient
+#Requires: commons-codec
+Requires: commons-collections
+Requires: commons-pool
+Requires: commons-dbcp
+Requires: jakarta-commons-logging
+Requires: jpackage-utils
+Requires: %{name}-daemonize
+Requires: /sbin/service
+Requires: /sbin/chkconfig
+Requires: /usr/bin/uuidgen
+Requires: augeas >= 0.7.1
+Group:     System Environment/Libraries
+%description console-proxy
+The Cloud.com console proxy is the service in charge of granting console
+access into virtual machines managed by the Cloud.com CloudStack.
+
+
 %if %{_premium}
+
+%package test
+Summary:   Cloud.com test suite
+Requires: java >= 1.6.0
+Requires: %{name}-utils = %{version}-%{release}, %{name}-deps = %{version}-%{release}, wget
+Group:     System Environment/Libraries
+Obsoletes: vmops-test < %{version}-%{release}
+%description test
+The Cloud.com test package contains a suite of automated tests
+that the very much appreciated QA team at Cloud.com constantly
+uses to help increase the quality of the Cloud.com Stack.
 
 %package premium-deps
 Summary:   Cloud.com premium library dependencies
@@ -236,6 +271,10 @@ the premium edition of the Cloud.com Stack.
 %package premium
 Summary:   Cloud.com premium components
 Obsoletes: vmops-premium < %{version}-%{release}
+Provides: %{name}-premium-plugin-zynga = %{version}-%{release}
+Obsoletes: %{name}-premium-plugin-zynga < %{version}-%{release}
+Provides: %{name}-premium-vendor-zynga = %{version}-%{release}
+Obsoletes: %{name}-premium-vendor-zynga < %{version}-%{release}
 Requires: java >= 1.6.0
 Requires: %{name}-utils = %{version}-%{release}
 Requires: %{name}-premium-deps
@@ -250,6 +289,7 @@ Obsoletes: vmops-usage < %{version}-%{release}
 Requires: java >= 1.6.0
 Requires: %{name}-utils = %{version}-%{release}, %{name}-core = %{version}-%{release}, %{name}-deps = %{version}-%{release}, %{name}-server = %{version}-%{release}, %{name}-premium = %{version}-%{release}, %{name}-daemonize = %{version}-%{release}
 Requires: %{name}-setup = %{version}-%{release}
+Requires: %{name}-client = %{version}-%{release}
 License:   CSL 1.1
 Group:     System Environment/Libraries
 %description usage
@@ -260,26 +300,26 @@ cloud operators to charge based on usage parameters.
 
 %prep
 
-%setup -q -n %{name}-%{_ver}
-
-%build
-
 %if %{_premium}
 echo Doing premium build
 %else
 echo Doing open source build
 %endif
 
+%setup -q -n %{name}-%{_ver}
+
+%build
+
 # this fixes the /usr/com bug on centos5
 %define _localstatedir /var
 %define _sharedstatedir /var/lib
-./waf configure --prefix=%{_prefix} --libdir=%{_libdir} --bindir=%{_bindir} --javadir=%{_javadir} --sharedstatedir=%{_sharedstatedir} --localstatedir=%{_localstatedir} --sysconfdir=%{_sysconfdir} --mandir=%{_mandir} --docdir=%{_docdir}/%{name}-%{version} --with-tomcat=%{_datadir}/tomcat6 --tomcat-user=%{name} --build-number=%{?_build_number}
-./waf showconfig
-./waf build
+./waf configure --prefix=%{_prefix} --libdir=%{_libdir} --bindir=%{_bindir} --javadir=%{_javadir} --sharedstatedir=%{_sharedstatedir} --localstatedir=%{_localstatedir} --sysconfdir=%{_sysconfdir} --mandir=%{_mandir} --docdir=%{_docdir}/%{name}-%{version} --with-tomcat=%{_datadir}/tomcat6 --tomcat-user=%{name} --fast
+./waf build --build-number=%{?_build_number}
 
 %install
 [ ${RPM_BUILD_ROOT} != "/" ] && rm -rf ${RPM_BUILD_ROOT}
-./waf install --destdir=$RPM_BUILD_ROOT --nochown
+# we put the build number again here, otherwise state checking will cause an almost-full recompile
+./waf install --destdir=$RPM_BUILD_ROOT --nochown --build-number=%{?_build_number}
 
 %clean
 
@@ -287,6 +327,7 @@ echo Doing open source build
 
 
 %preun client
+/sbin/service %{name}-management stop || true
 if [ "$1" == "0" ] ; then
     /sbin/chkconfig --del %{name}-management  > /dev/null 2>&1 || true
     /sbin/service %{name}-management stop > /dev/null 2>&1 || true
@@ -301,8 +342,6 @@ id %{name} > /dev/null 2>&1 || /usr/sbin/useradd -M -c "Cloud.com unprivileged u
 if [ "$1" == "1" ] ; then
     /sbin/chkconfig --add %{name}-management > /dev/null 2>&1 || true
     /sbin/chkconfig --level 345 %{name}-management on > /dev/null 2>&1 || true
-else
-    /sbin/service %{name}-management condrestart >/dev/null 2>&1 || true
 fi
 test -f %{_sharedstatedir}/%{name}/management/.ssh/id_rsa || su - %{name} -c 'yes "" 2>/dev/null | ssh-keygen -t rsa -q -N ""' < /dev/null
 
@@ -350,6 +389,20 @@ else
     /sbin/service %{name}-agent condrestart >/dev/null 2>&1 || true
 fi
 
+%preun console-proxy
+if [ "$1" == "0" ] ; then
+    /sbin/chkconfig --del %{name}-console-proxy  > /dev/null 2>&1 || true
+    /sbin/service %{name}-console-proxy stop > /dev/null 2>&1 || true
+fi
+
+%post console-proxy
+if [ "$1" == "1" ] ; then
+    /sbin/chkconfig --add %{name}-console-proxy > /dev/null 2>&1 || true
+    /sbin/chkconfig --level 345 %{name}-console-proxy on > /dev/null 2>&1 || true
+else
+    /sbin/service %{name}-console-proxy condrestart >/dev/null 2>&1 || true
+fi
+
 %preun vnet
 if [ "$1" == "0" ] ; then
     /sbin/chkconfig --del %{name}-vnetd > /dev/null 2>&1 || true
@@ -369,19 +422,24 @@ fi
 %defattr(0644,root,root,0755)
 %{_javadir}/%{name}-utils.jar
 %doc %{_docdir}/%{name}-%{version}/sccs-info
+%doc %{_docdir}/%{name}-%{version}/configure-info
 %doc README
+%doc HACKING
 %doc debian/copyright
 
 %files client-ui
 %defattr(0644,root,root,0755)
 %{_datadir}/%{name}/management/webapps/client/*
 %doc README
+%doc HACKING
 %doc debian/copyright
 
 %files server
 %defattr(0644,root,root,0755)
 %{_javadir}/%{name}-server.jar
+%{_sysconfdir}/%{name}/server/*
 %doc README
+%doc HACKING
 %doc debian/copyright
 
 %if %{_premium}
@@ -389,20 +447,31 @@ fi
 %files agent-scripts
 %defattr(-,root,root,-)
 %{_libdir}/%{name}/agent/scripts/*
-%exclude %{_libdir}/%{name}/agent/scripts/vm/hypervisor/systemvm-premium.zip
-%exclude %{_libdir}/%{name}/agent/scripts/vm/hypervisor/xenserver/patch/systemvm-premium.zip
-%exclude %{_libdir}/%{name}/agent/scripts/vm/hypervisor/kvm/patch/systemvm-premium.zip
-%attr(0600,%{name},root) %{_libdir}/%{name}/agent/scripts/network/domr/id_rsa
+%{_libdir}/%{name}/agent/vms/systemvm.zip
 %doc README
+%doc HACKING
 %doc debian/copyright
 
 %else
 
 %files agent-scripts
 %defattr(-,root,root,-)
-%{_libdir}/%{name}/agent/scripts/*
-%attr(0600,%{name},root) %{_libdir}/%{name}/agent/scripts/network/domr/id_rsa
+%{_libdir}/%{name}/agent/scripts/installer/*
+%{_libdir}/%{name}/agent/scripts/network/domr/*.sh
+%{_libdir}/%{name}/agent/scripts/storage/*.sh
+%{_libdir}/%{name}/agent/scripts/storage/qcow2/*
+%{_libdir}/%{name}/agent/scripts/storage/secondary/*
+%{_libdir}/%{name}/agent/scripts/util/*
+%{_libdir}/%{name}/agent/scripts/vm/*.sh
+%{_libdir}/%{name}/agent/scripts/vm/storage/nfs/*
+%{_libdir}/%{name}/agent/scripts/vm/network/*
+%{_libdir}/%{name}/agent/scripts/vm/hypervisor/*.sh
+%{_libdir}/%{name}/agent/scripts/vm/hypervisor/kvm/*
+%{_libdir}/%{name}/agent/vms/systemvm.zip
+%{_libdir}/%{name}/agent/scripts/vm/hypervisor/xenserver/*
+%{_libdir}/%{name}/agent/vms/systemvm-premium.zip
 %doc README
+%doc HACKING
 %doc debian/copyright
 
 %endif
@@ -411,6 +480,7 @@ fi
 %defattr(-,root,root,-)
 %attr(755,root,root) %{_bindir}/%{name}-daemonize
 %doc README
+%doc HACKING
 %doc debian/copyright
 
 %files deps
@@ -433,35 +503,35 @@ fi
 %{_javadir}/%{name}-xmlrpc-common-3.*.jar
 %{_javadir}/%{name}-xmlrpc-client-3.*.jar
 %doc README
+%doc HACKING
 %doc debian/copyright
 
 %files core
 %defattr(0644,root,root,0755)
 %{_javadir}/%{name}-core.jar
 %doc README
-%doc debian/copyright
-
-%files test
-%defattr(0644,root,root,0755)
-%attr(755,root,root) %{_bindir}/%{name}-run-test
-%{_javadir}/%{name}-test.jar
-%{_sharedstatedir}/%{name}/test/*
-%{_libdir}/%{name}/test/*
-%{_sysconfdir}/%{name}/test/*
-%doc README
+%doc HACKING
 %doc debian/copyright
 
 %files vnet
-%defattr(0755,root,root,0755)
-%{_sbindir}/%{name}-vnetd
-%{_sbindir}/%{name}-vn
-%{_initrddir}/%{name}-vnetd
+%defattr(0644,root,root,0755)
+%attr(0755,root,root) %{_sbindir}/%{name}-vnetd
+%attr(0755,root,root) %{_sbindir}/%{name}-vn
+%attr(0755,root,root) %{_initrddir}/%{name}-vnetd
+%doc README
+%doc HACKING
+%doc debian/copyright
+
+%files python
+%defattr(0644,root,root,0755)
 %{_prefix}/lib*/python*/site-packages/%{name}*
 %doc README
+%doc HACKING
 %doc debian/copyright
 
 %files setup
 %attr(0755,root,root) %{_bindir}/%{name}-setup-databases
+%attr(0755,root,root) %{_bindir}/%{name}-migrate-databases
 %dir %{_datadir}/%{name}/setup
 %{_datadir}/%{name}/setup/create-database.sql
 %{_datadir}/%{name}/setup/create-index-fk.sql
@@ -471,7 +541,12 @@ fi
 %{_datadir}/%{name}/setup/templates.xenserver.sql
 %{_datadir}/%{name}/setup/deploy-db-dev.sh
 %{_datadir}/%{name}/setup/server-setup.xml
+%{_datadir}/%{name}/setup/data-20to21.sql
+%{_datadir}/%{name}/setup/index-20to21.sql
+%{_datadir}/%{name}/setup/postprocess-20to21.sql
+%{_datadir}/%{name}/setup/schema-20to21.sql
 %doc README
+%doc HACKING
 %doc debian/copyright
 
 %files client
@@ -513,12 +588,12 @@ fi
 %dir %attr(770,root,%{name}) %{_localstatedir}/log/%{name}/management
 %dir %attr(770,root,%{name}) %{_localstatedir}/log/%{name}/agent
 %doc README
+%doc HACKING
 %doc debian/copyright
 
 %files agent
 %defattr(0644,root,root,0755)
 %{_javadir}/%{name}-agent.jar
-%{_javadir}/%{name}-agent-simulator.jar
 %config(noreplace) %{_sysconfdir}/%{name}/agent/agent.properties
 %config %{_sysconfdir}/%{name}/agent/developer.properties.template
 %config %{_sysconfdir}/%{name}/agent/environment.properties
@@ -532,28 +607,56 @@ fi
 %attr(0755,root,root) %{_bindir}/%{name}-setup-agent
 %dir %attr(770,root,root) %{_localstatedir}/log/%{name}/agent
 %doc README
+%doc HACKING
+%doc debian/copyright
+
+%files console-proxy
+%defattr(0644,root,root,0755)
+%{_javadir}/%{name}-console*.jar
+%config(noreplace) %{_sysconfdir}/%{name}/console-proxy/agent.properties
+%config(noreplace) %{_sysconfdir}/%{name}/console-proxy/consoleproxy.properties
+%config(noreplace) %{_sysconfdir}/%{name}/console-proxy/log4j-%{name}.xml
+%attr(0755,root,root) %{_initrddir}/%{name}-console-proxy
+%attr(0755,root,root) %{_libexecdir}/console-proxy-runner
+%{_libdir}/%{name}/console-proxy/*
+%attr(0755,root,root) %{_bindir}/%{name}-setup-console-proxy
+%dir %attr(770,root,root) %{_localstatedir}/log/%{name}/console-proxy
+%doc README
+%doc HACKING
 %doc debian/copyright
 
 %if %{_premium}
+
+%files test
+%defattr(0644,root,root,0755)
+%attr(755,root,root) %{_bindir}/%{name}-run-test
+%{_javadir}/%{name}-test.jar
+%{_sharedstatedir}/%{name}/test/*
+%{_libdir}/%{name}/test/*
+%{_sysconfdir}/%{name}/test/*
+%doc README
+%doc HACKING
+%doc debian/copyright
 
 %files premium-deps
 %defattr(0644,root,root,0755)
 %{_javadir}/%{name}-premium/*.jar
 %doc README
+%doc HACKING
 %doc debian/copyright
 
 %files premium
 %defattr(0644,root,root,0755)
-%{_javadir}/%{name}-premium.jar
 %{_javadir}/%{name}-core-extras.jar
+%{_javadir}/%{name}-server-extras.jar
 %{_sysconfdir}/%{name}/management/commands-ext.properties
 %{_sysconfdir}/%{name}/management/components-premium.xml
-%{_libdir}/%{name}/agent/scripts/vm/hypervisor/systemvm-premium.zip
-%{_libdir}/%{name}/agent/scripts/vm/hypervisor/xenserver/patch/systemvm-premium.zip
-%{_libdir}/%{name}/agent/scripts/vm/hypervisor/kvm/patch/systemvm-premium.zip
+%{_libdir}/%{name}/agent/scripts/vm/hypervisor/xenserver/*
+%{_libdir}/%{name}/agent/vms/systemvm-premium.zip
 %{_datadir}/%{name}/setup/create-database-premium.sql
 %{_datadir}/%{name}/setup/create-schema-premium.sql
 %doc README
+%doc HACKING
 %doc debian/copyright
 
 %files usage
@@ -566,6 +669,7 @@ fi
 %config(noreplace) %{_sysconfdir}/%{name}/usage/log4j-%{name}_usage.xml
 %config(noreplace) %attr(640,root,%{name}) %{_sysconfdir}/%{name}/usage/db.properties
 %doc README
+%doc HACKING
 %doc debian/copyright
 
 %endif

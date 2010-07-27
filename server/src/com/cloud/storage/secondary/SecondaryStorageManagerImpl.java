@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -46,6 +46,7 @@ import com.cloud.agent.api.SecStorageFirewallCfgCommand;
 import com.cloud.agent.api.SecStorageSetupCommand;
 import com.cloud.agent.api.StartSecStorageVmAnswer;
 import com.cloud.agent.api.StartSecStorageVmCommand;
+import com.cloud.agent.api.StartupCommand;
 import com.cloud.agent.api.StopAnswer;
 import com.cloud.agent.api.StopCommand;
 import com.cloud.async.AsyncJobExecutor;
@@ -54,14 +55,17 @@ import com.cloud.async.AsyncJobVO;
 import com.cloud.async.BaseAsyncJobExecutor;
 import com.cloud.capacity.dao.CapacityDao;
 import com.cloud.cluster.ClusterManager;
+import com.cloud.configuration.Config;
 import com.cloud.configuration.dao.ConfigurationDao;
 import com.cloud.dc.DataCenterVO;
 import com.cloud.dc.HostPodVO;
 import com.cloud.dc.VlanVO;
+import com.cloud.dc.Vlan.VlanType;
 import com.cloud.dc.dao.DataCenterDao;
 import com.cloud.dc.dao.HostPodDao;
 import com.cloud.dc.dao.VlanDao;
 import com.cloud.domain.DomainVO;
+import com.cloud.event.EventState;
 import com.cloud.event.EventTypes;
 import com.cloud.event.EventVO;
 import com.cloud.event.dao.EventDao;
@@ -78,11 +82,13 @@ import com.cloud.host.dao.HostDao;
 import com.cloud.info.RunningHostCountInfo;
 import com.cloud.info.RunningHostInfoAgregator;
 import com.cloud.info.RunningHostInfoAgregator.ZoneHostInfo;
-import com.cloud.network.IPAddressVO;
+import com.cloud.network.IpAddrAllocator;
 import com.cloud.network.NetworkManager;
+import com.cloud.network.IpAddrAllocator.networkInfo;
 import com.cloud.network.dao.IPAddressDao;
 import com.cloud.service.ServiceOfferingVO;
-import com.cloud.storage.DiskOfferingVO;
+import com.cloud.service.ServiceOffering.GuestIpType;
+import com.cloud.service.dao.ServiceOfferingDao;
 import com.cloud.storage.StorageManager;
 import com.cloud.storage.StoragePoolVO;
 import com.cloud.storage.VMTemplateHostVO;
@@ -152,8 +158,7 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 	private static final int ACQUIRE_GLOBAL_LOCK_TIMEOUT_FOR_COOPERATION = 3; 	// 3 seconds
 	private static final int ACQUIRE_GLOBAL_LOCK_TIMEOUT_FOR_SYNC = 180; 		// 3 minutes
 	
-	private static final int API_WAIT_TIMEOUT = 5000;							// 5 seconds (in milliseconds)
-	private static final int STARTUP_DELAY = 60000; 							// 60 seconds
+ 	private static final int STARTUP_DELAY = 60000; 							// 60 seconds
 
 	
 	
@@ -192,17 +197,18 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 	private SecondaryStorageListener _listener;
 	
     private ServiceOfferingVO _serviceOffering;
-    private DiskOfferingVO _diskOffering;
     private VMTemplateVO _template;
     @Inject private ConfigurationDao _configDao;
     @Inject private EventDao _eventDao;
+    @Inject private ServiceOfferingDao _offeringDao;
+    
+    private IpAddrAllocator _IpAllocator;
     
     private AsyncJobManager _asyncMgr;
 
 	private final ScheduledExecutorService _capacityScanScheduler = Executors
 			.newScheduledThreadPool(1, new NamedThreadFactory("SS-Scan"));
-	private final ExecutorService _requestHandlerScheduler = Executors
-			.newCachedThreadPool(new NamedThreadFactory("SS-Request-handler"));
+
 	
 	private long _capacityScanInterval = DEFAULT_CAPACITY_SCAN_INTERVAL;
 
@@ -224,21 +230,11 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 
 	
 	
-	private static boolean isInAssignableState(SecondaryStorageVmVO secStorageVm) {
-		State state = secStorageVm.getState();
-		if (state == State.Running || state == State.Starting
-				|| state == State.Creating || state == State.Migrating)
-			return true;
-
-		return false;
-	}
-
-	
-
 	@Override
-	public SecondaryStorageVmVO startSecStorageVm(long secStorageVmId) {
+	public SecondaryStorageVmVO startSecStorageVm(long secStorageVmId, long startEventId) {
 		try {
-			return start(secStorageVmId);
+	        saveStartedEvent(User.UID_SYSTEM, Account.ACCOUNT_ID_SYSTEM, EventTypes.EVENT_SSVM_START, "Starting secondary storage Vm Id: "+secStorageVmId, startEventId);
+			return start(secStorageVmId, startEventId);
 		} catch (StorageUnavailableException e) {
 			s_logger.warn("Exception while trying to start secondary storage vm", e);
 			return null;
@@ -252,7 +248,7 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 	}
 
 	@Override @DB
-	public SecondaryStorageVmVO start(long secStorageVmId) throws StorageUnavailableException, InsufficientCapacityException, ConcurrentOperationException {
+	public SecondaryStorageVmVO start(long secStorageVmId, long startEventId) throws StorageUnavailableException, InsufficientCapacityException, ConcurrentOperationException {
 
         AsyncJobExecutor asyncExecutor = BaseAsyncJobExecutor.getCurrentExecutor();
         if (asyncExecutor != null) {
@@ -309,10 +305,11 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 
 			DataCenterVO dc = _dcDao.findById(secStorageVm.getDataCenterId());
 			HostPodVO pod = _podDao.findById(secStorageVm.getPodId());
-			StoragePoolVO sp = _storagePoolDao.findById(secStorageVm.getPoolId());
+			List<StoragePoolVO> sps = _storageMgr.getStoragePoolsForVm(secStorageVm.getId());
+			StoragePoolVO sp = sps.get(0); // FIXME
 
 			HashSet<Host> avoid = new HashSet<Host>();
-			HostVO routingHost = (HostVO) _agentMgr.findHost(Host.Type.Routing, dc, pod, sp, _serviceOffering, _diskOffering, _template, secStorageVm, null, avoid);
+			HostVO routingHost = (HostVO) _agentMgr.findHost(Host.Type.Routing, dc, pod, sp, _serviceOffering, _template, secStorageVm, null, avoid);
 
 			if (routingHost == null) {
 				if (s_logger.isDebugEnabled()) {
@@ -333,9 +330,6 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 			}
 
 			try {
-				List<VolumeVO> vols = _volsDao.findByInstance(secStorageVmId);
-				VolumeVO vol = vols.get(0);
-
 				Answer answer = null;
 				int retry = _find_host_retry;
 
@@ -347,31 +341,29 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 								+ routingHost.getName());
 					}
 
-					String privateIpAddress = _dcDao.allocatePrivateIpAddress(
+					String privateIpAddress = allocPrivateIpAddress(
 							secStorageVm.getDataCenterId(), routingHost.getPodId(),
-							secStorageVm.getId());
-					if (privateIpAddress == null) {
+							secStorageVm.getId(), secStorageVm.getPrivateMacAddress());
+					if (privateIpAddress == null && (_IpAllocator != null && !_IpAllocator.exteralIpAddressAllocatorEnabled())) {
 						s_logger.debug("Not enough ip addresses in " + routingHost.getPodId());
 						avoid.add(routingHost);
 						continue;
 					}
 
 					secStorageVm.setPrivateIpAddress(privateIpAddress);
+					String guestIpAddress = _dcDao.allocateLinkLocalPrivateIpAddress(secStorageVm.getDataCenterId(), routingHost.getPodId(), secStorageVm.getId());
+					secStorageVm.setGuestIpAddress(guestIpAddress);
 					_secStorageVmDao.updateIf(secStorageVm, Event.OperationRetry, routingHost.getId());
 					secStorageVm = _secStorageVmDao.findById(secStorageVm.getId());
 
-					if( !_storageMgr.share(secStorageVm, vols, routingHost, true) ) {
-						s_logger.warn("Can not share " + vol.getPath() + " to " + secStorageVm.getName());
-
-						SubscriptionMgr.getInstance().notifySubscribers(
-								ALERT_SUBJECT, this,
-								new SecStorageVmAlertEventArgs(
-								SecStorageVmAlertEventArgs.SSVM_START_FAILURE,
-								secStorageVm.getDataCenterId(), secStorageVm.getId(), secStorageVm, "Unable to share the mounting storage to target host")
-						);
-						throw new StorageUnavailableException(vol.getPoolId());
+					List<VolumeVO> vols = _storageMgr.prepare(secStorageVm, routingHost);
+					if (vols == null || vols.size() == 0) {
+                        s_logger.warn("Can not share " + secStorageVm.getName());
+                        avoid.add(routingHost);
+                        continue;
 					}
-
+		            VolumeVO vol = vols.get(0);
+		            
 					// carry the secondary storage vm port info over so that we don't
 					// need to configure agent on this
 					StartSecStorageVmCommand cmdStart = new StartSecStorageVmCommand(
@@ -413,6 +405,7 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 		                        event.setAccountId(Account.ACCOUNT_ID_SYSTEM);
 		                        event.setType(EventTypes.EVENT_SSVM_START);
 		                        event.setLevel(EventVO.LEVEL_INFO);
+		                        event.setStartId(startEventId);
 		                        event.setDescription("Secondary Storage VM started - " + secStorageVm.getName());
 		                        _eventDao.persist(event);
 	                        }
@@ -431,16 +424,17 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 
 					avoid.add(routingHost);
 					secStorageVm.setPrivateIpAddress(null);
-					_dcDao.releasePrivateIpAddress(privateIpAddress, secStorageVm
+					freePrivateIpAddress(privateIpAddress, secStorageVm
 							.getDataCenterId(), secStorageVm.getId());
-
+					secStorageVm.setGuestIpAddress(null);
+					_dcDao.releaseLinkLocalPrivateIpAddress(guestIpAddress, secStorageVm.getDataCenterId(), secStorageVm.getId());
 					_storageMgr.unshare(secStorageVm, vols, routingHost);
 				} while (--retry > 0 && (routingHost = (HostVO) _agentMgr.findHost(
-								Host.Type.Routing, dc, pod, sp, _serviceOffering, _diskOffering, _template,
+								Host.Type.Routing, dc, pod, sp, _serviceOffering, _template,
 								secStorageVm, null, avoid)) != null);
-				if (routingHost == null || retry < 0) {
+				if (routingHost == null || retry <= 0) {
 					
-				SubscriptionMgr.getInstance().notifySubscribers(
+				    SubscriptionMgr.getInstance().notifySubscribers(
 						ALERT_SUBJECT, this,
 						new SecStorageVmAlertEventArgs(
 							SecStorageVmAlertEventArgs.SSVM_START_FAILURE,
@@ -452,6 +446,7 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
                     event.setAccountId(Account.ACCOUNT_ID_SYSTEM);
                     event.setType(EventTypes.EVENT_SSVM_START);
                     event.setLevel(EventVO.LEVEL_ERROR);
+                    event.setStartId(startEventId);
                     event.setDescription("Starting secondary storage vm failed due to unable to find a host - " + secStorageVm.getName());
                     _eventDao.persist(event);
 					throw new ExecutionException(
@@ -486,6 +481,7 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
                 event.setAccountId(Account.ACCOUNT_ID_SYSTEM);
                 event.setType(EventTypes.EVENT_SSVM_START);
                 event.setLevel(EventVO.LEVEL_ERROR);
+                event.setStartId(startEventId);
                 event.setDescription("Starting secondary storage vm failed due to unhandled exception - " + secStorageVm.getName());
                 _eventDao.persist(event);
 
@@ -495,7 +491,7 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 					String privateIpAddress = secStorageVm.getPrivateIpAddress();
 					if (privateIpAddress != null) {
 						secStorageVm.setPrivateIpAddress(null);
-						_dcDao.releasePrivateIpAddress(privateIpAddress, secStorageVm.getDataCenterId(), secStorageVm.getId());
+						freePrivateIpAddress(privateIpAddress, secStorageVm.getDataCenterId(), secStorageVm.getId());
 					}
 					secStorageVm.setStorageIp(null);
 					_secStorageVmDao.updateIf(secStorageVm, Event.OperationFailed, null);
@@ -555,9 +551,14 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 			List<String> allowedCidrs = new ArrayList<String>();
 			String [] cidrs = _allowedInternalSites.split(",");
 			for (String cidr: cidrs) {
-				if (NetUtils.isValidCIDR(cidr)) {
+				if (NetUtils.isValidCIDR(cidr) || NetUtils.isValidIp(cidr)) {
 					allowedCidrs.add(cidr);
 				}
+			}
+			String privateCidr = NetUtils.ipAndNetMaskToCidr(secStorageVm.getPrivateIpAddress(), secStorageVm.getPrivateNetmask());
+			String publicCidr = NetUtils.ipAndNetMaskToCidr(secStorageVm.getPublicIpAddress(), secStorageVm.getPublicNetmask());
+			if (NetUtils.isNetworkAWithinNetworkB(privateCidr, publicCidr) || NetUtils.isNetworkAWithinNetworkB(publicCidr, privateCidr)){
+				allowedCidrs.add("0.0.0.0/0");
 			}
 			setupCmd.setAllowedInternalSites(allowedCidrs.toArray(new String[allowedCidrs.size()]));
 		}
@@ -635,7 +636,7 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 
 			// release critical system resource on failure
 			if (context.get("publicIpAddress") != null)
-				freePublicIpAddress((String) context.get("publicIpAddress"));
+				freePublicIpAddress((String) context.get("publicIpAddress"), dataCenterId, 0);
 
 			return null;
 		}
@@ -668,7 +669,12 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 
 		Map<String, Object> context = new HashMap<String, Object>();
 		String publicIpAddress = null;
-
+		HostVO secHost = _hostDao.findSecondaryStorageHost(dataCenterId);
+        if (secHost == null) {
+			String msg = "No secondary storage available in zone " + dataCenterId + ", cannot create secondary storage vm";
+			s_logger.warn(msg);
+        	throw new CloudRuntimeException(msg);
+        }
 		Transaction txn = Transaction.currentTxn();
 		try {
 			DataCenterVO dc = _dcDao.findById(dataCenterId);
@@ -677,18 +683,9 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 
 			// this will basically allocate the pod based on data center id as
 			// we use system user id here
-			HostPodVO pod = _agentMgr.findPod(_template, _serviceOffering, dc, Account.ACCOUNT_ID_SYSTEM, new HashSet<Long>());
-			if (pod == null) {
-				s_logger.warn("Unable to allocate pod for secondary storage vm in data center : " + dataCenterId);
-
-				context.put("secStorageVmId", (long) 0);
-				return context;
-			}
-			context.put("pod", pod);
-			if (s_logger.isDebugEnabled()) {
-				s_logger.debug("Pod allocated " + pod.getName());
-			}
-
+			Set<Long> avoidPods = new HashSet<Long>();
+			Pair<HostPodVO, Long> pod = null;
+			networkInfo publicIpAndVlan = null;
 			// About MAC address allocation
 			// MAC address used by User VM is inherited from DomR MAC address,
 			// with the least 16 bits overrided. to avoid
@@ -698,40 +695,53 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 					dataCenterId, (1L << 31));
 			String privateMacAddress = macAddresses[0];
 			String publicMacAddress = macAddresses[1];
-			long id = _secStorageVmDao.getNextInSequence(Long.class, "id");
-
-			publicIpAddress = allocPublicIpAddress(dataCenterId);
-			if (publicIpAddress == null) {
-				s_logger.warn("Unable to allocate public IP address for secondary storage vm in data center : " + dataCenterId);
+			macAddresses = _dcDao.getNextAvailableMacAddressPair(
+					dataCenterId, (1L << 31));
+			String guestMacAddress = macAddresses[0];
+			while ((pod = _agentMgr.findPod(_template, _serviceOffering, dc, Account.ACCOUNT_ID_SYSTEM, avoidPods)) != null){
+				publicIpAndVlan = allocPublicIpAddress(dataCenterId, pod.first().getId(), publicMacAddress);
+				if (publicIpAndVlan == null) {
+					s_logger.warn("Unable to allocate public IP address for secondary storage vm in data center : " + dataCenterId + ", pod="+ pod.first().getId());
+					avoidPods.add(pod.first().getId());
+				} else {
+					break;
+				}
+			}
+			
+			if (pod == null || publicIpAndVlan == null) {
+				s_logger.warn("Unable to allocate pod for secondary storage vm in data center : " + dataCenterId);
 
 				context.put("secStorageVmId", (long) 0);
 				return context;
 			}
-			context.put("publicIpAddress", publicIpAddress);
+			
+			long id = _secStorageVmDao.getNextInSequence(Long.class, "id");
+			
+			context.put("publicIpAddress", publicIpAndVlan._ipAddr);
+			context.put("pod", pod);
+			if (s_logger.isDebugEnabled()) {
+				s_logger.debug("Pod allocated " + pod.first().getName());
+			}
 
-			String cidrNetmask = NetUtils.getCidrNetmask(pod.getCidrSize());
+			String cidrNetmask = NetUtils.getCidrNetmask(pod.first().getCidrSize());
 			
 			// Find the VLAN ID, VLAN gateway, and VLAN netmask for publicIpAddress
-            IPAddressVO ipVO = _ipAddressDao.findById(publicIpAddress);
-            VlanVO vlan = _vlanDao.findById(ipVO.getVlanDbId());
-            String vlanGateway = vlan.getVlanGateway();
-            String vlanNetmask = vlan.getVlanNetmask();
+			publicIpAddress = publicIpAndVlan._ipAddr;
+            
+            String vlanGateway = publicIpAndVlan._gateWay;
+            String vlanNetmask = publicIpAndVlan._netMask;
 
 			txn.start();
 			SecondaryStorageVmVO secStorageVm;
 			String name = VirtualMachineName.getSystemVmName(id, _instance, "s").intern();
-	        HostVO secHost = _hostDao.findSecondaryStorageHost(dataCenterId);
-	        if (secHost == null) {
-				String msg = "No secondary storage available in zone " + dataCenterId + ", cannot create secondary storage vm";
-				s_logger.warn(msg);
-	        	throw new CloudRuntimeException(msg);
-	        }
-			secStorageVm = new SecondaryStorageVmVO(id, name, State.Creating,
+	        
+			secStorageVm = new SecondaryStorageVmVO(id, name, State.Creating, guestMacAddress, null, NetUtils.getLinkLocalNetMask(),
 					privateMacAddress, null, cidrNetmask, _template.getId(), _template.getGuestOSId(),
-					publicMacAddress, publicIpAddress, vlanNetmask, vlan.getId(), vlan.getVlanId(),
-					pod.getId(), dataCenterId, vlanGateway, null,
+					publicMacAddress, publicIpAddress, vlanNetmask, publicIpAndVlan._vlanDbId, publicIpAndVlan._vlanid,
+					pod.first().getId(), dataCenterId, vlanGateway, null,
 					dc.getInternalDns1(), dc.getInternalDns2(), _domain, _secStorageVmRamSize, secHost.getGuid(), secHost.getStorageUrl());
 
+			secStorageVm.setLastHostId(pod.second());
 			secStorageVm = _secStorageVmDao.persist(secStorageVm);
 			long secStorageVmId = secStorageVm.getId();
             final EventVO event = new EventVO();
@@ -753,35 +763,24 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 		}
 	}
 
-	@DB
 	protected SecondaryStorageVmVO allocSecStorageVmStorage(long dataCenterId, long secStorageVmId) {
 		SecondaryStorageVmVO secStorageVm = _secStorageVmDao.findById(secStorageVmId);
 		assert (secStorageVm != null);
 
 		DataCenterVO dc = _dcDao.findById(dataCenterId);
 		HostPodVO pod = _podDao.findById(secStorageVm.getPodId());
-		long poolId = 0;
-        final AccountVO account = _accountDao.findById(Account.ACCOUNT_ID_SYSTEM);
+		
+		final AccountVO account = _accountDao.findById(Account.ACCOUNT_ID_SYSTEM);
 		
         try {
-			poolId = _storageMgr.create(account, secStorageVm, _template, dc, pod, _serviceOffering, _diskOffering);
-			if( poolId == 0){
+			List<VolumeVO> vols = _storageMgr.create(account, secStorageVm, _template, dc, pod, _serviceOffering, null);
+			if( vols == null ){
 				s_logger.error("Unable to alloc storage for secondary storage vm");
 				return null;
 			}
 			
-			Transaction txn = Transaction.currentTxn();
-			txn.start();
-			
-			// update pool id
-			SecondaryStorageVmVO vo = _secStorageVmDao.findById(secStorageVm.getId());
-			vo.setPoolId(poolId);
-			_secStorageVmDao.update(secStorageVm.getId(), vo);
-			
 			// kick the state machine
 			_secStorageVmDao.updateIf(secStorageVm, Event.OperationSucceeded, null);
-			
-			txn.commit();
 			return secStorageVm;
 		} catch (StorageUnavailableException e) {
 			s_logger.error("Unable to alloc storage for secondary storage vm: ", e);
@@ -792,23 +791,54 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 		}
 	}
 
-	private String allocPublicIpAddress(long dcId) {
-		long vlanDbIdToUse = _networkMgr.findNextVlan(dcId);
-		
-		String ipAddress = _ipAddressDao.assignIpAddress(
-				Account.ACCOUNT_ID_SYSTEM, DomainVO.ROOT_DOMAIN,
-				vlanDbIdToUse, true);
-		if (ipAddress == null) {
-			s_logger.error("Unable to get public ip address from data center : " + dcId);
-			return null;
+	private networkInfo allocPublicIpAddress(long dcId, long podId, String macAddr) {
+		if (_IpAllocator != null && _IpAllocator.exteralIpAddressAllocatorEnabled()) {
+			IpAddrAllocator.IpAddr ip = _IpAllocator.getPublicIpAddress(macAddr, dcId, podId);
+			networkInfo net = new networkInfo(ip.ipaddr, ip.netMask, ip.gateway, null, "untagged");
+			return net;
 		}
-		return ipAddress;
+		
+        Pair<String, VlanVO> ipAndVlan = _vlanDao.assignIpAddress(dcId, Account.ACCOUNT_ID_SYSTEM, DomainVO.ROOT_DOMAIN, VlanType.VirtualNetwork, true);
+		
+        if (ipAndVlan == null) {
+        	s_logger.debug("Unable to get public ip address (type=Virtual) for secondary storage vm for data center  : " + dcId);
+        	ipAndVlan = _vlanDao.assignPodDirectAttachIpAddress(dcId, podId, Account.ACCOUNT_ID_SYSTEM, DomainVO.ROOT_DOMAIN);
+        	if (ipAndVlan == null)
+        		s_logger.debug("Unable to get public ip address (type=DirectAttach) for secondary storage vm for data center  : " + dcId);
+
+        }
+        if (ipAndVlan != null) {
+			VlanVO vlan = ipAndVlan.second();
+			networkInfo net = new networkInfo(ipAndVlan.first(), vlan.getVlanNetmask(), vlan.getVlanGateway(), vlan.getId(), vlan.getVlanId());
+			return net;
+		}
+		return null;
 	}
 
-	private void freePublicIpAddress(String ipAddress) {
-		_ipAddressDao.unassignIpAddress(ipAddress);
+	private void freePublicIpAddress(String ipAddress, long dcId, long podId) {
+		if (_IpAllocator != null && _IpAllocator.exteralIpAddressAllocatorEnabled()) {
+			 _IpAllocator.releasePublicIpAddress(ipAddress, dcId, podId);
+		} else {
+			_ipAddressDao.unassignIpAddress(ipAddress);
+		}
 	}
 
+	private String allocPrivateIpAddress(Long dcId, Long podId, Long proxyId, String macAddr) {
+		if (_IpAllocator != null && _IpAllocator.exteralIpAddressAllocatorEnabled()) {
+			return _IpAllocator.getPrivateIpAddress(macAddr, dcId, podId).ipaddr;
+		} else {
+		return _dcDao.allocatePrivateIpAddress(dcId, podId, proxyId);
+		}
+	}
+	
+	private void freePrivateIpAddress(String ipAddress, Long dcId, Long podId) {
+		if (_IpAllocator != null && _IpAllocator.exteralIpAddressAllocatorEnabled()) {
+			 _IpAllocator.releasePrivateIpAddress(ipAddress, dcId, podId);
+		} else {
+			_dcDao.releasePrivateIpAddress(ipAddress, dcId, podId);
+		}
+	}
+	
 	private SecondaryStorageVmAllocator getCurrentAllocator() {
 
 		// for now, only one adapter is supported
@@ -847,7 +877,7 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 								try {
 									if (secStorageVmLock.lock(ACQUIRE_GLOBAL_LOCK_TIMEOUT_FOR_SYNC)) {
 										try {
-											readysecStorageVm = start(readysecStorageVm.getId());
+											readysecStorageVm = start(readysecStorageVm.getId(), 0);
 										} finally {
 											secStorageVmLock.unlock();
 										}
@@ -1020,7 +1050,7 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 			try {
 				if (secStorageVmLock.lock(ACQUIRE_GLOBAL_LOCK_TIMEOUT_FOR_SYNC)) {
 					try {
-						secStorageVm = startSecStorageVm(secStorageVmId);
+						secStorageVm = startSecStorageVm(secStorageVmId, 0);
 					} finally {
 						secStorageVmLock.unlock();
 					}
@@ -1040,7 +1070,7 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 						+ secStorageVmId + ", will recycle it and start a new one");
 
 				if (secStorageVmFromStoppedPool)
-					destroySecStorageVm(secStorageVmId);
+					destroySecStorageVm(secStorageVmId, 0);
 			} else {
 				if (s_logger.isInfoEnabled())
 					s_logger.info("Secondary storage vm " + secStorageVm.getName() + " is started");
@@ -1317,8 +1347,16 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 			haMgr.registerHandler(VirtualMachine.Type.SecondaryStorageVm, this);
 		}
 
-		_serviceOffering = new ServiceOfferingVO(null, "Fake Offering For Secondary Storage VM", 1, _secStorageVmRamSize, 0, 0, 0, false, null, false);
-		_diskOffering = new DiskOfferingVO(1, "fake disk offering", "fake disk offering", 0, false);
+		Adapters<IpAddrAllocator> ipAllocators = locator.getAdapters(IpAddrAllocator.class);
+		if (ipAllocators != null && ipAllocators.isSet()) {
+			Enumeration<IpAddrAllocator> it = ipAllocators.enumeration();
+			_IpAllocator = it.nextElement();
+		}
+		
+		boolean useLocalStorage = Boolean.parseBoolean((String)params.get(Config.SystemVMUseLocalStorage.key()));
+		_serviceOffering = new ServiceOfferingVO("Fake Offering For Secondary Storage VM", 1, _secStorageVmRamSize, 0, 0, 0, false, null, GuestIpType.Virtualized, useLocalStorage, true, null);
+		_serviceOffering.setUniqueName("Cloud.com-SecondaryStorage");
+		_serviceOffering = _offeringDao.persistSystemServiceOffering(_serviceOffering);
         _template = _templateDao.findConsoleProxyTemplate();
         if (_template == null) {
             throw new ConfigurationException("Unable to find the template for secondary storage vm VMs");
@@ -1368,7 +1406,12 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 			String privateIpAddress = secStorageVm.getPrivateIpAddress();
 			if (privateIpAddress != null) {
 				secStorageVm.setPrivateIpAddress(null);
-				_dcDao.releasePrivateIpAddress(privateIpAddress, secStorageVm.getDataCenterId(), secStorageVm.getId());
+				freePrivateIpAddress(privateIpAddress, secStorageVm.getDataCenterId(), secStorageVm.getId());
+			}
+			String guestIpAddress = secStorageVm.getGuestIpAddress();
+			if (guestIpAddress != null) {
+				secStorageVm.setGuestIpAddress(null);
+				_dcDao.releaseLinkLocalPrivateIpAddress(guestIpAddress, secStorageVm.getDataCenterId(), secStorageVm.getId());
 			}
 			secStorageVm.setStorageIp(null);
 			if (!_secStorageVmDao.updateIf(secStorageVm, ev, null)) {
@@ -1399,7 +1442,7 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 	}
 
 	@Override
-	public boolean stopSecStorageVm(long secStorageVmId) {
+	public boolean stopSecStorageVm(long secStorageVmId, long startEventId) {
 		
         AsyncJobExecutor asyncExecutor = BaseAsyncJobExecutor.getCurrentExecutor();
         if (asyncExecutor != null) {
@@ -1416,8 +1459,9 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 				s_logger.debug("Stopping secondary storage vm failed: secondary storage vm " + secStorageVmId + " no longer exists");
 			return false;
 		}
+        saveStartedEvent(User.UID_SYSTEM, Account.ACCOUNT_ID_SYSTEM, EventTypes.EVENT_SSVM_STOP, "Stopping secondary storage Vm Id: "+secStorageVmId, startEventId);
 		try {
-			return stop(secStorageVm);
+			return stop(secStorageVm, startEventId);
 		} catch (AgentUnavailableException e) {
 			if (s_logger.isDebugEnabled())
 				s_logger.debug("Stopping secondary storage vm " + secStorageVm.getName() + " faled : exception " + e.toString());
@@ -1426,7 +1470,7 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 	}
 
 	@Override
-	public boolean rebootSecStorageVm(long secStorageVmId) {
+	public boolean rebootSecStorageVm(long secStorageVmId, long startEventId) {
         AsyncJobExecutor asyncExecutor = BaseAsyncJobExecutor.getCurrentExecutor();
         if (asyncExecutor != null) {
             AsyncJobVO job = asyncExecutor.getJob();
@@ -1442,6 +1486,8 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 			return false;
 		}
 
+        saveStartedEvent(User.UID_SYSTEM, Account.ACCOUNT_ID_SYSTEM, EventTypes.EVENT_SSVM_REBOOT, "Rebooting secondary storage Vm Id: "+secStorageVmId, startEventId);
+		
 		if (secStorageVm.getState() == State.Running && secStorageVm.getHostId() != null) {
 			final RebootCommand cmd = new RebootCommand(secStorageVm.getInstanceName());
 			final Answer answer = _agentMgr.easySend(secStorageVm.getHostId(), cmd);
@@ -1462,6 +1508,7 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 	            event.setAccountId(Account.ACCOUNT_ID_SYSTEM);
 	            event.setType(EventTypes.EVENT_SSVM_REBOOT);
 	            event.setLevel(EventVO.LEVEL_INFO);
+	            event.setStartId(startEventId);
 	            event.setDescription("Secondary Storage Vm rebooted - " + secStorageVm.getName());
 	            _eventDao.persist(event);
 				return true;
@@ -1472,6 +1519,7 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 	            event.setAccountId(Account.ACCOUNT_ID_SYSTEM);
 	            event.setType(EventTypes.EVENT_SSVM_REBOOT);
 	            event.setLevel(EventVO.LEVEL_ERROR);
+	            event.setStartId(startEventId);
 	            event.setDescription("Rebooting Secondary Storage VM failed - " + secStorageVm.getName());
 	            _eventDao.persist(event);
 				if (s_logger.isDebugEnabled())
@@ -1479,19 +1527,19 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 				return false;
 			}
 		} else {
-			return startSecStorageVm(secStorageVmId) != null;
+			return startSecStorageVm(secStorageVmId, 0) != null;
 		}
 	}
 
 	@Override
 	public boolean destroy(SecondaryStorageVmVO secStorageVm)
 			throws AgentUnavailableException {
-		return destroySecStorageVm(secStorageVm.getId());
+		return destroySecStorageVm(secStorageVm.getId(), 0);
 	}
 
 	@Override
 	@DB
-	public boolean destroySecStorageVm(long vmId) {
+	public boolean destroySecStorageVm(long vmId, long startEventId) {
         AsyncJobExecutor asyncExecutor = BaseAsyncJobExecutor.getCurrentExecutor();
         if (asyncExecutor != null) {
             AsyncJobVO job = asyncExecutor.getJob();
@@ -1509,6 +1557,8 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 			return true;
 		}
 
+		saveStartedEvent(User.UID_SYSTEM, Account.ACCOUNT_ID_SYSTEM, EventTypes.EVENT_SSVM_DESTROY, "Destroying secondary storage Vm Id: "+vmId, startEventId);
+		
 		if (s_logger.isDebugEnabled()) {
 			s_logger.debug("Destroying secondary storage vm vm " + vmId);
 		}
@@ -1533,7 +1583,7 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 				// release critical system resources used by the VM before we
 				// delete them
 				if (vm.getPublicIpAddress() != null)
-					freePublicIpAddress(vm.getPublicIpAddress());
+					freePublicIpAddress(vm.getPublicIpAddress(), vm.getDataCenterId(), vm.getPodId());
 				vm.setPublicIpAddress(null);
 
 				_secStorageVmDao.remove(vm.getId());
@@ -1543,6 +1593,7 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 	            event.setAccountId(Account.ACCOUNT_ID_SYSTEM);
 	            event.setType(EventTypes.EVENT_SSVM_DESTROY);
 	            event.setLevel(EventVO.LEVEL_INFO);
+	            event.setStartId(startEventId);
 	            event.setDescription("Secondary Storage Vm destroyed - " + vm.getName());
 	            _eventDao.persist(event);
 				txn.commit();
@@ -1567,7 +1618,7 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 			SecondaryStorageVmVO secStorageVm = _secStorageVmDao.findById(vmId);
 			if (secStorageVm != null) {
 				if (secStorageVm.getPublicIpAddress() != null)
-					freePublicIpAddress(secStorageVm.getPublicIpAddress());
+					freePublicIpAddress(secStorageVm.getPublicIpAddress(), secStorageVm.getDataCenterId(), secStorageVm.getPodId());
 
 				_secStorageVmDao.remove(vmId);
 				final EventVO event = new EventVO();
@@ -1590,7 +1641,7 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 	}
 
 	@Override
-	public boolean stop(SecondaryStorageVmVO secStorageVm) throws AgentUnavailableException {
+	public boolean stop(SecondaryStorageVmVO secStorageVm, long startEventId) throws AgentUnavailableException {
 		if (!_secStorageVmDao.updateIf(secStorageVm, Event.StopRequested, secStorageVm.getHostId())) {
 			s_logger.debug("Unable to stop secondary storage vm: " + secStorageVm.toString());
 			return false;
@@ -1617,6 +1668,7 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
                                 event.setAccountId(Account.ACCOUNT_ID_SYSTEM);
                                 event.setType(EventTypes.EVENT_SSVM_STOP);
                                 event.setLevel(EventVO.LEVEL_ERROR);
+                                event.setStartId(startEventId);
                                 event.setDescription("Stopping secondary storage vm failed due to negative answer from agent - " + secStorageVm.getName());
                                 _eventDao.persist(event);
                                 return false;
@@ -1634,6 +1686,7 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
                             event.setAccountId(Account.ACCOUNT_ID_SYSTEM);
                             event.setType(EventTypes.EVENT_SSVM_STOP);
                             event.setLevel(EventVO.LEVEL_INFO);
+                            event.setStartId(startEventId);
                             event.setDescription("Secondary Storage Vm stopped - " + secStorageVm.getName());
                             _eventDao.persist(event);
 						return true;
@@ -1643,6 +1696,7 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
                         	event.setAccountId(Account.ACCOUNT_ID_SYSTEM);
                         	event.setType(EventTypes.EVENT_SSVM_STOP);
                         	event.setLevel(EventVO.LEVEL_ERROR);
+                        	event.setStartId(startEventId);
                         	event.setDescription("Stopping secondary storage vm failed due to operation time out - " + secStorageVm.getName());
                         	_eventDao.persist(event);
                             throw new AgentUnavailableException(secStorageVm.getHostId());
@@ -1713,9 +1767,10 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 		boolean mirroredVols = secStorageVm.isMirroredVols();
 		DataCenterVO dc = _dcDao.findById(secStorageVm.getDataCenterId());
 		HostPodVO pod = _podDao.findById(secStorageVm.getPodId());
-		StoragePoolVO sp = _storagePoolDao.findById(secStorageVm.getPoolId());
+        List<StoragePoolVO> sps = _storageMgr.getStoragePoolsForVm(secStorageVm.getId());
+        StoragePoolVO sp = sps.get(0); // FIXME
 
-		List<VolumeVO> vols = _volsDao.findByInstance(routerId);
+		List<VolumeVO> vols = _volsDao.findCreatedByInstance(routerId);
 
 		String[] storageIps = new String[2];
 		VolumeVO vol = vols.get(0);
@@ -1730,10 +1785,14 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 		HashSet<Host> avoid = new HashSet<Host>();
 
 		HostVO fromHost = _hostDao.findById(secStorageVm.getHostId());
+        if (fromHost.getClusterId() == null) {
+            s_logger.debug("The host is not in a cluster");
+            return null;
+        }
 		avoid.add(fromHost);
 
 		while ((routingHost = (HostVO) _agentMgr.findHost(Host.Type.Routing,
-				dc, pod, sp, _serviceOffering, _diskOffering, template, secStorageVm, fromHost, avoid)) != null) {
+				dc, pod, sp, _serviceOffering, template, secStorageVm, fromHost, avoid)) != null) {
 			avoid.add(routingHost);
 			if (s_logger.isDebugEnabled()) {
 				s_logger.debug("Trying to migrate router to host " + routingHost.getName());
@@ -1754,6 +1813,22 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 		return null;
 	}
 
+	@Override
+	public void onAgentConnect(Long dcId, StartupCommand cmd){
+		if (_IpAllocator != null && _IpAllocator.exteralIpAddressAllocatorEnabled()) {
+			List<SecondaryStorageVmVO> zoneSsvms = _secStorageVmDao.listByZoneId(dcId);
+			if (zoneSsvms.size() == 0) {
+				return ;
+			}
+			SecondaryStorageVmVO secStorageVm = zoneSsvms.get(0);//FIXME: assumes one vm per zone.
+			secStorageVm.setPrivateIpAddress(cmd.getStorageIpAddress()); /*FIXME: privateipaddress is overwrited with address of secondary storage*/
+			secStorageVm.setPrivateNetmask(cmd.getStorageNetmask());
+			secStorageVm.setPublicIpAddress(cmd.getPublicIpAddress());
+			secStorageVm.setPublicNetmask(cmd.getPublicNetmask());
+			_secStorageVmDao.persist(secStorageVm);
+		}
+	}
+	
 	private String getCapacityScanLockName() {
 		// to improve security, it may be better to return a unique mashed
 		// name(for example MD5 hashed)
@@ -1768,5 +1843,19 @@ public class SecondaryStorageManagerImpl implements SecondaryStorageVmManager, V
 
 	private String getSecStorageVmLockName(long id) {
 		return "secStorageVm." + id;
+	}
+	
+	private Long saveStartedEvent(Long userId, Long accountId, String type, String description, long startEventId) {
+	    EventVO event = new EventVO();
+	    event.setUserId(userId);
+	    event.setAccountId(accountId);
+	    event.setType(type);
+	    event.setState(EventState.Started);
+	    event.setDescription(description);
+	    event.setStartId(startEventId);
+	    event = _eventDao.persist(event);
+	    if(event != null)
+	        return event.getId();
+	    return null;
 	}
 }

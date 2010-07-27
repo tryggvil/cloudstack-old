@@ -23,8 +23,9 @@ import com.cloud.dc.DataCenterVO;
 import com.cloud.dc.HostPodVO;
 import com.cloud.service.ServiceOfferingVO;
 import com.cloud.storage.VirtualMachineTemplate;
+import com.cloud.utils.Pair;
 import com.cloud.utils.component.Adapter;
 
 public interface PodAllocator extends Adapter {
-    HostPodVO allocateTo(VirtualMachineTemplate template, ServiceOfferingVO offering, DataCenterVO dc, long userId, Set<Long> avoids);
+    Pair<HostPodVO, Long> allocateTo(VirtualMachineTemplate template, ServiceOfferingVO offering, DataCenterVO dc, long userId, Set<Long> avoids);
 }

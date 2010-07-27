@@ -30,8 +30,8 @@ import com.trilead.ssh2.SCPClient;
 public class ScpTemplateDownloader extends TemplateDownloaderBase implements TemplateDownloader {
     private static final Logger s_logger = Logger.getLogger(ScpTemplateDownloader.class);
     
-    public ScpTemplateDownloader(StorageLayer storageLayer, String downloadUrl, String toDir, DownloadCompleteCallback callback) {
-        super(storageLayer, downloadUrl, toDir, callback);
+    public ScpTemplateDownloader(StorageLayer storageLayer, String downloadUrl, String toDir, long maxTemplateSizeInBytes, DownloadCompleteCallback callback) {
+        super(storageLayer, downloadUrl, toDir, maxTemplateSizeInBytes, callback);
         
         URI uri;
         try {
@@ -151,7 +151,7 @@ public class ScpTemplateDownloader extends TemplateDownloaderBase implements Tem
     
     public static void main(String[] args) {
         String url ="scp://root@sol10-2/root/alex/agent.zip?password=password";
-        TemplateDownloader td = new ScpTemplateDownloader(null, url,"/tmp/mysql", null);
+        TemplateDownloader td = new ScpTemplateDownloader(null, url,"/tmp/mysql", TemplateDownloader.DEFAULT_MAX_TEMPLATE_SIZE_IN_BYTES, null);
         long bytes = td.download(true, null);
         if (bytes > 0) {
             System.out.println("Downloaded  (" + bytes + " bytes)" + " in " + td.getDownloadTime()/1000 + " secs");

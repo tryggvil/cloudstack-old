@@ -26,11 +26,13 @@ import org.apache.log4j.Logger;
 
 import com.cloud.api.BaseCmd;
 import com.cloud.api.ServerApiException;
+import com.cloud.dc.VlanVO;
+import com.cloud.dc.Vlan.VlanType;
 import com.cloud.exception.InvalidParameterValueException;
 import com.cloud.exception.PermissionDeniedException;
+import com.cloud.network.IPAddressVO;
 import com.cloud.network.LoadBalancerVO;
 import com.cloud.user.Account;
-import com.cloud.user.dao.UserDao;
 import com.cloud.utils.Pair;
 import com.cloud.utils.component.ComponentLocator;
 import com.cloud.vm.UserVmVO;
@@ -45,8 +47,6 @@ public class CreateLoadBalancerRuleCmd extends BaseCmd {
     static {
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.USER_ID, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT_OBJ, Boolean.FALSE));
-        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT, Boolean.FALSE));
-        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.DOMAIN_ID, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.NAME, Boolean.TRUE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.DESCRIPTION, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.PUBLIC_IP, Boolean.TRUE));
@@ -66,8 +66,6 @@ public class CreateLoadBalancerRuleCmd extends BaseCmd {
     public List<Pair<String, Object>> execute(Map<String, Object> params) {
         Long userId = (Long)params.get(BaseCmd.Properties.USER_ID.getName());
         Account account = (Account)params.get(BaseCmd.Properties.ACCOUNT_OBJ.getName());
-        String accountName = (String)params.get(BaseCmd.Properties.ACCOUNT.getName());
-        Long domainId = (Long)params.get(BaseCmd.Properties.DOMAIN_ID.getName());
         String name = (String)params.get(BaseCmd.Properties.NAME.getName());
         String description = (String)params.get(BaseCmd.Properties.DESCRIPTION.getName());
         String publicIP = (String)params.get(BaseCmd.Properties.PUBLIC_IP.getName());
@@ -83,32 +81,33 @@ public class CreateLoadBalancerRuleCmd extends BaseCmd {
             userId = Long.valueOf(1);
         }
 
-        Long accountId = null;
-        if ((account == null) || isAdmin(account.getType())) {
-            if (domainId != null) {
-                if ((account != null) && !getManagementServer().isChildDomain(account.getDomainId(), domainId)) {
-                    throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Invalid domain id (" + domainId + ") given, unable to create load balancer rule.");
-                }
-                if (accountName != null) {
-                    Account userAccount = getManagementServer().findActiveAccount(accountName, domainId);
-                    if (userAccount != null) {
-                        accountId = userAccount.getId();
-                    } else {
-                        throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to create load balancer rule for account " + accountName + " in domain " + domainId + "; account not found...");
-                    }
-                } else {
-                    throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to create load balancer rule, no account specified.");
-                }
-            } else {
-                // the admin must be creating the load balancer here
-                accountId = ((account == null) ? null : account.getId());
-            }
-        } else {
-            accountId = account.getId();
+        IPAddressVO ipAddr = getManagementServer().findIPAddressById(publicIP);
+        if (ipAddr == null) {
+            throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to create load balancer rule, invalid IP address " + publicIP);
         }
 
-        if (accountId == null) {
-            throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to find account for creating load balancer rule");
+        VlanVO vlan = getManagementServer().findVlanById(ipAddr.getVlanDbId());
+        if (vlan != null) {
+            if (!VlanType.VirtualNetwork.equals(vlan.getVlanType())) {
+                throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to create load balancer rule for IP address " + publicIP + ", only VirtualNetwork type IP addresses can be used for load balancers.");
+            }
+        } // else ERROR?
+
+        // Verify input parameters
+        Account accountByIp = getManagementServer().findAccountByIpAddress(publicIP);
+        if(accountByIp == null) {
+            throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to create load balancer rule, cannot find account owner for ip " + publicIP);
+        }
+
+        Long accountId = accountByIp.getId();
+        if (account != null) {
+            if (!isAdmin(account.getType())) {
+                if (account.getId().longValue() != accountId.longValue()) {
+                    throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to create load balancer rule, account " + account.getAccountName() + " doesn't own ip address " + publicIP);
+                }
+            } else if (!getManagementServer().isChildDomain(account.getDomainId(), accountByIp.getDomainId())) {
+                throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to create load balancer rule on IP address " + publicIP + ", permission denied.");
+            }
         }
 
         List<UserVmVO> userVmVO = _userVmDao.listByAccountId(accountId);

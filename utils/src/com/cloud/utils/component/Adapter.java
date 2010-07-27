@@ -22,7 +22,7 @@ import java.util.Map;
 import javax.naming.ConfigurationException;
 
 /**
- * Adapter defines methods for pluggable code within the VMops server. An
+ * Adapter defines methods for pluggable code within the Cloud Stack. An
  * adapter encapsulates code that performs to the specification of an interface.
  * Adapters are a departure from regular structured programming.
  */

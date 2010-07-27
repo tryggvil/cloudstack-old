@@ -27,6 +27,7 @@ import org.apache.log4j.Logger;
 import com.cloud.api.BaseCmd;
 import com.cloud.api.ServerApiException;
 import com.cloud.dc.DataCenterVO;
+import com.cloud.user.User;
 import com.cloud.utils.Pair;
 
 public class UpdateZoneCmd extends BaseCmd {
@@ -44,6 +45,7 @@ public class UpdateZoneCmd extends BaseCmd {
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.INTERNAL_DNS2, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.VNET, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.GUEST_CIDR_ADDRESS, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.USER_ID, Boolean.FALSE));
     }
 
     @Override
@@ -65,6 +67,11 @@ public class UpdateZoneCmd extends BaseCmd {
     	String dns4 = (String) params.get(BaseCmd.Properties.INTERNAL_DNS2.getName());
     	String vnet = (String) params.get(BaseCmd.Properties.VNET.getName());
     	String guestCidr = (String) params.get(BaseCmd.Properties.GUEST_CIDR_ADDRESS.getName());
+    	Long userId = (Long)params.get(BaseCmd.Properties.USER_ID.getName());
+    	
+    	if (userId == null) {
+            userId = Long.valueOf(User.UID_SYSTEM);
+        }
     	
     	//verify input parameters
     	DataCenterVO zone = getManagementServer().findDataCenterById(zoneId);
@@ -79,7 +86,7 @@ public class UpdateZoneCmd extends BaseCmd {
     	DataCenterVO updatedZone = null;
     	
         try {
-             updatedZone = getManagementServer().editZone(zoneId, zoneName, dns1, dns2, dns3, dns4, vnet,guestCidr);
+             updatedZone = getManagementServer().editZone(userId, zoneId, zoneName, dns1, dns2, dns3, dns4, vnet,guestCidr);
         } catch (Exception ex) {
             s_logger.error("Exception updating zone", ex);
             throw new ServerApiException(BaseCmd.INTERNAL_ERROR, ex.getMessage());

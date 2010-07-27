@@ -50,7 +50,7 @@ public class CopyTemplateExecutor extends BaseAsyncJobExecutor {
     	ManagementServer managementServer = asyncMgr.getExecutorContext().getManagementServer();
  
 		try {
-			boolean success = managementServer.copyTemplate(param.getUserId(), param.getTemplateId(), param.getSourceZoneId(), param.getDestZoneId());
+			boolean success = managementServer.copyTemplate(param.getUserId(), param.getTemplateId(), param.getSourceZoneId(), param.getDestZoneId(), param.getEventId());
 
 			if (success) {
 				VMTemplateVO template = managementServer.findTemplateById(param.getTemplateId());
@@ -85,6 +85,34 @@ public class CopyTemplateExecutor extends BaseAsyncJobExecutor {
 	private CopyTemplateResultObject composeResultObject(VMTemplateVO template, VMTemplateHostVO templateHostRef, DataCenterVO destZone, String guestOSName, Account owner, DomainVO domain) {
 		CopyTemplateResultObject resultObject = new CopyTemplateResultObject();
 		
+		
+        // If the user is an admin, add the template download status
+		boolean isAdmin = false;
+		
+		if(owner.getType() == Account.ACCOUNT_TYPE_ADMIN)
+			isAdmin = true;
+		
+		if (isAdmin || owner.getId().longValue() == template.getAccountId()) {
+            // add download status
+            if (templateHostRef.getDownloadState()!=Status.DOWNLOADED) {
+                String templateStatus = "Processing";
+                if (templateHostRef.getDownloadState() == VMTemplateHostVO.Status.DOWNLOAD_IN_PROGRESS) {
+                    if (templateHostRef.getDownloadPercent() == 100) {
+                        templateStatus = "Installing Template";
+                    } else {
+                        templateStatus = templateHostRef.getDownloadPercent() + "% Downloaded";
+                    }
+                } else {
+                    templateStatus = templateHostRef.getErrorString();
+                }
+                resultObject.setTemplateStatus(templateStatus);
+            } else if (templateHostRef.getDownloadState() == VMTemplateHostVO.Status.DOWNLOADED) {
+            	resultObject.setTemplateStatus("Download Complete");
+            } else {
+            	resultObject.setTemplateStatus("Successfully Installed");
+            }
+        }
+		
 		resultObject.setAccountName(owner.getAccountName());
 		resultObject.setDomainId(owner.getDomainId());
 		resultObject.setDomainName(domain.getName());
@@ -92,10 +120,8 @@ public class CopyTemplateExecutor extends BaseAsyncJobExecutor {
 		resultObject.setName(template.getName());
 		resultObject.setDisplayText(template.getDisplayText());
 		resultObject.setPublic(template.isPublicTemplate());
-//		resultObject.setRequiresHvm(template.requiresHvm());
-//		resultObject.setBits(template.getBits());
 		resultObject.setOsTypeName(guestOSName);
-		resultObject.setCreated(template.getCreated());
+		resultObject.setCreated(templateHostRef.getCreated());
 		resultObject.setReady(templateHostRef != null && templateHostRef.getDownloadState() == Status.DOWNLOADED);
 		resultObject.setFeatured(template.isFeatured());
 		resultObject.setPasswordEnabled(template.getEnablePassword());

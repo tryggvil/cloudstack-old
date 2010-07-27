@@ -17,66 +17,28 @@
  */
 package com.cloud.agent.api.storage;
 
-import java.util.List;
-
 import com.cloud.agent.api.Answer;
-import com.cloud.storage.Volume;
-import com.cloud.storage.VolumeVO;
+import com.cloud.agent.api.to.VolumeTO;
 
 public class CreateAnswer extends Answer {
-
-
-	private List<VolumeVO> volumes;
-    
-    public List<VolumeVO> getVolumes() {
-		return volumes;
-	}
-  
-	public void setVolumes(List<VolumeVO> volumes) {
-		this.volumes = volumes;
-	}
-
-	protected CreateAnswer() {
+    VolumeTO volume;
+    protected CreateAnswer() {
     }
     
-	protected VolumeVO findVolume (Volume.VolumeType vType) {
-		if (volumes == null) return null;
-
-		for (VolumeVO v: volumes) {
-			if (v.getVolumeType() == vType)
-				return v;
-		}
-
-		return null;
-	}
-	
-    public CreateAnswer(CreateCommand cmd, List<VolumeVO> vols) {
-        super(cmd);
-        
-       this.volumes = vols;
+    public CreateAnswer(CreateCommand cmd, VolumeTO volume) {
+        super(cmd, true, null);
+        this.volume = volume;
     }
     
     public CreateAnswer(CreateCommand cmd, String details) {
         super(cmd, false, details);
     }
     
-    public String getRootDiskPath() {
-    	VolumeVO vol = findVolume(Volume.VolumeType.ROOT);
-        return vol!=null?vol.getPath():null;
+    public CreateAnswer(CreateCommand cmd, Exception e) {
+        super(cmd, e);
     }
     
-    public String getDataDiskPath() {
-    	VolumeVO vol = findVolume(Volume.VolumeType.DATADISK);
-        return vol!=null?vol.getPath():null;
-    }
-    
-    public long getRootDiskSize() {
-    	VolumeVO vol = findVolume(Volume.VolumeType.ROOT);
-        return vol!=null?vol.getSize():0;
-    }
-    
-    public long getDataDiskSize() {
-    	VolumeVO vol = findVolume(Volume.VolumeType.DATADISK);
-        return vol!=null?vol.getSize():0;
+    public VolumeTO getVolume() {
+        return volume;
     }
 }

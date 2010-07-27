@@ -13,7 +13,7 @@
   <dirname property="base.dir" file="${ant.file.Cloud Stack Premium}/../.." />
   <property name="build.dir" location="${base.dir}/build" />
  
-  <import file="${build.dir}/build-cloud.xml" optional="false"/>
+  <import file="${build.dir}/build-cloud.xml" optional="false"/> 
 
   <!-- directories for premium code compilation -->
   <property name="premium.dir" location="${base.dir}/premium" />
@@ -40,7 +40,9 @@
     <path refid="thirdparty.classpath" />
     <path refid="dist.classpath" />
   </path>
-  <target name="compile-core-premium" depends="-init, compile-utils, compile-core" description="Compile the premium business logic.">
+  <target name="compile-core-premium" depends="-init, compile-utils, compile-core, compile-server" description="Compile the premium business logic.">
+<!-- compile-server is now added because core-premium imports a class com.cloud.configuration.Config that is only in server.jar.  These are the kinds of
+     bugs that are only discovered with a parallel compilation mode.  You are welcome. -->
     <compile-java jar.name="${core-premium.jar}" top.dir="${core-premium.dir}" classpath="core-premium.classpath" />
   </target>
 
@@ -53,22 +55,6 @@
     <compile-java jar.name="${premium.jar}" top.dir="${premium.dir}" classpath="premium.classpath" />
   </target>
 
-  <target name="build-premium" depends="compile-premium">
-    <copy overwrite="true" todir="${server.dist.dir}/conf">
-      <mappedresources>
-        <fileset dir="${base.dir}/premium/tomcatconf">
-          <include name="*.in" />
-        </fileset>
-        <globmapper from="*.in" to="*" />
-      </mappedresources>
-      <filterchain>
-        <filterreader classname="org.apache.tools.ant.filters.ReplaceTokens">
-          <param type="propertiesfile" value="build/${override.file}" />
-        </filterreader>
-      </filterchain>
-    </copy>
-  </target>
-
   <!-- ===================== Usage.Jar ===================== -->
   <path id="usage.classpath">
     <path refid="thirdparty.classpath" />
@@ -78,7 +64,7 @@
     <compile-java jar.name="${usage.jar}" top.dir="${usage.dir}" classpath="usage.classpath" />
   </target>
 
-  <target name="build-usage" depends="build-premium, compile-usage">
+  <target name="build-usage" depends="compile-premium, compile-usage">
     <mkdir dir="${usage.dist.dir}/bin" />
     <mkdir dir="${usage.dist.dir}/conf" />
 
@@ -86,19 +72,6 @@
       <fileset dir="${usage.dir}/scripts">
         <include name="usageserver.sh" />
       </fileset>
-    </copy>
-    <copy overwrite="true" todir="${usage.dist.dir}/conf">
-      <mappedresources>
-        <fileset dir="${usage.dir}/conf">
-          <include name="*.in" />
-        </fileset>
-        <globmapper from="*.in" to="*" />
-      </mappedresources>
-      <filterchain>
-        <filterreader classname="org.apache.tools.ant.filters.ReplaceTokens">
-          <param type="propertiesfile" value="build/${override.file}" />
-        </filterreader>
-      </filterchain>
     </copy>
     <copy overwrite="true" todir="${usage.dist.dir}/lib">
       <fileset dir="${jar.dir}">
@@ -140,38 +113,39 @@
     </copy>
   </target>
 
-  <target name="build-war-premium" depends="-init, build-opensource, build-usage, build-premium, build-ui" description="Compile the GWT client UI and builds WAR file.">
-     <mkdir dir="${client.dist.dir}" />
-     <chmod file="${scripts.dir}/start.sh" perm="700"/>
- 
-     <war destfile="${client.dist.dir}/client.war" webxml="${server.dir}/web.xml">
-       <fileset dir="${client.dist.dir}/ui">
-         <include name="**/*" />
-       </fileset>
-      <lib dir="${jar.dir}">
-        <include name="${core.jar}" />
-        <include name="${utils.jar}" />
-        <include name="${server.jar}" />
-        <include name="${usage.jar}" />
-        <include name="${premium.jar}" />
-        <include name="${core-premium.jar}"/>
-      </lib>
-      <zipfileset dir="${scripts.dir}" prefix="WEB-INF/lib/scripts" filemode="555">
-        <include name="**/*" />
+
+  <target name="build-xenserver-domr-patch" depends="-init">
+    <tar destfile="${dist.dir}/patch.tar">
+      <tarfileset dir="${base.dir}/patches/xenserver" filemode="755">
+        <include name="**/*"/>
         <exclude name="**/.classpath" />
         <exclude name="**/.project" />
-        <exclude name="**/id_rsa"/>
-      </zipfileset>
-      <zipfileset dir="${scripts.dir}" prefix="WEB-INF/lib/scripts" filemode="600">
-        <include name="**/id_rsa"/>
-      </zipfileset>
-    </war>
+      </tarfileset>
+      <tarfileset dir="${base.dir}/patches/shared" filemode="755">
+        <include name="**/*"/>
+        <exclude name="**/.classpath" />
+        <exclude name="**/.project" />
+      </tarfileset>     
+    </tar>
+    <gzip destfile="${dist.dir}/patch.tgz" src="${dist.dir}/patch.tar"/>
+    <delete file="${dist.dir}/patch.tar"/>
   </target>
 
-
-  <target name="build-all" depends="build-opensource, build-usage, build-premium, build-war-premium, build-console-proxy-premium, build-agent-simulator, build-xenserver-domr-patch">
+  
+  <target name="build-premium" depends="build-opensource, compile-premium, build-usage, build-console-proxy-premium, build-xenserver-domr-patch">
+    <copy overwrite="true" todir="${server.dist.dir}/conf">
+      <fileset dir="${base.dir}/premium/tomcatconf">
+        <include name="*.in" />
+      </fileset>
+      <globmapper from="*.in" to="*" />
+      <filterchain>
+        <filterreader classname="org.apache.tools.ant.filters.ReplaceTokens">
+          <param type="propertiesfile" value="${override.file}" />
+        </filterreader>
+      </filterchain>
+    </copy>
   </target>
-
+  
 </project>
 
 

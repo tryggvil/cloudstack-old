@@ -30,6 +30,10 @@ public class NfsUtils {
         return url.getHost() + ":" + url.getPath();
     }
     
+    public static String uri2Mount(URI uri) {
+        return uri.getHost() + ":" + uri.getPath();
+    }
+    
     public static String url2PathSafeString(String urlStr) {
         String safe = urlStr.replace(File.separatorChar, '-');
         safe = safe.replace("?", "");

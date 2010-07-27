@@ -27,13 +27,12 @@ import com.cloud.agent.api.AgentControlCommand;
 import com.cloud.agent.api.Answer;
 import com.cloud.agent.api.Command;
 import com.cloud.agent.api.StartupCommand;
-import com.cloud.agent.api.StartupComputingCommand;
-import com.cloud.agent.api.StartupStorageCommand;
-import com.cloud.host.Host;
+import com.cloud.agent.api.StartupRoutingCommand;
 import com.cloud.host.HostVO;
 import com.cloud.host.Status;
-import com.cloud.host.Host.HypervisorType;
 import com.cloud.host.dao.HostDao;
+import com.cloud.hypervisor.Hypervisor;
+import com.cloud.hypervisor.Hypervisor.Type;
 import com.cloud.storage.StorageManager;
 import com.cloud.storage.StoragePoolVO;
 import com.cloud.storage.dao.StoragePoolDao;
@@ -69,10 +68,10 @@ public class StoragePoolMonitor implements Listener {
     
     @Override
     public boolean processConnect(HostVO host, StartupCommand cmd) {
-    	if (cmd instanceof StartupComputingCommand) {
-    		StartupComputingCommand scCmd = (StartupComputingCommand)cmd;
-    		if (scCmd.getHypervisorType() == HypervisorType.XenServer || scCmd.getHypervisorType() ==  HypervisorType.KVM) {
-    			List<StoragePoolVO> pools = _poolDao.listByDataCenterPodId(host.getDataCenterId(),host.getPodId());
+    	if (cmd instanceof StartupRoutingCommand) {
+    		StartupRoutingCommand scCmd = (StartupRoutingCommand)cmd;
+    		if (scCmd.getHypervisorType() == Hypervisor.Type.XenServer || scCmd.getHypervisorType() ==  Hypervisor.Type.KVM) {
+    			List<StoragePoolVO> pools = _poolDao.listBy(host.getDataCenterId(), host.getPodId(), host.getClusterId());
     			for (StoragePoolVO pool : pools) {
     				Long hostId = host.getId();
     				s_logger.debug("Host " + hostId + " connected, sending down storage pool information ...");

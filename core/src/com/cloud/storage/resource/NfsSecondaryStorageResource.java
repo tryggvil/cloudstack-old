@@ -54,7 +54,7 @@ import com.cloud.resource.ServerResource;
 import com.cloud.resource.ServerResourceBase;
 import com.cloud.storage.StorageLayer;
 import com.cloud.storage.Volume;
-import com.cloud.storage.StoragePool.StoragePoolType;
+import com.cloud.storage.Storage.StoragePoolType;
 import com.cloud.storage.template.DownloadManager;
 import com.cloud.storage.template.DownloadManagerImpl;
 import com.cloud.storage.template.TemplateInfo;
@@ -169,7 +169,8 @@ public class NfsSecondaryStorageResource extends ServerResourceBase implements S
     	addRouteToInternalIpOrCidr(_localgw, _eth1ip, _eth1mask, destCidr);
     	return null;
 	}
-
+    
+    
 
 	private Answer execute(SecStorageFirewallCfgCommand cmd) {
 		if (!_inSystemVM){
@@ -278,7 +279,6 @@ public class NfsSecondaryStorageResource extends ServerResourceBase implements S
         return new PingStorageCommand(Host.Type.Storage, id, new HashMap<String, Boolean>());
     }
     
-    
     @Override
     public boolean configure(String name, Map<String, Object> params) throws ConfigurationException {
     	_eth1ip = (String)params.get("eth1ip");
@@ -287,7 +287,10 @@ public class NfsSecondaryStorageResource extends ServerResourceBase implements S
         } else {
         	s_logger.warn("Wait, what's going on? eth1ip is null!!");
         }
-        
+        String eth2ip = (String) params.get("eth2ip");
+        if (eth2ip != null) {
+            params.put("public.network.device", "eth2");
+        }         
         _publicIp = (String) params.get("eth2ip");
         _hostname = (String) params.get("name");
         
@@ -432,7 +435,6 @@ public class NfsSecondaryStorageResource extends ServerResourceBase implements S
     	if (result != null) {
     		s_logger.warn("Error in opening up ssh port err=" + result );
     	}
-    	
 	}
     
     private void addRouteToInternalIpOrCidr(String localgw, String eth1ip, String eth1mask, String destIpOrCidr) {
@@ -453,9 +455,7 @@ public class NfsSecondaryStorageResource extends ServerResourceBase implements S
     			s_logger.warn("addRouteToInternalIp: unable to determine same subnet: _eth1ip=" + eth1ip + ", dest ip=" + destIpOrCidr + ", _eth1mask=" + eth1mask);
     		}
     	} else {
-            String cidrSubnet = NetUtils.getCidrSubNet(destIpOrCidr);
-            String eth1Subnet = NetUtils.getSubNet(eth1ip, eth1mask);
-            inSameSubnet = eth1Subnet.equalsIgnoreCase(cidrSubnet);
+            inSameSubnet = NetUtils.isNetworkAWithinNetworkB(destIpOrCidr, NetUtils.ipAndNetMaskToCidr(eth1ip, eth1mask));
     	}
     	if (inSameSubnet) {
 			s_logger.debug("addRouteToInternalIp: dest ip " + destIpOrCidr + " is in the same subnet as eth1 ip " + eth1ip);

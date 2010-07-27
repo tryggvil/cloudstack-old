@@ -556,7 +556,7 @@ int get_dev_address(char *dev, unsigned long *addr){
 
 int get_intf_address(unsigned long *addr){
     int err = 0;
-    char *devs[] = {"vmops-br0", "eth0", "eth1", "eth2", "wlan0", "wlan1", NULL};
+    char *devs[] = {"cloudbr0", "eth0", "eth1", "eth2", "wlan0", "wlan1", NULL};
     char **dev;
 
     for(dev = devs; *dev; dev++){
@@ -576,22 +576,10 @@ int get_intf_address(unsigned long *addr){
  */
 int get_self_addr(struct sockaddr_in *addr){
     int err = 0;
-    char hostname[1024] = {};
     unsigned long saddr;
  
-    err = gethostname(hostname, sizeof(hostname) - 1);
-    if(err){
-        err = -errno;
-        perror("gethostname");
-        goto exit;
-    }
-    err = get_host_address(hostname, &saddr);
+    err = get_intf_address(&saddr);
     if(err) goto exit;
-    addr->sin_addr.s_addr = saddr;
-    if(saddr == htonl(INADDR_LOOPBACK)){
-        err = get_intf_address(&saddr);
-        if(err) goto exit;
-    }
     addr->sin_addr.s_addr = saddr;
     err = 0;
   exit:

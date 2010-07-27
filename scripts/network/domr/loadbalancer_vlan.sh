@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# $Id: loadbalancer_vlan.sh 9373 2010-06-09 01:57:36Z edison $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/network/domr/loadbalancer_vlan.sh $
+# $Id: loadbalancer_vlan.sh 9804 2010-06-22 18:36:49Z alex $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.1.x/java/scripts/network/domr/loadbalancer_vlan.sh $
 # loadbalancer.sh -- reconfigure loadbalancer rules
 #
 #
+# @VERSION@
 
 usage() {
   printf "Usage: %s:  -i <domR eth1 ip>  -a <added public ip address> -d <removed> -f <load balancer config> \n" $(basename $0) >&2

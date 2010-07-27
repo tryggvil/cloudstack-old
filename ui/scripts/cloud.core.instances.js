@@ -25,13 +25,13 @@ function showInstancesTab(p_domainId, p_account) {
 		if (isUser()) {
 			$("#submenu_links, #submenu_routers, #submenu_console").hide();
 		} else if (isDomainAdmin()) {
-			$("#submenu_console").hide();
+			$("#submenu_console, #router_template #router_action_view_console_container").hide();
 		}
 				
 		var vIndex = 0;
 		var vmPopup = $("#vmpopup");
-		var currentPageInPopupStep2 =1;
-		var filterInPopupStep2;  //filterInPopupStep2 will be set to "featured" when new VM dialog box opens
+		var currentPageInTemplateGridInVmPopup =1;
+		var selectedTemplateTypeInVmPopup;  //selectedTemplateTypeInVmPopup will be set to "featured" when new VM dialog box opens
 		
 		activateDialog($("#dialog_change_service_offering").dialog({ 
 			width: 600,
@@ -48,6 +48,13 @@ function showInstancesTab(p_domainId, p_account) {
 		}));
 		
 		activateDialog($("#dialog_change_group").dialog({ 
+			autoOpen: false,
+			modal: true,
+			zIndex: 2000
+		}));
+		
+		activateDialog($("#dialog_list_network_groups").dialog({ 
+		    width: 600,
 			autoOpen: false,
 			modal: true,
 			zIndex: 2000
@@ -79,119 +86,6 @@ function showInstancesTab(p_domainId, p_account) {
 			return false;
 		});
 		
-		// Security Groups Dialog setup --------------------
-		var availableSG = null;
-		function addSGToSelect(appliedSG) {
-			var availableSelect = $("#dialog_apply_security_groups #selectable_available").empty();
-			if (availableSG != null && availableSG.length > 0) {
-				for (var i = 0; i < availableSG.length; i++) {
-					var available = true;
-					if (appliedSG != null && appliedSG.length > 0) {
-						for (var j = 0; j < appliedSG.length ; j++) {
-							if (availableSG[i].id == appliedSG[j].id) {
-								available = false;
-								break;
-							}
-						}
-					}
-					if (available) {
-						var group = "<li id='"+availableSG[i].id+ "'>" + sanitizeXSS(availableSG[i].name) + "</li>";
-						availableSelect.append(group);
-					}
-				}
-			}
-			var appliedSelect = $("#dialog_apply_security_groups #selectable_applied").empty();
-			if (appliedSG != null && appliedSG.length > 0) {
-				for (var j = 0; j < appliedSG.length ; j++) {
-					var group = "<li id='"+appliedSG[j].id+ "'>" + sanitizeXSS(appliedSG[j].name) + "</li>";
-					appliedSelect.append(group);
-				}
-			}
-		}
-		activateDialog($("#dialog_apply_security_groups").dialog({ 
-			width: 550,
-			autoOpen: false,
-			modal: true,
-			zIndex: 2000,
-			buttons: {				
-				"Apply": function() { 
-					var dialogBox = $(this);
-					var appliedSG = null;
-					var publicIp = $("#apply_sg_public_ip").val();
-					var vmId = $("#apply_sg_public_ip").data("vmId");
-					
-					dialogBox.find(".selectable_commentbox").hide();
-					dialogBox.find(".selectable_errorbox").hide();
-					
-					$("#dialog_apply_security_groups #selectable_applied").children().each(function(index) {
-						if (appliedSG == null) {
-							appliedSG = $(this).attr("id");
-						} else {
-							appliedSG = appliedSG + "," + $(this).attr("id");
-						}
-					});
-					if (appliedSG == null) appliedSG = "0";
-					dialogBox.find(".selectable_commentbox .selectable_loader").show();
-					dialogBox.find(".selectable_commentbox").fadeIn("slow");
-					dialogBox.find(".selectable_commentbox strong").text("Please wait while we apply your Port Forwarding Services...");
-					$.ajax({
-						data: "command=assignPortForwardingService&ids="+appliedSG+"&publicip="+publicIp+"&virtualmachineid="+vmId+"&response=json",
-						dataType: "json",
-						success: function(json) {
-							dialogBox.everyTime(2000, function() {
-								$.ajax({
-									data: "command=queryAsyncJobResult&jobId="+json.assignportforwardingserviceresponse.jobid+"&response=json",
-									dataType: "json",
-									success: function(json) {
-										var result = json.queryasyncjobresultresponse;
-										if (result.jobstatus == 0) {
-											return; //Job has not completed
-										} else {
-											dialogBox.stopTime();
-											if (result.jobstatus == 1) {
-												// Succeeded
-												dialogBox.find(".selectable_commentbox .selectable_loader").hide();
-												dialogBox.find(".selectable_commentbox strong").text("Your Port Forwarding Services have been successfully applied.");
-											} else if (result.jobstatus == 2) {
-												// Failed
-												dialogBox.find(".selectable_commentbox").hide();
-												dialogBox.find(".selectable_errorbox #apply_error_text").text(result.jobresult);
-												dialogBox.find(".selectable_errorbox").fadeIn("slow");
-												$("#apply_sg_public_ip").change();
-											}
-										}
-									},
-									error: function(XMLHttpResponse) {
-										dialogBox.stopTime();
-										handleError(XMLHttpResponse);
-									}
-								});
-							}, 0);
-						}
-					});
-				},				
-				"Close": function() {
-					var dialogBox = $(this);
-					dialogBox.find(".selectable_commentbox, .selectable_errorbox").hide();
-					dialogBox.dialog("close"); 
-				}				
-			}
-		}));
-		$("#dialog_apply_security_groups #selectable_available, #dialog_apply_security_groups #selectable_applied").selectable();
-		$("#dialog_apply_security_groups #move_right").unbind("click").bind("click", function(event) {
-			$("#dialog_apply_security_groups #selectable_available .ui-selected").each(function(index) {
-				$(this).fadeOut("fast", function() {
-					$(this).detach().appendTo("#dialog_apply_security_groups #selectable_applied").fadeIn("fast");
-				});
-			});
-		});
-		$("#dialog_apply_security_groups #move_left").unbind("click").bind("click", function(event) {
-			$("#dialog_apply_security_groups #selectable_applied .ui-selected").each(function(index) {
-				$(this).fadeOut("fast", function() {
-					$(this).detach().appendTo("#dialog_apply_security_groups #selectable_available").fadeIn("fast");
-				});
-			});
-		});
 		$("#apply_sg_public_ip").change(function() {
 			var publicIp = $(this).val();
 			var vmId = $(this).data("vmId");
@@ -323,9 +217,10 @@ function showInstancesTab(p_domainId, p_account) {
 																
 																// Console Proxy UI
 																vmInstance.find("#vm_action_view_console").data("imgUrl", "console?cmd=thumbnail&vm=" + result.virtualmachine[0].id + "&w=144&h=110");
-																vmInstance.find("#vm_action_view_console").data("proxyUrl", "console?cmd=access&vm=" + result.virtualmachine[0].id + "&t=" + result.virtualmachine[0].displayname).data("vmId",result.virtualmachine[0].id).click(function(event) {
+																vmInstance.find("#vm_action_view_console").data("proxyUrl", "console?cmd=access&vm=" + result.virtualmachine[0].id).data("vmId",result.virtualmachine[0].id).click(function(event) {
 																	event.preventDefault();
-																	window.open($(this).data("proxyUrl"),$(this).data("vmId"),"width=820,height=640,resizable=yes,menubar=no,status=no,scrollbars=no,toolbar=no,location=no");
+																	var viewer = window.open($(this).data("proxyUrl"),$(this).data("vmId"),"width=820,height=640,resizable=yes,menubar=no,status=no,scrollbars=no,toolbar=no,location=no");
+																	viewer.focus();
 																});
 																vmInstance.find("#vm_action_view_console").bind("mouseover", function(event) {
 																	enableConsoleHover($(this));
@@ -696,12 +591,48 @@ function showInstancesTab(p_domainId, p_account) {
 							$.ajax({
 								data: "command=changeServiceForVirtualMachine&id="+vmId+"&serviceOfferingId="+$("#dialog_change_service_offering #change_service_offerings").val()+"&response=json",
 								dataType: "json",
-								success: function(json) {
-									vmInstance.find("#vm_loading_container").hide();
-									vmInstance.find(".row_loading").show();
-									vmInstance.find(".loadingmessage_container .loadingmessage_top p").html("Your virtual instance has been upgraded.  Please restart your virtual instance for the new service offering to take effect.");
-									vmInstance.find(".loadingmessage_container").fadeIn("slow");
-									vmInstance.find("#vm_service").text(($("#dialog_change_service_offering #change_service_offerings :selected").data("name")));
+								success: function(json) {						
+									var jobId = json.changeserviceforvirtualmachineresponse.jobid;
+						            var timerKey = "changeServiceForVirtualMachineJob_" + jobId;
+						            $("body").everyTime(
+							            5000,
+							            timerKey,
+							            function() {
+								            $.ajax({
+									            data: "command=queryAsyncJobResult&jobId=" + jobId + "&response=json",
+									            dataType: "json",
+									            success: function(json) {
+										            var result = json.queryasyncjobresultresponse;
+										            if (result.jobstatus == 0) {
+											            return; //Job has not completed
+										            } else {
+											            $("body").stopTime(timerKey);
+											            if (result.jobstatus == 1) { // Succeeded												            												            
+												            vmInstance.find("#vm_loading_container").hide();
+									                        vmInstance.find(".row_loading").show();
+									                        vmInstance.find(".loadingmessage_container .loadingmessage_top p").html("Your virtual instance has been upgraded.  Please restart your virtual instance for the new service offering to take effect.");
+									                        vmInstance.find(".loadingmessage_container").fadeIn("slow");										                        
+									                        vmInstance.find("#vm_service").html("<strong>Service:</strong> " + sanitizeXSS(result.virtualmachine[0].serviceofferingname));		
+									                        if (result.virtualmachine[0].haenable =='true') {
+				                                                vmInstance.find("#vm_ha").html("<strong>HA:</strong> Enabled");
+				                                                vmInstance.find("#vm_action_ha").text("Disable HA");
+			                                                } else {
+				                                                vmInstance.find("#vm_ha").html("<strong>HA:</strong> Disabled");
+				                                                vmInstance.find("#vm_action_ha").text("Enable HA");
+			                                                }									                        
+											            } else if (result.jobstatus == 2) { // Failed
+												            $("#dialog_alert").html("<p>" + sanitizeXSS(result.jobresult) + "</p>").dialog("open");		
+											            }
+										            }
+									            },
+									            error: function(XMLHttpResponse) {										
+										            handleError(XMLHttpResponse);
+										            $("body").stopTime(timerKey);										            
+									            }
+								            });
+							            },
+							            0
+						            );									
 								}
 							});
 						}, 
@@ -710,47 +641,64 @@ function showInstancesTab(p_domainId, p_account) {
 						} 
 					}).dialog("open");
 					break;
-				case "vm_action_apply_security" :
-					$("#dialog_apply_security_groups").find("#security_group_vm_name").text(vmName);
-					$("#dialog_apply_security_groups #apply_sg_public_ip").data("vmId", vmId);
-
-					var params = "";
-					if (isAdmin()) {
-						params = "&domainId="+vmInstance.data("domainId")+"&account="+vmInstance.data("account")+"&zoneid="+vmInstance.data("zoneId");
-					}
-					
-					// Get public ips
-					$.ajax({
-						data: "command=listPublicIpAddresses&response=json"+params,
-						dataType: "json",
-						success: function(json) {
-							var addressesJSON = json.listpublicipaddressesresponse.publicipaddress;
-							var ipSelect = $("#dialog_apply_security_groups #apply_sg_public_ip").empty();
-							if (addressesJSON != null && addressesJSON.length > 0 ) {
-								for (var i = 0; i < addressesJSON.length; i++) {
-									ipSelect.append("<option value='" + addressesJSON[i].ipaddress + "'>" + addressesJSON[i].ipaddress + "</option>"); 
-								}
-							} else {
-								ipSelect.append("<option value='none'>No Public IPs</option>"); 
-							}
-						}
-					});
-					
-					if (isAdmin()) {
-						params = "&domainId="+vmInstance.data("domainId")+"&account="+vmInstance.data("account");
-					}
-					
-					// Get list of available groups
-					$.ajax({
-						data: "command=listPortForwardingServices&response=json"+params,
-						dataType: "json",
-						success: function(json) {
-							availableSG = json.listportforwardingservicesresponse.portforwardingservice;
-							$("#dialog_apply_security_groups #apply_sg_public_ip").change();
-							$("#dialog_apply_security_groups").dialog("open");
-						}
-					});
-					break;
+								
+				case "vm_action_list_network_groups" :					      
+				    $.ajax({
+				        data: "command=listNetworkGroups&virtualmachineid="+vmId+"&response=json",				       
+				        dataType: "json",
+				        success: function(json) {				           
+					        var networkgroups = json.listnetworkgroupsresponse.networkgroup;					       			        
+					        if(networkgroups != null && networkgroups.length > 0) {					        
+					            var firstLevelList = $("#dialog_list_network_groups #network_groups_list_first_level").empty();				            
+                                for(var i=0; i<networkgroups.length; i++) {                        
+                                    var secondLevelList = $("#network_groups_list_second_level").clone();
+                                    if(networkgroups[i].ingressrule != null && networkgroups[i].ingressrule.length >0) {
+                                        for(var k=0; k<networkgroups[i].ingressrule.length; k++) {
+                                            var ingressRule = networkgroups[i].ingressrule[k];                       
+                                            
+                                            var html = [];                            
+                                            html.push("Protocol: " + ingressRule.protocol);
+                                            
+                                            if(ingressRule.startport != null)
+                                                html.push("Start Port: " + ingressRule.startport);
+                                            if(ingressRule.endport != null)
+                                                html.push("End Port: " + ingressRule.endport);                                            
+                                            if(ingressRule.icmptype != null)
+                                                html.push("ICMP Type: " + ingressRule.icmptype);
+                                            if(ingressRule.icmpcode != null)
+                                                html.push("ICMP Code: " + ingressRule.icmpcode);
+                                            
+                                            if(ingressRule.cidr != null)
+                                                html.push("CIDR: " + ingressRule.cidr);
+                                            if(ingressRule.account != null)
+                                                html.push("Account: " + ingressRule.account);
+                                            if(ingressRule.networkgroupname != null)
+                                                html.push("Network Group: " + ingressRule.networkgroupname);
+                                            
+                                            var secondLevelItem = "<li>" + html.join(", ") + "</li>";
+                                            secondLevelList.append(secondLevelItem);
+                                        }   
+                                    }    
+                                    var firstLevelItem = $("<li></li>");
+                                    firstLevelItem.append(networkgroups[i].name);
+                                    firstLevelItem.append(secondLevelList);                        
+                                    firstLevelList.append(firstLevelItem);                                    
+                                }	
+                            }	
+                            else { //no network group is associated
+                                $("#dialog_list_network_groups #network_groups_list_first_level").text("This instance is not associated with any network groups.");
+                            }		
+        								
+					        $("#dialog_list_network_groups")
+					        .dialog('option', 'buttons', { 						
+						        "Close": function() { 	
+						            $(this).dialog("close");
+						        }
+				            }).dialog("open");					       
+				        }
+			        });		   
+				    break;				
+				
 				case "vm_action_change_group" :
 					$("#dialog_change_group").find("#vm_name").text(vmName);								
 					$("#dialog_change_group").find("#change_group_name").val((vmInstance.data("group")==null)?"":vmInstance.data("group"));										
@@ -1045,6 +993,9 @@ function showInstancesTab(p_domainId, p_account) {
 									var detailTemplate = $("#volume_detail_template");
 									for (var i = 0; i < volumes.length; i++) {
 										var detail = detailTemplate.clone(true).attr("id","volume"+volumes[i].id);
+										if (getHypervisorType() == "kvm") {
+											detail.find("#volume_action_create_template").show();
+										}
 										if (vIndex++ % 2 == 0) {
 											detail.addClass("hostadmin_showdetails_row_even");
 										} else {
@@ -1077,10 +1028,14 @@ function showInstancesTab(p_domainId, p_account) {
 										}
 									}
 								}
+								//expand volumes panel
 								link.removeClass().addClass("vm_botactionslinks_up");
-								vmInstance.find("#volume_detail_panel").slideDown("slow");
-								
+								vmInstance.find("#volume_detail_panel").slideDown("slow");								
 								link.data("expanded", true);
+								
+								//collapse statistics panel if it is expanding								
+								if(vmInstance.find("#vm_statistics_panel").css("display") != "none")
+								    vmInstance.find("#vm_action_statistics").click();
 							}
 						});
 					} else {
@@ -1088,7 +1043,25 @@ function showInstancesTab(p_domainId, p_account) {
 						vmInstance.find("#volume_detail_panel").slideUp("slow");
 						link.data("expanded", false);
 					}
-					break;
+					break;			    
+			    case "vm_action_statistics" :
+					var expanded = link.data("expanded");
+					if (expanded == null || expanded == false) {
+					    //expand statistics panel
+					    link.removeClass().addClass("vm_botactionslinks_up");
+						vmInstance.find("#vm_statistics_panel").slideDown("slow");								
+						link.data("expanded", true);	
+												
+						//collapse volumes panel if it is expanding								
+						if(vmInstance.find("#volume_detail_panel").css("display") != "none")
+						    vmInstance.find("#vm_action_volumes").click();
+												
+					} else {
+						link.removeClass().addClass("vm_botactionslinks_down");
+						vmInstance.find("#vm_statistics_panel").slideUp("slow");
+						link.data("expanded", false);
+					}
+					break;			    
 				case "vm_actions" :
 					vmInstance.find("#vm_actions_container").slideDown("fast");
 					break;
@@ -1176,9 +1149,10 @@ function showInstancesTab(p_domainId, p_account) {
 				instanceTemplate.find("#vm_action_view_console").data("imgUrl", "console?cmd=thumbnail&vm=" + instanceJSON.id + "&w=144&h=110");
 
 				// Console Proxy UI
-				instanceTemplate.find("#vm_action_view_console").data("proxyUrl", "console?cmd=access&vm=" + instanceJSON.id + "&t=" + instanceJSON.displayname).data("vmId",instanceJSON.id).click(function(event) {
+				instanceTemplate.find("#vm_action_view_console").data("proxyUrl", "console?cmd=access&vm=" + instanceJSON.id).data("vmId",instanceJSON.id).click(function(event) {
 					event.preventDefault();
-					window.open($(this).data("proxyUrl"),$(this).data("vmId"),"width=820,height=640,resizable=yes,menubar=no,status=no,scrollbars=no,toolbar=no,location=no");
+					var viewer = window.open($(this).data("proxyUrl"),$(this).data("vmId"),"width=820,height=640,resizable=yes,menubar=no,status=no,scrollbars=no,toolbar=no,location=no");
+					viewer.focus();
 				});
 				
 				// Enable/Disable actions
@@ -1201,7 +1175,7 @@ function showInstancesTab(p_domainId, p_account) {
 				} else {
 					instanceTemplate.find("#vm_state_bar").removeClass("admin_vmred_arrow admin_vmgreen_arrow").addClass("admin_vmgrey_arrow");
 					instanceTemplate.find("#vm_state").text(instanceJSON.state).removeClass("grid_stoppedtitles grid_runningtitles").addClass("grid_celltitles");
-					instanceTemplate.find("#vm_action_start, #vm_action_stop, #vm_action_reboot, #vm_action_attach_iso, #vm_action_detach_iso, #vm_action_reset_password, #vm_action_change_service, #vm_action_apply_security").removeClass().addClass("vmaction_links_off");
+					instanceTemplate.find("#vm_action_start, #vm_action_stop, #vm_action_reboot, #vm_action_attach_iso, #vm_action_detach_iso, #vm_action_reset_password, #vm_action_change_service").removeClass().addClass("vmaction_links_off");
 					if(instanceJSON.state == 'Creating')
 					    instanceTemplate.find("#vm_action_destroy").hide();
 				}
@@ -1212,55 +1186,181 @@ function showInstancesTab(p_domainId, p_account) {
 			if (instanceJSON.isoid != undefined && instanceJSON.isoid.length > 0) {
 				instanceTemplate.find("#iso_state").removeClass().addClass("vmiso_on");
 			}
+									
+			if(getDirectAttachNetworkGroupsEnabled() != "true") 
+		        instanceTemplate.find("#vm_action_list_network_groups_container").hide();				
+						
+            var spaceCharacter = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"			
+			var statHtml = "<div class='hostcpu_icon'></div><p><strong> CPU Total:</strong> " + ((instanceJSON.cpunumber==null)? spaceCharacter:instanceJSON.cpunumber) + " x " + ((instanceJSON.cpuspeed==null)? spaceCharacter:convertHz(instanceJSON.cpuspeed)) + " | <span class='host_statisticspanel_green'> <strong>CPU Used:</strong> " + ((instanceJSON.cpuused==null)? spaceCharacter:instanceJSON.cpuused) + "</span></p>";
+			instanceTemplate.find("#vm_cpu_stat").html(statHtml);					
+			statHtml = "<div class='hostnetwork_icon'></div><p><strong> Network Read:</strong> " + ((instanceJSON.networkkbsread==null)? spaceCharacter:convertBytes(instanceJSON.networkkbsread * 1024))+" | <strong>Network Write:</strong> " + ((instanceJSON.networkkbswrite==null)? spaceCharacter:convertBytes(instanceJSON.networkkbswrite * 1024)) + "</p>";
+			instanceTemplate.find("#vm_network_stat").html(statHtml);		
 		}
+				
+		vmPopup.find("#wizard_service_offering").bind("click", function(event){		
+		    event.stopPropagation(); //do not use event.preventDetault(), otherwise, radio button won't be checked.	    
+		    var serviceOfferingId = vmPopup.find("#wizard_service_offering input[name=service]:checked").val();		    
+		    if(getDirectAttachNetworkGroupsEnabled() != "true") {
+		        vmPopup.find("#wizard_network_groups_container").hide();
+		    }
+		    else {    
+		        $.ajax({
+				    data: "command=listServiceOfferings&response=json&id="+serviceOfferingId,
+				    dataType: "json",				
+				    success: function(json) {
+					    var offerings = json.listserviceofferingsresponse.serviceoffering;					
+					    if (offerings != null && offerings.length > 0) {
+					        if(offerings[0].usevirtualnetwork =="true") { //virtual network
+					            vmPopup.find("#wizard_network_groups_container").hide();	
+					        }
+					        else { //direct attached					            
+					            if(vmPopup.find("#wizard_network_groups").find("option").length == 0)
+					                vmPopup.find("#wizard_network_groups_container").hide();	
+					            else 
+					                vmPopup.find("#wizard_network_groups_container").show();	
+					        }
+    					        
+					    }			
+				    }				
+			    });	
+			}   
+		});
 		
 		// Add New Wizard Setup
-		var currentStep = 1;
-		$(".add_newvmbutton").bind("click", function(event) {
-			// Wizard Step 1 - list zones
+		var currentStepInVmPopup;
+		$(".add_newvmbutton").bind("click", function(event) {			    	
+			vmPopup.fadeIn("slow");
+			$("#overlay_black").show();	
+			vmWizardCleanup();	
+						
 			$.ajax({
 				data: "command=listZones&available=true&response=json",
 				dataType: "json",
 				success: function(json) {
-					var zones = json.listzonesresponse.zone;
-					var zoneSelect = $("#wizard_zone").empty();	
+					var zones = json.listzonesresponse.zone;					
+					var zoneSelect = vmPopup.find("#wizard_zone").empty();	
 					if (zones != null && zones.length > 0) {
 						for (var i = 0; i < zones.length; i++) {
 							zoneSelect.append("<option value='" + zones[i].id + "'>" + sanitizeXSS(zones[i].name) + "</option>"); 
 						}
-					}
+					}				
+					listTemplatesInVmPopup();	
 				}
 			});
 			
-			filterInPopupStep2 = "featured";	
-			$("#vmpopup").fadeIn("slow");
-			$("#overlay_black").show();
+			$.ajax({					
+				data: "command=listNetworkGroups"+"&domainid="+g_domainid+"&account="+g_account+"&response=json",		
+				dataType: "json",
+				success: function(json) {					
+					var items = json.listnetworkgroupsresponse.networkgroup;					
+					var networkGroupSelect = vmPopup.find("#wizard_network_groups").empty();	
+					if (items != null && items.length > 0) {
+						for (var i = 0; i < items.length; i++) {
+						    if(items[i].name != "default")						
+							    networkGroupSelect.append("<option value='" + sanitizeXSS(items[i].name) + "'>" + sanitizeXSS(items[i].name) + "</option>"); 
+						}
+					}					    
+				}
+			});					
+			
+		    $.ajax({
+				data: "command=listServiceOfferings&response=json",
+				dataType: "json",
+				async: false,
+				success: function(json) {
+					var offerings = json.listserviceofferingsresponse.serviceoffering;
+					$("#wizard_service_offering").empty();	
+
+					var first = true;
+					if (offerings != null && offerings.length > 0) {						    
+						for (var i = 0; i < offerings.length; i++) {
+							var checked = "checked";
+							if (first == false) checked = "";
+							var listItem = $("<li><input class='radio' type='radio' name='service' id='service' value='"+offerings[i].id+"'" + checked + "/><label style='width:500px;font-size:11px;' for='service'>"+sanitizeXSS(offerings[i].displaytext)+"</label></li>");
+							$("#wizard_service_offering").append(listItem);													
+							first = false;
+						}
+						//Safari and Chrome are not smart enough to make checkbox checked if html markup is appended by JQuery.append(). So, the following 2 lines are added.		
+					    var html_all = $("#wizard_service_offering").html();        
+                        $("#wizard_service_offering").html(html_all); 
+					}
+					
+					$.ajax({
+						data: "command=listDiskOfferings&domainid=1&response=json",
+						dataType: "json",
+						async: false,
+						success: function(json) {
+							var offerings = json.listdiskofferingsresponse.diskoffering;
+							$("#wizard_root_disk_offering, #wizard_data_disk_offering").empty();
+														
+						    var html = 
+							"<li>"
+								+"<input class='radio' type='radio' name='datadisk' id='datadisk' value='' checked/>"
+								+"<label style='width:500px;font-size:11px;' for='disk'>No disk offering</label>"
+						   +"</li>";
+							$("#wizard_data_disk_offering").append(html);							
+														
+							if (offerings != null && offerings.length > 0) {								    
+								for (var i = 0; i < offerings.length; i++) {	
+									var html = 
+										"<li>"
+											+"<input class='radio' type='radio' name='rootdisk' id='rootdisk' value='"+offerings[i].id+"'" + ((i==0)?"checked":"") + "/>"
+											+"<label style='width:500px;font-size:11px;' for='disk'>"+sanitizeXSS(offerings[i].displaytext)+"</label>"
+									   +"</li>";
+									$("#wizard_root_disk_offering").append(html);
+								
+									var html2 = 
+									"<li>"
+										+"<input class='radio' type='radio' name='datadisk' id='datadisk' value='"+offerings[i].id+"'" + "/>"
+										+"<label style='width:500px;font-size:11px;' for='disk'>"+sanitizeXSS(offerings[i].displaytext)+"</label>"
+								   +"</li>";
+									$("#wizard_data_disk_offering").append(html2);																		
+								}
+								//Safari and Chrome are not smart enough to make checkbox checked if html markup is appended by JQuery.append(). So, the following 2 lines are added.		
+					            var html_all = $("#wizard_root_disk_offering").html();        
+                                $("#wizard_root_disk_offering").html(html_all); 
+					            
+					            var html_all2 = $("#wizard_data_disk_offering").html();        
+                                $("#wizard_data_disk_offering").html(html_all2); 
+							}
+						}
+					});
+				}
+			});		
+						
+			vmPopup.find("#wizard_service_offering").click();						          
 		});
 		
-		function vmWizardClose() {
-			currentStep = 1;
-			$("#vmpopup").hide();
-			$("#overlay_black").hide();
+		function vmWizardClose() {			
+			vmPopup.hide();
+			$("#overlay_black").hide();	
+			vmWizardCleanup();			
+		}
+		
+		function vmWizardCleanup() {
+		    currentStepInVmPopup = 1;			
 			vmPopup.find("#step1").show().nextAll().hide();
 			vmPopup.find(".rev_wizmid_actionback").hide();
 			vmPopup.find(".rev_wizmid_actionnext").show();
 			vmPopup.find("#wizard_message").hide();
+			selectedTemplateTypeInVmPopup = "featured";				
 			$("#wiz_featured").removeClass().addClass("rev_wizmid_selectedtempbut");
-			$("#wiz_my, #wiz_community, #wiz_blank").removeClass().addClass("rev_wizmid_nonselectedtempbut");
-		}
+			$("#wiz_my, #wiz_community, #wiz_blank").removeClass().addClass("rev_wizmid_nonselectedtempbut");	
+			currentPageInTemplateGridInVmPopup = 1;	 	
+		}		
 		
 		vmPopup.find("#vm_wizard_close").bind("click", function(event) {
 			vmWizardClose();
 			return false;
 		});
 				
-		vmPopup.find("#step2 #wiz_message_continue").bind("click", function(event) {		    
-			vmPopup.find("#step2 #wiz_message").hide();
+		vmPopup.find("#step1 #wiz_message_continue").bind("click", function(event) {			    
+			vmPopup.find("#step1 #wiz_message").hide();
 			return false;
 		});
-		
-		vmPopup.find("#step3 #wiz_message_continue").bind("click", function(event) {		    
-			vmPopup.find("#step3 #wiz_message").hide();
+			
+		vmPopup.find("#step2 #wiz_message_continue").bind("click", function(event) {			    
+			vmPopup.find("#step2 #wiz_message").hide();
 			return false;
 		});
 		
@@ -1280,8 +1380,8 @@ function showInstancesTab(p_domainId, p_account) {
 		
 		//vm wizard search and pagination
 		vmPopup.find("#search_button").bind("click", function(event) {	              
-            currentPageInPopupStep2 = 1;           	        	
-            listTemplatesInPopupStep2();  
+            currentPageInTemplateGridInVmPopup = 1;           	        	
+            listTemplatesInVmPopup();  
             return false;   //event.preventDefault() + event.stopPropagation() 
         });
     	
@@ -1293,37 +1393,41 @@ function showInstancesTab(p_domainId, p_account) {
         });   
 				
 		vmPopup.find("#nextPage").bind("click", function(event){	            
-            currentPageInPopupStep2++;        
-            listTemplatesInPopupStep2(); 
+            currentPageInTemplateGridInVmPopup++;        
+            listTemplatesInVmPopup(); 
             return false;   //event.preventDefault() + event.stopPropagation() 
         });		
         
         vmPopup.find("#prevPage").bind("click", function(event){	                 
-            currentPageInPopupStep2--;	              	    
-            listTemplatesInPopupStep2(); 
+            currentPageInTemplateGridInVmPopup--;	              	    
+            listTemplatesInVmPopup(); 
             return false;   //event.preventDefault() + event.stopPropagation() 
         });	
 							
 		var vmPopupStep2PageSize = 11; //max number of templates each page in step2 of New VM wizard is 11 
-		function listTemplatesInPopupStep2() {		
+		function listTemplatesInVmPopup() {		
+		    var zoneId = vmPopup.find("#wizard_zone").val();
+		    if(zoneId == null || zoneId.length == 0)
+		        return;
+		
 		    var container = vmPopup.find("#template_container");	 		    	
 			   
 		    var commandString;    		  	   
 	        var searchInput = vmPopup.find("#search_input").val();   
-	        if (filterInPopupStep2 != "blank") {      
+	        if (selectedTemplateTypeInVmPopup != "blank") {      
                 if (searchInput != null && searchInput.length > 0)                 
-                    commandString = "command=listTemplates&templatefilter="+filterInPopupStep2+"&zoneid="+wizardSelectedZone+"&keyword="+searchInput+"&page="+currentPageInPopupStep2+"&response=json"; 
+                    commandString = "command=listTemplates&templatefilter="+selectedTemplateTypeInVmPopup+"&zoneid="+zoneId+"&keyword="+searchInput+"&page="+currentPageInTemplateGridInVmPopup+"&response=json"; 
                 else
-                    commandString = "command=listTemplates&templatefilter="+filterInPopupStep2+"&zoneid="+wizardSelectedZone+"&page="+currentPageInPopupStep2+"&response=json";           		    		
+                    commandString = "command=listTemplates&templatefilter="+selectedTemplateTypeInVmPopup+"&zoneid="+zoneId+"&page="+currentPageInTemplateGridInVmPopup+"&response=json";           		    		
 			} else {
 			    if (searchInput != null && searchInput.length > 0)                 
-                    commandString = "command=listIsos&isReady=true&bootable=true&zoneid="+wizardSelectedZone+"&keyword="+searchInput+"&page="+currentPageInPopupStep2+"&response=json";  
+                    commandString = "command=listIsos&isReady=true&bootable=true&zoneid="+zoneId+"&keyword="+searchInput+"&page="+currentPageInTemplateGridInVmPopup+"&response=json";  
                 else
-                    commandString = "command=listIsos&isReady=true&bootable=true&zoneid="+wizardSelectedZone+"&page="+currentPageInPopupStep2+"&response=json";  
+                    commandString = "command=listIsos&isReady=true&bootable=true&zoneid="+zoneId+"&page="+currentPageInTemplateGridInVmPopup+"&response=json";  
 			}
 			
 			var loading = vmPopup.find("#wiz_template_loading").show();				
-			if(currentPageInPopupStep2==1)
+			if(currentPageInTemplateGridInVmPopup==1)
                 vmPopup.find("#prevPage").hide();
             else 
 	            vmPopup.find("#prevPage").show();  		
@@ -1334,7 +1438,7 @@ function showInstancesTab(p_domainId, p_account) {
 				async: false,
 				success: function(json) {
 				    var items;
-				    if (filterInPopupStep2 != "blank")
+				    if (selectedTemplateTypeInVmPopup != "blank")
 					    items = json.listtemplatesresponse.template;
 					else
 					    items = json.listisosresponse.iso;
@@ -1363,7 +1467,7 @@ function showInstancesTab(p_domainId, p_account) {
 			        
 					} else {
 					    var msg;
-					    if (filterInPopupStep2 != "blank")
+					    if (selectedTemplateTypeInVmPopup != "blank")
 					        msg = "No templates available";
 					    else
 					        msg = "No ISOs available";					    
@@ -1394,241 +1498,166 @@ function showInstancesTab(p_domainId, p_account) {
 				}
 			}
 		});
+                 
+        vmPopup.find("#wizard_zone").bind("change", function(event) {       
+            var selectedZone = $(this).val();
+            if(selectedZone != null && selectedZone.length > 0)
+                listTemplatesInVmPopup();         
+            return false;
+        });
         
-        var wizardSelectedZone;		
+        function displayDiskOffering(type) {
+            if(type=="data") {
+                vmPopup.find("#wizard_data_disk_offering_title").show();
+				vmPopup.find("#wizard_data_disk_offering").show();
+				vmPopup.find("#wizard_root_disk_offering_title").hide();
+				vmPopup.find("#wizard_root_disk_offering").hide();
+            }
+            else if(type=="root") {
+                vmPopup.find("#wizard_root_disk_offering_title").show();
+				vmPopup.find("#wizard_root_disk_offering").show();
+				vmPopup.find("#wizard_data_disk_offering_title").hide();	
+				vmPopup.find("#wizard_data_disk_offering").hide();	
+            }
+        }
+        displayDiskOffering("data");  //because default value of "#wiz_template_filter" is "wiz_featured"
+        
+        // Setup the left template filters	        	
+		vmPopup.find("#wiz_template_filter").unbind("click").bind("click", function(event) {			    
+			var container = $(this);
+			var target = $(event.target);
+			var targetId = target.attr("id");
+			selectedTemplateTypeInVmPopup = "featured";
+			switch (targetId) {
+				case "wiz_featured":
+				    vmPopup.find("#search_input").val("");  
+				    currentPageInTemplateGridInVmPopup = 1;
+					selectedTemplateTypeInVmPopup = "featured";
+					container.find("#wiz_featured").removeClass().addClass("rev_wizmid_selectedtempbut");
+					container.find("#wiz_my, #wiz_community, #wiz_blank").removeClass().addClass("rev_wizmid_nonselectedtempbut");
+					displayDiskOffering("data");
+					break;
+				case "wiz_my":
+				    vmPopup.find("#search_input").val("");  
+				    currentPageInTemplateGridInVmPopup = 1;
+					container.find("#wiz_my").removeClass().addClass("rev_wizmid_selectedtempbut");
+					container.find("#wiz_featured, #wiz_community, #wiz_blank").removeClass().addClass("rev_wizmid_nonselectedtempbut");
+					selectedTemplateTypeInVmPopup = "selfexecutable";
+					displayDiskOffering("data");
+					break;	
+				case "wiz_community":
+				    vmPopup.find("#search_input").val("");  
+				    currentPageInTemplateGridInVmPopup = 1;
+					container.find("#wiz_community").removeClass().addClass("rev_wizmid_selectedtempbut");
+					container.find("#wiz_my, #wiz_featured, #wiz_blank").removeClass().addClass("rev_wizmid_nonselectedtempbut");
+					selectedTemplateTypeInVmPopup = "community";					
+					displayDiskOffering("data");
+					break;
+				case "wiz_blank":
+				    vmPopup.find("#search_input").val("");  
+				    currentPageInTemplateGridInVmPopup = 1;
+					container.find("#wiz_blank").removeClass().addClass("rev_wizmid_selectedtempbut");
+					container.find("#wiz_my, #wiz_community, #wiz_featured").removeClass().addClass("rev_wizmid_nonselectedtempbut");
+					selectedTemplateTypeInVmPopup = "blank";
+					displayDiskOffering("root");
+					break;
+			}
+			listTemplatesInVmPopup();
+			return false;
+		});  
+		                
 		vmPopup.find(".rev_wizmid_actionnext").bind("click", function(event) {
 			event.preventDefault();
-			event.stopPropagation();
+			event.stopPropagation();						
+						
+			var thisPopup = vmPopup;		
+				
+			if (currentStepInVmPopup == 1) {					
+			    // prevent a person from moving on if no templates are selected	    
+			    if(thisPopup.find("#step1 #template_container .rev_wiztemplistbox_selected").length == 0) {			        
+			        thisPopup.find("#step1 #wiz_message").show();
+			        return false;
+			    }
+			}			
 			
-			var thisDialog = vmPopup;
-			
-			if (currentStep == 1) {			    
-			    // validate values
-				var isValid = true;		
-				isValid &= validateString("Name", thisDialog.find("#wizard_vm_name"), thisDialog.find("#wizard_vm_name_errormsg"), true);
-				isValid &= validateString("Group", thisDialog.find("#wizard_vm_group"), thisDialog.find("#wizard_vm_group_errormsg"), true);				
-				if (!isValid) return;		
-			}
-			
-			// prevent a person from moving on if no templates are selected
-			if (currentStep == 2 && vmPopup.find("#step2 #template_container .rev_wiztemplistbox_selected").length == 0) {
-				$("#step2 #wiz_message").show();
-				return false;
-			}
-			
-			if(currentStep ==3) {
+			if (currentStepInVmPopup == 2) {
 			    // prevent a person from moving on if no service offering is selected
-			    if(vmPopup.find("#step3 #wizard_service_offering li").length == 0) {
-			        $("#step3 #wiz_message #wiz_message_text").text("Please select a service offering to continue");
-			        $("#step3 #wiz_message").show();
+			    if(thisPopup.find("#step2 #wizard_service_offering li").length == 0) {
+			        thisPopup.find("#step2 #wiz_message #wiz_message_text").text("Please select a service offering to continue");
+			        thisPopup.find("#step2 #wiz_message").show();
 				    return false;
 				}
-				
-				// prevent a person from moving on if no disk offering is selected
-				if ($("#wiz_blank").hasClass("rev_wizmid_selectedtempbut")) {  //check root disk offering 				    
-				    if(vmPopup.find("#step3 #wizard_root_disk_offering li").length == 0) {
-			            $("#step3 #wiz_message #wiz_message_text").text("Please select a root disk offering to continue");
-			            $("#step3 #wiz_message").show();
-				        return false;
-				    }				    
-				}
-				else {  //check data disk offering				
-				    if(vmPopup.find("#step3 #wizard_data_disk_offering li").length == 0) {
-				        $("#step3 #wiz_message #wiz_message_text").text("Please select a data disk offering to continue");
-			            $("#step3 #wiz_message").show();
-				        return false;
-				    }				
-				}
-			}
+			}			
 			
-			vmPopup.find("#step" + currentStep).hide().next().show();
-			currentStep++;
+			if(currentStepInVmPopup ==3) {
+			    // validate values
+				var isValid = true;		
+				isValid &= validateString("Name", thisPopup.find("#wizard_vm_name"), thisPopup.find("#wizard_vm_name_errormsg"), true);
+				isValid &= validateString("Group", thisPopup.find("#wizard_vm_group"), thisPopup.find("#wizard_vm_group_errormsg"), true);				
+				if (!isValid) return;					   	
 			
-			// Wizard Step 2 - list templates
-			if (currentStep == 2) {
-				wizardSelectedZone = $("#wizard_zone").val();
-				
-				// Make a check to see if a zone has been selected
-				
-				// Show default featured templates
-				listTemplatesInPopupStep2();
-				
-				// Setup the left template filters
-				currentPageInPopupStep2 = 1;				
-				$("#wiz_template_filter").unbind("click").bind("click", function(event) {
-					var container = $(this);
-					var target = $(event.target);
-					var targetId = target.attr("id");
-					filterInPopupStep2 = "featured";
-					switch (targetId) {
-						case "wiz_featured":
-						    vmPopup.find("#search_input").val("");  
-						    currentPageInPopupStep2 = 1;
-							filterInPopupStep2 = "featured";
-							container.find("#wiz_featured").removeClass().addClass("rev_wizmid_selectedtempbut");
-							container.find("#wiz_my, #wiz_community, #wiz_blank").removeClass().addClass("rev_wizmid_nonselectedtempbut");
-							break;
-						case "wiz_my":
-						    vmPopup.find("#search_input").val("");  
-						    currentPageInPopupStep2 = 1;
-							container.find("#wiz_my").removeClass().addClass("rev_wizmid_selectedtempbut");
-							container.find("#wiz_featured, #wiz_community, #wiz_blank").removeClass().addClass("rev_wizmid_nonselectedtempbut");
-							filterInPopupStep2 = "selfexecutable";
-							break;	
-						case "wiz_community":
-						    vmPopup.find("#search_input").val("");  
-						    currentPageInPopupStep2 = 1;
-							container.find("#wiz_community").removeClass().addClass("rev_wizmid_selectedtempbut");
-							container.find("#wiz_my, #wiz_featured, #wiz_blank").removeClass().addClass("rev_wizmid_nonselectedtempbut");
-							filterInPopupStep2 = "community";
-							break;
-						case "wiz_blank":
-						    vmPopup.find("#search_input").val("");  
-						    currentPageInPopupStep2 = 1;
-							container.find("#wiz_blank").removeClass().addClass("rev_wizmid_selectedtempbut");
-							container.find("#wiz_my, #wiz_community, #wiz_featured").removeClass().addClass("rev_wizmid_nonselectedtempbut");
-							filterInPopupStep2 = "blank";
-							break;
-					}
-					listTemplatesInPopupStep2();
-					return false;
-				});
-			}
-
-			// Wizard Step 3 - list service offerings
-			if (currentStep == 3) {
-				vmPopup.find("#wiz_message").hide();
-				var serviceOfferingSelected = false;
-			    var diskOfferingSelected = false;
-				$.ajax({
-					data: "command=listServiceOfferings&response=json",
-					dataType: "json",
-					async: false,
-					success: function(json) {
-						var offerings = json.listserviceofferingsresponse.serviceoffering;
-						$("#wizard_service_offering").empty();	
-
-						var first = true;
-						if (offerings != null && offerings.length > 0) {
-						    serviceOfferingSelected = true;
-							for (var i = 0; i < offerings.length; i++) {
-								var checked = "checked";
-								if (first == false) checked = "";
-								var html = 
-									"<li>"
-										+"<input class='radio' type='radio' name='service' id='service' value='"+offerings[i].id+"'" + checked + "/>"
-										+"<label style='width:500px;font-size:11px;' for='service'>"+sanitizeXSS(offerings[i].displaytext)+"</label>"
-								   +"</li>";
-								$("#wizard_service_offering").append(html);
-								first = false;
-							}
-							//Safari and Chrome are not smart enough to make checkbox checked if html markup is appended by JQuery.append(). So, the following 2 lines are added.		
-						    var html_all = $("#wizard_service_offering").html();        
-                            $("#wizard_service_offering").html(html_all); 
-						}
-						
-						$.ajax({
-							data: "command=listDiskOfferings&domainid=1&response=json",
-							dataType: "json",
-							async: false,
-							success: function(json) {
-								var offerings = json.listdiskofferingsresponse.diskoffering;
-								$("#wizard_root_disk_offering, #wizard_data_disk_offering").empty();
-								var showRootDisk = false;
-								if ($("#wiz_blank").hasClass("rev_wizmid_selectedtempbut")) {
-									$("#wizard_root_disk_offering_title").show();
-									$("#wizard_data_disk_offering_title").hide();
-									showRootDisk = true;
-								} else {
-									$("#wizard_root_disk_offering_title").hide();
-									$("#wizard_data_disk_offering_title").show();
-								}
-								var first = true;
-								if (offerings != null && offerings.length > 0) {
-								    diskOfferingSelected = true;
-									for (var i = 0; i < offerings.length; i++) {
-										var checked = "checked";
-										if (first == false) checked = "";
-										if (showRootDisk) {
-											var html = 
-												"<li>"
-													+"<input class='radio' type='radio' name='rootdisk' id='rootdisk' value='"+offerings[i].id+"'" + checked + "/>"
-													+"<label style='width:500px;font-size:11px;' for='disk'>"+sanitizeXSS(offerings[i].displaytext)+"</label>"
-											   +"</li>";
-											$("#wizard_root_disk_offering").append(html);
-										} else {
-											var html = 
-											"<li>"
-												+"<input class='radio' type='radio' name='datadisk' id='datadisk' value='"+offerings[i].id+"'" + checked + "/>"
-												+"<label style='width:500px;font-size:11px;' for='disk'>"+sanitizeXSS(offerings[i].displaytext)+"</label>"
-										   +"</li>";
-											$("#wizard_data_disk_offering").append(html);
-										}
-										first = false;
-									}
-									//Safari and Chrome are not smart enough to make checkbox checked if html markup is appended by JQuery.append(). So, the following 2 lines are added.		
-						            var html_all = $("#wizard_root_disk_offering").html();        
-                                    $("#wizard_root_disk_offering").html(html_all); 
-						            
-						            var html_all = $("#wizard_data_disk_offering").html();        
-                                    $("#wizard_data_disk_offering").html(html_all); 
-								}
-							}
-						});
-					}
-				});
-			}
-			
-			// Wizard Step 4 - Review all data
-			if (currentStep == 4) {
-				if ($("#wiz_blank").hasClass("rev_wizmid_selectedtempbut")) {
-					$("#wizard_review_root_disk_offering").text($("#wizard_root_disk_offering input[name=rootdisk]:checked").next().text());
-					$("#wizard_review_root_disk_offering_p").show();
-					$("#wizard_review_iso").text($("#step2 .rev_wiztemplistbox_selected .rev_wiztemp_listtext").text());
-					$("#wizard_review_iso_p").show();
-					$("#wizard_review_data_disk_offering_p").hide();
-					$("#wizard_review_template").text("Blank Template");
-				} else {
-					$("#wizard_review_template").text($("#step2 .rev_wiztemplistbox_selected .rev_wiztemp_listtext").text());
-					$("#wizard_review_data_disk_offering_p").show();
-					$("#wizard_review_data_disk_offering").text($("#wizard_data_disk_offering input[name=datadisk]:checked").next().text());
-					$("#wizard_review_root_disk_offering_p").hide();
-					$("#wizard_review_iso_p").hide();
+			    // populate data for next step (step 4)			 
+				if (thisPopup.find("#wiz_blank").hasClass("rev_wizmid_selectedtempbut")) {  //selected template type is ISO(blank template)
+					thisPopup.find("#wizard_review_root_disk_offering").text(thisPopup.find("#wizard_root_disk_offering input[name=rootdisk]:checked").next().text());
+					thisPopup.find("#wizard_review_root_disk_offering_p").show();
+					thisPopup.find("#wizard_review_iso").text(thisPopup.find("#step1 .rev_wiztemplistbox_selected .rev_wiztemp_listtext").text());
+					thisPopup.find("#wizard_review_iso_p").show();
+					thisPopup.find("#wizard_review_data_disk_offering_p").hide();
+					thisPopup.find("#wizard_review_template").text("Blank Template");
+				} else {  //selected template type is template(non-blank template)
+					thisPopup.find("#wizard_review_template").text(thisPopup.find("#step1 .rev_wiztemplistbox_selected .rev_wiztemp_listtext").text());
+					thisPopup.find("#wizard_review_data_disk_offering_p").show();
+					thisPopup.find("#wizard_review_data_disk_offering").text(thisPopup.find("#wizard_data_disk_offering input[name=datadisk]:checked").next().text());
+					thisPopup.find("#wizard_review_root_disk_offering_p").hide();
+					thisPopup.find("#wizard_review_iso_p").hide();
 				}	
 								
-				$("#wizard_review_service_offering").text($("#wizard_service_offering input[name=service]:checked").next().text());
-				$("#wizard_review_zone").text($("#wizard_zone option:selected").text());
-				$("#wizard_review_name").text($("#wizard_vm_name").val());
-				$("#wizard_review_group").text($("#wizard_vm_group").val());
-			}
-			
-			if (currentStep > 4) {
+				thisPopup.find("#wizard_review_service_offering").text(thisPopup.find("#wizard_service_offering input[name=service]:checked").next().text());
+				thisPopup.find("#wizard_review_zone").text(thisPopup.find("#wizard_zone option:selected").text());
+				thisPopup.find("#wizard_review_name").text(thisPopup.find("#wizard_vm_name").val());
+				thisPopup.find("#wizard_review_group").text(thisPopup.find("#wizard_vm_group").val());
+				
+				if(thisPopup.find("#wizard_network_groups_container").css("display") != "none" && thisPopup.find("#wizard_network_groups").val() != null) {
+				    var networkGroupList = thisPopup.find("#wizard_network_groups").val().join(",");
+				    thisPopup.find("#wizard_review_network_groups_p").show();
+				    thisPopup.find("#wizard_review_network_groups").text(networkGroupList);				    
+				} else {
+				    thisPopup.find("#wizard_review_network_groups_p").hide();
+				    thisPopup.find("#wizard_review_network_groups").text("");
+				}								
+			}			
+			if (currentStepInVmPopup == 4) {
 				// Create a new VM!!!!
-				var soId = $("#wizard_service_offering input[name=service]:checked").val();
-				var doId = $("#wizard_data_disk_offering input[name=datadisk]:checked").val();
+				var moreCriteria = [];								
+				moreCriteria.push("&zoneId="+thisPopup.find("#wizard_zone").val());
 				
-				var tId = $("#step2 .rev_wiztemplistbox_selected").attr("id");
-				var zId = $("#wizard_zone").val();
-				var name = trim($("#wizard_vm_name").val());
-				var group = trim($("#wizard_vm_group").val());
-				var diskOffering = null;
+				var name = trim(thisPopup.find("#wizard_vm_name").val());
+				if (name != null && name.length > 0) 
+					moreCriteria.push("&displayname="+encodeURIComponent(name));	
 				
-				var template = "&templateId="+tId;
-				if ($("#wiz_blank").hasClass("rev_wizmid_selectedtempbut")) {
-					diskOffering = "&diskOfferingId="+$("#wizard_root_disk_offering input[name=rootdisk]:checked").val();
-				} else {
-					diskOffering = "&diskOfferingId="+doId;
-				}
-				if (group != null && group.length > 0) {
-					group = "&group="+encodeURIComponent(group);
-				} else {
-					group = "";
-				}
-				if (name != null && name.length > 0) {
-					name = "&displayname="+encodeURIComponent(name);
-				} else {
-					name = "";
-				}
+				var group = trim(thisPopup.find("#wizard_vm_group").val());
+				if (group != null && group.length > 0) 
+					moreCriteria.push("&group="+encodeURIComponent(group));			
+											
+				if(thisPopup.find("#wizard_network_groups_container").css("display") != "none" && thisPopup.find("#wizard_network_groups").val() != null) {
+				    var networkGroupList = thisPopup.find("#wizard_network_groups").val().join(",");
+				    moreCriteria.push("&networkgrouplist="+encodeURIComponent(networkGroupList));	
+				}				
+												
+				moreCriteria.push("&templateId="+thisPopup.find("#step1 .rev_wiztemplistbox_selected").attr("id"));
+								
+				moreCriteria.push("&serviceOfferingId="+thisPopup.find("#wizard_service_offering input[name=service]:checked").val());
+										
+				if (thisPopup.find("#wiz_blank").hasClass("rev_wizmid_selectedtempbut")) { //ISO
+				    var diskOfferingId = thisPopup.find("#wizard_root_disk_offering input[name=rootdisk]:checked").val();
+					moreCriteria.push("&diskOfferingId="+diskOfferingId);
+		        }
+				else { //template
+				    var diskOfferingId = thisPopup.find("#wizard_data_disk_offering input[name=datadisk]:checked").val();					    	    
+				    if(diskOfferingId != null && diskOfferingId != "")
+					    moreCriteria.push("&diskOfferingId="+diskOfferingId);	
+			    }							 
+							
 				vmWizardClose();
 				
 				var vmInstance = vmInstanceTemplate.clone(true);
@@ -1640,7 +1669,7 @@ function showInstancesTab(p_domainId, p_account) {
 				$("#submenu_content_vms #grid_content").prepend(vmInstance);
 				
 				$.ajax({
-					data: "command=deployVirtualMachine&zoneId="+zId+"&serviceOfferingId="+soId+diskOffering+template+group+name+"&response=json",
+					data: "command=deployVirtualMachine"+moreCriteria.join("")+"&response=json",
 					dataType: "json",
 					success: function(json) {
 						var jobId = json.deployvirtualmachineresponse.jobid;
@@ -1698,17 +1727,26 @@ function showInstancesTab(p_domainId, p_account) {
 							},
 							0
 						);
-					}
+					},
+					error: function(XMLHttpResponse) {					    
+						vmInstance.slideUp("slow", function() {
+							$(this).remove();
+						});					    
+					    handleError(XMLHttpResponse);
+					}					
 				});
-			} else {
-				vmPopup.find(".rev_wizmid_actionback").show();
-			}
+			} 		
+			
+			//since no error, move to next step
+			vmPopup.find(".rev_wizmid_actionback").show();
+			vmPopup.find("#step" + currentStepInVmPopup).hide().next().show();
+			currentStepInVmPopup++;					
 		});
 		
 		vmPopup.find(".rev_wizmid_actionback").bind("click", function(event) {		
-			vmPopup.find("#step" + currentStep).hide().prev().show();
-			currentStep--;
-			if (currentStep == 1) {
+			vmPopup.find("#step" + currentStepInVmPopup).hide().prev().show();
+			currentStepInVmPopup--;
+			if (currentStepInVmPopup == 1) {
 				vmPopup.find(".rev_wizmid_actionback").hide();
 			}
 			return false; //event.preventDefault() + event.stopPropagation()
@@ -1848,9 +1886,10 @@ function showInstancesTab(p_domainId, p_account) {
 														    routerJSONToTemplate(json, template, true);
 														    template.find(".loadingmessage_container .loadingmessage_top p").html("Your router has been successfully started.");
 														    template.find(".loadingmessage_container").fadeIn("slow");														   
-														    template.find("#router_action_view_console").data("proxyUrl", "console?cmd=access&vm=" + json.id + "&t=" + json.displayname).data("vmId", json.id).click(function(event) {
+														    template.find("#router_action_view_console").data("proxyUrl", "console?cmd=access&vm=" + json.id).data("vmId", json.id).click(function(event) {
 																event.preventDefault();
-																window.open($(this).data("proxyUrl"),$(this).data("vmId"),"width=820,height=640,resizable=yes,menubar=no,status=no,scrollbars=no,toolbar=no,location=no");
+																var viewer = window.open($(this).data("proxyUrl"),$(this).data("vmId"),"width=820,height=640,resizable=yes,menubar=no,status=no,scrollbars=no,toolbar=no,location=no");
+																viewer.focus();
 															});
 													    } else if (result.jobstatus == 2) {
 														    // Failed
@@ -2098,9 +2137,10 @@ function showInstancesTab(p_domainId, p_account) {
 														    consoleJSONToTemplate(json, template, true);
 														    template.find(".loadingmessage_container .loadingmessage_top p").html("Your system vm has been successfully started.");
 														    template.find(".loadingmessage_container").fadeIn("slow");											    
-														    template.find("#console_action_view_console").data("proxyUrl", "console?cmd=access&vm=" + json.id + "&t=" + json.displayname).data("vmId",json.id).click(function(event) {
+														    template.find("#console_action_view_console").data("proxyUrl", "console?cmd=access&vm=" + json.id).data("vmId",json.id).click(function(event) {
 																event.preventDefault();
-																window.open($(this).data("proxyUrl"),$(this).data("vmId"),"width=820,height=640,resizable=yes,menubar=no,status=no,scrollbars=no,toolbar=no,location=no");
+																var viewer = window.open($(this).data("proxyUrl"),$(this).data("vmId"),"width=820,height=640,resizable=yes,menubar=no,status=no,scrollbars=no,toolbar=no,location=no");
+																viewer.focus();
 															});														    
 													    } else if (result.jobstatus == 2) {
 														    // Failed
@@ -2335,6 +2375,7 @@ function showInstancesTab(p_domainId, p_account) {
 			template.find("#router_name").text(json.name);
 			template.find("#router_public_ip").text(json.publicip);
 			template.find("#router_private_ip").text(json.privateip);
+			template.find("#router_guest_ip").text(json.guestipaddress);
 			if(json.hostname)
 				template.find("#router_host").text(json.hostname);
 			else
@@ -2350,9 +2391,10 @@ function showInstancesTab(p_domainId, p_account) {
 				template.find("#router_state").text(json.state).removeClass("grid_celltitles grid_stoppedtitles").addClass("grid_runningtitles");
 				template.find(".grid_links").find("#router_action_start_container").hide();							
 			    // Console Proxy UI
-				template.find("#router_action_view_console").data("proxyUrl", "console?cmd=access&vm=" + json.id + "&t=" + json.displayname).data("vmId",json.id).click(function(event) {
+				template.find("#router_action_view_console").data("proxyUrl", "console?cmd=access&vm=" + json.id).data("vmId",json.id).click(function(event) {
 					event.preventDefault();
-					window.open($(this).data("proxyUrl"),$(this).data("vmId"),"width=820,height=640,resizable=yes,menubar=no,status=no,scrollbars=no,toolbar=no,location=no");
+					var viewer = window.open($(this).data("proxyUrl"),$(this).data("vmId"),"width=820,height=640,resizable=yes,menubar=no,status=no,scrollbars=no,toolbar=no,location=no");
+					viewer.focus();
 				});				
 			} else if (json.state == 'Stopped') {
 				template.find("#router_state_bar").removeClass("yellow_statusbar grey_statusbar green_statusbar").addClass("red_statusbar");
@@ -2452,9 +2494,10 @@ function showInstancesTab(p_domainId, p_account) {
 				template.find("#console_state").text(json.state).removeClass("grid_celltitles grid_stoppedtitles").addClass("grid_runningtitles");
 				template.find(".grid_links").find("#console_action_start_container").hide();				
 				// Console Proxy UI
-				template.find("#console_action_view_console").data("proxyUrl", "console?cmd=access&vm=" + json.id + "&t=" + json.displayname).data("vmId", json.id).click(function(event) {
+				template.find("#console_action_view_console").data("proxyUrl", "console?cmd=access&vm=" + json.id).data("vmId", json.id).click(function(event) {
 					event.preventDefault();
-					window.open($(this).data("proxyUrl"),$(this).data("vmId"),"width=820,height=640,resizable=yes,menubar=no,status=no,scrollbars=no,toolbar=no,location=no");
+					var viewer = window.open($(this).data("proxyUrl"),$(this).data("vmId"),"width=820,height=640,resizable=yes,menubar=no,status=no,scrollbars=no,toolbar=no,location=no");
+					viewer.focus();
 				});
 				
 			} else if (json.state == 'Stopped') {

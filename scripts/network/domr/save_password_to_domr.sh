@@ -1,5 +1,6 @@
 #!/bin/bash
-# $Id: save_password_to_domr.sh 9373 2010-06-09 01:57:36Z edison $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/network/domr/save_password_to_domr.sh $
+# $Id: save_password_to_domr.sh 9804 2010-06-22 18:36:49Z alex $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.1.x/java/scripts/network/domr/save_password_to_domr.sh $
+# @VERSION@
 
 #replace a line in a file of the form key=value
 #   $1 filename

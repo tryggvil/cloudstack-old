@@ -27,6 +27,7 @@ import org.apache.log4j.Logger;
 import com.cloud.api.BaseCmd;
 import com.cloud.api.ServerApiException;
 import com.cloud.storage.DiskOfferingVO;
+import com.cloud.user.User;
 import com.cloud.utils.Pair;
 
 public class UpdateDiskOfferingCmd extends BaseCmd{
@@ -38,6 +39,8 @@ public class UpdateDiskOfferingCmd extends BaseCmd{
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ID, Boolean.TRUE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.NAME, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.DISPLAY_TEXT, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.USER_ID, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.TAGS, Boolean.FALSE));
     }
 
     @Override
@@ -54,7 +57,13 @@ public class UpdateDiskOfferingCmd extends BaseCmd{
         Long id = (Long)params.get(BaseCmd.Properties.ID.getName());
         String name = (String)params.get(BaseCmd.Properties.NAME.getName());
         String displayText = (String)params.get(BaseCmd.Properties.DISPLAY_TEXT.getName());
+        Long userId = (Long)params.get(BaseCmd.Properties.USER_ID.getName());
+        String tags = (String)params.get(BaseCmd.Properties.TAGS.getName());
         Boolean editSOResult = false;
+        
+        if (userId == null) {
+            userId = Long.valueOf(User.UID_SYSTEM);
+        }
         
         //Verify input parameters
         DiskOfferingVO offering = getManagementServer().findDiskOfferingById(id);
@@ -62,28 +71,15 @@ public class UpdateDiskOfferingCmd extends BaseCmd{
     		throw new ServerApiException(BaseCmd.PARAM_ERROR, "unable to find disk offering " + id);
     	}
 
-    	if (name == null) {
-    		name = offering.getName();
-    	}
-
-    	if (displayText == null) {
-    		displayText = offering.getDisplayText();
-    	}
-
-        try {     
-        	getManagementServer().updateDiskOffering(id, name, displayText);
-        	editSOResult = true;
+        try {
+        	getManagementServer().updateDiskOffering(userId, id, name, displayText, tags);
         } catch (Exception ex) {
             s_logger.error("Exception updating disk offering", ex);
             throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Failed to update disk offering " + id + ":  internal error.");
         }
 
         List<Pair<String, Object>> returnValues = new ArrayList<Pair<String, Object>>();
-        if (editSOResult == true) {
-        	returnValues.add(new Pair<String, Object>(BaseCmd.Properties.SUCCESS.getName(), Boolean.TRUE));
-        } else {
-        	throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "Failed to update disk offering " + id);
-        }
+        returnValues.add(new Pair<String, Object>(BaseCmd.Properties.SUCCESS.getName(), Boolean.TRUE));
         return returnValues;
-    }  
+    }
 }

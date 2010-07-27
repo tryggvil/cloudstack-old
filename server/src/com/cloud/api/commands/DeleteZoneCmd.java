@@ -27,6 +27,7 @@ import org.apache.log4j.Logger;
 import com.cloud.api.BaseCmd;
 import com.cloud.api.ServerApiException;
 import com.cloud.dc.DataCenterVO;
+import com.cloud.user.User;
 import com.cloud.utils.Pair;
 
 public class DeleteZoneCmd extends BaseCmd {
@@ -37,6 +38,7 @@ public class DeleteZoneCmd extends BaseCmd {
 
     static {
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ID, Boolean.TRUE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.USER_ID, Boolean.FALSE));
     }
 
     public String getName() {
@@ -49,6 +51,11 @@ public class DeleteZoneCmd extends BaseCmd {
     @Override
     public List<Pair<String, Object>> execute(Map<String, Object> params) {
     	Long zoneId = (Long) params.get(BaseCmd.Properties.ID.getName());
+    	Long userId = (Long)params.get(BaseCmd.Properties.USER_ID.getName());
+    	
+    	if (userId == null) {
+            userId = Long.valueOf(User.UID_SYSTEM);
+        }
     	
     	//verify input parameters
     	DataCenterVO zone = getManagementServer().findDataCenterById(zoneId);
@@ -57,7 +64,7 @@ public class DeleteZoneCmd extends BaseCmd {
     	}
 
         try {
-             getManagementServer().deleteZone(zoneId);
+             getManagementServer().deleteZone(userId, zoneId);
         } catch (Exception ex) {
             s_logger.error("Exception deleting zone", ex);
             throw new ServerApiException(BaseCmd.INTERNAL_ERROR, ex.getMessage());

@@ -19,6 +19,8 @@ package com.cloud.host;
 
 import java.util.Date;
 
+import com.cloud.hypervisor.Hypervisor;
+
 
 /**
  *  Host represents one particular host server.
@@ -26,7 +28,6 @@ import java.util.Date;
 public interface Host {
     public enum Type {
         Storage(false),
-        Computing(false),
         Routing(false),
         SecondaryStorage(false),
         ConsoleProxy(true);
@@ -47,13 +48,6 @@ public interface Host {
             }
             return strs;
         }
-    }
-    
-    public enum HypervisorType {
-    	None, //for storage hosts
-    	Xen,
-    	XenServer,
-    	KVM;
     }
     
     /**
@@ -139,5 +133,36 @@ public interface Host {
     /**
      * @return type of hypervisor
      */
-    HypervisorType getHypervisorType();
+    Hypervisor.Type getHypervisorType();
+    
+    /**
+     * @return disconnection date
+     */
+    Date getDisconnectedOn();
+    /**
+     * @return version
+     */
+    public String getVersion();
+    /*
+     * @return total size
+     */
+    public long getTotalSize();
+    /*
+     * @return capabilities
+     */
+    public String getCapabilities();
+    /*
+     * @return last pinged time
+     */
+    public long getLastPinged();
+    /*
+     * @return management server id
+     */
+    public Long getManagementServerId();
+    /*
+     *@return removal date
+     */
+    public Date getRemoved();
+    
+    public Long getClusterId();
 }

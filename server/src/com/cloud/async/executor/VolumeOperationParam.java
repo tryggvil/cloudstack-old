@@ -20,7 +20,7 @@ package com.cloud.async.executor;
 
 public class VolumeOperationParam {
 	
-	public enum VolumeOp { Create, Delete, Attach, Detach;}
+	public enum VolumeOp { Create, Attach, Detach;}
 	
 	// Used for all VolumeOps
 	private VolumeOp op;
@@ -35,8 +35,11 @@ public class VolumeOperationParam {
 	// Used for Attach and Detach
 	private long vmId;
 	
+	
 	// Used for Attach, Detach, and Delete
 	private long volumeId;
+	private long eventId;
+	private Long deviceId;
 
 	public VolumeOperationParam() {
 	}
@@ -104,5 +107,21 @@ public class VolumeOperationParam {
 	public void setVmId(long vmId) {
 		this.vmId = vmId;
 	}
+
+    public void setEventId(long eventId) {
+        this.eventId = eventId;
+    }
+
+    public long getEventId() {
+        return eventId;
+    }
+
+    public void setDeviceId(Long deviceId) {
+        this.deviceId = deviceId;
+    }
+
+    public Long getDeviceId() {
+        return deviceId;
+    }
 
 }

@@ -27,6 +27,7 @@ import org.apache.log4j.Logger;
 import com.cloud.api.BaseCmd;
 import com.cloud.api.ServerApiException;
 import com.cloud.dc.DataCenterVO;
+import com.cloud.user.User;
 import com.cloud.utils.Pair;
 
 public class CreateZoneCmd extends BaseCmd {
@@ -43,6 +44,7 @@ public class CreateZoneCmd extends BaseCmd {
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.INTERNAL_DNS2, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.VNET, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.GUEST_CIDR_ADDRESS, Boolean.TRUE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.USER_ID, Boolean.FALSE));
     }
 
     @Override
@@ -63,11 +65,16 @@ public class CreateZoneCmd extends BaseCmd {
     	String dns4 = (String) params.get(BaseCmd.Properties.INTERNAL_DNS2.getName());
     	String vnet = (String) params.get(BaseCmd.Properties.VNET.getName());
     	String guestCidr = (String) params.get(BaseCmd.Properties.GUEST_CIDR_ADDRESS.getName());
+    	Long userId = (Long)params.get(BaseCmd.Properties.USER_ID.getName());
 
+    	if (userId == null) {
+            userId = Long.valueOf(User.UID_SYSTEM);
+        }
+    	
     	DataCenterVO zone = null;
     	
         try {
-             zone = getManagementServer().createZone(zoneName, dns1, dns2, dns3, dns4, vnet, guestCidr);
+             zone = getManagementServer().createZone(userId, zoneName, dns1, dns2, dns3, dns4, vnet, guestCidr);
         } catch (Exception ex) {
             s_logger.error("Exception creating zone", ex);
             throw new ServerApiException(BaseCmd.INTERNAL_ERROR, ex.getMessage());

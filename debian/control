@@ -54,15 +54,15 @@ Provides: vmops-vnet
 Conflicts: vmops-vnet
 Replaces: vmops-vnet
 Architecture: any
-Depends: cloud-daemonize (= ${source:Version}), python, bridge-utils, net-tools
+Depends: cloud-daemonize (= ${source:Version}), cloud-python (= ${source:Version}), python, bridge-utils, net-tools
 Description: Cloud.com-specific virtual network daemon
  The Cloud.com virtual network daemon manages virtual networks used in the
  Cloud.com Cloud Stack.
 
 Package: cloud-agent-scripts
-Provides: vmops-agent-scripts, vmops-console, cloud-console, vmops-console-proxy, cloud-console-proxy
-Conflicts: vmops-agent-scripts, vmops-console, cloud-console, vmops-console-proxy, cloud-console-proxy
-Replaces: vmops-agent-scripts, vmops-console, cloud-console, vmops-console-proxy, cloud-console-proxy
+Provides: vmops-agent-scripts, vmops-console, cloud-console, vmops-console-proxy
+Conflicts: vmops-agent-scripts, vmops-console, cloud-console, vmops-console-proxy
+Replaces: vmops-agent-scripts, vmops-console, cloud-console, vmops-console-proxy
 Architecture: any
 Depends: openjdk-6-jre, python, bash, bzip2, gzip, unzip, nfs-common, openssh-client
 Description: Cloud.com agent scripts
@@ -117,7 +117,7 @@ Provides: vmops-client
 Conflicts: vmops-client
 Replaces: vmops-client
 Architecture: any
-Depends: openjdk-6-jre, cloud-deps (= ${source:Version}), cloud-utils (= ${source:Version}), cloud-server (= ${source:Version}), cloud-client-ui (= ${source:Version}), cloud-setup (= ${source:Version}), cloud-agent-scripts (= ${source:Version}), tomcat6, libws-commons-util-java, libcommons-dbcp-java, libcommons-collections-java, libcommons-httpclient-java, sysvinit-utils, chkconfig, sudo, jsvc, python-mysqldb, python-paramiko, augeas-tools
+Depends: openjdk-6-jre, cloud-deps (= ${source:Version}), cloud-utils (= ${source:Version}), cloud-server (= ${source:Version}), cloud-client-ui (= ${source:Version}), cloud-setup (= ${source:Version}), cloud-agent-scripts (= ${source:Version}), cloud-python (= ${source:Version}), tomcat6, libws-commons-util-java, libcommons-dbcp-java, libcommons-collections-java, libcommons-httpclient-java, sysvinit-utils, chkconfig, sudo, jsvc, python-mysqldb, python-paramiko, augeas-tools
 Description: Cloud.com client
  The Cloud.com management server is the central point of coordination,
  management, and intelligence in the Cloud.com Cloud Stack.  This package
@@ -128,25 +128,39 @@ Provides: vmops-setup
 Conflicts: vmops-setup
 Replaces: vmops-setup
 Architecture: any
-Depends: openjdk-6-jre, python, cloud-utils (= ${source:Version}), mysql-client, cloud-deps (= ${source:Version}), cloud-server (= ${source:Version})
+Depends: openjdk-6-jre, python, cloud-utils (= ${source:Version}), mysql-client, cloud-deps (= ${source:Version}), cloud-server (= ${source:Version}), cloud-python (= ${source:Version}), python-mysqldb
 Description: Cloud.com client
  The Cloud.com setup tools let you set up your Management Server and Usage Server.
+
+Package: cloud-python
+Architecture: any
+Depends: python
+Description: Cloud.com Python library
+ The Cloud.com Python library contains a few Python modules that the
+ CloudStack uses.
 
 Package: cloud-agent
 Provides: vmops-agent
 Conflicts: vmops-agent
 Replaces: vmops-agent
 Architecture: any
-Depends: openjdk-6-jre, cloud-utils (= ${source:Version}), cloud-core (= ${source:Version}), cloud-deps (= ${source:Version}), cloud-agent-scripts (= ${source:Version}), cloud-vnet (= ${source:Version}), libcommons-httpclient-java, libcommons-collections-java, libcommons-dbcp-java, libcommons-pool-java, libcommons-logging-java, libvirt0, cloud-daemonize, sysvinit-utils, chkconfig, qemu-kvm, libvirt-bin, cgroup-bin, augeas-tools, uuid-runtime
+Depends: openjdk-6-jre, cloud-utils (= ${source:Version}), cloud-core (= ${source:Version}), cloud-deps (= ${source:Version}), cloud-python (= ${source:Version}), cloud-agent-scripts (= ${source:Version}), cloud-vnet (= ${source:Version}), libcommons-httpclient-java, libcommons-collections-java, libcommons-dbcp-java, libcommons-pool-java, libcommons-logging-java, libvirt0, cloud-daemonize, sysvinit-utils, chkconfig, qemu-kvm, libvirt-bin, cgroup-bin, augeas-tools, uuid-runtime, rsync
 Description: Cloud.com agent
  The Cloud.com agent is in charge of managing shared computing resources in
  a Cloud.com Cloud Stack-powered cloud.  Install this package if this computer
  will participate in your cloud.
 
+Package: cloud-console-proxy
+Architecture: any
+Depends: openjdk-6-jre, cloud-utils (= ${source:Version}), cloud-core (= ${source:Version}), cloud-deps (= ${source:Version}), cloud-agent (= ${source:Version}), libcommons-httpclient-java, libcommons-collections-java, libcommons-dbcp-java, libcommons-pool-java, libcommons-logging-java, cloud-daemonize, sysvinit-utils, chkconfig, augeas-tools, uuid-runtime
+Description: Cloud.com console proxy
+ The Cloud.com console proxy is the service in charge of granting console
+ access into virtual machines managed by the Cloud.com CloudStack.
+
 Package: cloud-premium
-Provides: vmops-premium
-Conflicts: vmops-premium
-Replaces: vmops-premium
+Provides: vmops-premium, cloud-premium-plugin-zynga, cloud-premium-vendor-zynga
+Conflicts: vmops-premium, cloud-premium-plugin-zynga, cloud-premium-vendor-zynga
+Replaces: vmops-premium, cloud-premium-plugin-zynga, cloud-premium-vendor-zynga
 Architecture: any
 Depends: openjdk-6-jre, cloud-utils (= ${source:Version}), cloud-premium-deps (= ${source:Version})
 Description: Cloud.com premium components
@@ -157,7 +171,7 @@ Provides: vmops-usage
 Conflicts: vmops-usage
 Replaces: vmops-usage
 Architecture: any
-Depends: openjdk-6-jre, cloud-utils (= ${source:Version}), cloud-core (= ${source:Version}), cloud-deps (= ${source:Version}), cloud-server (= ${source:Version}), cloud-premium (= ${source:Version}), cloud-daemonize (= ${source:Version}), cloud-setup (= ${source:Version})
+Depends: openjdk-6-jre, cloud-utils (= ${source:Version}), cloud-core (= ${source:Version}), cloud-deps (= ${source:Version}), cloud-server (= ${source:Version}), cloud-premium (= ${source:Version}), cloud-daemonize (= ${source:Version}), cloud-setup (= ${source:Version}), cloud-client (= ${source:Version})
 Description: Cloud.com usage monitor
  The Cloud.com usage monitor provides usage accounting across the entire cloud for
  cloud operators to charge based on usage parameters.

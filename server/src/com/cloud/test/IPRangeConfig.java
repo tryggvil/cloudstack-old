@@ -352,6 +352,12 @@ public class IPRangeConfig {
     	if (type.equals("public")) problemIPs = savePublicIPRange(txn, startIPLong, endIPLong, zoneId, vlanDbId);
     	else if (type.equals("private")) problemIPs = savePrivateIPRange(txn, startIPLong, endIPLong, podId, zoneId);
     	
+    	String[] linkLocalIps = NetUtils.getLinkLocalIPRange(10);
+    	long startLinkLocalIp = NetUtils.ip2Long(linkLocalIps[0]);
+    	long endLinkLocalIp = NetUtils.ip2Long(linkLocalIps[1]);
+    	
+    	saveLinkLocalPrivateIPRange(txn, startLinkLocalIp,  endLinkLocalIp, podId, zoneId);
+    	
     	return problemIPs;
     }
     
@@ -386,6 +392,36 @@ public class IPRangeConfig {
 	
 	private Vector<String> savePrivateIPRange(Transaction txn, long startIP, long endIP, long podId, long zoneId) {
 		String insertSql = "INSERT INTO `cloud`.`op_dc_ip_address_alloc` (ip_address, data_center_id, pod_id) VALUES (?, ?, ?)";
+		Vector<String> problemIPs = new Vector<String>();
+		PreparedStatement stmt = null;
+		
+		Connection conn = null;
+		try {
+			conn = txn.getConnection();
+		} catch (SQLException e) {
+			System.out.println("Exception: " + e.getMessage());
+			printError("Unable to start DB connection to save private IPs. Please contact Cloud Support.");
+		}
+		
+        while (startIP <= endIP) {
+        	try {
+        		stmt = conn.prepareStatement(insertSql);
+        		stmt.setString(1, NetUtils.long2Ip(startIP));
+        		stmt.setLong(2, zoneId);
+        		stmt.setLong(3, podId);
+        		stmt.executeUpdate();
+        		stmt.close();
+        	} catch (Exception ex) {
+        		 problemIPs.add(NetUtils.long2Ip(startIP));
+        	}
+        	startIP += 1;
+        }
+        
+        return problemIPs;
+	}
+	
+	private Vector<String> saveLinkLocalPrivateIPRange(Transaction txn, long startIP, long endIP, long podId, long zoneId) {
+		String insertSql = "INSERT INTO `cloud`.`op_dc_link_local_ip_address_alloc` (ip_address, data_center_id, pod_id) VALUES (?, ?, ?)";
 		Vector<String> problemIPs = new Vector<String>();
 		PreparedStatement stmt = null;
 		

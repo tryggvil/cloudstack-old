@@ -3,6 +3,9 @@
 
 ### Account commands
 updateAccount=com.cloud.api.commands.UpdateAccountCmd;3
+disableAccount=com.cloud.api.commands.DisableAccountCmd;3
+enableAccount=com.cloud.api.commands.EnableAccountCmd;3
+lockAccount=com.cloud.api.commands.LockAccountCmd;3
 listAccounts=com.cloud.api.commands.ListAccountsCmd;15
 
 #### User commands
@@ -13,9 +16,7 @@ listUsers=com.cloud.api.commands.ListUsersCmd;7
 lockUser=com.cloud.api.commands.LockUserCmd;3
 disableUser=com.cloud.api.commands.DisableUserCmd;3
 enableUser=com.cloud.api.commands.EnableUserCmd;3
-disableAccount=com.cloud.api.commands.DisableAccountCmd;3
-enableAccount=com.cloud.api.commands.EnableAccountCmd;3
-lockAccount=com.cloud.api.commands.LockAccountCmd;3
+
 
 #### Domain commands
 createDomain=com.cloud.api.commands.CreateDomainCmd;3
@@ -75,36 +76,26 @@ listOsTypes=com.cloud.api.commands.ListGuestOsCmd;15
 listOsCategories=com.cloud.api.commands.ListGuestOsCategoriesCmd;15
 
 #### service offering commands
-createServiceOffering=com.cloud.api.commands.CreateServiceOfferingCmd;3
-deleteServiceOffering=com.cloud.api.commands.DeleteServiceOfferingCmd;3
-updateServiceOffering=com.cloud.api.commands.UpdateServiceOfferingCmd;3
+createServiceOffering=com.cloud.api.commands.CreateServiceOfferingCmd;1
+deleteServiceOffering=com.cloud.api.commands.DeleteServiceOfferingCmd;1
+updateServiceOffering=com.cloud.api.commands.UpdateServiceOfferingCmd;1
 listServiceOfferings=com.cloud.api.commands.ListServiceOfferingsCmd;15
 
 #### disk offering commands
-createDiskOffering=com.cloud.api.commands.CreateDiskOfferingCmd;3
-updateDiskOffering=com.cloud.api.commands.UpdateDiskOfferingCmd;3
-deleteDiskOffering=com.cloud.api.commands.DeleteDiskOfferingCmd;3
+createDiskOffering=com.cloud.api.commands.CreateDiskOfferingCmd;1
+updateDiskOffering=com.cloud.api.commands.UpdateDiskOfferingCmd;1
+deleteDiskOffering=com.cloud.api.commands.DeleteDiskOfferingCmd;1
 listDiskOfferings=com.cloud.api.commands.ListDiskOfferingsCmd;15
 
 #### vlan commands
-#createVlan=com.cloud.api.commands.CreateVlanCmd;1
-#deleteVlan=com.cloud.api.commands.DeleteVlanCmd;1
-
 createVlanIpRange=com.cloud.api.commands.CreateVlanIpRangeCmd;1
 deleteVlanIpRange=com.cloud.api.commands.DeleteVlanIpRangeCmd;1
 listVlanIpRanges=com.cloud.api.commands.ListVlanIpRangesCmd;1
-
-#createVlanRange=com.cloud.api.commands.CreateVlanRangeCmd;1
-#deleteVlanRange=com.cloud.api.commands.DeleteVlanRangeCmd;1
-#listVlanRanges=com.cloud.api.commands.ListVlanRangesCmd;1
 
 #### address commands
 associateIpAddress=com.cloud.api.commands.AssociateIPAddrCmd;15
 disassociateIpAddress=com.cloud.api.commands.DisassociateIPAddrCmd;15
 listPublicIpAddresses=com.cloud.api.commands.ListPublicIpAddressesCmd;15
-listPrivateIpAddresses=com.cloud.api.commands.ListPrivateIpAddressesCmd;1
-updatePublicIpRange=com.cloud.api.commands.UpdatePublicIpRangeCmd;1
-updatePrivateIpRange=com.cloud.api.commands.UpdatePrivateIpRangeCmd;1
 
 #### firewall commands
 createPortForwardingServiceRule=com.cloud.api.commands.CreatePortForwardingServiceRuleCmd;15
@@ -117,12 +108,14 @@ removePortForwardingService=com.cloud.api.commands.RemovePortForwardingServiceCm
 listPortForwardingServices=com.cloud.api.commands.ListPortForwardingServicesCmd;15
 listPortForwardingServicesByVm=com.cloud.api.commands.ListPortForwardingServicesByVmCmd;15
 listPortForwardingRules=com.cloud.api.commands.ListPortForwardingRulesCmd;15
-#createPortForwardingRule=com.cloud.api.commands.CreateIPForwardingRuleCmd;15
-#deletePortForwardingRule=com.cloud.api.commands.DeleteIPForwardingRuleCmd;15
+createPortForwardingRule=com.cloud.api.commands.CreateIPForwardingRuleCmd;15
+deletePortForwardingRule=com.cloud.api.commands.DeleteIPForwardingRuleCmd;15
+updatePortForwardingRule=com.cloud.api.commands.UpdateIPForwardingRuleCmd;15
 
 #### load balancer commands
 createLoadBalancerRule=com.cloud.api.commands.CreateLoadBalancerRuleCmd;15
 deleteLoadBalancerRule=com.cloud.api.commands.DeleteLoadBalancerRuleCmd;15
+updateLoadBalancerRule=com.cloud.api.commands.UpdateLoadBalancerRuleCmd;15
 removeFromLoadBalancerRule=com.cloud.api.commands.RemoveFromLoadBalancerRuleCmd;15
 assignToLoadBalancerRule=com.cloud.api.commands.AssignToLoadBalancerRuleCmd;15
 listLoadBalancerRules=com.cloud.api.commands.ListLoadBalancerRulesCmd;15
@@ -196,4 +189,17 @@ listAsyncJobs=com.cloud.api.commands.ListAsyncJobsCmd;15
 #### storage pools commands
 listStoragePools=com.cloud.api.commands.ListStoragePoolsCmd;1
 createStoragePool=com.cloud.api.commands.CreateStoragePoolCmd;1
+updateStoragePool=com.cloud.api.commands.UpdateStoragePoolCmd;1
 deleteStoragePool=com.cloud.api.commands.DeletePoolCmd;1
+listClusters=com.cloud.api.commands.ListClustersCmd;1
+
+#### network group commands
+createNetworkGroup=com.cloud.api.commands.CreateNetworkGroupCmd;11
+deleteNetworkGroup=com.cloud.api.commands.DeleteNetworkGroupCmd;11
+authorizeNetworkGroupIngress=com.cloud.api.commands.AuthorizeNetworkGroupIngressCmd;11
+revokeNetworkGroupIngress=com.cloud.api.commands.RevokeNetworkGroupIngressCmd;11
+listNetworkGroups=com.cloud.api.commands.ListNetworkGroupsCmd;11
+
+registerPreallocatedLun=com.cloud.server.api.commands.RegisterPreallocatedLunCmd;1
+deletePreallocatedLun=com.cloud.server.api.commands.DeletePreallocatedLunCmd;1
+listPreallocatedLuns=com.cloud.api.commands.ListPreallocatedLunsCmd;1

@@ -17,11 +17,15 @@
  */
 package com.cloud.configuration;
 
+import java.util.List;
+
 import com.cloud.dc.DataCenterVO;
 import com.cloud.dc.HostPodVO;
 import com.cloud.dc.VlanVO;
+import com.cloud.dc.Vlan.VlanType;
 import com.cloud.exception.InternalErrorException;
 import com.cloud.exception.InvalidParameterValueException;
+import com.cloud.service.ServiceOfferingVO;
 import com.cloud.storage.DiskOfferingVO;
 import com.cloud.utils.component.Manager;
 
@@ -33,10 +37,11 @@ public interface ConfigurationManager extends Manager {
 	
 	/**
 	 * Updates a configuration entry with a new value
+	 * @param userId
 	 * @param name
 	 * @param value
 	 */
-	void updateConfiguration(String name, String value) throws InvalidParameterValueException, InternalErrorException;
+	void updateConfiguration(long userId, String name, String value) throws InvalidParameterValueException, InternalErrorException;
 	
 	/**
 	 * Creates a new service offering
@@ -48,9 +53,41 @@ public interface ConfigurationManager extends Manager {
 	 * @param displayText
 	 * @param localStorageRequired
 	 * @param offerHA
+	 * @param useVirtualNetwork
 	 * @return ID
 	 */
-	Long createServiceOffering(Long id, String name, int cpu, int ramSize, int speed, String displayText, boolean localStorageRequired, boolean offerHA);
+	ServiceOfferingVO createServiceOffering(long userId, String name, int cpu, int ramSize, int speed, String displayText, boolean localStorageRequired, boolean offerHA, boolean useVirtualNetwork, String tags);
+	
+	/**
+	 * Updates a service offering
+	 * @param serviceOfferingId
+	 * @param userId
+	 * @param name
+	 * @param displayText
+	 * @param offerHA
+	 * @param useVirtualNetwork
+	 * @param tags
+	 * @return updated service offering
+	 */
+	ServiceOfferingVO updateServiceOffering(long serviceOfferingId, long userId, String name, String displayText, Boolean offerHA, Boolean useVirtualNetwork, String tags);
+	
+	/**
+	 * Updates a disk offering
+	 * @param userId
+	 * @param diskOfferingId
+	 * @param name
+	 * @param description
+	 * @param tags
+	 * @return updated disk offering
+	 */
+	DiskOfferingVO updateDiskOffering(long userId, long diskOfferingId, String name, String description, String tags);
+	
+	/**
+	 * Deletes a service offering
+	 * @param userId
+	 * @param serviceOfferingId
+	 */
+	boolean deleteServiceOffering(long userId, long serviceOfferingId);
 	
 	/**
 	 * Creates a new disk offering
@@ -61,21 +98,24 @@ public interface ConfigurationManager extends Manager {
 	 * @param mirrored
 	 * @return ID
 	 */
-	DiskOfferingVO createDiskOffering(long domainId, String name, String description, int numGibibytes, boolean mirrored);
+	DiskOfferingVO createDiskOffering(long domainId, String name, String description, int numGibibytes, boolean mirrored, String tags);
 	
 	/**
 	 * Creates a new pod
+	 * @param userId
 	 * @param podName
 	 * @param zoneId
+	 * @param gateway
 	 * @param cidr
 	 * @param startIp
 	 * @param endIp
 	 * @return Pod
 	 */
-	HostPodVO createPod(String podName, long zoneId, String cidr, String startIp, String endIp) throws InvalidParameterValueException, InternalErrorException;
+	HostPodVO createPod(long userId, String podName, long zoneId, String gateway, String cidr, String startIp, String endIp) throws InvalidParameterValueException, InternalErrorException;
 	
 	/**
      * Edits a pod in the database. Will not allow you to edit pods that are being used anywhere in the system.
+     * @param userId
      * @param podId
      * @param newPodName
      * @param cidr
@@ -83,16 +123,18 @@ public interface ConfigurationManager extends Manager {
 	 * @param endIp
      * @return Pod
      */
-	HostPodVO editPod(long podId, String newPodName, String cidr, String startIp, String endIp) throws InvalidParameterValueException, InternalErrorException;
+	HostPodVO editPod(long userId, long podId, String newPodName, String gateway, String cidr, String startIp, String endIp) throws InvalidParameterValueException, InternalErrorException;
 	
 	 /**
      * Deletes a pod from the database. Will not allow you to delete pods that are being used anywhere in the system.
+     * @param userId
      * @param podId
      */
-	void deletePod(long podId) throws InvalidParameterValueException, InternalErrorException;
+	void deletePod(long userId,long podId) throws InvalidParameterValueException, InternalErrorException;
 	
 	/**
 	 * Creates a new zone
+	 * @param userId
 	 * @param zoneName
 	 * @param dns1
 	 * @param dns2
@@ -102,10 +144,11 @@ public interface ConfigurationManager extends Manager {
 	 * @param guestNetworkCidr
 	 * @return Zone
 	 */
-	DataCenterVO createZone(String zoneName, String dns1, String dns2, String dns3, String dns4, String vnetRange, String guestCidr) throws InvalidParameterValueException, InternalErrorException;
+	DataCenterVO createZone(long userId, String zoneName, String dns1, String dns2, String dns3, String dns4, String vnetRange, String guestCidr) throws InvalidParameterValueException, InternalErrorException;
 	
 	/**
      * Edits a zone in the database. Will not allow you to edit DNS values if there are VMs in the specified zone.
+     * @param userId
      * @param zoneId
      * @param newZoneName
      * @param dns1
@@ -116,37 +159,39 @@ public interface ConfigurationManager extends Manager {
      * @return Zone
      * @return guestCidr
      */
-	DataCenterVO editZone(long zoneId, String newZoneName, String dns1, String dns2, String dns3, String dns4, String vnetRange, String guestCidr) throws InvalidParameterValueException, InternalErrorException;
+	DataCenterVO editZone(long userId, long zoneId, String newZoneName, String dns1, String dns2, String dns3, String dns4, String vnetRange, String guestCidr) throws InvalidParameterValueException, InternalErrorException;
 	
 	/**
      * Deletes a zone from the database. Will not allow you to delete zones that are being used anywhere in the system.
+     * @param userId
      * @param zoneId
      */
-	void deleteZone(long zoneId) throws InvalidParameterValueException, InternalErrorException;
+	void deleteZone(long userId, long zoneId) throws InvalidParameterValueException, InternalErrorException;
 	
 	/**
-	 * Adds/deletes a vlan to/from the database. Will not all you to delete VLANs that are connected to any public IP addresses.
+	 * Adds a VLAN to the database, along with an IP address range. Can add three types of VLANs: (1) zone-wide VLANs on the virtual public network (2) pod-wide direct attached VLANs (3) account-specific direct attached VLANs
+	 * @param userId
+	 * @param vlanType - either "DomR" (VLAN for a virtual public network) or "DirectAttached" (VLAN for IPs that will be directly attached to UserVMs)
 	 * @param zoneId
+	 * @param accountId
+	 * @param podId
 	 * @param add
 	 * @param vlanId
 	 * @param gateway
-	 * @param description
-	 * @param name
-	 * @throws InvalidParameterValueException if no router for that user exists in the zone specified
-	 * @return Vlan
-	 */
-	VlanVO addOrDeletePublicVlan(long zoneId, boolean add, String vlanId, String vlanGateway, String vlanNetmask, String description, String name) throws InvalidParameterValueException;
-	
-	/**
-	 * Adds/deletes public IPs
-	 * @param add - either true or false
-	 * @param vlanDbId
 	 * @param startIP
 	 * @param endIP
-	 * @return Message to display to user
-	 * @throws InvalidParameterValueException if unable to add public ip range
+	 * @throws InvalidParameterValueException
+	 * @return The new VlanVO object
 	 */
-	String changePublicIPRange(boolean add, long vlanDbId, String startIP, String endIP) throws InvalidParameterValueException;
+	VlanVO createVlanAndPublicIpRange(long userId, VlanType vlanType, Long zoneId, Long accountId, Long podId, String vlanId, String vlanGateway, String vlanNetmask, String startIP, String endIP) throws InvalidParameterValueException, InternalErrorException;
+	
+	/**
+	 * Deletes a VLAN from the database, along with all of its IP addresses. Will not delete VLANs that have allocated IP addresses.
+	 * @param userId
+	 * @param vlanDbId
+	 * @return success/failure
+	 */
+	boolean deleteVlanAndPublicIpRange(long userId, long vlanDbId) throws InvalidParameterValueException;
 	
 	/**
 	 * Adds/deletes private IPs
@@ -158,6 +203,20 @@ public interface ConfigurationManager extends Manager {
 	 * @throws InvalidParameterValueException if unable to add private ip range
 	 */
 	String changePrivateIPRange(boolean add, long podId, String startIP, String endIP) throws InvalidParameterValueException;
+	
+	/**
+	 * Converts a comma separated list of tags to a List
+	 * @param tags
+	 * @return List of tags
+	 */
+	List<String> csvTagsToList(String tags);
+	
+	/**
+	 * Converts a List of tags to a comma separated list
+	 * @param tags
+	 * @return String containing a comma separated list of tags
+	 */
+	String listToCsvTags(List<String> tags);
 	
 	/**
 	 * Returns a flag that describes whether the manager is being used in a Premium context or not.

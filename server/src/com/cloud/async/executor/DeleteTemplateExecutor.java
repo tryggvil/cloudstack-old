@@ -43,7 +43,7 @@ public class DeleteTemplateExecutor extends BaseAsyncJobExecutor {
     	ManagementServer managementServer = asyncMgr.getExecutorContext().getManagementServer();
  
 		try {
-			boolean success = managementServer.deleteTemplate(param.getUserId(), param.getTemplateId(), param.getZoneId());
+			boolean success = managementServer.deleteTemplate(param.getUserId(), param.getTemplateId(), param.getZoneId(), param.getEventId());
 
 			if (success) {
 				asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_SUCCEEDED, 0, null);

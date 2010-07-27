@@ -69,7 +69,37 @@ DROP TABLE IF EXISTS `cloud`.`snapshot_policy`;
 DROP TABLE IF EXISTS `cloud`.`snapshot_policy_ref`;
 DROP TABLE IF EXISTS `cloud`.`snapshot_schedule`;
 DROP TABLE IF EXISTS `cloud`.`op_pod_vlan_alloc`;
+DROP TABLE IF EXISTS `cloud`.`ext_lun_alloc`;
+DROP TABLE IF EXISTS `cloud`.`storage_pool_details`;
+DROP TABLE IF EXISTS `cloud`.`ext_lun_details`;
+DROP TABLE IF EXISTS `cloud`.`cluster`;
 
+CREATE TABLE `cloud`.`cluster` (
+  `id` bigint unsigned NOT NULL UNIQUE AUTO_INCREMENT COMMENT 'id',
+  `name` varchar(255) NOT NULL COMMENT 'name for the cluster',
+  `pod_id` bigint unsigned NOT NULL COMMENT 'pod id',
+  `data_center_id` bigint unsigned NOT NULL COMMENT 'data center id',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `cloud`.`ext_lun_alloc` (
+  `id` bigint unsigned NOT NULL UNIQUE AUTO_INCREMENT COMMENT 'id',
+  `size` bigint unsigned NOT NULL COMMENT 'virtual size',
+  `portal` varchar(255) NOT NULL COMMENT 'ip or host name to the storage server',
+  `target_iqn` varchar(255) NOT NULL COMMENT 'target iqn',
+  `data_center_id` bigint unsigned NOT NULL COMMENT 'data center id this belongs to',
+  `lun` int NOT NULL COMMENT 'lun',
+  `taken` datetime COMMENT 'time occupied',
+  `volume_id` bigint unsigned COMMENT 'vm taking this lun',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `cloud`.`ext_lun_details` (
+  `id` bigint unsigned NOT NULL UNIQUE AUTO_INCREMENT COMMENT 'id',
+  `ext_lun_id` bigint unsigned NOT NULL COMMENT 'lun id',
+  `tag` varchar(255) COMMENT 'tags associated with this vm',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE `cloud`.`op_host_upgrade` (
   `host_id` bigint unsigned NOT NULL UNIQUE COMMENT 'host id',
@@ -79,27 +109,15 @@ CREATE TABLE `cloud`.`op_host_upgrade` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE `cloud`.`op_lock` (
-  `key` varchar(128) NOT NULL COMMENT 'primary key of the table',
+  `key` varchar(128) NOT NULL UNIQUE COMMENT 'primary key of the table',
   `mac` varchar(17) NOT NULL COMMENT 'mac address of who acquired this lock',
   `ip` varchar(15) NOT NULL COMMENT 'ip address of who acquired this lock',
-  `thread` varchar(256) NOT NULL COMMENT 'Thread that acquired this lock',
+  `thread` varchar(255) NOT NULL COMMENT 'Thread that acquired this lock',
   `acquired_on` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Time acquired',
   `waiters` int NOT NULL DEFAULT 0 COMMENT 'How many have waited for this',
   PRIMARY KEY (`key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `cloud`.`op_host_queue` (
-  `id` bigint unsigned UNIQUE NOT NULL AUTO_INCREMENT COMMENT 'id',
-  `host_id` bigint unsigned NOT NULL COMMENT 'id of the host',
-  `command` varchar(256) NOT NULL COMMENT 'command sending to the host',
-  `listener` varchar(256) NOT NULL COMMENT 'handler class for this command', 
-  `instance_id` bigint unsigned COMMENT 'id of the vm instance',
-  `request` blob NOT NULL COMMENT 'Command being sent to the host',
-  `sequence` bigint unsigned NOT NULL COMMENT 'Sequence number of the communication',
-  `active` tinyint(1) unsigned NOT NULL COMMENT 'Is this the active command',
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB Default CHARSET=utf8;
-  
 CREATE TABLE  `cloud`.`configuration` (
   `category` varchar(255) NOT NULL DEFAULT 'Advanced',
   `instance` varchar(255) NOT NULL,
@@ -158,8 +176,8 @@ CREATE TABLE `cloud`.`volumes` (
   `domain_id` bigint unsigned NOT NULL COMMENT 'the domain that the owner belongs to',
   `pool_id` bigint unsigned  COMMENT 'pool it belongs to. foreign key to storage_pool table',
   `instance_id` bigint unsigned NULL COMMENT 'vm instance it belongs to. foreign key to vm_instance table',
+  `device_id` bigint unsigned NULL COMMENT 'which device inside vm instance it is ',
   `name` varchar(255) COMMENT 'A user specified name for the volume',
-  `name_label` varchar(255) COMMENT 'A name label for the volume that is automatically generated',
   `size` bigint unsigned NOT NULL COMMENT 'total size',
   `folder` varchar(255)  COMMENT 'The folder where the volume is saved',
   `path` varchar(255) COMMENT 'Path',
@@ -169,12 +187,13 @@ CREATE TABLE `cloud`.`volumes` (
   `host_ip` varchar(15)  COMMENT 'host ip address for convenience',
   `volume_type` varchar(64) COMMENT 'root, swap or data',
   `resource_type` varchar(64) COMMENT 'pool-based or host-based',
+  `pool_type` varchar(64) COMMENT 'type of the pool',
   `mirror_state` varchar(64) COMMENT 'not_mirrored, active or defunct',
   `mirror_vol` bigint unsigned COMMENT 'the other half of the mirrored set if mirrored',
-  `disk_offering_id` bigint unsigned COMMENT 'can be null for system VMs',
-  `template_name` varchar (255) COMMENT 'fk to vm_template.unique_name',
+  `disk_offering_id` bigint unsigned NOT NULL COMMENT 'can be null for system VMs',
   `template_id` bigint unsigned COMMENT 'fk to vm_template.id',
   `first_snapshot_backup_uuid` varchar (255) COMMENT 'The first snapshot that was ever taken for this volume',
+  `recreatable` tinyint(1) unsigned NOT NULL DEFAULT 0 COMMENT 'Is this volume recreatable?',
   `destroyed` tinyint(1) COMMENT 'indicates whether the volume was destroyed by the user or not',
   `created` datetime COMMENT 'Date Created',
   `updated` datetime COMMENT 'Date updated for attach/detach',
@@ -204,16 +223,22 @@ CREATE TABLE `cloud`.`vlan` (
   `vlan_id` varchar(255),
   `vlan_gateway` varchar(255),
   `vlan_netmask` varchar(255),
-  `vlan_name` varchar(255),
   `description` varchar(255),
-  `vlan_type` varchar(255) COMMENT 'usually specified as public or private',
+  `vlan_type` varchar(255),
   `data_center_id` bigint unsigned NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE `cloud`.`pod_vlan_map` (
   `id` bigint unsigned NOT NULL UNIQUE AUTO_INCREMENT,
-  `pod_id` bigint unsigned NOT NULL COMMENT 'database id of host. foreign key to host table',
+  `pod_id` bigint unsigned NOT NULL COMMENT 'pod id. foreign key to pod table',
+  `vlan_db_id` bigint unsigned NOT NULL COMMENT 'database id of vlan. foreign key to vlan table',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `cloud`.`account_vlan_map` (
+  `id` bigint unsigned NOT NULL UNIQUE AUTO_INCREMENT,
+  `account_id` bigint unsigned NOT NULL COMMENT 'account id. foreign key to account table',
   `vlan_db_id` bigint unsigned NOT NULL COMMENT 'database id of vlan. foreign key to vlan table',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -235,14 +260,17 @@ CREATE TABLE  `cloud`.`data_center` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `cloud`.`xen_server_pool` (
-  `pool_uuid` varchar(255) NOT NULL UNIQUE,
-  `name` varchar(255),
-  `pod_id` bigint unsigned NOT NULL,
-  PRIMARY KEY (`pool_uuid`)  
+CREATE TABLE `cloud`.`op_dc_ip_address_alloc` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+  `ip_address` varchar(15) NOT NULL COMMENT 'ip address',
+  `data_center_id` bigint unsigned NOT NULL COMMENT 'data center it belongs to',
+  `pod_id` bigint unsigned NOT NULL COMMENT 'pod it belongs to',
+  `instance_id` bigint unsigned NULL COMMENT 'instance id',
+  `taken` datetime COMMENT 'Date taken',
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `cloud`.`op_dc_ip_address_alloc` (
+CREATE TABLE `cloud`.`op_dc_link_local_ip_address_alloc` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
   `ip_address` varchar(15) NOT NULL COMMENT 'ip address',
   `data_center_id` bigint unsigned NOT NULL COMMENT 'data center it belongs to',
@@ -256,6 +284,7 @@ CREATE TABLE  `cloud`.`host_pod_ref` (
   `id` bigint unsigned NOT NULL UNIQUE auto_increment,
   `name` varchar(255) NOT NULL,
   `data_center_id` bigint unsigned NOT NULL,
+  `gateway` varchar(255) NOT NULL COMMENT 'gateway for the pod',
   `cidr_address` varchar(15) NOT NULL COMMENT 'CIDR address for the pod',
   `cidr_size` bigint unsigned NOT NULL COMMENT 'CIDR size for the pod',
   `description` varchar(255) COMMENT 'store private ip range in startIP-endIP format',
@@ -300,7 +329,8 @@ CREATE TABLE  `cloud`.`host` (
   `storage_ip_address_2` varchar(15),
   `storage_mac_address_2` varchar(17),
   `storage_netmask_2` varchar(15),
-  `public_ip_address` varchar(15) UNIQUE,
+  `cluster_id` bigint unsigned COMMENT 'foreign key to cluster',
+  `public_ip_address` varchar(15),
   `public_netmask` varchar(15),
   `public_mac_address` varchar(17),
   `proxy_port` int(10) unsigned,
@@ -358,24 +388,6 @@ CREATE TABLE `cloud`.`op_vm_host` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE  `cloud`.`service_offering` (
-  `id` bigint unsigned NOT NULL auto_increment,
-  `name` varchar(255) NOT NULL,
-  `cpu` int(10) unsigned NOT NULL COMMENT '# of cores',
-  `speed` int(10) unsigned NOT NULL COMMENT 'speed per core in mhz',
-  `ram_size` bigint unsigned NOT NULL,
-  `nw_rate` smallint unsigned default 200 COMMENT 'network rate throttle mbits/s',
-  `mc_rate` smallint unsigned default 10 COMMENT 'mcast rate throttle mbits/s',
-  `created` datetime NOT NULL COMMENT 'date created',
-  `removed` datetime NULL COMMENT 'date removed',
-  `ha_enabled` tinyint(1) unsigned NOT NULL DEFAULT 0 COMMENT 'Enable HA',
-  `mirrored` tinyint(1) unsigned NOT NULL DEFAULT 1 COMMENT 'Enable mirroring?',
-  `display_text` varchar(4096) NULL COMMENT 'Description text set by the admin for display purpose only',
-  `guest_ip_type` varchar(255) NOT NULL DEFAULT 'Virtualized' COMMENT 'Type of guest network -- direct or virtualized',
-  `use_local_storage` tinyint(1) unsigned NOT NULL DEFAULT 0 COMMENT 'Indicates whether local storage pools should be used',
-  PRIMARY KEY  (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
-
 CREATE TABLE  `cloud`.`user` (
   `id` bigint unsigned NOT NULL auto_increment,
   `username` varchar(255) NOT NULL,
@@ -396,11 +408,13 @@ CREATE TABLE  `cloud`.`user` (
 CREATE TABLE  `cloud`.`event` (
   `id` bigint unsigned NOT NULL auto_increment,
   `type` varchar(32) NOT NULL,
+  `state` varchar(32) NOT NULL DEFAULT 'Completed',
   `description` varchar(1024) NOT NULL,
   `user_id` bigint unsigned NOT NULL,
   `account_id` bigint unsigned NOT NULL,
   `created` datetime NOT NULL,
   `level` varchar(16) NOT NULL,
+  `start_id` bigint unsigned NOT NULL DEFAULT 0,
   `parameters` varchar(1024) NULL,
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -461,7 +475,6 @@ CREATE TABLE  `cloud`.`vm_instance` (
   `vm_template_id` bigint unsigned,
   `iso_id` bigint unsigned,
   `guest_os_id` bigint unsigned NOT NULL,
-  `pool_id` bigint unsigned,
   `private_mac_address` varchar(17),
   `private_ip_address` varchar(15),
   `private_netmask` varchar(15),
@@ -469,6 +482,7 @@ CREATE TABLE  `cloud`.`vm_instance` (
   `storage_ip` varchar(15),
   `data_center_id` bigint unsigned NOT NULL COMMENT 'Data Center the instance belongs to',
   `host_id` bigint unsigned,
+  `last_host_id` bigint unsigned COMMENT 'tentative host for first run or last host that it has been running on',
   `proxy_id` bigint unsigned NULL COMMENT 'console proxy allocated in previous session',
   `proxy_assign_time` DATETIME NULL COMMENT 'time when console proxy was assigned',
   `vnc_password` varchar(255) NOT NULL COMMENT 'vnc password',
@@ -494,7 +508,7 @@ CREATE TABLE `cloud`.`pricing` (
 
 CREATE TABLE `cloud`.`user_vm` (
   `id` bigint unsigned UNIQUE NOT NULL,
-  `domain_router_id` bigint unsigned NOT NULL COMMENT 'router id',
+  `domain_router_id` bigint unsigned COMMENT 'router id',
   `service_offering_id` bigint unsigned NOT NULL COMMENT 'service offering id',
   `vnet` varchar(18) COMMENT 'vnet',
   `dc_vlan` varchar(18) COMMENT 'zone vlan',
@@ -567,13 +581,16 @@ CREATE TABLE  `cloud`.`template_zone_ref` (
 
 CREATE TABLE  `cloud`.`console_proxy` (
   `id` bigint unsigned NOT NULL auto_increment,
-  `gateway` varchar(15)  NOT NULL COMMENT 'gateway info for this console proxy towards public network interface',
+  `gateway` varchar(15)  COMMENT 'gateway info for this console proxy towards public network interface',
   `dns1` varchar(15) COMMENT 'dns1',
   `dns2` varchar(15) COMMENT 'dns2',
   `domain` varchar(255) COMMENT 'domain',
   `public_mac_address` varchar(17) NOT NULL unique COMMENT 'mac address of the public facing network card',
   `public_ip_address` varchar(15) UNIQUE COMMENT 'public ip address for the console proxy',
-  `public_netmask` varchar(15) NOT NULL COMMENT 'public netmask used for the console proxy',
+  `public_netmask` varchar(15)  COMMENT 'public netmask used for the console proxy',
+  `guest_mac_address` varchar(17) NOT NULL unique COMMENT 'mac address of the guest facing network card',
+  `guest_ip_address`  varchar(15) UNIQUE COMMENT 'guest ip address for the console proxy',
+  `guest_netmask` varchar(15)  COMMENT 'guest netmask used for the console proxy',
   `vlan_db_id` bigint unsigned COMMENT 'Foreign key into vlan id table',
   `vlan_id` varchar(255) COMMENT 'optional VLAN ID for console proxy that can be used',
   `ram_size` int(10) unsigned NOT NULL DEFAULT 512 COMMENT 'memory to use in mb',
@@ -585,13 +602,16 @@ CREATE TABLE  `cloud`.`console_proxy` (
 
 CREATE TABLE  `cloud`.`secondary_storage_vm` (
   `id` bigint unsigned NOT NULL auto_increment,
-  `gateway` varchar(15)  NOT NULL COMMENT 'gateway info for this sec storage vm towards public network interface',
+  `gateway` varchar(15)  COMMENT 'gateway info for this sec storage vm towards public network interface',
   `dns1` varchar(15) COMMENT 'dns1',
   `dns2` varchar(15) COMMENT 'dns2',
   `domain` varchar(255) COMMENT 'domain',
   `public_mac_address` varchar(17) NOT NULL unique COMMENT 'mac address of the public facing network card',
   `public_ip_address` varchar(15) UNIQUE COMMENT 'public ip address for the sec storage vm',
-  `public_netmask` varchar(15) NOT NULL COMMENT 'public netmask used for the sec storage vm',
+  `public_netmask` varchar(15)  COMMENT 'public netmask used for the sec storage vm',
+  `guest_mac_address` varchar(17) NOT NULL unique COMMENT 'mac address of the guest facing network card',
+  `guest_ip_address`  varchar(15) UNIQUE COMMENT 'guest ip address for the console proxy',
+  `guest_netmask` varchar(15)  COMMENT 'guest netmask used for the console proxy',
   `vlan_db_id` bigint unsigned COMMENT 'Foreign key into vlan id table',
   `vlan_id` varchar(255) COMMENT 'optional VLAN ID for sec storage vm that can be used',
   `ram_size` int(10) unsigned NOT NULL DEFAULT 512 COMMENT 'memory to use in mb',
@@ -737,12 +757,30 @@ CREATE TABLE `cloud`.`vm_disk` (
 
 CREATE TABLE `cloud`.`disk_offering` (
   `id` bigint unsigned NOT NULL auto_increment,
-  `domain_id` bigint unsigned NOT NULL,
+  `domain_id` bigint unsigned,
   `name` varchar(255) NOT NULL,
   `display_text` varchar(4096) NULL COMMENT 'Description text set by the admin for display purpose only',
   `disk_size` bigint unsigned NOT NULL COMMENT 'disk space in mbs',
   `mirrored` tinyint(1) unsigned NOT NULL DEFAULT 1 COMMENT 'Enable mirroring?',
+  `type` varchar(32) COMMENT 'inheritted by who?',
+  `tags` varchar(4096) COMMENT 'comma separated tags about the disk_offering',
+  `recreatable` tinyint(1) unsigned NOT NULL DEFAULT 0 COMMENT 'The root disk is always recreatable',
+  `use_local_storage` tinyint(1) unsigned NOT NULL DEFAULT 0 COMMENT 'Indicates whether local storage pools should be used',
+  `unique_name` varchar(32) UNIQUE COMMENT 'unique name',
   `removed` datetime COMMENT 'date removed',
+  `created` datetime COMMENT 'date the disk offering was created',
+  PRIMARY KEY  (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE  `cloud`.`service_offering` (
+  `id` bigint unsigned NOT NULL,
+  `cpu` int(10) unsigned NOT NULL COMMENT '# of cores',
+  `speed` int(10) unsigned NOT NULL COMMENT 'speed per core in mhz',
+  `ram_size` bigint unsigned NOT NULL,
+  `nw_rate` smallint unsigned default 200 COMMENT 'network rate throttle mbits/s',
+  `mc_rate` smallint unsigned default 10 COMMENT 'mcast rate throttle mbits/s',
+  `ha_enabled` tinyint(1) unsigned NOT NULL DEFAULT 0 COMMENT 'Enable HA',
+  `guest_ip_type` varchar(255) NOT NULL DEFAULT 'Virtualized' COMMENT 'Type of guest network -- direct or virtualized',
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -801,6 +839,7 @@ CREATE TABLE  `cloud`.`storage_pool` (
   `port` int unsigned NOT NULL,
   `data_center_id` bigint unsigned NOT NULL,
   `pod_id` bigint unsigned,
+  `cluster_id` bigint unsigned COMMENT 'foreign key to cluster',
   `available_bytes` bigint unsigned,
   `capacity_bytes` bigint unsigned,
   `host_address` varchar(255) NOT NULL COMMENT 'FQDN or IP of storage server',
@@ -809,6 +848,14 @@ CREATE TABLE  `cloud`.`storage_pool` (
   `removed` datetime COMMENT 'date removed if not null',
   `update_time` DATETIME,
   PRIMARY KEY  (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `cloud`.`storage_pool_details` (
+  `id` bigint unsigned UNIQUE NOT NULL AUTO_INCREMENT COMMENT 'id',
+  `pool_id` bigint unsigned NOT NULL COMMENT 'pool the detail is related to',
+  `name` varchar(255) NOT NULL COMMENT 'name of the detail',
+  `value` varchar(255) NOT NULL COMMENT 'value of the detail',
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE  `cloud`.`storage_pool_host_ref` (
@@ -896,6 +943,56 @@ CREATE TABLE `cloud`.`op_pod_vlan_alloc` (
     `account_id` bigint unsigned NULL COMMENT 'account the vlan belongs to right now',
     `taken` datetime COMMENT 'Date taken',
     PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `cloud`.`network_group` (
+  `id` bigint unsigned NOT NULL auto_increment,
+  `name` varchar(255) NOT NULL,
+  `description` varchar(4096) NULL,
+  `domain_id` bigint unsigned NOT NULL,
+  `account_id` bigint unsigned NOT NULL,
+  `account_name` varchar(100) NOT NULL,
+  PRIMARY KEY  (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `cloud`.`network_ingress_rule` (
+  `id` bigint unsigned NOT NULL auto_increment,
+  `network_group_id` bigint unsigned NOT NULL,
+  `start_port` varchar(10) default NULL,
+  `end_port` varchar(10) default NULL,
+  `protocol` varchar(16) NOT NULL default 'TCP',
+  `allowed_network_id` bigint unsigned,
+  `allowed_network_group` varchar(255) COMMENT 'data duplicated from network_group table to avoid lots of joins when listing rules (the name of the group should be displayed rather than just id)',
+  `allowed_net_grp_acct` varchar(100) COMMENT 'data duplicated from network_group table to avoid lots of joins when listing rules (the name of the group owner should be displayed)',
+  `allowed_ip_cidr`  varchar(44),
+  `create_status` varchar(32) COMMENT 'rule creation status',
+  PRIMARY KEY  (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `cloud`.`network_group_vm_map` (
+  `id` bigint unsigned NOT NULL auto_increment,
+  `network_group_id` bigint unsigned NOT NULL,
+  `instance_id` bigint unsigned NOT NULL,
+  PRIMARY KEY  (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `cloud`.`op_nwgrp_work` (
+  `id` bigint unsigned UNIQUE NOT NULL AUTO_INCREMENT COMMENT 'id',
+  `instance_id` bigint unsigned NOT NULL COMMENT 'vm instance that needs rules to be synced.',
+  `mgmt_server_id` bigint unsigned COMMENT 'management server that has taken up the work of doing rule sync',
+  `created` datetime NOT NULL COMMENT 'time the entry was requested',
+  `taken` datetime COMMENT 'time it was taken by the management server',
+  `step` varchar(32) NOT NULL COMMENT 'Step in the work',
+  `seq_no` bigint unsigned  COMMENT 'seq number to be sent to agent, uniquely identifies ruleset update',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `cloud`.`op_vm_ruleset_log` (
+  `id` bigint unsigned UNIQUE NOT NULL AUTO_INCREMENT COMMENT 'id',
+  `instance_id` bigint unsigned NOT NULL COMMENT 'vm instance that needs rules to be synced.',
+  `created` datetime NOT NULL COMMENT 'time the entry was requested',
+  `logsequence` bigint unsigned  COMMENT 'seq number to be sent to agent, uniquely identifies ruleset update',
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 SET foreign_key_checks = 1;

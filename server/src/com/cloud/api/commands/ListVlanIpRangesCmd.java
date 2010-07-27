@@ -26,8 +26,12 @@ import org.apache.log4j.Logger;
 
 import com.cloud.api.BaseCmd;
 import com.cloud.api.ServerApiException;
+import com.cloud.dc.HostPodVO;
 import com.cloud.dc.VlanVO;
+import com.cloud.dc.Vlan.VlanType;
 import com.cloud.server.Criteria;
+import com.cloud.user.Account;
+import com.cloud.user.AccountVO;
 import com.cloud.utils.Pair;
 
 public class ListVlanIpRangesCmd extends BaseCmd {
@@ -41,6 +45,9 @@ public class ListVlanIpRangesCmd extends BaseCmd {
     	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.VLAN, Boolean.FALSE));
     	s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.NAME, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ZONE_ID, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.DOMAIN_ID, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.POD_ID, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.KEYWORD, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.PAGE, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.PAGESIZE, Boolean.FALSE));
@@ -56,60 +63,94 @@ public class ListVlanIpRangesCmd extends BaseCmd {
     @Override
     public List<Pair<String, Object>> execute(Map<String, Object> params) {
     	Long id = (Long) params.get(BaseCmd.Properties.ID.getName());
-    	String vlan = (String) params.get(BaseCmd.Properties.VLAN.getName());
+    	String vlanId = (String) params.get(BaseCmd.Properties.VLAN.getName());
     	Long zoneId = (Long) params.get(BaseCmd.Properties.ZONE_ID.getName());
+    	String accountName = (String) params.get(BaseCmd.Properties.ACCOUNT.getName());
+    	Long domainId = (Long) params.get(BaseCmd.Properties.DOMAIN_ID.getName());
+    	Long podId = (Long) params.get(BaseCmd.Properties.POD_ID.getName());
     	String name = (String) params.get(BaseCmd.Properties.NAME.getName());
     	String keyword = (String)params.get(BaseCmd.Properties.KEYWORD.getName());
     	Integer page = (Integer)params.get(BaseCmd.Properties.PAGE.getName());
-        Integer pageSize = (Integer)params.get(BaseCmd.Properties.PAGESIZE.getName());
+    	Integer pageSize = (Integer)params.get(BaseCmd.Properties.PAGESIZE.getName());
         
     	
-    	 Long startIndex = Long.valueOf(0);
-         int pageSizeNum = 50;
-	     if (pageSize != null) 
-	     		pageSizeNum = pageSize.intValue();
-	     
-         if (page != null) {
-             int pageNum = page.intValue();
-             if (pageNum > 0) {
-                 startIndex = Long.valueOf(pageSizeNum * (pageNum-1));
-             }
-         }
+    	Long startIndex = Long.valueOf(0);
+    	int pageSizeNum = 50;
+    	if (pageSize != null) {
+    		pageSizeNum = pageSize.intValue();
+    	}
+	    
+    	if (page != null) {
+    		int pageNum = page.intValue();
+    		if (pageNum > 0) {
+    			startIndex = Long.valueOf(pageSizeNum * (pageNum-1));
+            }
+    	}
+    	
+    	// If an account name and domain ID are specified, look up the account
+    	Long accountId = null;
+    	if (accountName != null && domainId != null) {
+    		Account account = getManagementServer().findAccountByName(accountName, domainId);
+    		if (account == null) {
+    			throw new ServerApiException(BaseCmd.PARAM_ERROR, "Please specify a valid account.");
+    		} else {
+    			accountId = account.getId();
+    		}
+    	} 
+    	
     	Criteria c = new Criteria("id", Boolean.TRUE, startIndex, Long.valueOf(pageSizeNum));
     	
     	if (keyword != null) {
     		c.addCriteria(Criteria.KEYWORD, keyword);
-    	}else {
+    	} else {
     		c.addCriteria(Criteria.ID, id);
-        	c.addCriteria(Criteria.VLAN, vlan);
-        	c.addCriteria(Criteria.NAME, name);
+        	c.addCriteria(Criteria.VLAN, vlanId);
         	c.addCriteria(Criteria.DATACENTERID, zoneId);
+        	c.addCriteria(Criteria.ACCOUNTID, accountId);
+        	c.addCriteria(Criteria.PODID, podId);        	
     	}
     	
-    	 List<? extends VlanVO> vlans = getManagementServer().searchForVlans(c);
+    	List<? extends VlanVO> vlans = getManagementServer().searchForVlans(c);
 
-         if (vlans == null) {
-             throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "unable to find vlans");
-         }
-         
-         Object[] vlanTag = new Object[vlans.size()];
-         int i = 0;
-         
-         for (VlanVO vlanIn : vlans) {
-             List<Pair<String, Object>> vlanData = new ArrayList<Pair<String, Object>>();
-             vlanData.add(new Pair<String, Object>(BaseCmd.Properties.ID.getName(), vlanIn.getId()));
-             vlanData.add(new Pair<String, Object>(BaseCmd.Properties.VLAN.getName(), vlanIn.getVlanId()));
-             vlanData.add(new Pair<String, Object>(BaseCmd.Properties.NAME.getName(), vlanIn.getVlanName()));
-             vlanData.add(new Pair<String, Object>(BaseCmd.Properties.DESCRIPTION.getName(), vlanIn.getDescription()));
-             vlanData.add(new Pair<String, Object>(BaseCmd.Properties.ZONE_ID.getName(), vlanIn.getDataCenterId()));
-             vlanData.add(new Pair<String, Object>(BaseCmd.Properties.GATEWAY.getName(), vlanIn.getVlanGateway()));
-             vlanData.add(new Pair<String, Object>(BaseCmd.Properties.NETMASK.getName(), vlanIn.getVlanNetmask()));
-             vlanTag[i++] = vlanData;
-         }
-         List<Pair<String, Object>> returnTags = new ArrayList<Pair<String, Object>>();
-         Pair<String, Object> vlanTags = new Pair<String, Object>("vlaniprange", vlanTag);
-         returnTags.add(vlanTags);
-         return returnTags;
+    	if (vlans == null) {
+    		throw new ServerApiException(BaseCmd.INTERNAL_ERROR, "unable to find vlans");
+    	}
+        
+    	Object[] vlanTag = new Object[vlans.size()];
+    	int i = 0;
+       
+    	for (VlanVO vlan : vlans) {
+    		accountId = getManagementServer().getAccountIdForVlan(vlan.getId());
+    		podId = getManagementServer().getPodIdForVlan(vlan.getId());
+    		
+    		List<Pair<String, Object>> vlanData = new ArrayList<Pair<String, Object>>();
+    		vlanData.add(new Pair<String, Object>(BaseCmd.Properties.ID.getName(), vlan.getId()));
+    		vlanData.add(new Pair<String, Object>(BaseCmd.Properties.FOR_VIRTUAL_NETWORK.getName(), (vlan.getVlanType().equals(VlanType.VirtualNetwork))));
+    		vlanData.add(new Pair<String, Object>(BaseCmd.Properties.VLAN.getName(), vlan.getVlanId()));
+    		vlanData.add(new Pair<String, Object>(BaseCmd.Properties.ZONE_ID.getName(), vlan.getDataCenterId()));
+    		
+    		if (accountId != null) {
+    			Account account = getManagementServer().findAccountById(accountId);
+            	vlanData.add(new Pair<String, Object>(BaseCmd.Properties.ACCOUNT.getName(), account.getAccountName()));
+            	vlanData.add(new Pair<String, Object>(BaseCmd.Properties.DOMAIN_ID.getName(), account.getDomainId()));
+            }
+            
+            if (podId != null) {
+            	HostPodVO pod = getManagementServer().findHostPodById(podId);
+            	vlanData.add(new Pair<String, Object>(BaseCmd.Properties.POD_ID.getName(), podId));
+            	vlanData.add(new Pair<String, Object>(BaseCmd.Properties.POD_NAME.getName(), pod.getName()));
+            }
+            
+    		vlanData.add(new Pair<String, Object>(BaseCmd.Properties.GATEWAY.getName(), vlan.getVlanGateway()));
+    		vlanData.add(new Pair<String, Object>(BaseCmd.Properties.NETMASK.getName(), vlan.getVlanNetmask()));
+    		vlanData.add(new Pair<String, Object>(BaseCmd.Properties.DESCRIPTION.getName(), vlan.getIpRange()));
+    		vlanTag[i++] = vlanData;
+    	}
+    
+    	List<Pair<String, Object>> returnTags = new ArrayList<Pair<String, Object>>();
+    	Pair<String, Object> vlanTags = new Pair<String, Object>("vlaniprange", vlanTag);
+    	returnTags.add(vlanTags);
+    	return returnTags;
 
     } 	
 }

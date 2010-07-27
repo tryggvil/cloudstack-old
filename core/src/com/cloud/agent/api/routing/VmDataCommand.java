@@ -18,19 +18,15 @@
 
 package com.cloud.agent.api.routing;
 
+import java.util.ArrayList;
+import java.util.List;
 
 public class VmDataCommand extends RoutingCommand {
 
 	String routerPrivateIpAddress;
-	String routerPublicIpAddress;
 	String vmIpAddress;
-    String userData;
-    String serviceOffering;
-    String zoneName;
-    String guestIP;
-    String vmName;
-    String vmInstanceName;
-    
+	List<String[]> vmData;
+	
     protected VmDataCommand() {    	
     }
     
@@ -39,56 +35,26 @@ public class VmDataCommand extends RoutingCommand {
         return true;
     }
     
-    public VmDataCommand(String routerPrivateIpAddress, String routerPublicIpAddress, String vmIpAddress, String userData, String serviceOffering, String zoneName, String guestIP, String vmName, String vmInstanceName) {
+    public VmDataCommand(String routerPrivateIpAddress, String vmIpAddress) {
     	this.routerPrivateIpAddress = routerPrivateIpAddress;
-    	this.routerPublicIpAddress = routerPublicIpAddress;
     	this.vmIpAddress = vmIpAddress;
-    	this.userData = userData;
-    	this.serviceOffering = serviceOffering;
-    	this.zoneName = zoneName;
-    	this.guestIP = guestIP;
-    	this.vmName = vmName;
-    	this.vmInstanceName = vmInstanceName;
+    	this.vmData = new ArrayList<String[]>();
     }
 	
 	public String getRouterPrivateIpAddress() {
 		return routerPrivateIpAddress;
 	}
 	
-	public String getRouterPublicIpAddress() {
-		return routerPublicIpAddress;
-	}
-	
 	public String getVmIpAddress() {
 		return vmIpAddress;
 	}
 	
-	public String getUserData() {
-		return userData;
+	public List<String[]> getVmData() {
+		return vmData;
 	}
 	
-	public String getServiceOffering() {
-		return serviceOffering;
-	}
-	
-	public String getZoneName() {
-		return zoneName;
-	}
-	
-	public String getGuestIP() {
-		return guestIP;
-	}
-	
-	public String getVmName() {
-		return vmName;
-	}
-	
-	public String getVmInstanceName() {
-		return vmInstanceName;
-	}
-
-	public void setUserData(String userData) {
-		this.userData = userData;
+	public void addVmData(String folder, String file, String contents) {
+		vmData.add(new String[]{folder, file, contents});
 	}
 	
 }

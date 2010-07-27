@@ -20,7 +20,7 @@ package com.cloud.storage;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 import com.cloud.agent.api.Answer;
 import com.cloud.agent.api.Command;
@@ -32,7 +32,6 @@ import com.cloud.exception.ResourceInUseException;
 import com.cloud.exception.StorageUnavailableException;
 import com.cloud.host.Host;
 import com.cloud.host.HostVO;
-import com.cloud.service.ServiceOffering;
 import com.cloud.service.ServiceOfferingVO;
 import com.cloud.user.Account;
 import com.cloud.utils.Pair;
@@ -54,6 +53,8 @@ public interface StorageManager extends Manager {
 	 */
 	boolean share(VMInstanceVO vm, List<VolumeVO> vols, HostVO host, boolean cancelPrevious) throws StorageUnavailableException;
 
+    List<VolumeVO> prepare(VMInstanceVO vm, HostVO host);
+    
 	/**
 	 * Calls the storage server to unshare volumes to the host.
 	 * 
@@ -77,23 +78,23 @@ public interface StorageManager extends Manager {
      * destroy the storage volumes of a certain vm.
      * 
      * @param vm vm to destroy.
-     * @param vols volumes to remove from storage pool    
+     * @param vols volumes to remove from storage pool
      */
 	void destroy(VMInstanceVO vm, List<VolumeVO> vols);
 	
-	/**
-	 * Creates the storage needed by the vm
-	 */
-	long create(Account account, VMInstanceVO vm, VMTemplateVO template, DataCenterVO dc, HostPodVO pod, ServiceOfferingVO offering, DiskOfferingVO diskOffering) throws StorageUnavailableException, ExecutionException;
-	
-	HostVO findHost(DataCenterVO dc, HostPodVO pod, ServiceOffering offering, DiskOfferingVO dataDiskOffering, VMTemplateVO template, DiskOfferingVO rootDiskOffering, Set<Host> avoid);
-	
-	/**
-	 * Finds a host where the specified pool is visible
-	 * @param pool
-	 * @return host ID, or null if no host was found
-	 */
-	Long findHostIdForStoragePool(StoragePoolVO pool);
+    /**
+     * Creates volumes for a particular VM.
+     * @param account account to create volumes for.
+     * @param vm vm to create the volumes for.
+     * @param template template the root volume is based on.
+     * @param dc datacenter to put this.
+     * @param pod pod to put this.
+     * @param offering service offering of the vm.
+     * @param diskOffering disk offering of the vm.
+     * @param avoids storage pools to avoid.
+     * @return List of VolumeVO
+     */
+	List<VolumeVO> create(Account account, VMInstanceVO vm, VMTemplateVO template, DataCenterVO dc, HostPodVO pod, ServiceOfferingVO offering, DiskOfferingVO diskOffering) throws StorageUnavailableException, ExecutionException;
 	
 	/**
 	 * Create StoragePool based on uri
@@ -104,9 +105,9 @@ public interface StorageManager extends Manager {
 	 * @param uriString
 	 * @return
 	 * @throws ResourceInUseException, IllegalArgumentException
-	 * @throws ResourceAllocationException 
+	 * @throws ResourceAllocationException
 	 */
-	StoragePoolVO createPool(long zoneId, long podId, String poolName, URI uri) throws ResourceInUseException, IllegalArgumentException, UnknownHostException, ResourceAllocationException;
+	StoragePoolVO createPool(long zoneId, Long podId, Long clusterId, String poolName, URI uri, String tags, Map<String, String> details) throws ResourceInUseException, IllegalArgumentException, UnknownHostException, ResourceAllocationException;
 	
     /**
      * Get the storage ip address to connect to.
@@ -115,26 +116,9 @@ public interface StorageManager extends Manager {
      * @param storage storage that contains the vm.
      * @return ip address if it can be determined.  null if not.
      */
-    public String chooseStorageIp(VMInstanceVO vm, Host host, Host storage);
-	
+    String chooseStorageIp(VMInstanceVO vm, Host host, Host storage);
 
-	/**
-	 * Find a storage pool to allocate volumes for a VM and actually create a volume in that pool
-	 * @param dc data center / availability zone
-	 * @param pod ignored
-	 * @param offering  the service offering (cpu/mem)
-	 * @param dataDiskOffering the data disk offering
-	 * @param vm the VM for which the volumes are being allocated (null if allocating volumes that won't immediately be attached to any VM)
-	 * @param template template
-	 * @param rootDiskOffering the root disk offering (for ISO-based VMs)
-	 * @param avoid
-	 * @return pool where the volumes
-	 */
-	public StoragePoolVO findStoragePool(DataCenterVO dc, HostPodVO pod,
-			ServiceOffering offering, DiskOfferingVO dataDiskOffering,
-			VMInstanceVO vm, VMTemplateVO template, DiskOfferingVO rootDiskOffering,
-			Set<StoragePool> avoid);
-
+    boolean canVmRestartOnAnotherServer(long vmId);
 
     /** Returns the absolute path of the specified ISO
      * @param templateId - the ID of the template that represents the ISO
@@ -151,12 +135,11 @@ public interface StorageManager extends Manager {
 	public String getSecondaryStorageURL(long zoneId);
 	
 	/**
-	 * Returns a name label for the volume
-	 * @param volume - if root volume, disktype will be "ROOT". if data volume, disktype will be "DATA".
-	 * @param vm - if present, the name label will be [vmname]-[disktype]. if null, the name label will be "detached".
-	 * @return name label
+	 * Returns a comma separated list of tags for the specified storage pool
+	 * @param poolId
+	 * @return comma separated list of tags
 	 */
-	public String getVolumeNameLabel(VolumeVO volume, VMInstanceVO vm);
+	public String getStoragePoolTags(long poolId);
 	
 	/**
 	 * Returns the secondary storage host
@@ -172,37 +155,21 @@ public interface StorageManager extends Manager {
 	 */
 	public long createUserVM(Account account, VMInstanceVO vm,
 			VMTemplateVO template, DataCenterVO dc, HostPodVO pod,
-			ServiceOffering offering, DiskOfferingVO rootDiskOffering,
-			DiskOfferingVO dataDiskOffering, List<StoragePoolVO> avoids);
-
-	/**
-	 * Create the volumes for a user VM based on service offering in a storage pool in a particular data center
-	 * 
-	 * @return true if successful
-	 */
-	public long createInPool(Account account, VMInstanceVO vm,
-			VMTemplateVO template, DataCenterVO dc, HostPodVO pod,
-			ServiceOffering offering, DiskOfferingVO rootDiskOffering, DiskOfferingVO dataDiskOffering, List<StoragePoolVO> avoids);
-
-	
-	/** Choose a host to operate on a storage pool
-	 * @param poolVO  the pool
-	 * @param avoidHosts  a list of host ids to avoid
-	 * @return
-	 */
-	public StoragePoolHostVO chooseHostForStoragePool(StoragePoolVO poolVO, List<Long> avoidHosts);
+			ServiceOfferingVO offering, DiskOfferingVO diskOffering,
+			List<StoragePoolVO> avoids);
 
 	/**
 	 * This method sends the given command on all the hosts in the primary storage pool given until is succeeds on any one.
-	 * If the command doesn't succeed on any, it return null. All exceptions are swallowed. Any errors are expected be be in 
+	 * If the command doesn't succeed on any, it return null. All exceptions are swallowed. Any errors are expected be be in
 	 * answer.getDetails(), if it's not null.
 	 * @param poolId        The primary storage pool. The cmd uses this for some reason.
 	 * @param cmd           Any arbitrary command which needs access to the volumes on the given storage pool.
 	 * @param basicErrMsg   The cmd specific error msg to spew out in case of any exception.
 	 * @return The answer for that command, could be success or failure.
 	 */
-	Answer sendToStorageHostsOnPool(Long poolId, Command cmd, String basicErrMsg);
-	Answer sendToStorageHostsOnPool(Long poolId, Command cmd, String basicErrMsg, int retriesPerHost, int pauseBeforeRetry);
+	Answer sendToHostsOnStoragePool(Long poolId, Command cmd, String basicErrMsg);
+	Answer sendToHostsOnStoragePool(Long poolId, Command cmd, String basicErrMsg, int retriesPerHost, int pauseBeforeRetry, boolean shouldBeSnapshotCapable);
+	
 
 	/**
 	 * Add a pool to a host
@@ -212,12 +179,14 @@ public interface StorageManager extends Manager {
 	boolean addPoolToHost(long hostId, StoragePoolVO pool);
 	
 	/**
-	 * Moves a volume from its current storage pool to the specified storage pool.
+	 * Moves a volume from its current storage pool to a storage pool with enough capacity in the specified zone, pod, or cluster
 	 * @param volume
-	 * @param pool
+	 * @param destPoolDcId
+	 * @param destPoolPodId
+	 * @param destPoolClusterId
 	 * @return VolumeVO
 	 */
-	VolumeVO moveVolume(VolumeVO volume, StoragePoolVO pool) throws InternalErrorException;
+	VolumeVO moveVolume(VolumeVO volume, long destPoolDcId, Long destPoolPodId, Long destPoolClusterId) throws InternalErrorException;
 	
 	/**
 	 * Creates a new volume in a pool in the specified zone
@@ -228,31 +197,29 @@ public interface StorageManager extends Manager {
 	 * @param diskOffering
 	 * @return VolumeVO
 	 */
-	VolumeVO createVolumeInPool(long accountId, long userId, String name, DataCenterVO dc, DiskOfferingVO diskOffering);
+	VolumeVO createVolume(long accountId, long userId, String name, DataCenterVO dc, DiskOfferingVO diskOffering, long startEventId);
 	
 	/**
-	 * Deletes the specified volume on its pool
+	 * Marks the specified volume as destroyed in the management server database. The expunge thread will delete the volume from its storage pool.
 	 * @param volume
 	 */
-	void deleteVolumeInPool(VolumeVO volume) throws InternalErrorException;
+	void destroyVolume(VolumeVO volume);
 	
 	/** Create capacity entries in the op capacity table
 	 * @param storagePool
 	 */
 	public void createCapacityEntry(StoragePoolVO storagePool);
 
-	/** Choose a host to operate on a storage pool
-	 * @param poolId
-	 * @return
-	 */
-	public Long chooseHostForStoragePool(Long poolId);
-	
 	/**
 	 * Checks that the volume is stored on a shared storage pool
 	 * @param volume
 	 * @return true if the volume is on a shared storage pool, false otherwise
 	 */
 	boolean volumeOnSharedStoragePool(VolumeVO volume);
+	
+	Answer[] sendToPool(StoragePoolVO pool, Command[] cmds, boolean stopOnError);
+	
+	Answer sendToPool(StoragePoolVO pool, Command cmd);
 	
 	/**
 	 * Checks that one of the following is true:
@@ -265,6 +232,12 @@ public interface StorageManager extends Manager {
 	
 	List<Pair<VolumeVO, StoragePoolVO>> isStoredOn(VMInstanceVO vm);
 
+	/**
+	 * Checks if a host has running VMs that are using its local storage pool.
+	 * @return true if local storage is active on the host
+	 */
+	boolean isLocalStorageActiveOnHost(HostVO host);
+	
     /**
 	 * Cleans up storage pools by removing unused templates.
 	 * @param recurring - true if this cleanup is part of a recurring garbage collection thread
@@ -275,6 +248,28 @@ public interface StorageManager extends Manager {
 	 * Delete the storage pool
 	 * @param id -- id associated
 	 */
-	public boolean deletePool(long id);
+	boolean deletePool(long id);
+	
+	/**
+     * Updates a storage pool.
+     * @param poolId ID of the storage pool to be updated
+     * @param tags Tags that will be added to the storage pool
+     */
+    StoragePoolVO updateStoragePool(long poolId, String tags) throws IllegalArgumentException;
+
+	/**
+	 * Find all of the storage pools needed for this vm.
+	 * 
+	 * @param vmId id of the vm.
+	 * @return List of StoragePoolVO
+	 */
+	List<StoragePoolVO> getStoragePoolsForVm(long vmId);
+	
+    String getPrimaryStorageNameLabel(VolumeVO volume);
+    
+    /**
+     * Creates a volume from the specified snapshot. A new volume is returned which is not attached to any VM Instance
+     */
+    VolumeVO createVolumeFromSnapshot(long userId, long accountId, long snapshotId, String volumeName, long startEventId);
 
 }

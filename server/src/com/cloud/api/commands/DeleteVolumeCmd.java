@@ -48,6 +48,10 @@ public class DeleteVolumeCmd extends BaseCmd {
         return s_properties;
     }
 
+    public static String getResultObjectName() {
+    	return "volume";
+    }
+    
     @Override
     public List<Pair<String, Object>> execute(Map<String, Object> params) {
     	Account account = (Account) params.get(BaseCmd.Properties.ACCOUNT_OBJ.getName());
@@ -64,9 +68,10 @@ public class DeleteVolumeCmd extends BaseCmd {
 
     	// Check that the volume ID is valid
     	VolumeVO volume = getManagementServer().findVolumeById(volumeId);
-    	if (volume == null)
+    	if (volume == null) {
     		throw new ServerApiException(BaseCmd.PARAM_ERROR, "Unable to find volume with ID: " + volumeId);
-
+    	}
+    	
     	// If the account is not an admin, check that the volume is owned by the account that was passed in
     	if (!isAdmin) {
     		if (account.getId() != volume.getAccountId()) {
@@ -77,17 +82,9 @@ public class DeleteVolumeCmd extends BaseCmd {
     	}
 
     	try {
-    		long jobId = getManagementServer().deleteVolumeAsync(volumeId);
-    		
-    		if (jobId == 0) {
-            	s_logger.warn("Unable to schedule async-job for DeleteVolume comamnd");
-            } else {
-    	        if (s_logger.isDebugEnabled())
-    	        	s_logger.debug("DeleteVolume command has been accepted, job id: " + jobId);
-            }
-
+    		getManagementServer().destroyVolume(volumeId);
     		List<Pair<String, Object>> returnValues = new ArrayList<Pair<String, Object>>();
-            returnValues.add(new Pair<String, Object>(BaseCmd.Properties.JOB_ID.getName(), Long.valueOf(jobId))); 
+            returnValues.add(new Pair<String, Object>(BaseCmd.Properties.SUCCESS.getName(), "true")); 
 
             return returnValues;
     	} catch (Exception ex) {

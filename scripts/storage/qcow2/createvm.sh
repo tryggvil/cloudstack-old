@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# $Id: createvm.sh 9132 2010-06-04 20:17:43Z manuel $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/storage/qcow2/createvm.sh $
+# $Id: createvm.sh 10292 2010-07-07 00:24:04Z edison $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.1.x/java/scripts/storage/qcow2/createvm.sh $
 # createvm.sh -- create a vm image 
 #
 
@@ -232,22 +232,25 @@ do
 done
 
 # Check all parameters
-check_params
-exit_if_error $? "$(usage)"
+#check_params
+#exit_if_error $? "$(usage)"
 
-# Create the rootdisk folder if necessary, and make sure there is no existing rootdisk there
-check_rootdisk $rootdiskfolder
-exit_if_error $? "Failed to create rootdisk; a rootdisk already exists at $rootdiskfolder."
-
-if [ "$tflag" == "1" ]
+if [ -n "$rootdiskfolder" ]
 then
-  # A template path was passed in, so clone the template to a new rootdisk
-  clone_template_to_rootdisk $rootdiskfolder $templatepath
-  exit_if_error $? "Failed to clone template $templatepath to $rootdiskfolder/rootdisk."
-else
-  # A template path was not passed in, so create a blank rootdisk at the rootdisk folder
-  create_blank_rootdisk $rootdiskfolder $rootdisksize 
-  exit_if_error $? "Failed to create a blank rootdisk at $rootdiskfolder/rootdisk."
+	# Create the rootdisk folder if necessary, and make sure there is no existing rootdisk there
+	check_rootdisk $rootdiskfolder
+	exit_if_error $? "Failed to create rootdisk; a rootdisk already exists at $rootdiskfolder."
+
+	if [ "$tflag" == "1" ]
+	then
+  		# A template path was passed in, so clone the template to a new rootdisk
+  		clone_template_to_rootdisk $rootdiskfolder $templatepath
+  		exit_if_error $? "Failed to clone template $templatepath to $rootdiskfolder/rootdisk."
+	else
+  		# A template path was not passed in, so create a blank rootdisk at the rootdisk folder
+  		create_blank_rootdisk $rootdiskfolder $rootdisksize 
+  		exit_if_error $? "Failed to create a blank rootdisk at $rootdiskfolder/rootdisk."
+	fi
 fi
 
 if [ -n "$datadisksize" ]
@@ -261,10 +264,10 @@ then
   cleanup_and_exit_if_error $? "Failed to create datadisk in $datadiskfolder of size $datadisksize." $rootdiskfolder $datadiskfolder $datadiskname
 else
   # Create a datadisk for domr/domp
-    create_datadisk $rootdiskfolder datadisk 10M raw
-    exit_if_error $? "Failed to create datadisk"
+    #create_datadisk $rootdiskfolder datadisk 10M raw
+    #exit_if_error $? "Failed to create datadisk"
     loopdev=$(losetup -f)
-    losetup $loopdev $rootdiskfolder/datadisk
+    losetup $loopdev $datadiskfolder
     retry=10
     while [ $retry -gt 0 ]
     do

@@ -110,4 +110,15 @@ public class ProcessUtil {
 	        throw new CloudRuntimeException("Unable to create the " + pidFile.getAbsolutePath() + ".  Are you running as root?", e);
 	    }
 	}
+	
+	public static String dumpStack() {
+		StringBuilder sb = new StringBuilder();
+		StackTraceElement[] elems = Thread.currentThread().getStackTrace();
+		if(elems != null && elems.length > 0) {
+			for(StackTraceElement elem : elems) {
+				sb.append("\tat ").append(elem.getMethodName()).append("(").append(elem.getFileName()).append(":").append(elem.getLineNumber()).append(")\n");
+			}
+		}
+		return sb.toString();
+	}
 }

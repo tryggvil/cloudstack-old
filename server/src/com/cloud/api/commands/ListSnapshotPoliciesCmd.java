@@ -28,7 +28,6 @@ import com.cloud.api.BaseCmd;
 import com.cloud.api.ServerApiException;
 import com.cloud.storage.SnapshotPolicyVO;
 import com.cloud.storage.VolumeVO;
-import com.cloud.user.Account;
 import com.cloud.utils.Pair;
 
 public class ListSnapshotPoliciesCmd extends BaseCmd {
@@ -56,40 +55,13 @@ public class ListSnapshotPoliciesCmd extends BaseCmd {
     @Override
     public List<Pair<String, Object>> execute(Map<String, Object> params) {
         Long volumeId = (Long)params.get(BaseCmd.Properties.VOLUME_ID.getName());
-        Account account = (Account)params.get(BaseCmd.Properties.ACCOUNT_OBJ.getName());
-        String accountName = (String)params.get(BaseCmd.Properties.ACCOUNT.getName());
-        Long domainId = (Long)params.get(BaseCmd.Properties.DOMAIN_ID.getName());
-        Long accountId = null;
-
-        // if an admin account was passed in, or no account was passed in, make sure we honor the accountName/domainId parameters
-        if ((account == null) || isAdmin(account.getType())) {
-            // validate domainId before proceeding
-            if (domainId != null) {
-                if ((account != null) && !getManagementServer().isChildDomain(account.getDomainId(), domainId)) {
-                    throw new ServerApiException(BaseCmd.PARAM_ERROR, "Invalid domain id (" + domainId + ") given, unable to list snapshot policies.");
-                }
-                if (accountName != null) {
-                    Account userAccount = getManagementServer().findAccountByName(accountName, domainId);
-                    if (userAccount != null) {
-                        accountId = userAccount.getId();
-                    } else {
-                        throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "Unable to find account " + accountName + " in domain " + domainId);
-                    }
-                }
-            }
-        } else {
-            accountId = account.getId();
-        }
 
         // Verify that a volume exists with the specified volume ID
         VolumeVO volume = getManagementServer().findVolumeById(volumeId);
         if (volume == null) {
             throw new ServerApiException (BaseCmd.PARAM_ERROR, "Unable to find a volume with id " + volumeId);
         }
-
-        if ((accountId != null) && (volume.getAccountId() != accountId.longValue())) {
-            throw new ServerApiException(BaseCmd.ACCOUNT_ERROR, "unable to list snapshot policies for volume: " + volumeId);
-        }
+        checkAccountPermissions(params, volume.getAccountId(), volume.getDomainId(), "volume", volumeId);
 
         List<SnapshotPolicyVO> polices = getManagementServer().listSnapshotPolicies(volumeId);
 

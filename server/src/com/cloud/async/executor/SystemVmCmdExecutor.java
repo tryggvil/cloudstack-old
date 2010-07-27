@@ -58,7 +58,7 @@ public class SystemVmCmdExecutor extends VMOperationExecutor {
 	    			asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_SUCCEEDED, 0, "noop operation");
 	    			break;
 	    		case Start:
-	    			vm = managementServer.startSystemVM(param.getVmId());
+	    			vm = managementServer.startSystemVM(param.getVmId(), param.getEventId());
 	    			if(vm != null)
 		    			asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_SUCCEEDED, 0, 
 							composeResultObject(managementServer, vm));
@@ -67,7 +67,7 @@ public class SystemVmCmdExecutor extends VMOperationExecutor {
 							"operation failed");
 	    			break;
 	    		case Stop:
-	    			boolean result = managementServer.stopSystemVM(param.getVmId());
+	    			boolean result = managementServer.stopSystemVM(param.getVmId(), param.getEventId());
 	    			if(result) {
 	    				vm = managementServer.findSystemVMById(param.getVmId());
 		    			asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_SUCCEEDED, 0, composeResultObject(managementServer, vm));
@@ -77,7 +77,7 @@ public class SystemVmCmdExecutor extends VMOperationExecutor {
 	    			}
 	    			break;
 	    		case Reboot:
-	    			result = managementServer.rebootSystemVM(param.getVmId());
+	    			result = managementServer.rebootSystemVM(param.getVmId(), param.getEventId());
 	    			if(result) {
 	    				vm = managementServer.findSystemVMById(param.getVmId());
 		    			asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_SUCCEEDED, 0, composeResultObject(managementServer, vm));

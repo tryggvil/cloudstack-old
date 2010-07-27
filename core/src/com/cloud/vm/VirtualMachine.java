@@ -118,6 +118,11 @@ public interface VirtualMachine {
      * @return id of the host it is running on.  If not running, returns null.
      */
     public Long getHostId();
+    
+    /**
+     * @return id of the host it was assigned last time.
+     */
+    public Long getLastHostId();
 
     /**
      * @return should HA be enabled for this machine?

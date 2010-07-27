@@ -39,11 +39,19 @@ import com.cloud.utils.exception.CloudRuntimeException;
 public class DataCenterVnetDaoImpl extends GenericDaoBase<DataCenterVnetVO, Long> implements GenericDao<DataCenterVnetVO, Long> {
     private final SearchBuilder<DataCenterVnetVO> FreeVnetSearch;
     private final SearchBuilder<DataCenterVnetVO> VnetDcSearch;
+    private final SearchBuilder<DataCenterVnetVO> VnetDcSearchAllocated;
     private final SearchBuilder<DataCenterVnetVO> DcSearchAllocated;
     
     public List<DataCenterVnetVO> listAllocatedVnets(long dcId) {
     	SearchCriteria sc = DcSearchAllocated.create();
     	sc.setParameters("dc", dcId);
+    	return listActiveBy(sc);
+    }
+    
+    public List<DataCenterVnetVO> findVnet(long dcId, String vnet) {
+    	SearchCriteria sc = VnetDcSearch.create();;
+    	sc.setParameters("dc", dcId);
+    	sc.setParameters("vnet", vnet);
     	return listActiveBy(sc);
     }
     
@@ -103,7 +111,7 @@ public class DataCenterVnetDaoImpl extends GenericDaoBase<DataCenterVnetVO, Long
     }
 
     public void release(String vnet, long dcId, long accountId) {
-        SearchCriteria sc = VnetDcSearch.create();
+        SearchCriteria sc = VnetDcSearchAllocated.create();
         sc.setParameters("vnet", vnet);
         sc.setParameters("dc", dcId);
         sc.setParameters("account", accountId);
@@ -129,12 +137,17 @@ public class DataCenterVnetDaoImpl extends GenericDaoBase<DataCenterVnetVO, Long
         FreeVnetSearch.and("dc", FreeVnetSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
         FreeVnetSearch.and("taken", FreeVnetSearch.entity().getTakenAt(), SearchCriteria.Op.NULL);
         FreeVnetSearch.done();
-
+        
         VnetDcSearch = createSearchBuilder();
         VnetDcSearch.and("vnet", VnetDcSearch.entity().getVnet(), SearchCriteria.Op.EQ);
         VnetDcSearch.and("dc", VnetDcSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
-        VnetDcSearch.and("taken", VnetDcSearch.entity().getTakenAt(), SearchCriteria.Op.NNULL);
-        VnetDcSearch.and("account", VnetDcSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
         VnetDcSearch.done();
+
+        VnetDcSearchAllocated = createSearchBuilder();
+        VnetDcSearchAllocated.and("vnet", VnetDcSearchAllocated.entity().getVnet(), SearchCriteria.Op.EQ);
+        VnetDcSearchAllocated.and("dc", VnetDcSearchAllocated.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        VnetDcSearchAllocated.and("taken", VnetDcSearchAllocated.entity().getTakenAt(), SearchCriteria.Op.NNULL);
+        VnetDcSearchAllocated.and("account", VnetDcSearchAllocated.entity().getAccountId(), SearchCriteria.Op.EQ);
+        VnetDcSearchAllocated.done();
     }
 }

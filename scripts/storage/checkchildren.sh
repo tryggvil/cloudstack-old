@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# $Id: checkchildren.sh 9132 2010-06-04 20:17:43Z manuel $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.0.0/java/scripts/storage/checkchildren.sh $
+# $Id: checkchildren.sh 9132 2010-06-04 20:17:43Z manuel $ $HeadURL: svn://svn.lab.vmops.com/repos/branches/2.1.x/java/scripts/storage/checkchildren.sh $
 # checkchdilren.sh -- Does this path has children?
 # 
 

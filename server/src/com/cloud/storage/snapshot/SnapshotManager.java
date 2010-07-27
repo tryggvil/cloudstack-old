@@ -19,16 +19,13 @@ package com.cloud.storage.snapshot;
 
 import java.util.List;
 
-import com.cloud.dc.DataCenterVO;
 import com.cloud.exception.InternalErrorException;
 import com.cloud.exception.InvalidParameterValueException;
 import com.cloud.exception.ResourceAllocationException;
-import com.cloud.storage.DiskOfferingVO;
 import com.cloud.storage.SnapshotPolicyVO;
 import com.cloud.storage.SnapshotScheduleVO;
 import com.cloud.storage.SnapshotVO;
 import com.cloud.storage.VolumeVO;
-import com.cloud.utils.Pair;
 import com.cloud.utils.component.Manager;
 import com.cloud.utils.db.Filter;
 
@@ -82,8 +79,8 @@ public interface SnapshotManager extends Manager {
     /**
      * Creates a volume from the specified snapshot. A new volume is returned which is not attached to any VM Instance
      */
-    VolumeVO createVolumeFromSnapshot(long accountId, long userId, long snapshotId, String volumeName);
-    long createVolumeFromSnapshotAsync(long accountId, long userId, long snapshotId, String volumeName) throws InternalErrorException;
+    //VolumeVO createVolumeFromSnapshot(long userId, long accountId, long snapshotId, String volumeName);
+    long createVolumeFromSnapshotAsync(long userId, long accountId, long snapshotId, String volumeName) throws InternalErrorException;
     
     /**
      * Destroys the specified snapshot from secondary storage
@@ -106,7 +103,7 @@ public interface SnapshotManager extends Manager {
      * @param userId 
      * @param timeZone The timezone in which the 'schedule' string is specified
      */
-    SnapshotPolicyVO createPolicy(long accountId, long userId, long volumeId, String schedule, short interval, int maxSnaps, String timezone);
+    SnapshotPolicyVO createPolicy(long userId, long accountId, long volumeId, String schedule, short interval, int maxSnaps, String timezone);
     
     /**
      * Deletes snapshot scheduling policy. Delete will fail if this policy is assigned to one or more volumes
@@ -156,16 +153,6 @@ public interface SnapshotManager extends Manager {
      */
 	boolean deleteSnapshotDirsForAccount(long accountId);
 
-    Pair<VolumeVO, String> createVolumeFromSnapshot(long accountId,
-                                                    long userId,
-                                                    String userSpecifiedName,
-                                                    DataCenterVO dc,
-                                                    DiskOfferingVO diskOffering,
-                                                    SnapshotVO snapshot,
-                                                    String templatePath,
-                                                    Long originalVolumeSize);
-
     void validateSnapshot(Long userId, SnapshotVO snapshot);
-
 
 }

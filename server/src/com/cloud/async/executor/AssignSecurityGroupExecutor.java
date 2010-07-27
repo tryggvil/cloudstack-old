@@ -58,7 +58,7 @@ public class AssignSecurityGroupExecutor extends BaseAsyncJobExecutor {
 			return true;
 		} else {
 			try {
-				managementServer.assignSecurityGroup(param.getUserId(), param.getSecurityGroupId(), param.getSecurityGroupIdList(), param.getPublicIp(), param.getInstanceId());
+				managementServer.assignSecurityGroup(param.getUserId(), param.getSecurityGroupId(), param.getSecurityGroupIdList(), param.getPublicIp(), param.getInstanceId(), param.getEventId());
 				asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_SUCCEEDED, 0, 
 					"success");
 			} catch (PermissionDeniedException e) {
@@ -99,6 +99,9 @@ public class AssignSecurityGroupExecutor extends BaseAsyncJobExecutor {
         if(userVm == null)
         	return null;
         
-        return routerDao.findById(userVm.getDomainRouterId());
+        if (userVm.getDomainRouterId() == null) 
+        	return null;
+        else
+        	return routerDao.findById(userVm.getDomainRouterId());
 	}
 }

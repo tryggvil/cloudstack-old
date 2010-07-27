@@ -30,6 +30,7 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.persistence.Transient;
 
+import com.cloud.storage.Storage.StoragePoolType;
 import com.cloud.utils.db.GenericDao;
 
 /**
@@ -52,7 +53,7 @@ public class StoragePoolVO implements StoragePool {
     
     @Column(name="pool_type", updatable=false, nullable=false, length=32)
     @Enumerated(value=EnumType.STRING)
-    private StoragePoolType type;
+    private StoragePoolType poolType;
     
     @Column(name=GenericDao.CREATED_COLUMN)
     Date created;
@@ -93,7 +94,7 @@ public class StoragePoolVO implements StoragePool {
 	}
 
 	public StoragePoolType getPoolType() {
-		return type;
+		return poolType;
 	}
 
 	public Date getCreated() {
@@ -104,7 +105,7 @@ public class StoragePoolVO implements StoragePool {
 		return removed;
 	}
 
-	public Date getLastModified() {
+	public Date getUpdateTime() {
 		return updateTime;
 	}
 
@@ -137,6 +138,18 @@ public class StoragePoolVO implements StoragePool {
     @Column(name="port")
     private int port;
 
+    @Column(name="cluster_id")
+    private Long clusterId;
+    
+    
+    public Long getClusterId() {
+        return clusterId;
+    }
+    
+    public void setClusterId(Long clusterId) {
+        this.clusterId = clusterId;
+    }
+    
     public String getHostAddress() {
         return hostAddress;
     }
@@ -150,7 +163,7 @@ public class StoragePoolVO implements StoragePool {
         this.name  = name;
         this.id = poolId;
         this.uuid = uuid;
-        this.type = type;
+        this.poolType = type;
         this.dataCenterId = dataCenterId;
         this.availableBytes = availableBytes;
         this.capacityBytes = capacityBytes;
@@ -160,19 +173,39 @@ public class StoragePoolVO implements StoragePool {
         this.podId = podId;
     }
     
+    public StoragePoolVO(StoragePoolType type, String hostAddress, int port, String path) {
+        this.poolType = type;
+        this.hostAddress = hostAddress;
+        this.port = port;
+        this.path = path;
+    }
+    
+    public void setId(long id) {
+        this.id = id;
+    }
+    
+    public void setDataCenterId(long dcId) {
+        this.dataCenterId = dcId;
+    }
+    
+    public void setPodId(Long podId) {
+        this.podId = podId;
+    }
+    
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
+    }
+    
     public int getPort() {
         return port;
     }
     
     public boolean isShared() {
-    	return (type.equals(StoragePoolType.NetworkFilesystem) ||
-    			type.equals(StoragePoolType.IscsiLUN) ||
-    			type.equals(StoragePoolType.IscsiLUNPerVolume));
+    	return poolType.isShared();
     }
     
     public boolean isLocal() {
-    	return (type.equals(StoragePoolType.Filesystem) ||
-    			type.equals(StoragePoolType.LVM));
+    	return !poolType.isShared();
     }
     
     @Transient
@@ -194,12 +227,12 @@ public class StoragePoolVO implements StoragePool {
         return null;
     }
 
-	public void setPodId(Long podId) {
-		this.podId = podId;
-	}
-
 	public Long getPodId() {
 		return podId;
+	}
+	
+	public void setName(String name) {
+	    this.name = name;
 	}
 	
 	@Override
@@ -215,4 +248,9 @@ public class StoragePoolVO implements StoragePool {
 	public int hashCode() {
 	    return new Long(id).hashCode();
 	}
+	
+    @Override
+    public String toString() {
+        return new StringBuilder("Pool[").append(id).append("|").append(poolType).append("]").toString();
+    }
 }

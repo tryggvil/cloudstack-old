@@ -26,6 +26,7 @@ import org.apache.log4j.Logger;
 
 import com.cloud.api.BaseCmd;
 import com.cloud.api.ServerApiException;
+import com.cloud.async.AsyncJobVO;
 import com.cloud.domain.DomainVO;
 import com.cloud.exception.InvalidParameterValueException;
 import com.cloud.server.Criteria;
@@ -147,8 +148,17 @@ public class ListVolumesCmd extends BaseCmd{
         Object[] vTag = new Object[volumes.size()];
         int i = 0;
         for (VolumeVO volume : volumes) {
+
             List<Pair<String, Object>> volumeData = new ArrayList<Pair<String, Object>>();
+            
             volumeData.add(new Pair<String, Object>(BaseCmd.Properties.ID.getName(), volume.getId()));
+
+        	
+            AsyncJobVO asyncJob = getManagementServer().findInstancePendingAsyncJob("volume", volume.getId());
+            if(asyncJob != null) {
+                volumeData.add(new Pair<String, Object>(BaseCmd.Properties.JOB_ID.getName(), asyncJob.getId().toString()));
+                volumeData.add(new Pair<String, Object>(BaseCmd.Properties.JOB_STATUS.getName(), String.valueOf(asyncJob.getStatus())));
+            } 
 
             if (volume.getName() != null) {
                 volumeData.add(new Pair<String, Object>(BaseCmd.Properties.NAME.getName(), volume.getName()));

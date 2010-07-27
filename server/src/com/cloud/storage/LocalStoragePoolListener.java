@@ -29,8 +29,6 @@ import com.cloud.agent.api.StartupStorageCommand;
 import com.cloud.agent.api.StoragePoolInfo;
 import com.cloud.host.HostVO;
 import com.cloud.host.Status;
-import com.cloud.storage.StoragePoolHostVO;
-import com.cloud.storage.StoragePoolVO;
 import com.cloud.storage.Volume.StorageResourceType;
 import com.cloud.storage.dao.StoragePoolDao;
 import com.cloud.storage.dao.StoragePoolHostDao;
@@ -87,12 +85,14 @@ public class LocalStoragePoolListener implements Listener {
             StoragePoolVO pool = _storagePoolDao.findPoolByHostPath(host.getDataCenterId(), host.getPodId(), pInfo.getHost(), pInfo.getHostPath());
             if (pool == null) {
                 long poolId = _storagePoolDao.getNextInSequence(Long.class, "id");
+                String name = cmd.getName() == null ? (host.getName() + " Local Storage") : cmd.getName();
                 Transaction txn = Transaction.currentTxn();
                 txn.start();
-                pool = new StoragePoolVO(poolId, host.getName() + " Local Storage", pInfo.getUuid(), pInfo.getPoolType(), host.getDataCenterId(),
+                pool = new StoragePoolVO(poolId, name, pInfo.getUuid(), pInfo.getPoolType(), host.getDataCenterId(),
                                          host.getPodId(), pInfo.getAvailableBytes(), pInfo.getCapacityBytes(), pInfo.getHost(), 0,
                                          pInfo.getHostPath());
-                _storagePoolDao.persist(pool);
+                pool.setClusterId(host.getClusterId());
+                _storagePoolDao.persist(pool, pInfo.getDetails());
                 StoragePoolHostVO poolHost = new StoragePoolHostVO(pool.getId(), host.getId(), pInfo.getLocalPath());
                 _storagePoolHostDao.persist(poolHost);
                 txn.commit();
@@ -102,6 +102,9 @@ public class LocalStoragePoolListener implements Listener {
                 pool.setAvailableBytes(pInfo.getAvailableBytes());
                 pool.setCapacityBytes(pInfo.getCapacityBytes());
                 _storagePoolDao.update(pool.getId(), pool);
+                if (pInfo.getDetails() != null) {
+                    _storagePoolDao.updateDetails(pool.getId(), pInfo.getDetails());
+                }
                 StoragePoolHostVO poolHost = _storagePoolHostDao.findByPoolHost(pool.getId(), host.getId());
                 if (poolHost == null) {
                     poolHost = new StoragePoolHostVO(pool.getId(), host.getId(), pInfo.getLocalPath());
@@ -110,7 +113,7 @@ public class LocalStoragePoolListener implements Listener {
                 txn.commit();
             }
         } catch (Exception e) {
-            s_logger.warn("Unable to setup the local storage pool for " + host);
+            s_logger.warn("Unable to setup the local storage pool for " + host, e);
             return false;
         }
         return true;

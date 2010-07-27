@@ -39,13 +39,16 @@ public abstract class TemplateDownloaderBase implements TemplateDownloader {
     protected long _start;
     protected StorageLayer _storage;
     protected boolean _inited = false;
+    private long MAX_TEMPLATE_SIZE_IN_BYTES;
     
-    public TemplateDownloaderBase(StorageLayer storage, String downloadUrl, String toDir, DownloadCompleteCallback callback) {
+    public TemplateDownloaderBase(StorageLayer storage, String downloadUrl, String toDir, long maxTemplateSizeInBytes, DownloadCompleteCallback callback) {
     	_storage = storage;
         _downloadUrl = downloadUrl;
         _toDir = toDir;
         _callback = callback;
         _inited = true;
+        
+        this.MAX_TEMPLATE_SIZE_IN_BYTES  = maxTemplateSizeInBytes;
     }
 
     @Override
@@ -115,6 +118,10 @@ public abstract class TemplateDownloaderBase implements TemplateDownloader {
         }
         return true;
     }
+    
+    public long getMaxTemplateSizeInBytes() { 
+		return this.MAX_TEMPLATE_SIZE_IN_BYTES;
+	}
     
     @Override
     public void run() {

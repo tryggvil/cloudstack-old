@@ -19,20 +19,14 @@ package com.cloud.storage;
 
 import java.util.Date;
 
+import com.cloud.storage.Storage.StoragePoolType;
+
 /**
  * @author chiradeep
  *
  */
 
 public interface StoragePool  {
-	public enum StoragePoolType {
-        Filesystem, //local directory
-        NetworkFilesystem, //NFS or CIFS
-        IscsiLUN, //shared LUN, with a clusterfs overlay
-        IscsiLUNPerVolume, //for e.g., ZFS Comstar
-        ISO,    // for iso image
-        LVM,    // XenServer local LVM SR
-    }
     
     /**
      * @return id of the pool.
@@ -63,7 +57,7 @@ public interface StoragePool  {
     /**
      * @return the last time the state of this pool was modified.
      */
-    Date getLastModified();
+    Date getUpdateTime();
     
     
     /**

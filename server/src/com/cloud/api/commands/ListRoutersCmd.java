@@ -159,8 +159,9 @@ public class ListRoutersCmd extends BaseCmd {
             routerData.add(new Pair<String, Object>(BaseCmd.Properties.PUBLIC_IP.getName(), router.getPublicIpAddress()));
             routerData.add(new Pair<String, Object>(BaseCmd.Properties.PUBLIC_MAC_ADDRESS.getName(), router.getPublicMacAddress()));
             routerData.add(new Pair<String, Object>(BaseCmd.Properties.PUBLIC_NETMASK.getName(), router.getPublicNetmask()));
-            routerData.add(new Pair<String, Object>(BaseCmd.Properties.IP_ADDRESS.getName(), router.getGuestIpAddress()));
-            routerData.add(new Pair<String, Object>(BaseCmd.Properties.MAC_ADDRESS.getName(), router.getGuestMacAddress()));
+            routerData.add(new Pair<String, Object>(BaseCmd.Properties.GUEST_IP_ADDRESS.getName(), router.getGuestIpAddress()));
+            routerData.add(new Pair<String, Object>(BaseCmd.Properties.GUEST_MAC_ADDRESS.getName(), router.getGuestMacAddress()));
+            routerData.add(new Pair<String, Object>(BaseCmd.Properties.GUEST_NETMASK.getName(), router.getGuestNetmask()));
             routerData.add(new Pair<String, Object>(BaseCmd.Properties.TEMPLATE_ID.getName(), Long.valueOf(router.getTemplateId()).toString()));
             routerData.add(new Pair<String, Object>(BaseCmd.Properties.CREATED.getName(), getDateString(router.getCreated())));
             if (router.getHostId() != null) {

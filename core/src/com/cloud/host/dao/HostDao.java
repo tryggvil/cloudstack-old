@@ -33,14 +33,16 @@ import com.cloud.utils.db.GenericDao;
  * 
  */
 public interface HostDao extends GenericDao<HostVO, Long> {
-    List<HostVO> listBy(Host.Type type, long podId, long dcId);
+    List<HostVO> listBy(Host.Type type, Long clusterId, Long podId, long dcId);
+    
+    long countBy(long podId, Status... statuses);
  
     List<HostVO> listByDataCenter(long dcId);
 	List<HostVO> listByHostPod(long podId);
 	List<HostVO> listByStatus(Status... status);
 	List<HostVO> listBy(Host.Type type, long dcId);
 	HostVO findSecondaryStorageHost(long dcId);
-	
+	List<HostVO> listByCluster(long clusterId);
 	/**
 	 * Lists all secondary storage hosts, across all zones
 	 * @return list of Hosts

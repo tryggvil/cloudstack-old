@@ -78,9 +78,11 @@ public class StackMaid {
 	}
 	
 	public void exitCleanup() {
+/*
 		assert(msid_setby_manager != 0) : "Fatal, make sure StackMaidManager is loaded";
 		if(msid_setby_manager == 0)
 			s_logger.error("Fatal, make sure StackMaidManager is loaded");
+*/			
 		
 		exitCleanup(msid_setby_manager);
 	}

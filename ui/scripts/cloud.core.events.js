@@ -34,6 +34,7 @@ function showEventsTab(showEvents) {
 		    template.find("#event_type").text(json.type);
 		    template.find("#event_level").text(json.level);
 		    template.find("#event_desc").text(json.description);  
+		    template.find("#event_state").text(json.state);  
 		    
 		    setDateField(json.created, template.find("#event_date"));		   			    
         }
@@ -48,6 +49,8 @@ function showEventsTab(showEvents) {
 			    var level = submenuContent.find("#advanced_search #adv_search_level").val();
 			    var domainId = submenuContent.find("#advanced_search #adv_search_domain").val();	
 			    var account = submenuContent.find("#advanced_search #adv_search_account").val();
+			    var startdate = submenuContent.find("#advanced_search #adv_search_startdate").val();	
+			    var enddate = submenuContent.find("#advanced_search #adv_search_enddate").val();	
 			    var moreCriteria = [];								
 				if (type!=null && trim(type).length > 0) 
 					moreCriteria.push("&type="+encodeURIComponent(trim(type)));		
@@ -56,7 +59,11 @@ function showEventsTab(showEvents) {
 				if (domainId!=null && domainId.length > 0) 
 					moreCriteria.push("&domainid="+domainId);					
 				if (account!=null && account.length > 0) 
-					moreCriteria.push("&account="+account);		
+					moreCriteria.push("&account="+account);					
+				if (startdate!=null && startdate.length > 0) 
+					moreCriteria.push("&startdate="+encodeURIComponent(startdate));		
+				if (enddate!=null && enddate.length > 0) 
+					moreCriteria.push("&enddate="+encodeURIComponent(enddate));		
 				commandString = "command=listEvents&page="+currentPage+moreCriteria.join("")+"&response=json";   
 			} else {          	 
                 var searchInput = submenuContent.find("#search_input").val();            
@@ -90,7 +97,7 @@ function showEventsTab(showEvents) {
 	        });	   
 	         
 	        $(".submenu_links, #submenu_content_alerts, #alert_template").show(); 
-	        $("#event_username_header, #event_username_container, #event_account_header, #event_account_container").show();	 	
+	        $("#event_account_header, #event_account_container").show();	 	
 	                    
 	        if (showEvents == null || showEvents) {
 				currentSubMenu = $("#submenu_alerts");
@@ -102,7 +109,7 @@ function showEventsTab(showEvents) {
 	    }
 	    else {
 	        $(".submenu_links, #submenu_content_alerts, #alert_template").hide();
-	        $("#event_username_header, #event_username_container, #event_account_header, #event_account_container").hide();	 
+	        $("#event_account_header, #event_account_container").hide();	 
 			$("#submenu_content_events").show();
 	        listEvents();    
 	    }   
@@ -110,7 +117,10 @@ function showEventsTab(showEvents) {
     
 
 	// Manage Events 
-	mainContainer.load("content/tab_events.html", function() {		
+	mainContainer.load("content/tab_events.html", function() {			   
+		var advancedSearch = $("#advanced_search");
+		advancedSearch.find("#adv_search_startdate, #adv_search_enddate").datepicker({dateFormat: 'yy-mm-dd'});
+			
 	    if (isAdmin()) {				
 			// *** Alerts (begin) ***
 			var alertIndex = 0;

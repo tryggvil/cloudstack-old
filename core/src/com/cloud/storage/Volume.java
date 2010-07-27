@@ -32,11 +32,6 @@ public interface Volume {
     String getName();
     
     /**
-     * @return the volume name label
-     */
-    String getNameLabel();
-
-    /**
      * @return owner's account id
      */
     long getAccountId();
@@ -74,15 +69,9 @@ public interface Volume {
     
     VolumeType getVolumeType();
     
-    MirrorState getMirrorState();
-    
     StorageResourceType getStorageResourceType();
     
-    long getStorageResourceId();
-
 	Long getPoolId();
-	
-	void setPoolId(Long poolId);
 	
     public AsyncInstanceCreateStatus getStatus();
 	

@@ -17,6 +17,7 @@
  */
 package com.cloud.utils.net;
 
+import java.net.URI;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,6 +31,10 @@ public class UrlUtil {
     }
     
     public final static Map<String, String> parseQueryParameters(URL url) {
+        return parseQueryParameters(url.getQuery());
+    }
+    
+    public final static Map<String, String> parseQueryParameters(URI url) {
         return parseQueryParameters(url.getQuery());
     }
     

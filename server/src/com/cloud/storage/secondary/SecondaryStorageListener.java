@@ -83,6 +83,7 @@ public class SecondaryStorageListener implements Listener {
             
             StartupStorageCommand ss = (StartupStorageCommand)cmd;
             if (ss.getResourceType() == StorageResourceType.SECONDARY_STORAGE) {
+            	_ssVmMgr.onAgentConnect(agent.getDataCenterId(), cmd);
             	_ssVmMgr.generateFirewallConfiguration(agent.getId());
             	_ssVmMgr.generateSetupCommand(agent.getDataCenterId());
             }

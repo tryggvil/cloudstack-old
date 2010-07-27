@@ -120,9 +120,20 @@ public class ApiServlet extends HttpServlet {
                     String domain = null;
                     if (domainName != null) {
                     	domain = domainName[0];
+                    	if (domain != null) {
+                    	    // ensure domain starts with '/' and ends with '/'
+                    	    if (!domain.endsWith("/")) {
+                                domain += '/';
+                    	    }
+                    	    if (!domain.startsWith("/")) {
+                    	        domain = "/" + domain;
+                    	    }
+                    	}
                     }
-                    if ((username != null) && (password != null)) {
-                        List<Pair<String, Object>> sessionParams = _apiServer.loginUser(username[0], password[0], domainId, domain);
+
+                    if (username != null) {
+                        String pwd = ((password == null) ? null : password[0]);
+                        List<Pair<String, Object>> sessionParams = _apiServer.loginUser(username[0], pwd, domainId, domain, params);
                         if (sessionParams != null) {
                             for (Pair<String, Object> sessionParam : sessionParams) {
                                 session.setAttribute(sessionParam.first(), sessionParam.second());
@@ -172,7 +183,10 @@ public class ApiServlet extends HttpServlet {
                 }
             }
 
-            setupUserContext(userId, accountObj, session != null ? session.getId() : null);
+            // Initialize an empty context and we will update it after we have verified the request below,
+            // we no longer rely on web-session here, verifyRequest will populate user/account information
+            // if a API key exists
+            UserContext.registerContext(null, null, null, false);
 
             if (_apiServer.verifyRequest(params, userId)) {
             	if (accountObj != null) {
@@ -187,6 +201,10 @@ public class ApiServlet extends HttpServlet {
             			params.put(BaseCmd.Properties.ACCOUNT_OBJ.getName(), new Object[] { accountObj });
             		}
             	}
+            	
+            	// update user context info here so that we can take information if the request is authenticated
+            	// via api key mechenism
+            	updateUserContext(params, session != null ? session.getId() : null);
             	try {
             		String response = _apiServer.handleRequest(params, false, responseType);
             		writeResponse(resp, response != null ? response : "", false, responseType);
@@ -197,27 +215,31 @@ public class ApiServlet extends HttpServlet {
                 resp.sendError(HttpServletResponse.SC_UNAUTHORIZED, "unable to verify user credentials and/or request signature");
             }
 
-            // cleanup user context to prevent from being peeked in other request context
-            UserContext.unregisterContext();
         } catch (IOException ioex) {
             if (s_logger.isTraceEnabled()) {
                 s_logger.trace("exception processing request: " + ioex);
             }
         } catch (Exception ex) {
             s_logger.error("unknown exception writing api response", ex);
+        } finally {
+            // cleanup user context to prevent from being peeked in other request context
+            UserContext.unregisterContext();
         }
     }
     
-    private void setupUserContext(String userIdStr, Object account, String sessionId) {
+    private void updateUserContext(Map<String, Object[]> requestParameters, String sessionId) {
+    	String userIdStr = (String)(requestParameters.get(BaseCmd.Properties.USER_ID.getName())[0]);
+    	Account accountObj = (Account)(requestParameters.get(BaseCmd.Properties.ACCOUNT_OBJ.getName())[0]);
+    	
     	Long userId = null;
     	Long accountId = null;
-    	
     	if(userIdStr != null)
     		userId = Long.parseLong(userIdStr);
-    	if(account != null)
-    		accountId = ((Account)account).getId();
-
-    	UserContext.registerContext(userId, accountId, sessionId, false);
+    	
+    	if(accountObj != null)
+    		accountId = accountObj.getId();
+    	
+    	UserContext.updateContext(userId, accountId, sessionId);
     }
 
     // FIXME: rather than isError, we might was to pass in the status code to give more flexibility
@@ -256,21 +278,48 @@ public class ApiServlet extends HttpServlet {
         String domainid = (String)session.getAttribute("domainId");        
         String networkType = (String)session.getAttribute("networkType");
         String hypervisorType = (String)session.getAttribute("hypervisorType");
+        String directAttachNetworkGroupsEnabled = (String)session.getAttribute("directAttachNetworkGroupsEnabled");        
+        String directAttachedUntaggedEnabled = (String)session.getAttribute("directAttachedUntaggedEnabled");
         String timezone = (String)session.getAttribute("timezone");
         Float timezoneOffset = (Float)session.getAttribute("timezoneOffset");
         Short type = (Short)session.getAttribute("type");
-        String timezoneResponse = "";
-        
-        if (BaseCmd.RESPONSE_TYPE_JSON.equalsIgnoreCase(responseType)) {
-        	if (timezoneOffset != null) {
-            	timezoneResponse = "\", \"timezoneoffset\" : \"" + timezoneOffset.toString() + "\", \"timezone\" : \"" + timezone;
+                
+        if (BaseCmd.RESPONSE_TYPE_JSON.equalsIgnoreCase(responseType)) {        	
+            sb.append("{ \"loginresponse\" : { ");
+            sb.append("\"timeout\" : \"" + inactiveInterval);
+            sb.append("\",\"username\" : \"" + userName);
+            sb.append("\", \"firstname\" : \"" + firstName);
+            sb.append("\", \"lastname\" : \"" + lastName);
+            sb.append("\",\"account\" : \"" + account);
+            sb.append("\", \"domainid\" : \"" + domainid);
+            sb.append("\", \"type\" : \"" + type);
+            sb.append("\", \"networktype\" : \"" + networkType);
+            if (timezoneOffset != null) {
+                sb.append("\", \"timezoneoffset\" : \"" + timezoneOffset.toString());
+                sb.append("\", \"timezone\" : \"" + timezone);
             }
-            sb.append("{ \"loginresponse\" : { \"timeout\" : \"" + inactiveInterval + "\",\"username\" : \"" + userName + "\", \"firstname\" : \"" + firstName + "\", \"lastname\" : \"" + lastName + "\",\"account\" : \"" + account + "\", \"domainid\" : \"" + domainid + "\", \"type\" : \"" + type + "\", \"networktype\" : \"" + networkType + timezoneResponse + "\", \"hypervisortype\" : \"" + hypervisorType + "\" } }");
-        } else {
-        	if (timezoneOffset != null) {
-            	timezoneResponse = "<timezoneoffset>"+ timezoneOffset.toString() + "</timezoneoffset><timezone>"+ timezone + "</timezone>";
+            sb.append("\",\"directattachnetworkgroupsenabled\" : \"" + directAttachNetworkGroupsEnabled);
+            sb.append("\",\"directattacheduntaggedenabled\" : \"" + directAttachedUntaggedEnabled);
+            sb.append("\", \"hypervisortype\" : \"" + hypervisorType);
+            sb.append("\" } }");
+        } else {        	
+            sb.append("<loginresponse>");
+            sb.append("<timeout>" + inactiveInterval + "</timeout>");
+            sb.append("<username>" + userName + "</username>");
+            sb.append("<firstname>" + firstName + "</firstname>");
+            sb.append("<lastname>" + lastName + "</lastname>");
+            sb.append("<account>" + account + "</account>");
+            sb.append("<domainid>" + domainid + "</domainid>");
+            sb.append("<type>"+ type + "</type>");
+            sb.append("<networktype>"+ networkType + "</networktype>");
+            if (timezoneOffset != null) {
+                sb.append("<timezoneoffset>"+ timezoneOffset.toString() + "</timezoneoffset>");
+                sb.append("<timezone>"+ timezone + "</timezone>");
             }
-            sb.append("<loginresponse>" + "<timeout>" + inactiveInterval + "</timeout>" + "<username>" + userName + "</username>" + "<firstname>" + firstName + "</firstname>" + "<lastname>" + lastName + "</lastname>" + "<account>" + account + "</account>" + "<domainid>" + domainid + "</domainid>" + "<type>"+ type + "</type>" + "<networktype>"+ networkType + "</networktype>" + timezoneResponse + "<hypervisortype>" + hypervisorType + "</hypervisortype>" + "</loginresponse>");
+            sb.append("<directattachnetworkgroupsenabled>" + directAttachNetworkGroupsEnabled + "</directattachnetworkgroupsenabled>");
+            sb.append("<directattacheduntaggedenabled>" + directAttachedUntaggedEnabled + "</directattacheduntaggedenabled>");
+            sb.append("<hypervisortype>" + hypervisorType + "</hypervisortype>");
+            sb.append("</loginresponse>");
         }
         return sb.toString();
     }

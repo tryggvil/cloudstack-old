@@ -446,8 +446,14 @@ public class SqlGenerator {
         return attrs;
     }
     
-    protected static void addPrimaryKeyJoinColumns(StringBuilder sql, String fromTable, String toTable, PrimaryKeyJoinColumn[] pkjcs) {
-        sql.append(" INNER JOIN ").append(toTable).append(" ON ");
+    protected static void addPrimaryKeyJoinColumns(StringBuilder sql, String fromTable, String toTable, String joinType, PrimaryKeyJoinColumn[] pkjcs) {
+        if ("right".equalsIgnoreCase(joinType)) {
+            sql.append(" RIGHT JOIN ").append(toTable).append(" ON ");
+        } else if ("left".equalsIgnoreCase(joinType)) {
+            sql.append(" LEFT JOIN ").append(toTable).append(" ON ");
+        } else {
+            sql.append(" INNER JOIN ").append(toTable).append(" ON ");
+        }
         for (PrimaryKeyJoinColumn pkjc : pkjcs) {
             sql.append(fromTable).append(".").append(pkjc.name());
             String refColumn = DbUtil.getReferenceColumn(pkjc);
@@ -477,7 +483,7 @@ public class SqlGenerator {
         SecondaryTable[] sts = DbUtil.getSecondaryTables(clazz);
         ArrayList<String> secondaryTables = new ArrayList<String>();
         for (SecondaryTable st : sts) {
-            addPrimaryKeyJoinColumns(innerJoin, tableName, st.name(), st.pkJoinColumns());
+            addPrimaryKeyJoinColumns(innerJoin, tableName, st.name(), st.join(), st.pkJoinColumns());
             secondaryTables.add(st.name());
         }
         
@@ -486,7 +492,7 @@ public class SqlGenerator {
             String table = DbUtil.getTableName(parent);
             PrimaryKeyJoinColumn[] pkjcs = DbUtil.getPrimaryKeyJoinColumns(clazz);
             assert (pkjcs != null) : "No Join columns specified for the super class";
-            addPrimaryKeyJoinColumns(innerJoin, tableName, table, pkjcs);
+            addPrimaryKeyJoinColumns(innerJoin, tableName, table, null, pkjcs);
         }
     }
 

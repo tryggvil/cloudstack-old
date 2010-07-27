@@ -22,11 +22,11 @@ import java.util.HashMap;
 import java.util.List;
 
 import com.cloud.agent.AgentManager;
-import com.cloud.agent.manager.allocator.StoragePoolAllocator;
 import com.cloud.ha.HighAvailabilityManager;
 import com.cloud.network.NetworkManager;
 import com.cloud.server.ManagementServer;
 import com.cloud.storage.StorageManager;
+import com.cloud.storage.allocator.StoragePoolAllocator;
 import com.cloud.storage.snapshot.SnapshotManager;
 import com.cloud.vm.UserVmManager;
 
@@ -61,6 +61,7 @@ public enum Config {
 	// Usage
 	
 	CapacityCheckPeriod("Usage", ManagementServer.class, Integer.class, "capacity.check.period", "300000", "The interval in milliseconds between capacity checks", null),
+	CapacitySkipCountingHours("Usage", ManagementServer.class, Integer.class, "capacity.skipcounting.hours", "24", "The interval in hours since VM has stopped to skip counting its allocated CPU/Memory capacity", null),
 	StorageAllocatedCapacityThreshold("Usage", ManagementServer.class, Float.class, "storage.allocated.capacity.threshold", "0.85", "Percentage (as a value between 0 and 1) of allocated storage utilization above which alerts will be sent about low storage available.", null),
 	StorageCapacityThreshold("Usage", ManagementServer.class, Float.class, "storage.capacity.threshold", "0.85", "Percentage (as a value between 0 and 1) of storage utilization above which alerts will be sent about low storage available.", null),
 	CPUCapacityThreshold("Usage", ManagementServer.class, Float.class, "cpu.capacity.threshold", "0.85", "Percentage (as a value between 0 and 1) of cpu utilization above which alerts will be sent about low cpu available.", null),
@@ -93,23 +94,18 @@ public enum Config {
     SnapshotWeeklyMax("Snapshots", SnapshotManager.class, String.class, "snapshot.max.weekly", "8", "Maximum hourly snapshots for a volume", null),
     SnapshotMonthlyMax("Snapshots", SnapshotManager.class, String.class, "snapshot.max.monthly", "8", "Maximum hourly snapshots for a volume", null),
     SnapshotPollInterval("Snapshots", SnapshotManager.class, Boolean.class, "snapshot.poll.interval", "300", "The time interval in seconds when the management server polls for snapshots to be scheduled.", null),
-    SnapshotRecurringTest("Snapshots", SnapshotManager.class, Boolean.class, "snapshot.recurring.test", "false", "Flag for testing recurring snapshots", null),
-    SnapshotTestMinutesPerHour("Snapshots", SnapshotManager.class, String.class, "snapshot.test.minutes.per.hour", "60", "Set it to a smaller value to take more recurring snapshots", null),
-    SnapshotTestHoursPerDay("Snapshots", SnapshotManager.class, String.class, "snapshot.test.hours.per.day", "24", "Set it to a smaller value to take more recurring snapshots", null),
-    SnapshotTestDaysPerWeek("Snapshots", SnapshotManager.class, String.class, "snapshot.test.days.per.week", "7", "Set it to a smaller value to take more recurring snapshots", null),
-    SnapshotTestDaysPerMonth("Snapshots", SnapshotManager.class, String.class, "snapshot.test.days.per.month", "30", "Set it to a smaller value to take more recurring snapshots", null),
-    SnapshotTestWeeksPerMonth("Snapshots", SnapshotManager.class, String.class, "snapshot.test.weeks.per.month", "4", "Set it to a smaller value to take more recurring snapshots", null),
-    SnapshotTestMonthsPerYear("Snapshots", SnapshotManager.class, String.class, "snapshot.test.months.per.year", "12", "Set it to a smaller value to take more recurring snapshots", null),
     
 	// Advanced
     JobExpireMinutes("Advanced", ManagementServer.class, String.class, "job.expire.minutes", "1440", "Time (in minutes) for async-jobs to be kept in system", null),
 	
 	AccountCleanupInterval("Advanced", ManagementServer.class, Integer.class, "account.cleanup.interval", "86400", "The interval in seconds between cleanup for removed accounts", null),
+	AllowPublicUserTemplates("Advanced", ManagementServer.class, Integer.class, "allow.public.user.templates", "true", "If false, users will not be able to create public templates.", null),
 	InstanceName("Advanced", AgentManager.class, String.class, "instance.name", "VM", "Name of the deployment instance.", null),
 	ExpungeDelay("Advanced", UserVmManager.class, Integer.class, "expunge.delay", "86400", "Determines how long to wait before actually expunging destroyed vm. The default value = the default value of expunge.interval", null),
 	ExpungeInterval("Advanced", UserVmManager.class, Integer.class, "expunge.interval", "86400", "The interval to wait before running the expunge thread.", null),
 	ExpungeWorkers("Advanced", UserVmManager.class, Integer.class, "expunge.workers",  "1", "Number of workers performing expunge ", null),
 	HostStatsInterval("Advanced", ManagementServer.class, Integer.class, "host.stats.interval", "60000", "The interval in milliseconds when host stats are retrieved from agents.", null),
+	HostRetry("Advanced", AgentManager.class, Integer.class, "host.retry", "2", "Number of times to retry hosts for creating a volume", null),
 	IntegrationAPIPort("Advanced", ManagementServer.class, Integer.class, "integration.api.port", "8096", "Defaul API port", null),
 	InvestigateRetryInterval("Advanced", HighAvailabilityManager.class, Integer.class, "investigate.retry.interval", "60", "Time in seconds between VM pings when agent is disconnected", null),
 	MigrateRetryInterval("Advanced", HighAvailabilityManager.class, Integer.class, "migrate.retry.interval", "120", "Time in seconds between migration retries", null),
@@ -133,22 +129,24 @@ public enum Config {
 	SystemVMUseLocalStorage("Advanced", ManagementServer.class, Boolean.class, "system.vm.use.local.storage", "false", "Indicates whether to use local storage pools or shared storage pools for system VMs.", null),
 	CPUOverprovisioningFactor("Advanced", ManagementServer.class, String.class, "cpu.overprovisioning.factor", "1", "Used for CPU overprovisioning calculation; available CPU will be (actualCpuCapacity * cpu.overprovisioning.factor)", null),
 	NetworkType("Advanced", ManagementServer.class, String.class, "network.type", "vnet", "The type of network that this deployment will use.", "vnet,vlan,direct"),
+	LinkLocalIpNums("Advanced", ManagementServer.class, Integer.class, "linkLocalIp.nums", "10", "The number of link local ip that needed by domR(in power of 2)", null),
 	HypervisorType("Advanced", ManagementServer.class, String.class, "hypervisor.type", "kvm", "The type of hypervisor that this deployment will use.", "kvm,xenserver"),
 	ManagementHostIPAdr("Advanced", ManagementServer.class, String.class, "host", "localhost", "The ip address of management server", null),
 	UseSecondaryStorageVm("Advanced", ManagementServer.class, Boolean.class, "secondary.storage.vm", "false", "Deploys a VM per zone to manage secondary storage if true, otherwise secondary storage is mounted on management server", null),
 	EventPurgeDelay("Advanced", ManagementServer.class, Integer.class, "event.purge.delay", "0", "Events older than specified number days will be purged", null),
     UseLocalStorage("Premium", ManagementServer.class, Boolean.class, "use.local.storage", "false", "Should we use the local storage if it's available?", null),
 	SecStorageVmRamSize("Advanced", AgentManager.class, Integer.class, "secstorage.vm.ram.size", null, "RAM size (in MB) used to create new secondary storage vms", null),
-	MaxTemplateAndIsoSize("Advanced",  ManagementServer.class, Long.class, "max.template.iso.size", "25", "The maximum size for a downloaded template (in GB).", null),
+	MaxTemplateAndIsoSize("Advanced",  ManagementServer.class, Long.class, "max.template.iso.size", "50", "The maximum size for a downloaded template or ISO (in GB).", null),
 	SecStorageAllowedInternalDownloadSites("Advanced", ManagementServer.class, String.class, "secstorage.allowed.internal.sites", null, "Comma separated list of cidrs internal to the datacenter that can host template download servers", null),
 	SecStorageEncryptCopy("Advanced", ManagementServer.class, Boolean.class, "secstorage.encrypt.copy", "false", "Use SSL method used to encrypt copy traffic between zones", "true,false"),
 	SecStorageSecureCopyCert("Advanced", ManagementServer.class, Boolean.class, "secstorage.ssl.cert.domain", "realhostip.com", "SSL certificate used to encrypt copy traffic between zones", "realhostip.com"),
+	DirectAttachNetworkGroupsEnabled("Advanced", ManagementServer.class, Boolean.class, "direct.attach.network.groups.enabled", "false", "Ec2-style distributed firewall for direct-attach VMs", "true,false"),
+	DirectAttachNetworkEnabled("Advanced", ManagementServer.class, Boolean.class, "direct.attach.network.externalIpAllocator.enabled", "false", "Direct-attach VMs using external DHCP server", "true,false"),
+	DirectAttachNetworkExternalAPIURL("Advanced", ManagementServer.class, String.class, "direct.attach.network.externalIpAllocator.url", null, "Direct-attach VMs using external DHCP server (API url)", null),
+	DirectAttachUntaggedVlanEnabled("Advanced", ManagementServer.class, String.class, "direct.attach.untagged.vlan.enabled", "false", "Indicate whether the system supports direct-attached untagged vlan", "true,false"),
+
 	// XenServer
-	CreatePoolsInPod("Advanced", ManagementServer.class, Boolean.class, "xen.create.pools.in.pod", "true", "Should we automatically add XenServers into pools that are inside a Pod", null),
-    PoolCreationStrategy("Advanced", ManagementServer.class, String.class, "xen.pool.creation.strategy", "Greedy", "Greedy=Fill up one pool first; Even=Distribute between pools", "Greedy,Even"),
-    MaxPoolsInPod("Advanced", ManagementServer.class, Integer.class, "xen.max.pools.in.pod", "1", "Number of XenServer pools in a Pod", "1-5"),
-    ForceJoinPool("Advanced", ManagementServer.class, Boolean.class, "xen.force.join.pool", "false", "Force joining into the pool?", null),
-    VmAllocationAlgorithm("Advanced", ManagementServer.class, Boolean.class, "vm.allocation.algorithm", "random", "If 'random', hosts within a pod will be randomly considered for VM/volume allocation. If 'firstfit', they will be considered on a first-fit basis.", null),
+    VmAllocationAlgorithm("Advanced", ManagementServer.class, String.class, "vm.allocation.algorithm", "random", "If 'random', hosts within a pod will be randomly considered for VM/volume allocation. If 'firstfit', they will be considered on a first-fit basis.", null),
     XenPublicNetwork("Network", ManagementServer.class, String.class, "xen.public.network.device", null, "[ONLY IF THE PUBLIC NETWORK IS ON A DEDICATED NIC]:The network name label of the physical device dedicated to the public network on a XenServer host", null),
     XenStorageNetwork1("Network", ManagementServer.class, String.class, "xen.storage.network.device1", "cloud-stor1", "Specify when there are storage networks", null),
     XenStorageNetwork2("Network", ManagementServer.class, String.class, "xen.storage.network.device2", "cloud-stor2", "Specify when there are storage networks", null),
@@ -162,6 +160,7 @@ public enum Config {
     XenSetupMultipath("Advanced", ManagementServer.class, String.class, "xen.setup.multipath", "false", "Setup the host to do multipath", null),
     XenBondStorageNic("Advanced", ManagementServer.class, String.class, "xen.bond.storage.nics", null, "Attempt to bond the two networks if found", null),
     XenHeartBeatInterval("Advanced", ManagementServer.class, Integer.class, "xen.heartbeat.interval", "60", "heartbeat to use when implementing XenServer Self Fencing", "any # of seconds"),
+    XenPreallocatedLunSizeRange("Advanced", ManagementServer.class, Float.class, "xen.preallocated.lun.size.range", ".05", "percentage to add to disk size when allocating", null),
     
 	// Premium
 	
@@ -172,8 +171,11 @@ public enum Config {
     
 	// Hidden
 	
-	CloudIdentifier("Hidden", ManagementServer.class, String.class, "cloud.identifier", null, "A unique identifier for the cloud.", null);
-	
+    CreatePoolsInPod("Hidden", ManagementServer.class, Boolean.class, "xen.create.pools.in.pod", "false", "Should we automatically add XenServers into pools that are inside a Pod", null),
+    CloudIdentifier("Hidden", ManagementServer.class, String.class, "cloud.identifier", null, "A unique identifier for the cloud.", null),
+    SSOKey("Hidden", ManagementServer.class, String.class, "security.singlesignon.key", null, "A Single Sign-On key used for logging into the cloud", null),
+    SSOAuthTolerance("Advanced", ManagementServer.class, Long.class, "security.singlesignon.tolerance.millis", "300000", "The allowable clock difference in milliseconds between when an SSO login request is made and when it is received.", null);
+
 	private final String _category;
 	private final Class<?> _componentClass;
 	private final Class<?> _type;
@@ -181,7 +183,7 @@ public enum Config {
     private final String _defaultValue;
     private final String _description;
     private final String _range;
-    
+
     private static final HashMap<String, List<Config>> _configs = new HashMap<String, List<Config>>();
     static {
     	// Add categories
@@ -288,14 +290,4 @@ public enum Config {
     	}
     	return categories;
     }
-   
-    /*
-    public static int main(String[] args) {
-    	System.out.println("VMOps Management Server Configuration Variables");
-    	
-    	for (Config config : Config.values()) {
-    		
-    	}
-    }
-    */
 }

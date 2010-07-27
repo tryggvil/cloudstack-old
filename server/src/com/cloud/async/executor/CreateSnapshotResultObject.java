@@ -19,6 +19,7 @@
 package com.cloud.async.executor;
 
 import java.util.Date;
+import com.cloud.storage.Volume.VolumeType;
 
 import com.cloud.serializer.Param;
 
@@ -49,7 +50,13 @@ public class CreateSnapshotResultObject {
 	private String path;
 
 	@Param(name="snapshottype")
-	private short snapshotType;
+	private String snapshotType;
+	
+	@Param(name="volumename")
+	private String volumeName;
+	
+	@Param(name="volumetype")
+	private VolumeType volumeType;
 	
 	public long getId() {
 		return id;
@@ -108,19 +115,35 @@ public class CreateSnapshotResultObject {
 		return domainId;
 	}
 	
-	public void setDomain(String domainName) {
+	public void setDomainName(String domainName) {
 		this.domainName = domainName;
 	}
 	
-	public String getDomain() {
+	public String getDomainName() {
 		return domainName;
 	}
 	
-	public void setSnapshotType(short s){
-		this.snapshotType = s;
+	public void setSnapshotType(String snapshotType){
+		this.snapshotType = snapshotType;
 	}
 	
-	public short getSnapshotType(){
+	public String getSnapshotType(){
 		return this.snapshotType;
+	}
+	
+	public String getVolumeName() {
+		return volumeName;
+	}
+
+	public void setVolumeName(String volumeName) {
+		this.volumeName = volumeName;
+	}
+
+	public VolumeType getVolumeType() {
+		return volumeType;
+	}
+
+	public void setVolumeType(VolumeType volumeType) {
+		this.volumeType = volumeType;
 	}
 }

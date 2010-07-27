@@ -137,9 +137,9 @@ public class CreateVolumeCmd extends BaseCmd {
     	try {
     		long jobId = 0;
     		if (useSnapshot) {
-                jobId = getManagementServer().createVolumeFromSnapshotAsync(account.getId(), userId, snapshotId, name);
+                jobId = getManagementServer().createVolumeFromSnapshotAsync(userId, account.getId(), snapshotId, name);
     		} else {
-    		    jobId = getManagementServer().createVolumeAsync(account.getId(), userId, name, zoneId, diskOfferingId);
+    		    jobId = getManagementServer().createVolumeAsync(userId, account.getId(), name, zoneId, diskOfferingId);
     		}
     		
     		if (jobId == 0) {

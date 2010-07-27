@@ -45,9 +45,11 @@ public class ListDiskOfferingsCmd extends BaseCmd {
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.PAGESIZE, Boolean.FALSE));
     }
 
+    @Override
     public String getName() {
         return s_name;
     }
+    @Override
     public List<Pair<Enum, Boolean>> getProperties() {
         return s_properties;
     }
@@ -95,9 +97,9 @@ public class ListDiskOfferingsCmd extends BaseCmd {
             offeringData.add(new Pair<String, Object>(BaseCmd.Properties.DOMAIN.getName(), getManagementServer().findDomainIdById(offering.getDomainId()).getName()));
             offeringData.add(new Pair<String, Object>(BaseCmd.Properties.NAME.getName(), offering.getName()));
             offeringData.add(new Pair<String, Object>(BaseCmd.Properties.DISPLAY_TEXT.getName(), offering.getDisplayText()));
-            offeringData.add(new Pair<String, Object>(BaseCmd.Properties.DISK_SIZE.getName(), offering.getDiskSize() / 1024));
-            offeringData.add(new Pair<String, Object>(BaseCmd.Properties.IS_MIRRORED.getName(), offering.getMirrored()));
-
+            offeringData.add(new Pair<String, Object>(BaseCmd.Properties.DISK_SIZE.getName(), offering.getDiskSizeInBytes()));
+            offeringData.add(new Pair<String, Object>(BaseCmd.Properties.IS_MIRRORED.getName(), offering.isMirrored()));
+            offeringData.add(new Pair<String, Object>(BaseCmd.Properties.TAGS.getName(), offering.getTags()));
             diskOffTag[i++] = offeringData;
         }
         Pair<String, Object> offeringTag = new Pair<String, Object>("diskoffering", diskOffTag);

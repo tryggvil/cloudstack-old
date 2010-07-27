@@ -413,8 +413,7 @@ public class AgentShell implements IAgentShell {
     
     private boolean needConsoleProxy() {
     	for(Agent agent: _agents) {
-    		if(agent.getResource().getType().equals(Host.Type.Computing)||
-    		        agent.getResource().getType().equals(Host.Type.ConsoleProxy)||
+    		if( agent.getResource().getType().equals(Host.Type.ConsoleProxy)||
     			agent.getResource().getType().equals(Host.Type.Routing))
     			return true;
     	}
@@ -567,7 +566,7 @@ public class AgentShell implements IAgentShell {
     public void stop() {
     	_exit = true;
     	if(_consoleProxyMain != null) {
-    		_consoleProxyMain.stop();
+    		_consoleProxyMain.interrupt();
     	}
     }
     

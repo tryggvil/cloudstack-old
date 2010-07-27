@@ -39,7 +39,8 @@ import com.cloud.agent.api.storage.CreatePrivateTemplateCommand;
 import com.cloud.agent.api.storage.DestroyCommand;
 import com.cloud.agent.api.storage.UpgradeDiskAnswer;
 import com.cloud.agent.api.storage.UpgradeDiskCommand;
-import com.cloud.storage.StoragePool.StoragePoolType;
+import com.cloud.agent.api.to.VolumeTO;
+import com.cloud.storage.Storage.StoragePoolType;
 import com.cloud.storage.Volume.StorageResourceType;
 import com.cloud.storage.template.TemplateInfo;
 import com.cloud.utils.exception.CloudRuntimeException;
@@ -201,13 +202,10 @@ public abstract class FileSystemStorageResource extends StorageResource {
 
 	@Override
 	protected Answer execute(DestroyCommand cmd) {
-	    List<VolumeVO> volumes = cmd.getVolumes();
+	    VolumeTO volume = cmd.getVolume();
 	    String result = null;
 
-	    for (VolumeVO volume : volumes) {
-	    		result = delete(volume.getPath());
-	    }
-
+  		result = delete(volume.getPath());
 	    return new Answer(cmd, result == null, result);
 	}
 
@@ -386,6 +384,7 @@ public abstract class FileSystemStorageResource extends StorageResource {
 		ModifyStoragePoolAnswer answer = new ModifyStoragePoolAnswer(cmd, capacity, available, tInfo);
 		return answer;
 	}
+	
 	@Override
 	protected Answer execute(ModifyStoragePoolCommand cmd) {
 	    StoragePoolVO pool = cmd.getPool();

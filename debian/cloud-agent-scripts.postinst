@@ -7,13 +7,6 @@ case "$1" in
                 --group --disabled-password --shell /bin/sh cloud
                 # update me in cloud-usage.postinst as well
         fi
-
-	for i in /usr/lib/cloud/agent/scripts/network/domr/id_rsa
-	do
-		chmod 0600 $i
-		chown cloud $i
-	done
-
     ;;
 esac
 

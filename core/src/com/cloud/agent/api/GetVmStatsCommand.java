@@ -23,16 +23,28 @@ import com.cloud.vm.VirtualMachine;
 
 public class GetVmStatsCommand extends Command {
     List<String> vmNames;
+    String hostGuid;
+    String hostName;
     
     protected GetVmStatsCommand() {
     }
     
-    public GetVmStatsCommand(List<String> vmNames) {
+    public GetVmStatsCommand(List<String> vmNames, String hostGuid, String hostName) {
         this.vmNames = vmNames;
+        this.hostGuid = hostGuid;
+        this.hostName = hostName;
     }
     
     public List<String> getVmNames() {
         return vmNames;
+    }
+    
+    public String getHostGuid(){
+    	return this.hostGuid;
+    }
+    
+    public String getHostName(){
+    	return this.hostName;
     }
     
     @Override

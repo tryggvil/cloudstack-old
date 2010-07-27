@@ -44,7 +44,7 @@ public class DestroyConsoleProxyExecutor extends VMOperationExecutor {
 			return true;
 		} else {
 	    	try {
-	    		boolean result = managementServer.destroyConsoleProxy(param.getVmId());
+	    		boolean result = managementServer.destroyConsoleProxy(param.getVmId(), param.getEventId());
 	    		if(result)
 	    			asyncMgr.completeAsyncJob(getJob().getId(), AsyncJobResult.STATUS_SUCCEEDED, 0, 
 						"success");

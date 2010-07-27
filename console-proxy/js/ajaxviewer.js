@@ -22,10 +22,7 @@
 //		Kelven Yang
 //		11/18/2009
 //
-function trace(str) {
-	if(window.log != undefined && jQuery.isFunction(window.log))
-		window.log(str);
-}
+var g_logger;
 
 function StringBuilder(initStr) {
     this.strings = new Array("");
@@ -51,6 +48,12 @@ StringBuilder.prototype = {
 };
 
 function AjaxViewer(panelId, imageUrl, updateUrl, tileMap, width, height, tileWidth, tileHeight, rawKeyboard) {
+	// logging is disabled by default so that it won't have negative impact on performance
+	// however, a back door key-sequence can trigger to open the logger window, it is designed to help
+	// trouble-shooting
+	g_logger = new Logger();
+	g_logger.enable(false);
+	
 	var ajaxViewer = this;
 	this.rawKeyboard = rawKeyboard;
 	this.imageLoaded = false;
@@ -79,6 +82,8 @@ function AjaxViewer(panelId, imageUrl, updateUrl, tileMap, width, height, tileWi
 		window.onStatusNotify = function(status) {};
 	
 	this.panel = this.generateCanvas(panelId, width, height, tileWidth, tileHeight);
+	
+	this.setupKeyCodeTranslationTable();
 }
 
 AjaxViewer.prototype = {
@@ -199,15 +204,150 @@ AjaxViewer.prototype = {
 		this.checkEventQueue();
 	},
 	
+	setupKeyCodeTranslationTable: function() {
+		this.keyCodeMap = {};
+		for(var i = 'a'.charCodeAt(); i < 'z'.charCodeAt(); i++)
+			this.keyCodeMap[i] = { code: 65 + i - 'a'.charCodeAt(), shift: false };
+		for(i = 'A'.charCodeAt(); i < 'Z'.charCodeAt(); i++)
+			this.keyCodeMap[i] = { code: 65 + i - 'A'.charCodeAt(), shift: true };
+		for(i = '0'.charCodeAt(); i < '9'.charCodeAt(); i++)
+			this.keyCodeMap[i] = { code: 48 + i - '0'.charCodeAt(), shift: false };
+		
+		this.keyCodeMap['`'.charCodeAt()] = { code : 192, shift : false };
+		this.keyCodeMap['~'.charCodeAt()] = { code : 192, shift : true };
+		
+		this.keyCodeMap[')'.charCodeAt()] = { code : 48, shift : true };
+		this.keyCodeMap['!'.charCodeAt()] = { code : 49, shift : true };
+		this.keyCodeMap['@'.charCodeAt()] = { code : 50, shift : true };
+		this.keyCodeMap['#'.charCodeAt()] = { code : 51, shift : true };
+		this.keyCodeMap['$'.charCodeAt()] = { code : 52, shift : true };
+		this.keyCodeMap['%'.charCodeAt()] = { code : 53, shift : true };
+		this.keyCodeMap['^'.charCodeAt()] = { code : 54, shift : true };
+		this.keyCodeMap['&'.charCodeAt()] = { code : 55, shift : true };
+		this.keyCodeMap['*'.charCodeAt()] = { code : 56, shift : true };
+		this.keyCodeMap['('.charCodeAt()] = { code : 57, shift : true };
+		
+		this.keyCodeMap['-'.charCodeAt()] = { code : 109, shift : false };
+		this.keyCodeMap['_'.charCodeAt()] = { code : 109, shift : true };
+		this.keyCodeMap['='.charCodeAt()] = { code : 107, shift : false };
+		this.keyCodeMap['+'.charCodeAt()] = { code : 107, shift : true };
+
+		this.keyCodeMap['['.charCodeAt()] = { code : 219, shift : false };
+		this.keyCodeMap['{'.charCodeAt()] = { code : 219, shift : true };
+		this.keyCodeMap[']'.charCodeAt()] = { code : 221, shift : false };
+		this.keyCodeMap['}'.charCodeAt()] = { code : 221, shift : true };
+		this.keyCodeMap['\\'.charCodeAt()] = { code : 220, shift : false };
+		this.keyCodeMap['|'.charCodeAt()] = { code : 220, shift : true };
+		this.keyCodeMap[';'.charCodeAt()] = { code : 59, shift : false };
+		this.keyCodeMap[':'.charCodeAt()] = { code : 59, shift : true };
+		this.keyCodeMap['\''.charCodeAt()] = { code : 222 , shift : false };
+		this.keyCodeMap['"'.charCodeAt()] = { code : 222, shift : true };
+		this.keyCodeMap[','.charCodeAt()] = { code : 188 , shift : false };
+		this.keyCodeMap['<'.charCodeAt()] = { code : 188, shift : true };
+		this.keyCodeMap['.'.charCodeAt()] = { code : 190, shift : false };
+		this.keyCodeMap['>'.charCodeAt()] = { code : 190, shift : true };
+		this.keyCodeMap['/'.charCodeAt()] = { code : 191, shift : false };
+		this.keyCodeMap['?'.charCodeAt()] = { code : 191, shift : true };
+	},
+	
+	// Firefox on Mac OS X does not generate key-code for following keys 
+	translateZeroKeycode: function() {
+		var len = this.eventQueue.length;
+		if(len > 1 && this.eventQueue[len - 2].type == this.EVENT_QUEUE_KEYBOARD_EVENT && this.eventQueue[len - 2].code == 0) {
+			switch(this.eventQueue[len - 1].code) {
+			case 95 :	// underscore _
+				this.eventQueue[len - 2].code = 109;
+				break;
+				
+			case 58 :	// colon :
+				this.eventQueue[len - 2].code = 59;
+				break;
+				
+			case 60 : 	// <
+				this.eventQueue[len - 2].code = 188;
+				break;
+				
+			case 62 : 	// >
+				this.eventQueue[len - 2].code = 190;
+				break;
+			
+			case 63 :	// ?
+				this.eventQueue[len - 2].code = 191;
+				break;
+				
+			case 124 : 	// |
+				this.eventQueue[len - 2].code = 220;
+				break;
+				
+			case 126 :	// ~
+				this.eventQueue[len - 2].code = 192;
+				break;
+				
+			default :
+				g_logger.log(Logger.LEVEL_WARN, "Zero keycode detected for KEY-PRESS char code " + this.eventQueue[len - 1].code);
+				break;
+			}
+		}
+	},
+
+	//
+	// Firefox on Mac OS X does not send KEY-DOWN for repeated KEY-PRESS event
+	// IE on windows, when typing is fast, it will omit issuing KEY-DOWN event
+	//
+	translateImcompletedKeypress : function() {
+		var len = this.eventQueue.length;
+		if(len == 1 || !(this.eventQueue[len - 2].type == this.EVENT_QUEUE_KEYBOARD_EVENT && this.eventQueue[len - 2].event == this.KEY_DOWN)) {
+			var nSplicePos = Math.max(0, len - 2);
+			var keyPressEvent = this.eventQueue[len - 1];
+			if(!!this.keyCodeMap[keyPressEvent.code]) {
+				if(this.keyCodeMap[keyPressEvent.code].shift) {
+					this.eventQueue.splice(nSplicePos, 0, {
+						type: this.EVENT_QUEUE_KEYBOARD_EVENT,
+						event: this.KEY_DOWN,
+						code: this.keyCodeMap[keyPressEvent.code].code,
+						modifiers: this.SHIFT_KEY
+					});
+				} else {
+					this.eventQueue.splice(nSplicePos, 0, {
+						type: this.EVENT_QUEUE_KEYBOARD_EVENT,
+						event: this.KEY_DOWN,
+						code: this.keyCodeMap[keyPressEvent.code].code,
+						modifiers: 0
+					});
+				}
+			} else {
+				g_logger.log(Logger.LEVEL_WARN, "Keycode mapping is not defined to translate KEY-PRESS event for char code : " + keyPressEvent.code);
+				this.eventQueue.splice(nSplicePos, 0, {
+					type: this.EVENT_QUEUE_KEYBOARD_EVENT,
+					event: this.KEY_DOWN,
+					code: keyPressEvent.code,
+					modifiers: keyPressEvent.modifiers
+				});
+			}
+		}
+	},
+	
 	sendKeyboardEvent: function(event, code, modifiers) {
+		// back door to open logger window - CTRL-ATL-SHIFT+SPACE
+		if(code == 32 && 
+			(modifiers & this.SHIFT_KEY | this.CTRL_KEY | this.ALT_KEY) == (this.SHIFT_KEY | this.CTRL_KEY | this.ALT_KEY)) {
+			g_logger.enable(true);
+			g_logger.open();
+		}
+			
 		var len;
-		trace("Keyboard event: " + event + ", code: " + code + ", modifiers: " + modifiers);
+		g_logger.log(Logger.LEVEL_INFO, "Keyboard event: " + event + ", code: " + code + ", modifiers: " + modifiers + ', char: ' + String.fromCharCode(code));
 		this.eventQueue.push({
 			type: this.EVENT_QUEUE_KEYBOARD_EVENT,
 			event: event,
 			code: code,
 			modifiers: modifiers
 		});
+
+		if(event == this.KEY_PRESS) {
+			this.translateZeroKeycode();
+			this.translateImcompletedKeypress();
+		}
 		
 		if(this.rawKeyboard) {
 			if(event == this.KEY_PRESS) {
@@ -256,19 +396,21 @@ AjaxViewer.prototype = {
 						var origKeyDown = this.eventQueue[len - 2];
 						if(origKeyDown.type == this.EVENT_QUEUE_KEYBOARD_EVENT && 
 							origKeyDown.code == this.KEYCODE_ADD) {
-							
+
+							g_logger.log(Logger.LEVEL_INFO, "Detected + on numeric pad area, fake it");
+							this.eventQueue[len - 2].modifiers = this.SHIFT_KEY;	
+							this.eventQueue[len - 1].modifiers = this.SHIFT_KEY;	
 							this.eventQueue.splice(len - 2, 0, {
 								type: this.EVENT_QUEUE_KEYBOARD_EVENT,
 								event: this.KEY_DOWN,
 								code: this.KEYCODE_SHIFT,
-								modifiers: 0
+								modifiers: this.SHIFT_KEY
 							});
-							
 							this.eventQueue.push({
 								type: this.EVENT_QUEUE_KEYBOARD_EVENT,
 								event: this.KEY_UP,
 								code: this.KEYCODE_SHIFT,
-								modifiers: 0
+								modifiers: this.SHIFT_KEY
 							});
 						}
 					}
@@ -361,10 +503,15 @@ AjaxViewer.prototype = {
 			});
 			this.eventQueue.length = 0;
 			
-			var url = ajaxViewer.updateUrl + "&event=" + ajaxViewer.EVENT_BAG; 
+			var url = ajaxViewer.updateUrl + "&event=" + ajaxViewer.EVENT_BAG;
+			
+			g_logger.log(Logger.LEVEL_TRACE, "Posting client event " + sb.toString() + "...");
+			
 			ajaxViewer.sendingEventInProgress = true;
 			window.onStatusNotify(ajaxViewer.STATUS_SENDING);
 			$.post(url, {data: sb.toString()}, function(data, textStatus) {
+				g_logger.log(Logger.LEVEL_TRACE, "Client event " + sb.toString() + " is posted");
+				
 				ajaxViewer.sendingEventInProgress = false;
 				window.onStatusNotify(ajaxViewer.STATUS_SENT);
 				

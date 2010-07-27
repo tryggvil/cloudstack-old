@@ -26,6 +26,8 @@ import org.apache.log4j.Logger;
 
 import com.cloud.api.BaseCmd;
 import com.cloud.api.ServerApiException;
+import com.cloud.dc.VlanVO;
+import com.cloud.dc.Vlan.VlanType;
 import com.cloud.domain.DomainVO;
 import com.cloud.network.IPAddressVO;
 import com.cloud.server.Criteria;
@@ -49,6 +51,7 @@ public class ListPublicIpAddressesCmd extends BaseCmd {
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.KEYWORD, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.PAGE, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.PAGESIZE, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.FOR_VIRTUAL_NETWORK, Boolean.FALSE));
     }
 
     @Override
@@ -73,6 +76,7 @@ public class ListPublicIpAddressesCmd extends BaseCmd {
         String keyword = (String)params.get(BaseCmd.Properties.KEYWORD.getName());
         Integer page = (Integer)params.get(BaseCmd.Properties.PAGE.getName());
         Integer pageSize = (Integer)params.get(BaseCmd.Properties.PAGESIZE.getName());
+        Boolean forVirtualNetwork = (Boolean) params.get(BaseCmd.Properties.FOR_VIRTUAL_NETWORK.getName());
         boolean isAdmin = false;
 
         if (allocatedOnly == null)
@@ -131,9 +135,10 @@ public class ListPublicIpAddressesCmd extends BaseCmd {
         } else {
             if (isAdmin) {
                 c.addCriteria(Criteria.DOMAINID, domainId);
+                c.addCriteria(Criteria.VLAN, vlanDbId);
             }
+            c.addCriteria(Criteria.FOR_VIRTUAL_NETWORK, forVirtualNetwork);
         	c.addCriteria(Criteria.DATACENTERID, zoneId);
-            c.addCriteria(Criteria.VLAN, vlanDbId);
             c.addCriteria(Criteria.IPADDRESS, ip);
         }
 
@@ -146,6 +151,9 @@ public class ListPublicIpAddressesCmd extends BaseCmd {
         Object[] ipTag = new Object[result.size()];
         int i = 0;
         for (IPAddressVO ipAddress : result) {
+        	VlanVO vlan  = getManagementServer().findVlanById(ipAddress.getVlanDbId());
+        	boolean forVirtualNetworks = vlan.getVlanType().equals(VlanType.VirtualNetwork);
+        	
             List<Pair<String, Object>> ipAddrData = new ArrayList<Pair<String, Object>>();
             ipAddrData.add(new Pair<String, Object>(BaseCmd.Properties.IP_ADDRESS.getName(), ipAddress.getAddress()));
             if (ipAddress.getAllocated() != null) {
@@ -162,6 +170,7 @@ public class ListPublicIpAddressesCmd extends BaseCmd {
                 ipAddrData.add(new Pair<String, Object>(BaseCmd.Properties.DOMAIN.getName(), getManagementServer().findDomainIdById(accountTemp.getDomainId()).getName()));
             } 
             
+            ipAddrData.add(new Pair<String, Object>(BaseCmd.Properties.FOR_VIRTUAL_NETWORK.getName(), forVirtualNetworks));
             //show this info to admin only
             if (isAdmin == true) {
             	ipAddrData.add(new Pair<String, Object>(BaseCmd.Properties.VLAN_DB_ID.getName(), Long.valueOf(ipAddress.getVlanDbId()).toString()));

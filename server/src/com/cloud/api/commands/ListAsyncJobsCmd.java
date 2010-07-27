@@ -20,6 +20,7 @@ package com.cloud.api.commands;
 
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -37,6 +38,8 @@ public class ListAsyncJobsCmd extends BaseCmd {
 
     static {
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT_OBJ, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.ACCOUNT_ID, Boolean.FALSE));
+        s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.START_TZDATE, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.PAGE, Boolean.FALSE));
         s_properties.add(new Pair<Enum, Boolean>(BaseCmd.Properties.PAGESIZE, Boolean.FALSE));
     }
@@ -53,6 +56,8 @@ public class ListAsyncJobsCmd extends BaseCmd {
         Account account = (Account)params.get(BaseCmd.Properties.ACCOUNT_OBJ.getName());
     	Integer page = (Integer)params.get(BaseCmd.Properties.PAGE.getName());
         Integer pageSize = (Integer)params.get(BaseCmd.Properties.PAGESIZE.getName());
+        Long accountId = (Long)params.get(BaseCmd.Properties.ACCOUNT_ID.getName());
+        Date startDate = (Date)params.get(BaseCmd.Properties.START_TZDATE.getName());
         
         Long startIndex = Long.valueOf(0);
         int pageSizeNum = 50;
@@ -68,9 +73,21 @@ public class ListAsyncJobsCmd extends BaseCmd {
         
         Criteria c = new Criteria("id", Boolean.TRUE, startIndex, Long.valueOf(pageSizeNum));
         if(account == null) {
-        	c.addCriteria(Criteria.ACCOUNTID, Account.ACCOUNT_ID_SYSTEM);
+        	if(accountId != null)
+        		c.addCriteria(Criteria.ACCOUNTID, accountId.longValue());
         } else {
-        	c.addCriteria(Criteria.ACCOUNTID, account.getId());
+        	if(account.getType() == Account.ACCOUNT_TYPE_ADMIN) {
+        		// for root admins, can take arbitrary account id from input
+            	if(accountId != null)
+            		c.addCriteria(Criteria.ACCOUNTID, accountId.longValue());
+        	} else {
+        		// for normal accounts, they can only query jobs of their own
+            	c.addCriteria(Criteria.ACCOUNTID, account.getId());
+        	}
+        }
+        
+        if(startDate != null) {
+        	c.addCriteria(Criteria.STARTDATE, startDate);
         }
         
    	 	List<AsyncJobVO> jobs = getManagementServer().searchForAsyncJobs(c);

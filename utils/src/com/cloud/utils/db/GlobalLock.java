@@ -138,7 +138,7 @@ public class GlobalLock {
 					if(ownerThread != null) {
 						profiler.start();
 						try {
-							wait(timeoutSeconds*1000);
+							wait(((long)timeoutSeconds)*1000L);
 						} catch (InterruptedException e) {
 							interrupted = true;
 						}

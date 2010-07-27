@@ -24,6 +24,10 @@ import javax.ejb.Local;
 
 import org.apache.log4j.Logger;
 
+import com.cloud.service.ServiceOffering;
+import com.cloud.service.ServiceOfferingVO;
+import com.cloud.service.dao.ServiceOfferingDao;
+import com.cloud.utils.component.ComponentLocator;
 import com.cloud.utils.db.Attribute;
 import com.cloud.utils.db.GenericDaoBase;
 import com.cloud.utils.db.SearchBuilder;
@@ -43,11 +47,15 @@ public class UserVmDaoImpl extends GenericDaoBase<UserVmVO, Long> implements Use
     protected final SearchBuilder<UserVmVO> AccountDataCenterSearch;
     protected final SearchBuilder<UserVmVO> AccountSearch;
     protected final SearchBuilder<UserVmVO> HostSearch;
+    protected final SearchBuilder<UserVmVO> HostUpSearch;
     protected final SearchBuilder<UserVmVO> HostRunningSearch;
     protected final SearchBuilder<UserVmVO> NameSearch;
     protected final SearchBuilder<UserVmVO> StateChangeSearch;
     protected final SearchBuilder<UserVmVO> StorageIpSearch;
+    protected final SearchBuilder<UserVmVO> GuestIpSearch;
+
     protected final SearchBuilder<UserVmVO> DestroySearch;
+    protected SearchBuilder<UserVmVO> AccountDataCenterVirtualSearch;
     protected final Attribute _updateTimeAttr;
     
     protected UserVmDaoImpl() {
@@ -58,6 +66,11 @@ public class UserVmDaoImpl extends GenericDaoBase<UserVmVO, Long> implements Use
         HostSearch = createSearchBuilder();
         HostSearch.and("host", HostSearch.entity().getHostId(), SearchCriteria.Op.EQ);
         HostSearch.done();
+        
+        HostUpSearch = createSearchBuilder();
+        HostUpSearch.and("host", HostUpSearch.entity().getHostId(), SearchCriteria.Op.EQ);
+        HostUpSearch.and("states", HostUpSearch.entity().getState(), SearchCriteria.Op.NIN);
+        HostUpSearch.done();
         
         HostRunningSearch = createSearchBuilder();
         HostRunningSearch.and("host", HostRunningSearch.entity().getHostId(), SearchCriteria.Op.EQ);
@@ -80,12 +93,12 @@ public class UserVmDaoImpl extends GenericDaoBase<UserVmVO, Long> implements Use
         AccountPodSearch.and("account", AccountPodSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
         AccountPodSearch.and("pod", AccountPodSearch.entity().getPodId(), SearchCriteria.Op.EQ);
         AccountPodSearch.done();
-        
+
         AccountDataCenterSearch = createSearchBuilder();
         AccountDataCenterSearch.and("account", AccountDataCenterSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
         AccountDataCenterSearch.and("dc", AccountDataCenterSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
         AccountDataCenterSearch.done();
-        
+
         StateChangeSearch = createSearchBuilder();
         StateChangeSearch.and("id", StateChangeSearch.entity().getId(), SearchCriteria.Op.EQ);
         StateChangeSearch.and("states", StateChangeSearch.entity().getState(), SearchCriteria.Op.EQ);
@@ -99,14 +112,19 @@ public class UserVmDaoImpl extends GenericDaoBase<UserVmVO, Long> implements Use
         StorageIpSearch.and("ip", StorageIpSearch.entity().getStorageIp(), SearchCriteria.Op.EQ);
         StorageIpSearch.done();
         
+        GuestIpSearch = createSearchBuilder();
+        GuestIpSearch.and("dc", GuestIpSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+        GuestIpSearch.and("ip", GuestIpSearch.entity().getGuestIpAddress(), SearchCriteria.Op.EQ);
+        GuestIpSearch.and("states", GuestIpSearch.entity().getState(), SearchCriteria.Op.NIN);
+        GuestIpSearch.done();
+
         DestroySearch = createSearchBuilder();
         DestroySearch.and("state", DestroySearch.entity().getState(), SearchCriteria.Op.IN);
         DestroySearch.and("updateTime", DestroySearch.entity().getUpdateTime(), SearchCriteria.Op.LT);
         DestroySearch.done();
-        
+
         _updateTimeAttr = _allAttributes.get("updateTime");
         assert _updateTimeAttr != null : "Couldn't get this updateTime attribute";
-        
     }
     
     public List<UserVmVO> listByAccountAndPod(long accountId, long podId) {
@@ -174,6 +192,13 @@ public class UserVmDaoImpl extends GenericDaoBase<UserVmVO, Long> implements Use
     	
     	vm.incrUpdated();
         UpdateBuilder ub = getUpdateBuilder(vm);
+        if(newState == State.Running) {
+        	// save current running host id to last_host_id field
+        	ub.set(vm, "lastHostId", vm.getHostId());
+        } else if(newState == State.Expunging) {
+        	ub.set(vm, "lastHostId", null);
+        }
+        
         ub.set(vm, "state", newState);
         ub.set(vm, "hostId", hostId);
         ub.set(vm, _updateTimeAttr, new Date());
@@ -223,6 +248,14 @@ public class UserVmDaoImpl extends GenericDaoBase<UserVmVO, Long> implements Use
         return listActiveBy(sc);
     }
     
+    @Override
+    public List<UserVmVO> listUpByHostId(Long hostId) {
+        SearchCriteria sc = HostUpSearch.create();
+        sc.setParameters("host", hostId);
+        sc.setParameters("states", new Object[] {State.Destroyed, State.Stopped, State.Expunging});
+        return listActiveBy(sc);
+    }
+    
     public List<UserVmVO> listRunningByHostId(long hostId) {
         SearchCriteria sc = HostRunningSearch.create();
         sc.setParameters("host", hostId);
@@ -236,5 +269,36 @@ public class UserVmDaoImpl extends GenericDaoBase<UserVmVO, Long> implements Use
         sc.setParameters("name", name);
         return findOneBy(sc);
     }
-    
+
+    @Override
+    public List<UserVmVO> listVirtualNetworkInstancesByAcctAndZone(long accountId, long dcId) {
+        if (AccountDataCenterVirtualSearch == null) {
+            ServiceOfferingDao offeringDao = ComponentLocator.getLocator("management-server").getDao(ServiceOfferingDao.class);
+            SearchBuilder<ServiceOfferingVO> offeringSearch = offeringDao.createSearchBuilder();
+            offeringSearch.and("guestIpType", offeringSearch.entity().getGuestIpType(), SearchCriteria.Op.EQ);
+
+            AccountDataCenterVirtualSearch = createSearchBuilder();
+            AccountDataCenterVirtualSearch.and("account", AccountDataCenterVirtualSearch.entity().getAccountId(), SearchCriteria.Op.EQ);
+            AccountDataCenterVirtualSearch.and("dc", AccountDataCenterVirtualSearch.entity().getDataCenterId(), SearchCriteria.Op.EQ);
+            AccountDataCenterVirtualSearch.join("offeringSearch", offeringSearch, AccountDataCenterVirtualSearch.entity().getServiceOfferingId(), offeringSearch.entity().getId());
+            AccountDataCenterVirtualSearch.done();
+        }
+
+        SearchCriteria sc = AccountDataCenterVirtualSearch.create();
+        sc.setParameters("account", accountId);
+        sc.setParameters("dc", dcId);
+        sc.setJoinParameters("offeringSearch", "guestIpType", ServiceOffering.GuestIpType.Virtualized);
+
+        return listActiveBy(sc);
+    }
+
+	@Override
+	public List<UserVmVO> listVmsUsingGuestIpAddress(long dcId, String ipAddress) {
+    	SearchCriteria sc = GuestIpSearch.create();
+    	sc.setParameters("dc", dcId);
+    	sc.setParameters("ip", ipAddress);
+    	sc.setParameters("states", new Object[] {State.Destroyed,  State.Expunging});
+    	
+    	return listActiveBy(sc);
+	}
 }
