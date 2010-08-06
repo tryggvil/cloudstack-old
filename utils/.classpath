@@ -1,13 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="src" path="test"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="/thirdparty/log4j-1.2.15.jar"/>
-	<classpathentry kind="lib" path="/thirdparty/cglib-nodep-2.2.jar"/>
-	<classpathentry kind="lib" path="/thirdparty/ehcache-1.5.0.jar"/>
-	<classpathentry kind="lib" path="/thirdparty/commons-dbcp-1.2.2.jar"/>
-	<classpathentry kind="lib" path="/thirdparty/commons-pool-1.4.jar"/>
-	<classpathentry kind="lib" path="/thirdparty/junit-4.8.1.jar"/>
-	<classpathentry kind="output" path="bin"/>
+	<classpathentry kind="src" output="target/classes" path="src"/>
+	<classpathentry kind="src" output="target/test-classes" path="test"/>
+	<classpathentry kind="con" path="org.maven.ide.eclipse.MAVEN2_CLASSPATH_CONTAINER">
+		<attributes>
+			<attribute name="org.eclipse.jst.component.nondependency" value=""/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.module.container"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/java-6-openjdk">
+		<attributes>
+			<attribute name="owner.project.facets" value="jst.java"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="output" path="target/classes"/>
 </classpath>
