@@ -45,8 +45,8 @@
 				</includes>
 				</resource>
 				<resource>
-				<directory>content</directory>
-				<targetPath>content</targetPath>
+				<directory>jsp</directory>
+				<targetPath>jsp</targetPath>
 				<includes>
 				<include>**/**</include>	
 				</includes>
