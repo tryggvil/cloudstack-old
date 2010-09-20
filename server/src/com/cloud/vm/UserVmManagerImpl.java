@@ -1299,6 +1299,10 @@ public class UserVmManagerImpl implements UserVmManager {
                 podsToAvoid.add(pod.first().getId());
             }
 
+            if(pod == null){
+                throw new ResourceAllocationException("Create VM " + ((vm == null) ? vmId : vm.toString()) + " failed. There are no pods with enough CPU/memory");
+            }
+            
             if ((vm == null) || (poolid == 0)) {
                 throw new ResourceAllocationException("Create VM " + ((vm == null) ? vmId : vm.toString()) + " failed due to no Storage Pool is available");
             }
@@ -2577,6 +2581,8 @@ public class UserVmManagerImpl implements UserVmManager {
 	            _eventDao.persist(event);
 		        String eventParams = "\nvmName=" + name + "\nsoId=" + serviceOfferingId + "\ndoId=" + diskOfferingIdentifier + "\ntId=" + templateId + "\ndcId=" + dataCenterId;
 		        event.setParameters(eventParams);
+	            _accountMgr.decrementResourceCount(account.getId(), ResourceType.user_vm);
+	            _accountMgr.decrementResourceCount(account.getId(), ResourceType.volume, numVolumes);
 	            txn.commit();
 	            return null;
 	        }
@@ -2629,6 +2635,9 @@ public class UserVmManagerImpl implements UserVmManager {
         	throw new InternalErrorException("No template or ISO was specified for the VM.");
         }
 	    
+        boolean isIso = Storage.ImageFormat.ISO.equals(template.getFormat());
+        long numVolumes = (isIso || (diskOffering == null)) ? 1 : 2;
+        
 	    Transaction txn = Transaction.currentTxn();
 	    try {
 	        UserVmVO vm = null;
@@ -2685,8 +2694,6 @@ public class UserVmManagerImpl implements UserVmManager {
 	            _networkGroupManager.addInstanceToGroups(vmId, networkGroups);
 	            
 	            _accountMgr.incrementResourceCount(account.getId(), ResourceType.user_vm);
-	            boolean isIso = Storage.ImageFormat.ISO.equals(template.getFormat());
-	            long numVolumes = (isIso || (diskOffering == null)) ? 1 : 2;
 	            _accountMgr.incrementResourceCount(account.getId(), ResourceType.volume, numVolumes);
 	            txn.commit();
 	
@@ -2733,6 +2740,8 @@ public class UserVmManagerImpl implements UserVmManager {
 	            _eventDao.persist(event);
 		        String eventParams = "\nvmName=" + name + "\nsoId=" + serviceOfferingId + "\ndoId=" + diskOfferingIdentifier + "\ntId=" + templateId + "\ndcId=" + dataCenterId;
 		        event.setParameters(eventParams);
+	            _accountMgr.decrementResourceCount(account.getId(), ResourceType.user_vm);
+	            _accountMgr.decrementResourceCount(account.getId(), ResourceType.volume, numVolumes);
 	            txn.commit();
 	            return null;
 	        }
@@ -2752,11 +2761,15 @@ public class UserVmManagerImpl implements UserVmManager {
 	
 	        return _vmDao.findById(vmId);
 	    } catch (ResourceAllocationException rae) {
+            _accountMgr.decrementResourceCount(account.getId(), ResourceType.user_vm);
+            _accountMgr.decrementResourceCount(account.getId(), ResourceType.volume, numVolumes);
 	        if (s_logger.isInfoEnabled()) {
 	            s_logger.info("Failed to create VM for account " + accountId + " due to maximum number of virtual machines exceeded.");
 	        }
 	    	throw rae;
 	    } catch (Throwable th) {
+            _accountMgr.decrementResourceCount(account.getId(), ResourceType.user_vm);
+            _accountMgr.decrementResourceCount(account.getId(), ResourceType.volume, numVolumes);
 	        s_logger.error("Unable to create vm", th);
 	        throw new CloudRuntimeException("Unable to create vm", th);
 	    }
