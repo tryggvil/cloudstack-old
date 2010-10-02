@@ -33,7 +33,7 @@ import java.util.Set;
  */
 public class HAProxyConfigurator implements LoadBalancerConfigurator {
 	private static String [] globalSection = {"global",
-			"\tlog 127.0.0.1:3914   local0 info",
+			"\tlog 127.0.0.1:3914   local0 notice notice",
 			"\tmaxconn 4096",
 			"\tchroot /var/lib/haproxy",
 			"\tuser haproxy",
@@ -117,6 +117,14 @@ public class HAProxyConfigurator implements LoadBalancerConfigurator {
 		sb = new StringBuilder();
 		sb.append("\t").append("balance ").append(algorithm);
 		result.add(sb.toString());
+		if (publicPort.equals("80")) {
+			sb = new StringBuilder();
+			sb.append("\t").append("mode http");
+			result.add(sb.toString());
+			sb = new StringBuilder();
+			sb.append("\t").append("option httpclose");
+			result.add(sb.toString());
+		}
 		int i=0;
 		for (FirewallRuleVO rule: fwRules) {
 			//add line like this: "server  65_37_141_30-80_3 10.1.1.4:80 check"
