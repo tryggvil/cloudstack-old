@@ -2471,8 +2471,10 @@ public class NetworkManagerImpl implements NetworkManager, VirtualMachineManager
                     }
                     description = desc;
                 }
-
-                saveEvent(userId, accountId, level, type, description);
+                
+                IPAddressVO ipAddr = _ipAddressDao.findById(rule.getPublicIpAddress());
+                
+                saveEvent(userId, ipAddr!=null?ipAddr.getAccountId():null, level, type, description);
             }
         } finally {
             if (e != null) {
@@ -2500,6 +2502,7 @@ public class NetworkManagerImpl implements NetworkManager, VirtualMachineManager
                 // for existing user ids
                 throw new PermissionDeniedException("Account does not own supplied address");
             }
+ 
             // although we are not writing these values to the DB, we will check
             // them out of an abundance
             // of caution (may not be warranted)
