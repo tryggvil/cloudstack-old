@@ -3132,6 +3132,8 @@ public abstract class CitrixResourceBase implements StoragePoolResource, ServerR
                 s_logger.trace("callHostPlugin Result: " + result);
             }
             return result.replace("\n", "");
+        } catch ( Types.HandleInvalid e) {
+            s_logger.warn("callHostPlugin failed for cmd: " + cmd + " with args " + getArgsString(args) + " due to HandleInvalid clazz:" + e.clazz + ", handle:" + e.handle);
         } catch (XenAPIException e) {
             s_logger.warn("callHostPlugin failed for cmd: " + cmd + " with args " + getArgsString(args) + " due to " + e.toString(), e);
         } catch (XmlRpcException e) {
@@ -6130,7 +6132,7 @@ public abstract class CitrixResourceBase implements StoragePoolResource, ServerR
         public String pool;
     }
 
-    private class VHDInfo {
+    class VHDInfo {
         private final String uuid;
         private final Long virtualSize;
 
