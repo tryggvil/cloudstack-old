@@ -718,7 +718,8 @@ def mount(remoteDir, localDir):
     makedirs(localDir)
     
     try: 
-        cmd = ['mount', remoteDir, localDir]
+        options = "soft,timeo=133,retrans=10,tcp,noac"
+        cmd = ['mount', remoteDir, localDir, "-o", options]
         txt = util.pread2(cmd)
     except:
         txt = ''
@@ -1478,7 +1479,7 @@ def ipset(ipsetname, proto, start, end, ips):
         util.SMlog("ipset chain already exists" + ipsetname)
 
     result = True
-    ipsettmp = ipsetname + str(int(time.time())%3600)
+    ipsettmp = ''.join(''.join(ipsetname.split('-')).split('_')) + str(int(time.time()) % 1000)
 
     try: 
         util.pread2(['ipset', '-N', ipsettmp, 'iptreemap']) 

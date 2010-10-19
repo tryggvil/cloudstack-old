@@ -408,7 +408,8 @@ public abstract class CitrixResourceBase implements StoragePoolResource, ServerR
     protected boolean currentlyAttached(SR sr, SR.Record rec, PBD pbd, PBD.Record pbdr) {
         String status = null;
         if (SRType.NFS.equals(rec.type)) {
-            status = callHostPlugin("checkMount", "mount", rec.uuid);
+            //status = callHostPlugin("checkMount", "mount", rec.uuid);
+            return true;
         } else if (SRType.LVMOISCSI.equals(rec.type) ) {
             String scsiid = pbdr.deviceConfig.get("SCSIid");
             if (scsiid.isEmpty()) {
@@ -4099,15 +4100,9 @@ public abstract class CitrixResourceBase implements StoragePoolResource, ServerR
         try {
             Connection conn = getConnection();
             SR sr = getStorageRepository(conn, poolTO);
-            sr.setNameLabel(conn, pool.getUuid());
-            sr.setNameDescription(conn, pool.getName());
-
+            removeSR(sr);
             Answer answer = new Answer(cmd, true, "success");
             return answer;
-        } catch (XenAPIException e) {
-            String msg = "DeleteStoragePoolCommand XenAPIException:" + e.toString() + " host:" + _host.uuid + " pool: " + pool.getName() + pool.getHostAddress() + pool.getPath();
-            s_logger.warn(msg, e);
-            return new Answer(cmd, false, msg);
         } catch (Exception e) {
             String msg = "DeleteStoragePoolCommand XenAPIException:" + e.getMessage() + " host:" + _host.uuid + " pool: " + pool.getName() + pool.getHostAddress() + pool.getPath();
             s_logger.warn(msg, e);

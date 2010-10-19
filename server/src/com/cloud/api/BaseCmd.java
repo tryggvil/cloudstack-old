@@ -220,6 +220,7 @@ public abstract class BaseCmd {
         ISO_PATH("isopath", BaseCmd.TYPE_STRING, "isoPath"),
         IS_READY("isready", BaseCmd.TYPE_BOOLEAN, "isReady"),
         IS_SOURCE_NAT("issourcenat", BaseCmd.TYPE_BOOLEAN, "isSourceNat"),
+        IQN("iqn", BaseCmd.TYPE_STRING, "iqn"),
         KEYWORD("keyword", BaseCmd.TYPE_STRING, "keyword"),
         LASTNAME("lastname", BaseCmd.TYPE_STRING, "lastname"),
         LASTPINGED("lastpinged", BaseCmd.TYPE_DATE, "lastpinged"),
@@ -235,7 +236,7 @@ public abstract class BaseCmd {
         MEMORY_ALLOCATED("memoryallocated", BaseCmd.TYPE_LONG, "memoryallocated"),
         MONTHLY_MAX("monthlymax", BaseCmd.TYPE_INT, "monthlyMax"),
         NAME("name", BaseCmd.TYPE_STRING, "name"),
-        CLIENT_IQN("clientiqn", BaseCmd.TYPE_STRING, "clientiqn"),
+        GUEST_IQN("guestiqn", BaseCmd.TYPE_STRING, "guestiqn"),
         NEW_NAME("newname", BaseCmd.TYPE_STRING, "newname"),
         NETMASK("netmask", BaseCmd.TYPE_STRING, "netmask"),
         NETWORK_DOMAIN("networkdomain", BaseCmd.TYPE_STRING, "networkdomain"),
@@ -389,12 +390,14 @@ public abstract class BaseCmd {
         TAKEN("taken", BaseCmd.TYPE_DATE, "taken"),
         LUN("lun", BaseCmd.TYPE_INT, "lun"),
         LUN_SIZE("lunsize", BaseCmd.TYPE_LONG, "lunsize"),
+        LUN_ID("lunid", BaseCmd.TYPE_STRING, "lunid"),
         LUN_SIZE_USED("lunsizeused", BaseCmd.TYPE_LONG, "lunsizeused"),
         DETAILS("details", BaseCmd.TYPE_OBJECT_MAP, "details"),
         CLUSTER_ID("clusterid", BaseCmd.TYPE_LONG, "clusterid"),
         CLUSTER_NAME("clustername", BaseCmd.TYPE_STRING, "clustername"),
         SCOPE("scope", BaseCmd.TYPE_STRING, "scope"),
-        SUM_ACROSS_ZONE("sumacrosszone", BaseCmd.TYPE_BOOLEAN, "sumAcrossZone");
+        SUM_ACROSS_ZONE("sumacrosszone", BaseCmd.TYPE_BOOLEAN, "sumAcrossZone"),
+        EXCEPTION("exception", BaseCmd.TYPE_STRING, "excetpion");
 
         private final String _name;
         private final short _dataType;
