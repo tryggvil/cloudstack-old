@@ -46,7 +46,7 @@ copy_vm_data_file() {
   local file=$4
   local dataFile=$5        
   
-  chmod +r $dataFile
+  chmod a+r $dataFile
   scp -P $PORT -o StrictHostKeyChecking=no -i $CERT $dataFile root@$domrIp:/var/www/html/$folder/$vmIp/$file >/dev/null
   return $?
 }
