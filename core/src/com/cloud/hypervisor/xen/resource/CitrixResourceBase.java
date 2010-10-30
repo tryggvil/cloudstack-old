@@ -1728,6 +1728,10 @@ public abstract class CitrixResourceBase implements StoragePoolResource, ServerR
                 vmtmpltvdi = cloudVDIcopy(tmpltvdi, poolsr);
                 snapshotvdi = vmtmpltvdi.snapshot(conn, new HashMap<String, String>());
                 vmtmpltvdi.destroy(conn);
+                try{
+                    poolsr.scan(conn);
+                } catch (Exception e) {
+                }
                 snapshotvdi.setNameLabel(conn, "Template " + cmd.getName());
                 // vmtmpltvdi.setNameDescription(conn, cmd.getDescription());
                 uuid = snapshotvdi.getUuid(conn);
@@ -3159,7 +3163,7 @@ public abstract class CitrixResourceBase implements StoragePoolResource, ServerR
         return true;
     }
 
-    protected Nic getLocalNetwork(Connection conn, String name) throws XmlRpcException, XenAPIException {
+    protected Nic getManageMentNetwork(Connection conn, String name) throws XmlRpcException, XenAPIException {
         Set<Network> networks = Network.getByNameLabel(conn, name);
         for (Network network : networks) {
             Network.Record nr = network.getRecord(conn);
@@ -3169,7 +3173,7 @@ public abstract class CitrixResourceBase implements StoragePoolResource, ServerR
                     if (s_logger.isDebugEnabled()) {
                         s_logger.debug("Found a network called " + name + " on host=" + _host.ip + ";  Network=" + nr.uuid + "; pif=" + pr.uuid);
                     }
-                    if (pr.bondMasterOf != null && pr.bondMasterOf.size() > 0) {
+                    if (!pr.management && pr.bondMasterOf != null && pr.bondMasterOf.size() > 0) {
                         if (pr.bondMasterOf.size() > 1) {
                             String msg = new StringBuilder("Unsupported configuration.  Network " + name + " has more than one bond.  Network=").append(nr.uuid)
                                     .append("; pif=").append(pr.uuid).toString();
@@ -3201,6 +3205,25 @@ public abstract class CitrixResourceBase implements StoragePoolResource, ServerR
         return null;
     }
 
+    
+    protected Nic getLocalNetwork(Connection conn, String name) throws XmlRpcException, XenAPIException {
+        Set<Network> networks = Network.getByNameLabel(conn, name);
+        for (Network network : networks) {
+            Network.Record nr = network.getRecord(conn);
+            for (PIF pif : nr.PIFs) {
+                PIF.Record pr = pif.getRecord(conn);
+                if (_host.uuid.equals(pr.host.getUuid(conn))) {
+                    if (s_logger.isDebugEnabled()) {
+                        s_logger.debug("Found a network called " + name + " on host=" + _host.ip + ";  Network=" + nr.uuid + "; pif=" + pr.uuid);
+                    }
+                    return new Nic(network, nr, pif, pr);
+                }
+            }
+        }
+
+        return null;
+    }
+    
     protected VIF getCorrectVif(VM router, String vlanId) {
         try {
             Connection conn = getConnection();
@@ -3527,11 +3550,6 @@ public abstract class CitrixResourceBase implements StoragePoolResource, ServerR
         try {
             Host myself = Host.getByUuid(conn, _host.uuid);
 
-            String name = "cloud-private";
-            if (_privateNetworkName != null) {
-                name = _privateNetworkName;
-            }
-
             _localGateway = callHostPlugin("getgateway", "mgmtIP", myself.getAddress(conn));
             if (_localGateway == null || _localGateway.isEmpty()) {
                 s_logger.warn("can not get gateway for host :" + _host.uuid);
@@ -3540,7 +3558,15 @@ public abstract class CitrixResourceBase implements StoragePoolResource, ServerR
 
             _canBridgeFirewall = can_bridge_firewall();
 
-            Nic privateNic = getLocalNetwork(conn, name);
+
+            Nic privateNic = null;
+            privateNic = getManageMentNetwork(conn, "cloud-private");
+            if( privateNic == null ) {
+                privateNic = getManageMentNetwork(conn, _privateNetworkName);
+            } else {
+                _privateNetworkName = "cloud-private";
+            }
+            String name = _privateNetworkName;
             if (privateNic == null) {
                 s_logger.debug("Unable to find any private network.  Trying to determine that by route for host " + _host.ip);
                 name = callHostPlugin("getnetwork", "mgmtIP", myself.getAddress(conn));
@@ -3549,16 +3575,14 @@ public abstract class CitrixResourceBase implements StoragePoolResource, ServerR
                     return false;
                 }
                 _privateNetworkName = name;
-                privateNic = getLocalNetwork(conn, name);
+                privateNic = getManageMentNetwork(conn, name);
                 if (privateNic == null) {
                     s_logger.warn("Unable to get private network " + name);
                     return false;
                 }
-            } else {
-                _privateNetworkName = name;
+                name = privateNic.nr.nameLabel;
             }
-            name = privateNic.nr.nameLabel;
-            
+
             Nic guestNic = null;
             if (_guestNetworkName != null && !_guestNetworkName.equals(name)) {
             	guestNic = getLocalNetwork(conn, _guestNetworkName);
